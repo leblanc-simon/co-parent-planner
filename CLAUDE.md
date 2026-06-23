@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Projet greenfield, non encore échafaudé.** Le seul contenu actuel est la spécification `specs/cdc.md` (cahier des charges, en français) — c'est le **contrat d'implémentation** et la source de vérité. Aucun code, aucun monorepo, aucun outillage build/test n'existe pour l'instant. Il n'y a pas non plus de dépôt git initialisé.
 
-Avant toute implémentation, lire `specs/cdc.md` en entier. En cas d'ambiguïté de rendu visuel, les maquettes HTML du bundle Claude Design (`CoParentPlanner Desktop.dc.html` + variante mobile, `ios-frame.jsx`) font foi.
+Avant toute implémentation, lire `specs/cdc.md` en entier. En cas d'ambiguïté de rendu visuel, les maquettes HTML du bundle Claude Design (`specs/design/CoParentPlanner Desktop.dc.html` + variante mobile, `ios-frame.jsx`) font foi.
 
 ## Décisions d'architecture verrouillées (cdc §0)
 

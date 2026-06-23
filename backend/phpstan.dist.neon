@@ -1,0 +1,11 @@
+parameters:
+    level: 8
+    paths:
+        - src
+        - tests
+    # Autorise les vérifications défensives volontaires (instanceof/method_exists) sans
+    # que PHPStan ne les considère « toujours vraies » à partir des types PHPDoc.
+    treatPhpDocTypesAsCertain: false
+    # Le conteneur dev permet à l'extension Symfony d'analyser services/console.
+    symfony:
+        containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml

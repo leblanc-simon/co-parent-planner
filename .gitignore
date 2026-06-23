@@ -1,0 +1,31 @@
+# Monorepo — règles transverses. Chaque sous-projet a aussi son propre .gitignore.
+
+# OS / éditeurs
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+.vscode/
+*.code-workspace
+
+# Secrets / environnement local (ne jamais committer)
+.env.local
+.env.*.local
+*.local.php
+/infra/secrets/
+
+# Clés (JWT, chiffrement) — générées localement, jamais committées
+*.pem
+backend/config/jwt/*.pem
+
+# Logs / temporaire
+*.log
+/tmp/
+.scratchpad/
+
+# Couverture / rapports
+coverage/
+.phpunit.result.cache
+.php-cs-fixer.cache
+.phpstan.cache

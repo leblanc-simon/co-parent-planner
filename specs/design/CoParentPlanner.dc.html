@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *{ box-sizing:border-box; }
+    body{ margin:0; }
+    @keyframes cpp-sheet{ from{ transform:translateY(100%); } to{ transform:translateY(0); } }
+    @keyframes cpp-fade{ from{ opacity:0; } to{ opacity:1; } }
+    ::-webkit-scrollbar{ width:0; height:0; }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; width:100%; background:#E9E4DA; display:flex; align-items:center; justify-content:center; padding:28px; font-family:'Hanken Grotesk',system-ui,sans-serif;">
+<x-import component="IOSDevice" from="./ios-frame.jsx" hint-size="402px,874px">
+
+<div style="height:100%; display:flex; flex-direction:column; position:relative; background:#F4F1EA; overflow:hidden;">
+
+  <!-- ============ SCROLLABLE CONTENT ============ -->
+  <div style="flex:1; overflow-y:auto; overflow-x:hidden;">
+
+    <!-- ===================== ACCUEIL ===================== -->
+    <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+    <div data-screen-label="Accueil" style="padding:58px 20px 24px;">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+        <div>
+          <div style="font-size:13px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:#A39B8C;">{{ dateLabel }}</div>
+          <div style="display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-top:2px;">
+            <div style="font-family:'Bricolage Grotesque'; font-size:30px; font-weight:700; letter-spacing:-.02em; color:#292621;">{{ greeting }}</div>
+            <sc-if value="{{ famIsUnited }}" hint-placeholder-val="{{ false }}"><span title="Famille unie" style="width:27px; height:27px; border-radius:999px; background:#E2EDE9; color:#2C5C4F; display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:700;">∞</span></sc-if>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; position:relative;">
+          <div onClick="{{ toggleFamMenu }}" style="display:flex; align-items:center; gap:6px; background:#fff; border:1px solid #EAE4D9; border-radius:999px; padding:5px 10px 5px 12px; box-shadow:0 1px 2px rgba(41,38,33,.05); cursor:pointer; max-width:150px;">
+            <span style="font-size:13px; font-weight:600; color:#6F685C; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ famShort }}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;"><path d="M6 9l6 6 6-6" stroke="#A39B8C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <sc-if value="{{ famMenuOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute; top:100%; right:0; margin-top:8px; width:248px; background:#fff; border:1px solid #EAE4D9; border-radius:16px; padding:6px; z-index:60; box-shadow:0 16px 40px rgba(41,38,33,.18);">
+            <sc-for list="{{ famList }}" as="f" hint-placeholder-count="2">
+              <div onClick="{{ f.onClick }}" style="display:flex; align-items:center; gap:10px; padding:10px 11px; border-radius:11px; cursor:pointer; background:{{ f.bgRow }}; border:1px solid {{ f.borderRow }}; margin-bottom:5px;">
+                <span style="width:30px; height:30px; border-radius:8px; background:#EDE7DB; color:#8A7B5E; display:flex; align-items:center; justify-content:center; font-family:'Bricolage Grotesque'; font-weight:700; font-size:12px; flex-shrink:0;">{{ f.tag }}</span>
+                <div style="flex:1; min-width:0;">
+                  <div style="display:flex; align-items:center; gap:7px;"><span style="font-size:14px; font-weight:600; color:#292621; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ f.name }}</span><sc-if value="{{ f.united }}" hint-placeholder-val="{{ false }}"><span title="Famille unie" style="font-size:15px; font-weight:700; color:#2C5C4F; flex-shrink:0;">∞</span></sc-if></div>
+                  <div style="font-size:12px; color:#857E71;">{{ f.sub }}</div>
+                </div>
+                <span style="width:8px; height:8px; border-radius:999px; background:{{ f.dot }}; flex-shrink:0;"></span>
+              </div>
+            </sc-for>
+          </div>
+          </sc-if>
+          <span onClick="{{ goSettings }}" style="width:38px; height:38px; border-radius:999px; background:#fff; border:1px solid #EAE4D9; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 1px 2px rgba(41,38,33,.05); flex-shrink:0;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke="#6F685C" stroke-width="1.9"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="#6F685C" stroke-width="1.5"/></svg>
+          </span>
+        </div>
+      </div>
+
+      <!-- Garde cette semaine -->
+      <div style="margin-top:18px; border-radius:22px; padding:18px 18px 16px; background:#fff; border:1px solid #EFEAE0; box-shadow:0 1px 2px rgba(41,38,33,.04), 0 8px 24px rgba(41,38,33,.05); position:relative; overflow:hidden;">
+        <div style="position:absolute; top:0; left:0; width:5px; height:100%; background:{{ weekChipColor }};"></div>
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#A39B8C;">{{ heroEyebrow }}</div>
+          <div style="display:flex; align-items:center; gap:-6px;">
+            <sc-for list="{{ kids }}" as="k" hint-placeholder-count="2">
+              <span style="width:30px; height:30px; border-radius:999px; background:{{ k.color }}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; border:2px solid #fff; margin-left:-8px;">{{ k.initial }}</span>
+            </sc-for>
+          </div>
+        </div>
+        <div style="font-family:'Bricolage Grotesque'; font-size:21px; font-weight:600; line-height:1.25; color:#292621; margin-top:10px; text-wrap:pretty;">{{ heroText }}</div>
+        <div style="display:flex; align-items:center; gap:7px; margin-top:8px; color:#6F685C; font-size:14px;">
+          <sc-if value="{{ heroShowClock }}" hint-placeholder-val="{{ true }}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 7v5l3 2" stroke="#A39B8C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#A39B8C" stroke-width="2"/></svg></sc-if>
+          <span>{{ heroSub }}</span>
+        </div>
+      </div>
+
+      <!-- À venir -->
+      <div style="display:flex; align-items:center; justify-content:space-between; margin:22px 2px 10px;">
+        <div style="font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#A39B8C;">À venir</div>
+        <span onClick="{{ goAgenda }}" style="font-size:13px; font-weight:600; color:{{ accentColor }}; cursor:pointer;">Tout l’agenda</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <sc-for list="{{ upcoming }}" as="e" hint-placeholder-count="3">
+          <div onClick="{{ goAgenda }}" style="display:flex; align-items:center; gap:13px; background:#fff; border:1px solid #EFEAE0; border-radius:16px; padding:13px 14px; cursor:pointer; box-shadow:0 1px 2px rgba(41,38,33,.03);">
+            <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:46px; flex-shrink:0;">
+              <span style="font-size:11px; font-weight:600; color:#A39B8C; text-transform:uppercase;">{{ e.dow }}</span>
+              <span style="font-family:'Bricolage Grotesque'; font-size:20px; font-weight:700; color:#292621; line-height:1;">{{ e.day }}</span>
+            </div>
+            <div style="width:1px; align-self:stretch; background:#EFEAE0;"></div>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:15px; font-weight:600; color:#292621;">{{ e.title }}</div>
+              <div style="font-size:13px; color:#857E71; margin-top:2px;">{{ e.metaLine }}</div>
+            </div>
+            <span style="font-size:11px; font-weight:600; color:{{ e.catColor }}; background:{{ e.catSoft }}; padding:4px 9px; border-radius:999px; white-space:nowrap;">{{ e.catLabel }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- À décider -->
+      <div style="display:flex; align-items:center; justify-content:space-between; margin:22px 2px 10px;">
+        <div style="font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#A39B8C;">À décider ensemble</div>
+        <span onClick="{{ goQuestions }}" style="font-size:13px; font-weight:600; color:{{ accentColor }}; cursor:pointer;">Voir tout</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <sc-for list="{{ pending }}" as="q" hint-placeholder-count="2">
+          <div onClick="{{ q.onClick }}" style="background:#fff; border:1px solid #EFEAE0; border-radius:16px; padding:14px; cursor:pointer; box-shadow:0 1px 2px rgba(41,38,33,.03);">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+              <div style="font-size:15px; font-weight:600; color:#292621; line-height:1.3; text-wrap:pretty;">{{ q.title }}</div>
+              <span style="font-size:11px; font-weight:700; color:{{ q.deadlineColor }}; background:{{ q.deadlineSoft }}; padding:4px 9px; border-radius:999px; white-space:nowrap; flex-shrink:0;">{{ q.deadlineLabel }}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; margin-top:9px; color:#857E71; font-size:13px;">
+              <span style="width:18px; height:18px; border-radius:999px; background:{{ q.authorColor }}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700;">{{ q.authorInitial }}</span>
+              <span>Proposé par {{ q.author }}</span>
+              <span style="color:#C9C1B2;">·</span>
+              <span>{{ q.replies }} réponses</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="height:8px;"></div>
+    </div>
+    </sc-if>
+
+    <!-- ===================== GARDE ===================== -->
+    <sc-if value="{{ isCustody }}" hint-placeholder-val="{{ true }}">
+    <div data-screen-label="Garde" style="padding:58px 20px 24px;">
+      <div style="font-family:'Bricolage Grotesque'; font-size:30px; font-weight:700; letter-spacing:-.02em; color:#292621;">Planning de garde</div>
+
+      <sc-if value="{{ canOverlay }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; background:#fff; border:1px solid #EFEAE0; border-radius:14px; padding:12px 14px;">
+        <div style="display:flex; align-items:center; gap:9px;"><span style="width:10px; height:10px; border-radius:3px; border:1.5px solid #9C6FB0;"></span><span style="font-size:14px; font-weight:600; color:#292621;">{{ overlayLabel }}</span></div>
+        <div onClick="{{ onToggleOverlay }}" style="width:46px; height:27px; border-radius:999px; background:{{ overlayTrack }}; padding:3px; cursor:pointer; flex-shrink:0; display:flex; justify-content:{{ overlayJustify }};"><span style="width:21px; height:21px; border-radius:999px; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2);"></span></div>
+      </div>
+      </sc-if>
+
+      <!-- règle -->
+      <div style="display:flex; gap:11px; align-items:flex-start; margin-top:14px; background:#FBF4E8; border:1px solid #EFE2C9; border-radius:16px; padding:13px 14px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex-shrink:0; margin-top:1px;"><path d="M4 7h16M4 12h16M4 17h10" stroke="#C99A3F" stroke-width="2" stroke-linecap="round"/></svg>
+        <div style="font-size:13px; line-height:1.45; color:#6F685C;">Alternance hebdomadaire — échange le <b style="color:#292621;">dimanche 19h</b>. Les vacances scolaires suivent des règles dédiées.</div>
+      </div>
+
+      <!-- month nav -->
+      <div style="display:flex; align-items:center; justify-content:space-between; margin:20px 0 12px;">
+        <div style="font-family:'Bricolage Grotesque'; font-size:18px; font-weight:700; color:#292621;">{{ monthLabel }}</div>
+        <div style="display:flex; gap:8px;">
+          <span style="width:34px; height:34px; border-radius:10px; background:#fff; border:1px solid #EAE4D9; display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="9" height="15" viewBox="0 0 12 20"><path d="M10 2L2 10l8 8" stroke="#857E71" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span style="width:34px; height:34px; border-radius:10px; background:#fff; border:1px solid #EAE4D9; display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="9" height="15" viewBox="0 0 12 20"><path d="M2 2l8 8-8 8" stroke="#857E71" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        </div>
+      </div>
+
+      <!-- weekday header -->
+      <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:6px;">
+        <sc-for list="{{ weekdays }}" as="w" hint-placeholder-count="7">
+          <div style="text-align:center; font-size:11px; font-weight:600; color:#A39B8C; text-transform:uppercase;">{{ w }}</div>
+        </sc-for>
+      </div>
+      <!-- calendar grid -->
+      <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:6px;">
+        <sc-for list="{{ calendarDays }}" as="d" hint-placeholder-count="35">
+          <div onClick="{{ d.onClick }}" style="aspect-ratio:1; border-radius:12px; background:{{ d.bg }}; border:{{ d.border }}; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; cursor:pointer; position:relative;">
+            <span style="width:25px; height:25px; display:flex; align-items:center; justify-content:center; border-radius:13px; font-size:13.5px; font-weight:600; background:{{ d.numBg }}; color:{{ d.numColor }};">{{ d.num }}</span>
+            <sc-if value="{{ d.hasEvent }}" hint-placeholder-val="{{ true }}"><span style="position:absolute; bottom:6px; width:5px; height:5px; border-radius:3px; background:{{ d.eventColor }};"></span></sc-if>
+            <sc-if value="{{ d.hasExt }}" hint-placeholder-val="{{ false }}"><span style="position:absolute; bottom:6px; right:8px; width:5px; height:5px; border-radius:3px; border:1.5px solid #9C6FB0;"></span></sc-if>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- legend -->
+      <div style="display:flex; flex-wrap:wrap; gap:14px; margin-top:16px; padding:0 2px;">
+        <div style="display:flex; align-items:center; gap:7px;"><span style="width:13px; height:13px; border-radius:4px; background:{{ elodieColor }};"></span><span style="font-size:13px; color:#6F685C;">{{ p1Name }}</span></div>
+        <div style="display:flex; align-items:center; gap:7px;"><span style="width:13px; height:13px; border-radius:4px; background:{{ marcColor }};"></span><span style="font-size:13px; color:#6F685C;">{{ p2Name }}</span></div>
+        <div style="display:flex; align-items:center; gap:7px;"><span style="width:13px; height:13px; border-radius:4px; border:1.5px dashed #857E71;"></span><span style="font-size:13px; color:#6F685C;">Échange exceptionnel</span></div>
+        <div style="display:flex; align-items:center; gap:7px;"><span style="width:5px; height:5px; border-radius:3px; background:#9C6FB0; margin:0 4px;"></span><span style="font-size:13px; color:#6F685C;">Activité</span></div>
+      </div>
+
+      <!-- périodes spéciales -->
+      <div style="font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#A39B8C; margin:24px 2px 10px;">Périodes spéciales</div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <sc-for list="{{ specialPeriods }}" as="s" hint-placeholder-count="2">
+          <div style="background:#fff; border:1px solid #EFEAE0; border-radius:16px; padding:14px; box-shadow:0 1px 2px rgba(41,38,33,.03);">
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+              <div style="font-size:15px; font-weight:600; color:#292621;">{{ s.title }}</div>
+              <span style="font-size:13px; color:#857E71;">{{ s.dates }}</span>
+            </div>
+            <div style="font-size:13px; color:#857E71; margin-top:3px;">{{ s.rule }}</div>
+            <div style="display:flex; height:8px; border-radius:5px; overflow:hidden; margin-top:11px;">
+              <div style="flex:{{ s.splitA }}; background:{{ elodieColor }};"></div>
+              <div style="flex:{{ s.splitB }}; background:{{ marcColor }};"></div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="height:8px;"></div>
+    </div>
+    </sc-if>
+
+    <!-- ===================== AGENDA ===================== -->
+    <sc-if value="{{ isAgenda }}" hint-placeholder-val="{{ true }}">
+    <div data-screen-label="Agenda" style="padding:58px 20px 24px;">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+        <div style="font-family:'Bricolage Grotesque'; font-size:30px; font-weight:700; letter-spacing:-.02em; color:#292621;">Agenda</div>
+        <span onClick="{{ openEvent }}" style="display:flex; align-items:center; gap:6px; height:38px; padding:0 14px; border-radius:11px; background:#292621; color:#fff; font-size:13px; font-weight:600; cursor:pointer; flex-shrink:0; margin-top:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>Ajouter</span>
+      </div>
+      <!-- filters -->
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:16px;">
+        <sc-for list="{{ filterCats }}" as="c" hint-placeholder-count="5">
+          <span onClick="{{ c.onClick }}" style="font-size:13px; font-weight:600; padding:7px 14px; border-radius:999px; cursor:pointer; background:{{ c.bg }}; color:{{ c.fg }}; border:1px solid {{ c.border }};">{{ c.label }}</span>
+        </sc-for>
+      </div>
+      <sc-if value="{{ canOverlay }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; background:#fff; border:1px solid #EFEAE0; border-radius:14px; padding:12px 14px;">
+        <div style="display:flex; align-items:center; gap:9px;"><span style="width:10px; height:10px; border-radius:3px; background:#9C6FB0;"></span><span style="font-size:14px; font-weight:600; color:#292621;">{{ overlayLabel }}</span></div>
+        <div onClick="{{ onToggleOverlay }}" style="width:46px; height:27px; border-radius:999px; background:{{ overlayTrack }}; padding:3px; cursor:pointer; flex-shrink:0; display:flex; justify-content:{{ overlayJustify }};"><span style="width:21px; height:21px; border-radius:999px; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2);"></span></div>
+      </div>
+      </sc-if>
+      <!-- grouped events -->
+      <div style="margin-top:20px; display:flex; flex-direction:column; gap:20px;">
+        <sc-for list="{{ groupedEvents }}" as="g" hint-placeholder-count="4">
+          <div>
+            <div style="display:flex; align-items:baseline; gap:8px; margin-bottom:9px; padding-left:2px;">
+              <span style="font-family:'Bricolage Grotesque'; font-size:17px; font-weight:700; color:#292621;">{{ g.dayLabel }}</span>
+              <span style="font-size:13px; color:#A39B8C;">{{ g.sub }}</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <sc-for list="{{ g.items }}" as="e" hint-placeholder-count="1">
+                <div style="display:flex; gap:13px; background:#fff; border:1px solid #EFEAE0; border-radius:16px; padding:14px; box-shadow:0 1px 2px rgba(41,38,33,.03);">
+                  <div style="width:4px; border-radius:3px; background:{{ e.catColor }}; opacity:{{ e.barOpacity }}; flex-shrink:0;"></div>
+                  <div style="flex:1; min-width:0;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                      <span style="font-size:15px; font-weight:600; color:#292621;">{{ e.title }}</span>
+                      <span style="font-size:14px; font-weight:600; color:#6F685C; white-space:nowrap;">{{ e.time }}</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; margin-top:7px; flex-wrap:wrap;">
+                      <span style="font-size:11px; font-weight:600; color:{{ e.catColor }}; background:{{ e.catSoft }}; padding:3px 8px; border-radius:999px;">{{ e.catLabel }}</span>
+                      <sc-if value="{{ e.external }}" hint-placeholder-val="{{ false }}"><span style="font-size:11px; font-weight:600; color:#6F5B7A; background:#EFE6F4; padding:3px 8px; border-radius:999px;">{{ e.extTag }}</span></sc-if>
+                      <span style="font-size:13px; color:#857E71;">{{ e.child }}</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:6px; margin-top:8px; color:#857E71; font-size:13px;">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 21s7-5.5 7-11a7 7 0 10-14 0c0 5.5 7 11 7 11z" stroke="#B7AF9F" stroke-width="2"/><circle cx="12" cy="10" r="2.4" stroke="#B7AF9F" stroke-width="2"/></svg>
+                      <span>{{ e.loc }}</span>
+                      <span style="color:#C9C1B2;">·</span>
+                      <span>{{ e.who }}</span>
+                    </div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="height:8px;"></div>
+    </div>
+    </sc-if>
+
+    <!-- ===================== ENFANTS (liste) ===================== -->
+    <sc-if value="{{ showChildList }}" hint-placeholder-val="{{ true }}">
+    <div data-screen-label="Enfants" style="padding:58px 20px 24px;">
+      <div style="font-family:'Bricolage Grotesque'; font-size:30px; font-weight:700; letter-spacing:-.02em; color:#292621;">Enfants</div>
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:18px;">
+        <sc-for list="{{ children }}" as="c" hint-placeholder-count="2">
+          <div onClick="{{ c.onClick }}" style="display:flex; align-items:center; gap:14px; background:#fff; border:1px solid #EFEAE0; border-radius:20px; padding:16px; cursor:pointer; box-shadow:0 1px 2px rgba(41,38,33,.03);">
+            <span style="width:52px; height:52px; border-radius:999px; background:{{ c.color }}; color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Bricolage Grotesque'; font-size:22px; font-weight:700; flex-shrink:0;">{{ c.initial }}</span>
+            <div style="flex:1; min-width:0;">
+              <div style="font-family:'Bricolage Grotesque'; font-size:19px; font-weight:700; color:#292621;">{{ c.name }}</div>
+              <div style="font-size:14px; color:#857E71; margin-top:1px;">{{ c.sub }}</div>
+            </div>
+            <svg width="9" height="15" viewBox="0 0 12 20" style="flex-shrink:0;"><path d="M2 2l8 8-8 8" stroke="#C9C1B2" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        </sc-for>
+      </div>
+      <div style="height:8px;"></div>
+    </div>
+    </sc-if>
+
+    <!-- ===================== ENFANT (détail) ===================== -->
+    <sc-if value="{{ showChildDetail }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Profil enfant" style="padding:54px 0 24px;">
+      <div style="display:flex; align-items:center; gap:6px; padding:0 16px; cursor:pointer;" onClick="{{ backToChildren }}">
+        <svg width="11" height="18" viewBox="0 0 12 20"><path d="M10 2L2 10l8 8" stroke="{{ accentColor }}" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span style="font-size:16px; font-weight:600; color:{{ accentColor }};">Enfants</span>
+      </div>
+      <div style="display:flex; flex-direction:column; align-items:center; padding:14px 20px 4px;">
+        <span style="width:78px; height:78px; border-radius:999px; background:{{ child.color }}; color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Bricolage Grotesque'; font-size:34px; font-weight:700;">{{ child.initial }}</span>
+        <div style="font-family:'Bricolage Grotesque'; font-size:26px; font-weight:700; color:#292621; margin-top:12px;">{{ child.name }}</div>
+        <div style="font-size:14px; color:#857E71; margin-top:1px;">{{ child.sub }}</div>
+      </div>
+
+      <div style="font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#A39B8C; margin:22px 22px 10px;">Informations</div>
+      <div style="margin:0 16px; background:#fff; border:1px solid #EFEAE0; border-radius:18px; overflow:hidden;">
+        <sc-for list="{{ child.info }}" as="f" hint-placeholder-count="6">
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 16px; border-bottom:{{ f.border }};">
+            <span style="font-size:14px; color:#857E71;">{{ f.label }}</span>
+            <span style="font-size:15px; font-weight:600; color:#292621; text-align:right;">{{ f.value }}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#A39B8C; margin:22px 22px 10px;">Notes partagées</div>
+      <div style="margin:0 16px; display:flex; flex-direction:column; gap:8px;">
+        <sc-for list="{{ child.notes }}" as="n" hint-placeholder-count="3">
+          <div style="background:#fff; border:1px solid #EFEAE0; border-radius:16px; padding:14px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="width:20px; height:20px; border-radius:999px; background:{{ n.color }}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700;">{{ n.initial }}</span>
+              <span style="font-size:13px; font-weight:600; color:#292621;">{{ n.author }}</span>
+              <span style="font-size:13px; color:#A39B8C;">· {{ n.date }}</span>
+            </div>
+            <div style="font-size:14px; color:#544E45; line-height:1.45; margin-top:8px; text-wrap:pretty;">{{ n.text }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#A39B8C; margin:22px 22px 10px;">Accès & droits</div>
+      <div style="margin:0 16px; background:#fff; border:1px solid #EFEAE0; border-radius:18px; overflow:hidden;">
+        <sc-for list="{{ child.access }}" as="a" hint-placeholder-count="3">
+          <div style="display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:{{ a.border }};">
+            <span style="width:32px; height:32px; border-radius:999px; background:{{ a.color }}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700;">{{ a.initial }}</span>
+            <div style="flex:1;">
+              <div style="font-size:15px; font-weight:600; color:#292621;">{{ a.name }}</div>
+              <div style="font-size:13px; color:#857E71;">{{ a.role }}</div>
+            </div>
+            <span style="font-size:11px; font-weight:600; color:{{ a.rightColor }}; background:{{ a.rightSoft }}; padding:4px 10px; border-radius:999px;">{{ a.right }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="height:8px;"></div>
+    </div>
+    </sc-if>
+
+    <!-- ===================== ÉCHANGES (liste) ===================== -->
+    <sc-if value="{{ showQList }}" hint-placeholder-val="{{ true }}">
+    <div data-screen-label="Échanges" style="padding:58px 20px 24px;">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+        <div>
+          <div style="font-family:'Bricolage Grotesque'; font-size:30px; font-weight:700; letter-spacing:-.02em; color:#292621;">Échanges</div>
+          <div style="font-size:14px; color:#857E71; margin-top:3px;">Questions et décisions à prendre ensemble</div>
+        </div>
+        <span onClick="{{ openDisc }}" style="display:flex; align-items:center; gap:6px; height:38px; padding:0 14px; border-radius:11px; background:#292621; color:#fff; font-size:13px; font-weight:600; cursor:pointer; flex-shrink:0; margin-top:4px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg>Nouveau</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:18px;">
+        <sc-for list="{{ questions }}" as="q" hint-placeholder-count="4">
+          <div onClick="{{ q.onClick }}" style="background:#fff; border:1px solid #EFEAE0; border-radius:18px; padding:16px; cursor:pointer; box-shadow:0 1px 2px rgba(41,38,33,.03); opacity:{{ q.opacity }};">
+            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px;">
+              <div style="font-family:'Bricolage Grotesque'; font-size:17px; font-weight:600; color:#292621; line-height:1.3; text-wrap:pretty;">{{ q.title }}</div>
+              <span style="font-size:11px; font-weight:700; color:{{ q.badgeColor }}; background:{{ q.badgeSoft }}; padding:4px 10px; border-radius:999px; white-space:nowrap; flex-shrink:0;">{{ q.badge }}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; margin-top:11px; color:#857E71; font-size:13px;">
+              <span style="width:20px; height:20px; border-radius:999px; background:{{ q.authorColor }}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700;">{{ q.authorInitial }}</span>
+              <span>{{ q.author }}</span>
+              <span style="color:#C9C1B2;">·</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.38 8.38 0 01-9 8.3L3 21l1.3-4A8.5 8.5 0 1121 11.5z" stroke="#B7AF9F" stroke-width="2"/></svg>
+              <span>{{ q.replies }}</span>
+              <span style="margin-left:auto; font-size:13px; color:{{ q.childColor }};">{{ q.childTag }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="height:8px;"></div>
+    </div>
+    </sc-if>
+
+    <!-- ===================== ÉCHANGE (détail) ===================== -->
+    <sc-if value="{{ showQDetail }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Discussion" style="padding:54px 0 24px;">
+      <div style="display:flex; align-items:center; gap:6px; padding:0 16px; cursor:pointer;" onClick="{{ backToQuestions }}">
+        <svg width="11" height="18" viewBox="0 0 12 20"><path d="M10 2L2 10l8 8" stroke="{{ accentColor }}" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span style="font-size:16px; font-weight:600; color:{{ accentColor }};">Échanges</span>
+      </div>
+      <div style="padding:14px 20px 0;">
+        <span style="font-size:12px; font-weight:600; color:{{ question.childColor }};">{{ question.childTag }}</span>
+        <div style="font-family:'Bricolage Grotesque'; font-size:24px; font-weight:700; color:#292621; line-height:1.25; margin-top:4px; text-wrap:pretty;">{{ question.title }}</div>
+        <div style="font-size:15px; color:#544E45; line-height:1.5; margin-top:10px; text-wrap:pretty;">{{ question.body }}</div>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:14px; padding:10px 12px; border-radius:12px; background:{{ question.statusSoft }};">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="{{ question.statusColor }}" stroke-width="2"/><path d="M12 7v5l3 2" stroke="{{ question.statusColor }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span style="font-size:13px; font-weight:600; color:{{ question.statusColor }};">{{ question.statusLabel }}</span>
+        </div>
+      </div>
+
+      <!-- options -->
+      <sc-if value="{{ question.hasOptions }}" hint-placeholder-val="{{ false }}">
+      <div style="font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#A39B8C; margin:22px 22px 10px;">Choisis une option</div>
+      <div style="margin:0 16px; display:flex; flex-direction:column; gap:9px;">
+        <sc-for list="{{ question.options }}" as="o" hint-placeholder-count="2">
+          <div onClick="{{ o.onClick }}" style="display:flex; align-items:center; gap:13px; background:#fff; border:2px solid {{ o.border }}; border-radius:16px; padding:14px; cursor:pointer;">
+            <span style="width:22px; height:22px; border-radius:999px; border:2px solid {{ o.dotBorder }}; background:{{ o.dotBg }}; flex-shrink:0; display:flex; align-items:center; justify-content:center;"><span style="width:9px; height:9px; border-radius:999px; background:{{ o.dotInner }};"></span></span>
+            <div style="flex:1;">
+              <div style="font-size:15px; font-weight:600; color:#292621;">{{ o.label }}</div>
+              <div style="font-size:13px; color:#857E71; margin-top:1px;">{{ o.sub }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div onClick="{{ question.onValidate }}" style="margin:14px 16px 0; height:52px; border-radius:14px; background:{{ question.validateBg }}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:600; cursor:pointer;">{{ question.validateLabel }}</div>
+      </sc-if>
+
+      <!-- discussion -->
+      <div style="font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#A39B8C; margin:24px 22px 12px;">Discussion</div>
+      <div style="margin:0 16px; display:flex; flex-direction:column; gap:14px;">
+        <sc-for list="{{ question.messages }}" as="m" hint-placeholder-count="3">
+          <div style="display:flex; gap:10px; flex-direction:{{ m.dir }};">
+            <span style="width:30px; height:30px; border-radius:999px; background:{{ m.color }}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;">{{ m.initial }}</span>
+            <div style="max-width:78%;">
+              <div style="background:{{ m.bubble }}; border:1px solid {{ m.bubbleBorder }}; border-radius:16px; padding:11px 14px; font-size:14px; line-height:1.45; color:#3A352E; text-wrap:pretty;">{{ m.text }}</div>
+              <div style="font-size:11px; color:#A39B8C; margin-top:4px; text-align:{{ m.align }};">{{ m.author }} · {{ m.time }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- composer -->
+      <div style="margin:18px 16px 0; display:flex; align-items:center; gap:10px; background:#fff; border:1px solid #EAE4D9; border-radius:999px; padding:6px 6px 6px 16px;">
+        <span style="flex:1; font-size:14px; color:#B7AF9F;">Écrire un message…</span>
+        <span style="width:38px; height:38px; border-radius:999px; background:{{ accentColor }}; display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 12h15m0 0l-6-6m6 6l-6 6" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      </div>
+      <div style="height:8px;"></div>
+    </div>
+    </sc-if>
+
+    <!-- ===================== DÉPENSES ===================== -->
+    <sc-if value="{{ isExpenses }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Dépenses" style="padding:58px 20px 24px;">
+      <div style="font-family:'Bricolage Grotesque'; font-size:30px; font-weight:700; letter-spacing:-.02em; color:#292621;">Dépenses</div>
+
+      <!-- balance hero -->
+      <div style="margin-top:16px; border-radius:22px; padding:20px; background:#fff; border:1px solid #EFEAE0; box-shadow:0 1px 2px rgba(41,38,33,.04), 0 8px 24px rgba(41,38,33,.05); position:relative; overflow:hidden;">
+        <div style="position:absolute; top:0; left:0; width:5px; height:100%; background:{{ balance.barColor }};"></div>
+        <div style="font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#A39B8C;">Solde courant</div>
+        <div style="font-family:'Bricolage Grotesque'; font-size:32px; font-weight:700; color:{{ balance.amountColor }}; margin-top:8px; line-height:1;">{{ balance.amount }}</div>
+        <div style="font-size:15px; color:#544E45; margin-top:6px;">{{ balance.label }}</div>
+        <div onClick="{{ balance.onSettle }}" style="height:48px; margin-top:16px; border-radius:13px; background:{{ balance.btnBg }}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:600; cursor:pointer;">{{ balance.btnLabel }}</div>
+      </div>
+
+      <div style="display:flex; align-items:center; justify-content:space-between; margin:22px 2px 10px;">
+        <div style="font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#A39B8C;">Juin 2026</div>
+        <span style="font-size:13px; font-weight:600; color:{{ accentColor }};">+ Ajouter</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <sc-for list="{{ expenses.items }}" as="x" hint-placeholder-count="5">
+          <div style="display:flex; align-items:center; gap:13px; background:#fff; border:1px solid #EFEAE0; border-radius:16px; padding:13px 14px; box-shadow:0 1px 2px rgba(41,38,33,.03); opacity:{{ x.opacity }};">
+            <span style="width:40px; height:40px; border-radius:11px; background:{{ x.catSoft }}; color:{{ x.catColor }}; display:flex; align-items:center; justify-content:center; flex-shrink:0;">{{ x.icon }}</span>
+            <div style="flex:1; min-width:0;">
+              <div style="font-size:15px; font-weight:600; color:#292621; line-height:1.25;">{{ x.title }}</div>
+              <div style="display:flex; align-items:center; gap:6px; margin-top:3px; color:#857E71; font-size:12.5px;">
+                <span style="width:16px; height:16px; border-radius:999px; background:{{ x.payerColor }}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:700;">{{ x.payerInitial }}</span>
+                <span>{{ x.payer }} · {{ x.date }}</span>
+              </div>
+            </div>
+            <div style="text-align:right; flex-shrink:0;">
+              <div style="font-family:'Bricolage Grotesque'; font-size:17px; font-weight:700; color:#292621;">{{ x.amount }}</div>
+              <div style="font-size:11px; font-weight:600; color:{{ x.statusColor }}; margin-top:2px;">{{ x.statusLabel }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="height:8px;"></div>
+    </div>
+    </sc-if>
+
+    <!-- ===================== PARAMÈTRES ===================== -->
+    <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+    <div data-screen-label="Paramètres" style="padding:54px 0 24px;">
+      <div style="display:flex; align-items:center; gap:6px; padding:0 16px; cursor:pointer;" onClick="{{ goHome }}">
+        <svg width="11" height="18" viewBox="0 0 12 20"><path d="M10 2L2 10l8 8" stroke="{{ accentColor }}" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span style="font-size:16px; font-weight:600; color:{{ accentColor }};">Accueil</span>
+      </div>
+      <div style="font-family:'Bricolage Grotesque'; font-size:30px; font-weight:700; letter-spacing:-.02em; color:#292621; padding:8px 20px 0;">Paramètres</div>
+
+      <!-- sub-tabs -->
+      <div style="display:flex; gap:8px; padding:14px 20px 0;">
+        <sc-for list="{{ settingsTabsM }}" as="t" hint-placeholder-count="3">
+          <span onClick="{{ t.onClick }}" style="font-size:13px; font-weight:600; padding:8px 14px; border-radius:999px; cursor:pointer; background:{{ t.bg }}; color:{{ t.fg }}; border:1px solid {{ t.border }};">{{ t.label }}</span>
+        </sc-for>
+      </div>
+
+      <!-- COMPTE -->
+      <sc-if value="{{ isSetCompte }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:18px 16px 0;">
+        <div style="display:flex; align-items:center; gap:14px; background:#fff; border:1px solid #EFEAE0; border-radius:18px; padding:16px;">
+          <span style="width:56px; height:56px; border-radius:999px; background:{{ profileColor }}; color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Bricolage Grotesque'; font-size:24px; font-weight:700;">{{ profileInitial }}</span>
+          <div style="flex:1;">
+            <div style="font-family:'Bricolage Grotesque'; font-size:19px; font-weight:700; color:#292621;">{{ profileName }}</div>
+            <div style="font-size:13px; color:#857E71;">{{ profileRole }}</div>
+          </div>
+        </div>
+        <div style="font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#A39B8C; margin:20px 4px 9px;">Informations</div>
+        <div style="background:#fff; border:1px solid #EFEAE0; border-radius:16px; overflow:hidden;">
+          <sc-for list="{{ accountFields }}" as="f" hint-placeholder-count="4">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 15px; border-bottom:{{ f.border }};">
+              <span style="font-size:14px; color:#857E71;">{{ f.label }}</span>
+              <span style="font-size:15px; font-weight:600; color:#292621; text-align:right;">{{ f.value }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#A39B8C; margin:20px 4px 9px;">Notifications</div>
+        <div style="background:#fff; border:1px solid #EFEAE0; border-radius:16px; overflow:hidden;">
+          <sc-for list="{{ notifRows }}" as="n" hint-placeholder-count="4">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 15px; border-bottom:{{ n.border }};">
+              <div>
+                <div style="font-size:14.5px; font-weight:600; color:#292621;">{{ n.label }}</div>
+                <div style="font-size:12.5px; color:#857E71; margin-top:1px;">{{ n.sub }}</div>
+              </div>
+              <div onClick="{{ n.onToggle }}" style="width:46px; height:27px; border-radius:999px; background:{{ n.track }}; padding:3px; cursor:pointer; flex-shrink:0; display:flex; justify-content:{{ n.justify }};">
+                <span style="width:21px; height:21px; border-radius:999px; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2);"></span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:9px; margin-top:18px;">
+          <div style="height:48px; border-radius:13px; background:#fff; border:1px solid #E3DCD0; color:#544E45; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:600; cursor:pointer;">Changer le mot de passe</div>
+          <div style="height:48px; border-radius:13px; background:#fff; border:1px solid #EAD3C7; color:#B85C36; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:600; cursor:pointer;">Se déconnecter</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- MEMBRES -->
+      <sc-if value="{{ isSetMembres }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:18px 16px 0;">
+        <div style="font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#A39B8C; margin:0 4px 9px;">Réglages de la famille</div>
+        <div style="background:#fff; border:1px solid #EFEAE0; border-radius:16px; padding:15px;">
+          <div style="font-size:13px; font-weight:600; color:#6F685C; margin-bottom:7px;">Nom de la famille</div>
+          <input value="{{ famNameValue }}" style="width:100%; height:46px; border:1px solid #E3DCD0; border-radius:12px; padding:0 14px; font-size:15px; font-weight:600; color:#292621; outline:none; background:#fff; font-family:'Hanken Grotesk';"/>
+          <div style="font-size:13px; font-weight:600; color:#6F685C; margin:16px 0 7px;">Type de famille</div>
+          <div style="display:flex; gap:9px;">
+            <sc-for list="{{ famTypeOptions }}" as="o" hint-placeholder-count="2">
+              <div onClick="{{ o.onClick }}" style="flex:1; display:flex; align-items:center; gap:8px; border:2px solid {{ o.border }}; background:{{ o.bg }}; border-radius:13px; padding:12px; cursor:pointer;">
+                <span style="width:18px; height:18px; border-radius:999px; border:2px solid {{ o.dotBorder }}; background:{{ o.dotBg }}; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><span style="width:7px; height:7px; border-radius:999px; background:{{ o.dotInner }};"></span></span>
+                <span style="font-size:14px; font-weight:600; color:#292621;">{{ o.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-size:12.5px; color:#857E71; margin-top:10px; line-height:1.4;">Une famille unie n’a pas de garde et les dépenses y sont optionnelles.</div>
+        </div>
+
+        <sc-if value="{{ isIntact }}" hint-placeholder-val="{{ false }}">
+        <div style="font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#A39B8C; margin:20px 4px 9px;">Modules</div>
+        <div style="background:#fff; border:1px solid #EFEAE0; border-radius:16px; padding:14px 15px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+          <div>
+            <div style="font-size:14.5px; font-weight:600; color:#292621;">Partage des dépenses</div>
+            <div style="font-size:12.5px; color:#857E71; margin-top:1px;">Optionnel — active l’onglet Dépenses</div>
+          </div>
+          <div onClick="{{ onToggleExpensesModule }}" style="width:46px; height:27px; border-radius:999px; background:{{ expModTrack }}; padding:3px; cursor:pointer; flex-shrink:0; display:flex; justify-content:{{ expModJustify }};"><span style="width:21px; height:21px; border-radius:999px; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2);"></span></div>
+        </div>
+        </sc-if>
+
+        <div style="font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#A39B8C; margin:20px 4px 9px;">Membres</div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <sc-for list="{{ members }}" as="m" hint-placeholder-count="3">
+            <div style="display:flex; align-items:center; gap:12px; background:#fff; border:1px solid #EFEAE0; border-radius:16px; padding:13px 14px;">
+              <span style="width:40px; height:40px; border-radius:999px; background:{{ m.color }}; color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Bricolage Grotesque'; font-size:16px; font-weight:700; flex-shrink:0;">{{ m.initial }}</span>
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:15px; font-weight:600; color:#292621;">{{ m.name }}</div>
+                <div style="font-size:13px; color:#857E71;">{{ m.role }}</div>
+              </div>
+              <span style="font-size:11px; font-weight:600; color:{{ m.rightColor }}; background:{{ m.rightSoft }}; padding:5px 11px; border-radius:999px; white-space:nowrap;">{{ m.right }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="margin-top:20px; background:#FBF8F1; border:1px solid #EFE8DA; border-radius:18px; padding:18px;">
+          <div style="font-family:'Bricolage Grotesque'; font-size:18px; font-weight:700; color:#292621;">Inviter une personne</div>
+          <div style="font-size:12.5px; color:#857E71; margin-top:2px;">Elle recevra un lien par e-mail.</div>
+          <div style="font-size:13px; font-weight:600; color:#6F685C; margin:16px 0 7px;">Adresse e-mail</div>
+          <input placeholder="prenom@email.com" style="width:100%; height:46px; border:1px solid #E3DCD0; border-radius:12px; padding:0 14px; font-size:15px; color:#292621; outline:none; background:#fff; font-family:'Hanken Grotesk';"/>
+          <div style="font-size:13px; font-weight:600; color:#6F685C; margin:16px 0 7px;">Rôle</div>
+          <div style="display:flex; gap:9px;">
+            <sc-for list="{{ inviteRoles }}" as="r" hint-placeholder-count="2">
+              <div onClick="{{ r.onClick }}" style="flex:1; border:2px solid {{ r.border }}; background:#fff; border-radius:13px; padding:12px; cursor:pointer;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="width:18px; height:18px; border-radius:999px; border:2px solid {{ r.dotBorder }}; background:{{ r.dotBg }}; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><span style="width:7px; height:7px; border-radius:999px; background:{{ r.dotInner }};"></span></span>
+                  <span style="font-size:14.5px; font-weight:600; color:#292621;">{{ r.label }}</span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-size:13px; font-weight:600; color:#6F685C; margin:16px 0 7px;">Droits accordés</div>
+          <div style="display:flex; flex-direction:column; gap:7px;">
+            <sc-for list="{{ inviteRights }}" as="p" hint-placeholder-count="4">
+              <div onClick="{{ p.onToggle }}" style="display:flex; align-items:center; gap:10px; padding:11px 12px; background:#fff; border:1px solid {{ p.border }}; border-radius:11px; cursor:pointer; opacity:{{ p.opacity }};">
+                <span style="width:21px; height:21px; border-radius:7px; border:2px solid {{ p.boxBorder }}; background:{{ p.boxBg }}; display:flex; align-items:center; justify-content:center; flex-shrink:0;">{{ p.check }}</span>
+                <span style="font-size:14px; font-weight:600; color:#292621; flex:1;">{{ p.label }}</span>
+                <span style="font-size:12.5px; color:#A39B8C;">{{ p.locked }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="height:48px; margin-top:18px; border-radius:13px; background:#292621; color:#fff; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:600; cursor:pointer;">Envoyer l’invitation</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <!-- GARDE -->
+      <sc-if value="{{ isSetGarde }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:18px 16px 0;">
+        <div style="font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#A39B8C; margin:0 4px 9px;">Type de rythme</div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <sc-for list="{{ custodyModes }}" as="c" hint-placeholder-count="4">
+            <div onClick="{{ c.onClick }}" style="border:2px solid {{ c.border }}; background:{{ c.bg }}; border-radius:14px; padding:14px; cursor:pointer;">
+              <div style="display:flex; align-items:center; gap:9px;">
+                <span style="width:20px; height:20px; border-radius:999px; border:2px solid {{ c.dotBorder }}; background:{{ c.dotBg }}; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><span style="width:8px; height:8px; border-radius:999px; background:{{ c.dotInner }};"></span></span>
+                <span style="font-size:15px; font-weight:600; color:#292621;">{{ c.label }}</span>
+              </div>
+              <div style="font-size:13px; color:#857E71; margin-top:6px; line-height:1.4;">{{ c.desc }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="margin-top:18px; background:#fff; border:1px solid #EFEAE0; border-radius:18px; padding:18px;">
+          <div style="font-family:'Bricolage Grotesque'; font-size:16px; font-weight:700; color:#292621;">{{ builderTitle }}</div>
+          <div style="font-size:12.5px; color:#857E71; margin-top:2px; text-wrap:pretty;">{{ builderSub }}</div>
+          <div style="font-size:12.5px; color:#A39B8C; margin-top:12px;">Touche une nuit pour changer de parent.</div>
+          <div style="display:flex; flex-direction:column; gap:11px; margin-top:10px;">
+            <sc-for list="{{ patternWeeksM }}" as="w" hint-placeholder-count="2">
+              <div>
+                <div style="font-size:12.5px; font-weight:600; color:#6F685C; margin-bottom:6px;">{{ w.label }}</div>
+                <div style="display:grid; grid-template-columns:repeat(7,1fr); gap:5px;">
+                  <sc-for list="{{ w.days }}" as="d" hint-placeholder-count="7">
+                    <div onClick="{{ d.onClick }}" style="border-radius:10px; background:{{ d.bg }}; padding:7px 2px; cursor:pointer; text-align:center;">
+                      <div style="font-size:10px; font-weight:600; color:#9C9486; text-transform:uppercase;">{{ d.dow }}</div>
+                      <div style="font-size:14px; font-weight:700; color:{{ d.nameColor }}; margin-top:4px;">{{ d.initial }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex; gap:18px; margin-top:14px; padding-top:13px; border-top:1px solid #F1ECE2;">
+            <div style="font-size:13px; color:#6F685C;">Échange : <b style="color:#292621;">Dimanche 19h</b></div>
+          </div>
+        </div>
+
+        <div style="font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#A39B8C; margin:22px 4px 9px;">Vacances scolaires</div>
+        <div style="background:#fff; border:1px solid #EFEAE0; border-radius:16px; padding:16px;">
+          <div style="font-size:15px; font-weight:600; color:#292621;">Calendrier officiel · Zone B</div>
+          <div style="font-size:13px; color:#857E71; margin-top:1px;">Académie de Bordeaux · 2025–2026</div>
+          <div onClick="{{ onImportHolidays }}" style="height:44px; margin-top:13px; border-radius:12px; background:{{ importBtnBg }}; color:{{ importBtnFg }}; border:1px solid {{ importBtnBorder }}; display:flex; align-items:center; justify-content:center; gap:8px; font-size:14px; font-weight:600; cursor:pointer;">{{ importBtnIcon }}{{ importBtnLabel }}</div>
+          <sc-if value="{{ holidaysImported }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; flex-direction:column; gap:7px; margin-top:13px;">
+            <sc-for list="{{ holidayPeriods }}" as="h" hint-placeholder-count="3">
+              <div style="display:flex; align-items:center; gap:12px; background:#FBF8F1; border:1px solid #EFE8DA; border-radius:12px; padding:11px 13px;">
+                <div style="flex:1;">
+                  <div style="font-size:14px; font-weight:600; color:#292621;">{{ h.title }}</div>
+                  <div style="font-size:12.5px; color:#857E71;">{{ h.dates }}</div>
+                </div>
+                <span style="font-size:12px; font-weight:600; color:#544E45; background:#fff; border:1px solid #E6E0D4; border-radius:8px; padding:6px 10px;">{{ h.rule }}</span>
+              </div>
+            </sc-for>
+          </div>
+          </sc-if>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; margin:22px 4px 9px;">
+          <div style="font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#A39B8C;">Exceptions</div>
+          <span style="font-size:13px; font-weight:600; color:{{ accentColor }};">+ Ajouter</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:7px;">
+          <sc-for list="{{ exceptions }}" as="e" hint-placeholder-count="2">
+            <div style="display:flex; align-items:center; gap:12px; background:#fff; border:1px solid #EFEAE0; border-radius:13px; padding:12px 14px;">
+              <span style="width:9px; height:9px; border-radius:3px; background:{{ e.color }}; flex-shrink:0;"></span>
+              <div style="flex:1;">
+                <div style="font-size:14.5px; font-weight:600; color:#292621;">{{ e.title }}</div>
+                <div style="font-size:12.5px; color:#857E71;">{{ e.dates }} · chez {{ e.parent }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+
+      <div style="height:8px;"></div>
+    </div>
+    </sc-if>
+
+  </div>
+
+  <!-- ============ BOTTOM NAV ============ -->
+  <sc-if value="{{ showNav }}" hint-placeholder-val="{{ true }}">
+  <div style="flex-shrink:0; display:flex; justify-content:space-around; align-items:flex-start; padding:9px 6px 24px; background:rgba(252,250,245,.92); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-top:1px solid #ECE5D9;">
+    <div onClick="{{ goHome }}" style="display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; color:{{ cHome }}; flex:1;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 11l8-7 8 7v8a1 1 0 01-1 1h-4v-5h-6v5H5a1 1 0 01-1-1v-8z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>
+      <span style="font-size:10.5px; font-weight:600;">Accueil</span>
+    </div>
+    <sc-if value="{{ showGardeTab }}" hint-placeholder-val="{{ true }}">
+    <div onClick="{{ goCustody }}" style="display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; color:{{ cCustody }}; flex:1;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3.5" y="4.5" width="17" height="16" rx="3" stroke="currentColor" stroke-width="1.9"/><path d="M3.5 9h17M8 3v3M16 3v3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+      <span style="font-size:10.5px; font-weight:600;">Garde</span>
+    </div>
+    </sc-if>
+    <div onClick="{{ goAgenda }}" style="display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; color:{{ cAgenda }}; flex:1;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M8 6h12M8 12h12M8 18h12" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="4" cy="6" r="1.4" fill="currentColor"/><circle cx="4" cy="12" r="1.4" fill="currentColor"/><circle cx="4" cy="18" r="1.4" fill="currentColor"/></svg>
+      <span style="font-size:10.5px; font-weight:600;">Agenda</span>
+    </div>
+    <div onClick="{{ goChildren }}" style="display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; color:{{ cChildren }}; flex:1;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.9"/><circle cx="17" cy="9" r="2.6" stroke="currentColor" stroke-width="1.9"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5M15 14.5c2.6.2 4.5 2 4.5 4.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+      <span style="font-size:10.5px; font-weight:600;">Enfants</span>
+    </div>
+    <sc-if value="{{ showExpensesTab }}" hint-placeholder-val="{{ true }}">
+    <div onClick="{{ goExpenses }}" style="display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; color:{{ cExpenses }}; flex:1;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="6" width="18" height="13" rx="2.5" stroke="currentColor" stroke-width="1.9"/><path d="M3 10h18" stroke="currentColor" stroke-width="1.9"/><path d="M7 15h3" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+      <span style="font-size:10.5px; font-weight:600;">Dépenses</span>
+    </div>
+    </sc-if>
+    <div onClick="{{ goQuestions }}" style="display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer; color:{{ cQuestions }}; flex:1; position:relative;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.38 8.38 0 01-9 8.3L3 21l1.3-4A8.5 8.5 0 1121 11.5z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>
+      <span style="font-size:10.5px; font-weight:600;">Échanges</span>
+      <sc-if value="{{ hasPending }}" hint-placeholder-val="{{ true }}"><span style="position:absolute; top:-2px; right:50%; margin-right:-16px; width:8px; height:8px; border-radius:999px; background:#C2643D; border:1.5px solid #FCFAF5;"></span></sc-if>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ DAY DETAIL SHEET ============ -->
+  <sc-if value="{{ dayOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute; inset:0; z-index:80; animation:cpp-fade .2s ease;">
+    <div onClick="{{ closeDay }}" style="position:absolute; inset:0; background:rgba(41,38,33,.38);"></div>
+    <div style="position:absolute; left:0; right:0; bottom:0; background:#F4F1EA; border-radius:28px 28px 0 0; padding:10px 20px 34px; animation:cpp-sheet .3s cubic-bezier(.2,.8,.2,1); box-shadow:0 -10px 40px rgba(41,38,33,.18);">
+      <div style="width:40px; height:5px; border-radius:3px; background:#D8D1C3; margin:0 auto 16px;"></div>
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <div>
+          <div style="font-family:'Bricolage Grotesque'; font-size:22px; font-weight:700; color:#292621;">{{ selectedDay.long }}</div>
+          <div style="font-size:14px; color:#857E71; margin-top:1px;">{{ selectedDay.ruleText }}</div>
+        </div>
+        <span onClick="{{ closeDay }}" style="width:32px; height:32px; border-radius:999px; background:#EBE5D9; display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19" stroke="#857E71" stroke-width="2.4" stroke-linecap="round"/></svg></span>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:13px; background:#fff; border:1px solid #EFEAE0; border-radius:18px; padding:15px; margin-top:16px; position:relative; overflow:hidden;">
+        <div style="position:absolute; left:0; top:0; width:5px; height:100%; background:{{ selectedDay.parentColor }};"></div>
+        <span style="width:42px; height:42px; border-radius:999px; background:{{ selectedDay.parentColor }}; color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Bricolage Grotesque'; font-size:18px; font-weight:700;">{{ selectedDay.parentInitial }}</span>
+        <div style="flex:1;">
+          <div style="font-size:12px; color:#A39B8C; font-weight:600; text-transform:uppercase; letter-spacing:.05em;">Chez</div>
+          <div style="font-family:'Bricolage Grotesque'; font-size:19px; font-weight:700; color:#292621;">{{ selectedDay.parentName }}</div>
+        </div>
+        <div style="text-align:right; font-size:13px; color:#857E71; max-width:130px;">{{ selectedDay.handover }}</div>
+      </div>
+
+      <sc-if value="{{ selectedDay.hasEvents }}" hint-placeholder-val="{{ false }}">
+        <div style="font-size:12px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:#A39B8C; margin:18px 2px 9px;">Activités du jour</div>
+        <sc-for list="{{ selectedDay.events }}" as="e" hint-placeholder-count="1">
+          <div style="display:flex; gap:12px; background:#fff; border:1px solid #EFEAE0; border-radius:16px; padding:13px;">
+            <div style="width:4px; border-radius:3px; background:{{ e.catColor }};"></div>
+            <div style="flex:1;">
+              <div style="display:flex; justify-content:space-between;"><span style="font-size:15px; font-weight:600; color:#292621;">{{ e.title }}</span><span style="font-size:14px; font-weight:600; color:#6F685C;">{{ e.time }}</span></div>
+              <div style="font-size:13px; color:#857E71; margin-top:3px;">{{ e.child }} · {{ e.who }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </sc-if>
+
+      <div style="display:flex; gap:10px; margin-top:18px;">
+        <div onClick="{{ closeDay }}" style="flex:1; height:50px; border-radius:14px; background:#fff; border:1px solid #E3DCD0; color:#3A352E; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:600; cursor:pointer;">Échanger ce jour</div>
+        <div onClick="{{ closeDay }}" style="flex:1; height:50px; border-radius:14px; background:#292621; color:#fff; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:600; cursor:pointer;">Modifier la garde</div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ ADD EVENT SHEET ============ -->
+  <sc-if value="{{ eventOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute; inset:0; z-index:90; animation:cpp-fade .2s ease;">
+    <div onClick="{{ closeEvent }}" style="position:absolute; inset:0; background:rgba(41,38,33,.42);"></div>
+    <div class="cpp-scroll" style="position:absolute; left:0; right:0; bottom:0; max-height:94%; overflow-y:auto; background:#F4F1EA; border-radius:28px 28px 0 0; animation:cpp-sheet .3s cubic-bezier(.2,.8,.2,1); box-shadow:0 -10px 40px rgba(41,38,33,.2);">
+      <div style="position:sticky; top:0; background:#F4F1EA; padding:10px 20px 14px; z-index:2; border-bottom:1px solid #ECE5D9;">
+        <div style="width:40px; height:5px; border-radius:3px; background:#D8D1C3; margin:0 auto 12px;"></div>
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="font-family:'Bricolage Grotesque'; font-size:22px; font-weight:700; color:#292621;">Nouvel événement</div>
+          <span onClick="{{ closeEvent }}" style="width:32px; height:32px; border-radius:999px; background:#EBE5D9; display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19" stroke="#857E71" stroke-width="2.4" stroke-linecap="round"/></svg></span>
+        </div>
+      </div>
+
+      <div style="padding:18px 20px 30px;">
+        <div style="font-size:13px; font-weight:600; color:#6F685C; margin-bottom:7px;">Titre</div>
+        <input placeholder="Ex. Cours de tennis" style="width:100%; height:46px; border:1px solid #E3DCD0; border-radius:12px; padding:0 14px; font-size:15px; color:#292621; outline:none; background:#fff; font-family:'Hanken Grotesk';"/>
+
+        <div style="font-size:13px; font-weight:600; color:#6F685C; margin:18px 0 8px;">Type</div>
+        <div style="display:flex; flex-wrap:wrap; gap:8px;">
+          <sc-for list="{{ evTypes }}" as="t" hint-placeholder-count="5">
+            <span onClick="{{ t.onClick }}" style="display:flex; align-items:center; gap:7px; font-size:14px; font-weight:600; padding:9px 13px; border-radius:11px; cursor:pointer; background:{{ t.bg }}; color:{{ t.fg }}; border:1.5px solid {{ t.border }};"><span style="width:9px; height:9px; border-radius:3px; background:{{ t.dot }};"></span>{{ t.label }}</span>
+          </sc-for>
+        </div>
+
+        <div style="font-size:13px; font-weight:600; color:#6F685C; margin:18px 0 8px;">Enfant(s) concerné(s)</div>
+        <div style="display:flex; gap:9px;">
+          <sc-for list="{{ evChildChips }}" as="c" hint-placeholder-count="2">
+            <div onClick="{{ c.onClick }}" style="display:flex; align-items:center; gap:10px; flex:1; padding:11px 13px; border-radius:13px; cursor:pointer; background:{{ c.bg }}; border:1.5px solid {{ c.border }};">
+              <span style="width:30px; height:30px; border-radius:999px; background:{{ c.color }}; color:#fff; display:flex; align-items:center; justify-content:center; font-family:'Bricolage Grotesque'; font-size:14px; font-weight:700; flex-shrink:0;">{{ c.initial }}</span>
+              <span style="font-size:15px; font-weight:600; color:#292621; flex:1;">{{ c.name }}</span>
+              <span style="width:22px; height:22px; border-radius:7px; border:2px solid {{ c.boxBorder }}; background:{{ c.boxBg }}; display:flex; align-items:center; justify-content:center; flex-shrink:0;">{{ c.check }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex; gap:12px; margin-top:18px;">
+          <div style="flex:1;">
+            <div style="font-size:13px; font-weight:600; color:#6F685C; margin-bottom:8px;">Date</div>
+            <input type="date" value="2026-06-25" style="width:100%; height:46px; border:1px solid #E3DCD0; border-radius:12px; padding:0 12px; font-size:15px; color:#292621; outline:none; background:#fff; font-family:'Hanken Grotesk';"/>
+          </div>
+          <div style="width:120px;">
+            <div style="font-size:13px; font-weight:600; color:#6F685C; margin-bottom:8px;">Heure</div>
+            <input type="time" value="17:30" style="width:100%; height:46px; border:1px solid #E3DCD0; border-radius:12px; padding:0 12px; font-size:15px; color:#292621; outline:none; background:#fff; font-family:'Hanken Grotesk';"/>
+          </div>
+        </div>
+
+        <div style="font-size:13px; font-weight:600; color:#6F685C; margin:18px 0 8px;">Lieu</div>
+        <input placeholder="Ex. TC Bellevue" style="width:100%; height:46px; border:1px solid #E3DCD0; border-radius:12px; padding:0 14px; font-size:15px; color:#292621; outline:none; background:#fff; font-family:'Hanken Grotesk';"/>
+
+        <div style="font-size:13px; font-weight:600; color:#6F685C; margin:18px 0 8px;">Parent responsable</div>
+        <div style="display:flex; flex-wrap:wrap; gap:9px;">
+          <sc-for list="{{ evParents }}" as="p" hint-placeholder-count="3">
+            <div onClick="{{ p.onClick }}" style="display:flex; align-items:center; gap:9px; padding:9px 13px 9px 9px; border-radius:11px; cursor:pointer; background:{{ p.bg }}; border:1.5px solid {{ p.border }};">
+              <span style="width:26px; height:26px; border-radius:999px; background:{{ p.color }}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">{{ p.initial }}</span>
+              <div>
+                <div style="font-size:14px; font-weight:600; color:#292621; line-height:1;">{{ p.name }}</div>
+                <div style="font-size:11px; color:#857E71; margin-top:2px;">{{ p.role }}</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="font-size:13px; font-weight:600; color:#6F685C; margin:18px 0 8px;">Commentaire</div>
+        <textarea placeholder="Ex. prévoir la raquette et une tenue de rechange" style="width:100%; height:70px; border:1px solid #E3DCD0; border-radius:12px; padding:11px 14px; font-size:15px; color:#292621; outline:none; background:#fff; font-family:'Hanken Grotesk'; resize:none; line-height:1.45;"></textarea>
+
+        <div style="margin-top:20px; background:#fff; border:1px solid #EFEAE0; border-radius:16px; overflow:hidden;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding:15px 16px;">
+            <div>
+              <div style="font-size:15px; font-weight:600; color:#292621;">Répéter l’événement</div>
+              <div style="font-size:13px; color:#857E71; margin-top:1px;">Sur l’année scolaire en cours</div>
+            </div>
+            <div onClick="{{ onToggleRecur }}" style="width:46px; height:27px; border-radius:999px; background:{{ recurTrack }}; padding:3px; cursor:pointer; flex-shrink:0; display:flex; justify-content:{{ recurJustify }};">
+              <span style="width:21px; height:21px; border-radius:999px; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2);"></span>
+            </div>
+          </div>
+          <sc-if value="{{ evRecur }}" hint-placeholder-val="{{ false }}">
+          <div style="border-top:1px solid #F1ECE2; padding:15px 16px;">
+            <div style="font-size:13px; font-weight:600; color:#6F685C; margin-bottom:8px;">Fréquence</div>
+            <div style="display:flex; gap:8px;">
+              <sc-for list="{{ freqOptions }}" as="f" hint-placeholder-count="3">
+                <span onClick="{{ f.onClick }}" style="flex:1; text-align:center; font-size:13px; font-weight:600; padding:9px 0; border-radius:10px; cursor:pointer; background:{{ f.bg }}; color:{{ f.fg }}; border:1.5px solid {{ f.border }};">{{ f.label }}</span>
+              </sc-for>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px; margin-top:14px; font-size:13px; color:#857E71;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="3.5" y="4.5" width="17" height="16" rx="3" stroke="#A39B8C" stroke-width="1.8"/><path d="M3.5 9h17M8 3v3M16 3v3" stroke="#A39B8C" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <span>Jusqu’au <b style="color:#292621;">4 juillet 2026</b></span>
+            </div>
+            <div onClick="{{ onToggleExclude }}" style="display:flex; align-items:center; gap:11px; margin-top:14px; padding:13px 14px; border-radius:12px; cursor:pointer; background:{{ excludeBg }}; border:1.5px solid {{ excludeBorder }};">
+              <span style="width:22px; height:22px; border-radius:7px; border:2px solid {{ excludeBoxBorder }}; background:{{ excludeBoxBg }}; display:flex; align-items:center; justify-content:center; flex-shrink:0;">{{ excludeCheck }}</span>
+              <div style="flex:1;">
+                <div style="font-size:14.5px; font-weight:600; color:#292621;">Exclure les vacances scolaires</div>
+                <div style="font-size:12.5px; color:#857E71; margin-top:1px;">{{ excludeSub }}</div>
+              </div>
+            </div>
+          </div>
+          </sc-if>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:20px;">
+          <div onClick="{{ closeEvent }}" style="flex:1; height:50px; border-radius:13px; background:#fff; border:1px solid #E3DCD0; color:#3A352E; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:600; cursor:pointer;">Annuler</div>
+          <div onClick="{{ closeEvent }}" style="flex:2; height:50px; border-radius:13px; background:#292621; color:#fff; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:600; cursor:pointer;">{{ createLabel }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ NEW DISCUSSION SHEET ============ -->
+  <sc-if value="{{ discOpen }}" hint-placeholder-val="{{ false }}">
+  <div style="position:absolute; inset:0; z-index:90; animation:cpp-fade .2s ease;">
+    <div onClick="{{ closeDisc }}" style="position:absolute; inset:0; background:rgba(41,38,33,.42);"></div>
+    <div class="cpp-scroll" style="position:absolute; left:0; right:0; bottom:0; max-height:94%; overflow-y:auto; background:#F4F1EA; border-radius:28px 28px 0 0; animation:cpp-sheet .3s cubic-bezier(.2,.8,.2,1); box-shadow:0 -10px 40px rgba(41,38,33,.2);">
+      <div style="position:sticky; top:0; background:#F4F1EA; padding:10px 20px 14px; z-index:2; border-bottom:1px solid #ECE5D9;">
+        <div style="width:40px; height:5px; border-radius:3px; background:#D8D1C3; margin:0 auto 12px;"></div>
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div style="font-family:'Bricolage Grotesque'; font-size:22px; font-weight:700; color:#292621;">Nouvel échange</div>
+          <span onClick="{{ closeDisc }}" style="width:32px; height:32px; border-radius:999px; background:#EBE5D9; display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19" stroke="#857E71" stroke-width="2.4" stroke-linecap="round"/></svg></span>
+        </div>
+      </div>
+
+      <div style="padding:18px 20px 30px;">
+        <div style="display:flex; gap:10px;">
+          <sc-for list="{{ discTypes }}" as="t" hint-placeholder-count="2">
+            <div onClick="{{ t.onClick }}" style="flex:1; border:2px solid {{ t.border }}; background:{{ t.bg }}; border-radius:14px; padding:13px; cursor:pointer;">
+              <span style="width:32px; height:32px; border-radius:9px; background:{{ t.iconBg }}; color:{{ t.iconFg }}; display:flex; align-items:center; justify-content:center;">{{ t.icon }}</span>
+              <div style="font-size:14.5px; font-weight:600; color:#292621; margin-top:9px;">{{ t.label }}</div>
+              <div style="font-size:12px; color:#857E71; margin-top:3px; line-height:1.35;">{{ t.desc }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="font-size:13px; font-weight:600; color:#6F685C; margin:18px 0 8px;">Sujet</div>
+        <input placeholder="Ex. Colonie de vacances cet été ?" style="width:100%; height:46px; border:1px solid #E3DCD0; border-radius:12px; padding:0 14px; font-size:15px; color:#292621; outline:none; background:#fff; font-family:'Hanken Grotesk';"/>
+
+        <div style="font-size:13px; font-weight:600; color:#6F685C; margin:18px 0 8px;">Détails</div>
+        <textarea placeholder="Explique le contexte, donne les infos utiles…" style="width:100%; height:80px; border:1px solid #E3DCD0; border-radius:12px; padding:11px 14px; font-size:15px; color:#292621; outline:none; background:#fff; font-family:'Hanken Grotesk'; resize:none; line-height:1.45;"></textarea>
+
+        <sc-if value="{{ discIsDecision }}" hint-placeholder-val="{{ false }}">
+        <div style="font-size:13px; font-weight:600; color:#6F685C; margin:18px 0 8px;">Options proposées</div>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <sc-for list="{{ discOptionRows }}" as="o" hint-placeholder-count="2">
+            <div style="display:flex; align-items:center; gap:9px;">
+              <span style="width:20px; height:20px; border-radius:999px; border:2px solid #CFC8BA; flex-shrink:0;"></span>
+              <input value="{{ o.value }}" onInput="{{ o.onInput }}" placeholder="{{ o.placeholder }}" style="flex:1; height:44px; border:1px solid #E3DCD0; border-radius:12px; padding:0 14px; font-size:15px; color:#292621; outline:none; background:#fff; font-family:'Hanken Grotesk';"/>
+              <span onClick="{{ o.onRemove }}" style="width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; cursor:{{ o.removeCursor }}; flex-shrink:0; opacity:{{ o.removeOpacity }};"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19" stroke="#B7AF9F" stroke-width="2.2" stroke-linecap="round"/></svg></span>
+            </div>
+          </sc-for>
+        </div>
+        <div onClick="{{ onAddOption }}" style="display:inline-flex; align-items:center; gap:7px; margin-top:10px; font-size:14px; font-weight:600; color:{{ accentColor }}; cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="{{ accentColor }}" stroke-width="2.2" stroke-linecap="round"/></svg>Ajouter une option</div>
+        </sc-if>
+
+        <div style="font-size:13px; font-weight:600; color:#6F685C; margin:18px 0 8px;">Concerne</div>
+        <div style="display:flex; gap:9px; flex-wrap:wrap;">
+          <sc-for list="{{ discChildChips }}" as="c" hint-placeholder-count="3">
+            <div onClick="{{ c.onClick }}" style="display:flex; align-items:center; gap:9px; padding:9px 13px 9px 9px; border-radius:11px; cursor:pointer; background:{{ c.bg }}; border:1.5px solid {{ c.border }};">
+              <span style="width:26px; height:26px; border-radius:999px; background:{{ c.color }}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700;">{{ c.initial }}</span>
+              <span style="font-size:14px; font-weight:600; color:#292621;">{{ c.name }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:20px; background:#fff; border:1px solid #EFEAE0; border-radius:14px; padding:14px 16px;">
+          <div>
+            <div style="font-size:14.5px; font-weight:600; color:#292621;">Réponse avant le</div>
+            <div style="font-size:12.5px; color:#857E71; margin-top:1px;">{{ discDeadlineSub }}</div>
+          </div>
+          <input type="date" value="2026-06-28" style="width:150px; height:44px; border:1px solid #E3DCD0; border-radius:11px; padding:0 10px; font-size:14px; color:#292621; outline:none; background:#fff; font-family:'Hanken Grotesk'; flex-shrink:0;"/>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:20px;">
+          <div onClick="{{ closeDisc }}" style="flex:1; height:50px; border-radius:13px; background:#fff; border:1px solid #E3DCD0; color:#3A352E; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:600; cursor:pointer;">Annuler</div>
+          <div onClick="{{ closeDisc }}" style="flex:2; height:50px; border-radius:13px; background:#292621; color:#fff; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:600; cursor:pointer;">{{ discCreateLabel }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  </div>
+  </sc-if>
+
+</div>
+</x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:460,&quot;height&quot;:930},&quot;viewer&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Mère&quot;,&quot;Père&quot;],&quot;default&quot;:&quot;Mère&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;elodieColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#C2643D&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;marcColor&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#2E7D71&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = {
+    fam:'flechel', famMenuOpen:false, expensesEnabled:false, overlayEvents:false, famTypes:{},
+    screen:'home', day:null, child:null, q:null, filter:'all', choice:null, validated:false,
+    setTab:'compte', custodyMode:'custom',
+    weekA:['elodie','elodie','marc','marc','elodie','elodie','marc'],
+    weekB:['elodie','elodie','marc','marc','marc','marc','marc'],
+    notif:{ garde:true, agenda:true, depenses:true, echanges:false },
+    inviteRole:'beauparent',
+    rights:{ planning:true, depenses:false, agenda:true, notes:false },
+    holidaysImported:true,
+    eventOpen:false, evChildren:[], evType:'sport', evParent:'elodie', evRecur:false, evExcludeHolidays:true, evFreq:'weekly',
+    discOpen:false, discType:'discussion', discChild:null, discOptions:['',''],
+  };
+
+  go(s){ this.setState({ screen:s, day:null, child:null, q:null, famMenuOpen:false }); }
+  toggleFamMenu(){ this.setState({ famMenuOpen:!this.state.famMenuOpen }); }
+  setFam(id){ this.setState({ fam:id, famMenuOpen:false, screen:'home', child:null, q:null, choice:null, validated:false, evChildren:[], discChild:null, overlayEvents:false }); }
+  toggleExpensesModule(){ this.setState({ expensesEnabled:!this.state.expensesEnabled }); }
+  toggleOverlay(){ this.setState({ overlayEvents:!this.state.overlayEvents }); }
+  setFamType(t){ this.setState({ famTypes:{ ...this.state.famTypes, [this.state.fam]:t } }); }
+  openEvent(){ this.setState({ eventOpen:true }); }
+  closeEvent(){ this.setState({ eventOpen:false }); }
+  toggleEvChild(id){ const a = this.state.evChildren; const has = a.includes(id); const next = has ? a.filter(x=>x!==id) : [...a,id]; this.setState({ evChildren: next.length?next:a }); }
+  setEvType(t){ this.setState({ evType:t }); }
+  setEvParent(p){ this.setState({ evParent:p }); }
+  toggleRecur(){ this.setState({ evRecur:!this.state.evRecur }); }
+  toggleExcludeHolidays(){ this.setState({ evExcludeHolidays:!this.state.evExcludeHolidays }); }
+  setEvFreq(f){ this.setState({ evFreq:f }); }
+  openDisc(){ this.setState({ discOpen:true }); }
+  closeDisc(){ this.setState({ discOpen:false }); }
+  setDiscType(t){ this.setState({ discType:t }); }
+  setDiscChild(c){ this.setState({ discChild:c }); }
+  setOption(i,v){ const a = this.state.discOptions.slice(); a[i]=v; this.setState({ discOptions:a }); }
+  addOption(){ this.setState({ discOptions:[...this.state.discOptions,''] }); }
+  removeOption(i){ const a = this.state.discOptions.filter((_,j)=>j!==i); this.setState({ discOptions: a.length>=2?a:this.state.discOptions }); }
+  goSettings(){ this.setState({ screen:'settings', day:null, child:null, q:null }); }
+  setTab(t){ this.setState({ setTab:t }); }
+  setCustodyMode(m){ this.setState({ custodyMode:m }); }
+  cycleDay(w,i){ const arr = this.state[w].slice(); arr[i] = arr[i]==='elodie'?'marc':'elodie'; this.setState({ [w]:arr }); }
+  buildFamilies(A,B){
+    const soft1='#F6E6DB', strong1='#A8512B', soft2='#DCECE8', strong2='#226B60';
+    return {
+      flechel:{
+        id:'flechel', name:'Famille Carin / Flechel', short:'Carin / Flechel', tag:'CF', counts:'3 enfants · 4 membres', type:'separated', linked:'carin', typeLabel:'Séparée',
+        p1:{ name:'Lucie', initial:'L', role:'Mère', color:A, soft:soft1, strong:strong1 },
+        p2:{ name:'Benjamin', initial:'B', role:'Père', color:B, soft:soft2, strong:strong2 },
+        children:[
+          { id:'clemence', name:'Clémence', initial:'C', color:'#C99A3F', sub:'11 ans · 6e',
+            info:[ ['Date de naissance','4 mars 2015'], ['Collège','Camille Claudel'], ['Médecin','Dr Lemoine'], ['Allergies','Arachides'], ['Pointure','37'], ['Taille','150 cm'] ],
+            notes:[ { who:'elodie', date:'18 juin', text:'Stressée par le brevet blanc, à rassurer.' }, { who:'marc', date:'12 juin', text:'A besoin d’un nouveau cahier de textes.' }, { who:'elodie', date:'5 juin', text:'Nouvelles lunettes prêtes le 25/06 chez l’opticien.' } ] },
+          { id:'jules', name:'Jules', initial:'J', color:'#5E7CB8', sub:'8 ans · CE2',
+            info:[ ['Date de naissance','2 sept. 2017'], ['École','Jules Ferry'], ['Médecin','Dr Roy'], ['Allergies','Aucune connue'], ['Pointure','32'], ['Taille','128 cm'] ],
+            notes:[ { who:'marc', date:'20 juin', text:'Rappel vaccin DTP mi-juillet, à caler ensemble.' }, { who:'elodie', date:'10 juin', text:'A oublié son doudou chez Benjamin, à rapporter.' } ] },
+          { id:'nathan', name:'Nathan', initial:'N', color:'#7E9B7A', sub:'5 ans · GS',
+            info:[ ['Date de naissance','14 mai 2021'], ['École','Mat. Les Tilleuls'], ['Médecin','Dr Roy'], ['Allergies','Lait'], ['Pointure','28'], ['Taille','110 cm'] ],
+            notes:[ { who:'elodie', date:'15 juin', text:'Sieste indispensable l’après-midi.' } ] },
+        ],
+        members:[
+          { initial:'L', color:A, name:'Lucie Carin', role:'Mère', email:'lucie.carin@email.com', right:'Administratrice', rightColor:'#226B60', rightSoft:'#DCECE8', action:'' },
+          { initial:'B', color:B, name:'Benjamin Flechel', role:'Père', email:'benjamin.flechel@email.com', right:'Co-parent', rightColor:'#226B60', rightSoft:'#DCECE8', action:'' },
+          { initial:'S', color:'#9C8AB0', name:'Simon Carin', role:'Conjoint de Lucie', email:'simon.carin@email.com', right:'Lecture seule', rightColor:'#7A7264', rightSoft:'#ECE5D9', action:'Gérer' },
+          { initial:'C', color:'#7E9B7A', name:'Cécile Vidal', role:'Conjointe de Benjamin', email:'cecile.v@email.com', right:'Lecture seule', rightColor:'#7A7264', rightSoft:'#ECE5D9', action:'Gérer' },
+        ],
+        steps:[ { k:'simon', name:'Simon', initial:'S', color:'#9C8AB0', role:'Beau-père' }, { k:'cecile', name:'Cécile', initial:'C', color:'#7E9B7A', role:'Belle-mère' } ],
+        events:{
+          17:{ t:'Audition de piano', time:'18:00', cat:'musique', child:'Clémence', who:'Lucie', loc:'Conservatoire' },
+          23:{ t:'Cours de tennis', time:'17:30', cat:'sport', child:'Clémence', who:'Lucie', loc:'TC Bellevue' },
+          24:{ t:'Éveil musical', time:'10:00', cat:'musique', child:'Nathan', who:'Lucie', loc:'MJC du Centre' },
+          25:{ t:'Orthodontiste', time:'14:00', cat:'sante', child:'Clémence', who:'Benjamin', loc:'Cabinet Dr Roy' },
+          26:{ t:'Réunion parents-profs', time:'18:00', cat:'ecole', child:'Jules', who:'Lucie + Benjamin', loc:'École Jules Ferry' },
+          27:{ t:'Match de football', time:'10:00', cat:'sport', child:'Jules', who:'Benjamin', loc:'Stade municipal' },
+          30:{ t:'Spectacle de fin d’année', time:'19:00', cat:'ecole', child:'Jules & Nathan', who:'Lucie + Benjamin', loc:'École Jules Ferry' },
+        },
+        qOrder:['colo','college','cadeau','judo'], pendingIds:['colo','cadeau'], coloId:'colo',
+        qData:{
+          colo:{ id:'colo', title:'Colonie de vacances cet été ?', child:'Clémence', childColor:'#C99A3F', author:'Lucie', authorColor:A, authorInitial:'L',
+            body:'J’ai trouvé deux séjours pour Clémence pendant les vacances. Tu préfères lequel ? Il faut réserver vite, les places partent.',
+            deadline:'28 juin', urgent:true, replies:4, status:'open',
+            options:[ { id:'mer', label:'Séjour à la mer', sub:'20–27 juil · Cap Breton · 480 €' }, { id:'mont', label:'Séjour à la montagne', sub:'12–19 juil · Les Arcs · 520 €' } ],
+            messages:[ { who:'elodie', text:'J’ai trouvé deux séjours sympas pour Clémence cet été. Tu préfères lequel ?', time:'Lun. 10:12' }, { who:'marc', text:'Les deux sont bien. La mer me paraît plus adaptée je trouve.', time:'Lun. 12:40' }, { who:'elodie', text:'Ok pour moi aussi. On part sur la mer alors ?', time:'Hier 18:03' } ] },
+          college:{ id:'college', title:'Choix du collège pour Clémence', child:'Clémence', childColor:'#C99A3F', author:'Benjamin', authorColor:B, authorInitial:'B',
+            body:'Il faut formuler les vœux d’affectation avant les vacances. Public secteur ou dérogation pour la section bilingue ?',
+            deadline:'5 juil', urgent:false, replies:6, status:'open', options:[],
+            messages:[ { who:'marc', text:'Le collège de secteur est très bien classé. On reste dessus ?', time:'Mar. 09:20' }, { who:'elodie', text:'Clémence aimerait la section bilingue. Tentons la dérogation en parallèle.', time:'Mar. 14:55' } ] },
+          cadeau:{ id:'cadeau', title:'Cadeau anniversaire de Mamie', child:'Famille', childColor:'#857E71', author:'Lucie', authorColor:A, authorInitial:'L',
+            body:'On fait un cadeau commun de la part des enfants. Budget 60 € partagé moitié-moitié, ça te va ?',
+            deadline:'30 juin', urgent:false, replies:2, status:'open', options:[],
+            messages:[ { who:'elodie', text:'Je propose un album photo personnalisé. 60 € au total, 30 € chacun.', time:'Lun. 21:10' } ] },
+          judo:{ id:'judo', title:'Activité de Jules à la rentrée', child:'Jules', childColor:'#5E7CB8', author:'Benjamin', authorColor:B, authorInitial:'B',
+            body:'On avait hésité entre judo et natation pour Jules.', deadline:'', urgent:false, replies:5, status:'decided', decided:'Judo le mercredi', options:[],
+            messages:[ { who:'marc', text:'Jules a adoré l’essai de judo. On valide le mercredi 17h ?', time:'05 juin' }, { who:'elodie', text:'Parfait, je l’inscris.', time:'06 juin' } ] },
+        },
+        exData:[
+          { title:'Orthodontiste — 1re séance', cat:'sante', payer:'marc', amount:180, date:'20 juin', child:'Clémence', settled:false },
+          { title:'Acompte colonie d’été', cat:'activites', payer:'marc', amount:150, date:'18 juin', child:'Clémence', settled:false },
+          { title:'Inscription tennis (trimestre)', cat:'activites', payer:'elodie', amount:120, date:'14 juin', child:'Clémence', settled:false },
+          { title:'Cantine — juin', cat:'scolarite', payer:'elodie', amount:84, date:'10 juin', child:'Jules & Nathan', settled:false },
+          { title:'Chaussures de sport', cat:'vetements', payer:'elodie', amount:55, date:'7 juin', child:'Jules', settled:false },
+          { title:'Lunettes (monture)', cat:'sante', payer:'marc', amount:95, date:'3 juin', child:'Clémence', settled:true },
+        ],
+        recentNotes:[ { who:'elodie', child:'Clémence', date:'18 juin', text:'Stressée par le brevet blanc.' }, { who:'marc', child:'Jules', date:'20 juin', text:'Rappel vaccin DTP mi-juillet.' } ],
+        specialPeriods:[ { title:'Vacances d’été', dates:'4 juil – 31 août', rule:'Répartition 2 sem. / 2 sem. · hors alternance', splitA:1, splitB:1 }, { title:'Toussaint', dates:'17 oct – 2 nov', rule:'1re semaine Benjamin · 2e semaine Lucie', splitA:1, splitB:1 } ],
+      },
+      carin:{
+        id:'carin', name:'Famille Carin', short:'Carin', tag:'C', counts:'1 enfant · 2 membres', type:'intact', linked:null, typeLabel:'Famille unie',
+        p1:{ name:'Lucie', initial:'L', role:'Mère', color:A, soft:soft1, strong:strong1 },
+        p2:{ name:'Simon', initial:'S', role:'Père', color:B, soft:soft2, strong:strong2 },
+        children:[
+          { id:'alex', name:'Alex', initial:'A', color:'#5E7CB8', sub:'3 ans · Crèche',
+            info:[ ['Date de naissance','8 janv. 2023'], ['Crèche','Les Petits Pas'], ['Médecin','Dr Lemoine'], ['Allergies','Aucune connue'], ['Pointure','24'], ['Taille','95 cm'] ],
+            notes:[ { who:'elodie', date:'19 juin', text:'Adore la motricité le mardi matin.' }, { who:'marc', date:'11 juin', text:'Doudou lapin à ne jamais oublier pour la sieste.' } ] },
+        ],
+        members:[
+          { initial:'L', color:A, name:'Lucie Carin', role:'Mère', email:'lucie.carin@email.com', right:'Administratrice', rightColor:'#226B60', rightSoft:'#DCECE8', action:'' },
+          { initial:'S', color:B, name:'Simon Carin', role:'Père', email:'simon.carin@email.com', right:'Co-parent', rightColor:'#226B60', rightSoft:'#DCECE8', action:'' },
+        ],
+        steps:[],
+        events:{
+          22:{ t:'Bébé nageur', time:'10:00', cat:'sport', child:'Alex', who:'Lucie', loc:'Piscine Aqua' },
+          24:{ t:'Visite des 3 ans', time:'11:00', cat:'sante', child:'Alex', who:'Simon', loc:'Dr Lemoine' },
+          29:{ t:'Fête de la crèche', time:'16:30', cat:'ecole', child:'Alex', who:'Lucie + Simon', loc:'Les Petits Pas' },
+        },
+        qOrder:['eveil','aout'], pendingIds:['eveil'], coloId:'eveil',
+        qData:{
+          eveil:{ id:'eveil', title:'Inscription à l’éveil musical ?', child:'Alex', childColor:'#5E7CB8', author:'Lucie', authorColor:A, authorInitial:'L',
+            body:'Deux créneaux possibles pour l’éveil musical d’Alex à la rentrée. Lequel t’arrange le mieux ?',
+            deadline:'30 juin', urgent:true, replies:2, status:'open',
+            options:[ { id:'mar', label:'Mardi 10h', sub:'Pendant ta semaine · MJC' }, { id:'sam', label:'Samedi 10h', sub:'Week-end alterné · MJC' } ],
+            messages:[ { who:'elodie', text:'Je penche pour le mardi, c’est plus simple côté trajet.', time:'Lun. 09:40' }, { who:'marc', text:'Le samedi m’arrange un week-end sur deux. On en parle ?', time:'Lun. 13:15' } ] },
+          aout:{ id:'aout', title:'Semaine de congés en août', child:'Alex', childColor:'#5E7CB8', author:'Simon', authorColor:B, authorInitial:'S',
+            body:'Je pose une semaine mi-août, on cale les dates ensemble pour Alex ?', deadline:'8 juil', urgent:false, replies:3, status:'open', options:[],
+            messages:[ { who:'marc', text:'Je vise le 10–17 août. Ça te va ?', time:'Mar. 18:00' }, { who:'elodie', text:'Parfait pour moi.', time:'Mar. 20:10' } ] },
+        },
+        exData:[
+          { title:'Pédiatre — visite des 3 ans', cat:'sante', payer:'marc', amount:70, date:'24 juin', child:'Alex', settled:false },
+          { title:'Bébé nageur (trimestre)', cat:'activites', payer:'elodie', amount:90, date:'12 juin', child:'Alex', settled:false },
+          { title:'Bottes de pluie', cat:'vetements', payer:'elodie', amount:28, date:'5 juin', child:'Alex', settled:true },
+        ],
+        recentNotes:[ { who:'elodie', child:'Alex', date:'19 juin', text:'Adore la motricité le mardi matin.' }, { who:'marc', child:'Alex', date:'11 juin', text:'Doudou lapin à ne jamais oublier.' } ],
+        specialPeriods:[ { title:'Vacances d’été', dates:'4 juil – 31 août', rule:'Semaines alternées · à adapter', splitA:1, splitB:1 }, { title:'Toussaint', dates:'17 oct – 2 nov', rule:'1re semaine Simon · 2e semaine Lucie', splitA:1, splitB:1 } ],
+      },
+    };
+  }
+  toggleNotif(k){ this.setState({ notif:{ ...this.state.notif, [k]:!this.state.notif[k] } }); }
+  setInviteRole(r){ this.setState({ inviteRole:r }); }
+  toggleRight(k){ this.setState({ rights:{ ...this.state.rights, [k]:!this.state.rights[k] } }); }
+  importHolidays(){ this.setState({ holidaysImported:true }); }
+  openDay(d){ this.setState({ day:d }); }
+  closeDay(){ this.setState({ day:null }); }
+  openChild(id){ this.setState({ child:id }); }
+  openQ(id){ this.setState({ screen:'questions', q:id }); }
+  setFilter(f){ this.setState({ filter:f }); }
+  choose(id){ this.setState({ choice:id }); }
+  validate(){ this.setState({ validated:true }); }
+
+  renderVals(){
+    const A = this.props.elodieColor ?? '#C2643D';
+    const B = this.props.marcColor ?? '#2E7D71';
+    const ACCENT = '#B85C36';
+    const INK = '#292621', MUTED = '#A39B8C';
+    const FAMS = this.buildFamilies(A,B);
+    const FAM = FAMS[this.state.fam] || FAMS.flechel;
+    const E = FAM.p1, M = FAM.p2;
+    const P = { elodie:E, marc:M };
+    const viewerSlot = (this.props.viewer==='Père') ? 'marc' : 'elodie';
+    const viewer = P[viewerSlot].name;
+    const famType = this.state.famTypes[this.state.fam] || FAM.type;
+    const isIntact = famType==='intact';
+    const linkedFam = FAM.linked ? FAMS[FAM.linked] : null;
+    const canOverlay = !isIntact && !!linkedFam && viewerSlot==='elodie';
+    const overlayOn = canOverlay && this.state.overlayEvents;
+    const extEvents = linkedFam ? linkedFam.events : {};
+
+    const cats = {
+      musique:{ label:'Musique', color:'#9C6FB0', soft:'#EFE6F4' },
+      sport:{ label:'Sport', color:'#5E7CB8', soft:'#E4EAF5' },
+      sante:{ label:'Santé', color:'#C75D5D', soft:'#F6E3E3' },
+      ecole:{ label:'École', color:'#C99A3F', soft:'#F6EDDA' },
+    };
+    const wdShort = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+    const wdLong = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+    const dow = (d)=> (d-1)%7; // Jun 1 2026 = Monday
+    const base = (d)=> d<=7?'marc':d<=14?'elodie':d<=21?'marc':d<=28?'elodie':'marc';
+    const overrides = { 17:'elodie' };
+    const parent = (d)=> overrides[d] || base(d);
+    const weekEnd = (d)=> d<=7?7:d<=14?14:d<=21?21:d<=28?28:30;
+
+    const events = FAM.events;
+    const TODAY = 23;
+
+    // ---------- calendar ----------
+    const calendarDays = [];
+    for(let d=1; d<=30; d++){
+      const cur = parent(d); const p = P[cur];
+      const isSwap = base(d) !== cur;
+      const ev = events[d];
+      const ext = overlayOn && extEvents[d];
+      calendarDays.push({
+        num:String(d), bg:p.soft,
+        numBg: d===TODAY ? INK : 'transparent',
+        numColor: d===TODAY ? '#fff' : p.strong,
+        border: isSwap ? ('1.5px dashed '+P[base(d)].color) : '1.5px solid transparent',
+        hasEvent: !!ev, eventColor: ev ? cats[ev.cat].color : 'transparent',
+        hasExt: !!ext, extColor: ext ? '#9C6FB0' : 'transparent',
+        onClick: ()=> this.openDay(d),
+      });
+    }
+    for(let i=0;i<5;i++) calendarDays.push({ num:'', bg:'transparent', numBg:'transparent', numColor:'transparent', border:'1.5px solid transparent', hasEvent:false, eventColor:'transparent', onClick:()=>{} });
+
+    // ---------- selected day ----------
+    let selectedDay = null;
+    if(this.state.day){
+      const d = this.state.day; const cur = parent(d); const p = P[cur];
+      const isSwap = base(d) !== cur;
+      const we = weekEnd(d); const nextP = P[parent(we+1>30?1:we+1)] || P['marc'];
+      const ev = events[d] ? [{ title:events[d].t, time:events[d].time, catColor:cats[events[d].cat].color, child:events[d].child, who:'Avec '+events[d].who }] : [];
+      selectedDay = {
+        long: wdLong[dow(d)]+' '+d+' juin', parentName:p.name, parentInitial:p.initial,
+        parentColor:p.color,
+        ruleText: isSwap ? ('Échange exceptionnel — habituellement chez '+P[base(d)].name) : 'Alternance hebdomadaire · hors vacances',
+        handover:'Retour chez '+nextP.name+' le '+we+' juin, 19h',
+        events:ev, hasEvents: ev.length>0,
+      };
+    }
+
+    // ---------- home ----------
+    const todayP = P[parent(TODAY)];
+    const isViewerWeek = parent(TODAY)===viewerSlot;
+    const otherName = P[viewerSlot==='elodie'?'marc':'elodie'].name;
+    const weekText = isViewerWeek ? 'Les enfants sont avec toi cette semaine.' : ('Les enfants sont chez '+todayP.name+' cette semaine.');
+    const weekSub = isViewerWeek ? ('Retour chez '+otherName+' dimanche 28 juin, 19h00') : 'De retour chez toi dimanche 28 juin, 19h00';
+    const heroEyebrow = isIntact ? 'Cette semaine' : 'Cette semaine';
+    const heroText = isIntact ? 'Toute la famille est réunie.' : weekText;
+    const heroSub = isIntact ? (FAM.p1.name+', '+FAM.p2.name+' et '+FAM.children.map(c=>c.name).join(', ')) : weekSub;
+    const heroShowClock = !isIntact;
+    const kids = FAM.children.map(c=>({ initial:c.initial, color:c.color, name:c.name }));
+
+    const upcoming = Object.keys(events).map(Number).filter(d=>d>=TODAY).sort((a,b)=>a-b).slice(0,4).map(d=>{
+      const e = events[d];
+      return { dow:wdShort[dow(d)], day:String(d), title:e.t, metaLine: e.time+' · '+e.child,
+               catLabel:cats[e.cat].label, catColor:cats[e.cat].color, catSoft:cats[e.cat].soft };
+    });
+
+    // ---------- questions ----------
+    const qData = FAM.qData;
+    const qOrder = FAM.qOrder;
+    const qId = qData[this.state.q] ? this.state.q : null;
+    const questions = qOrder.map(id=>{
+      const q = qData[id]; const decided = q.status==='decided';
+      return { title:q.title, author:q.author, authorColor:q.authorColor, authorInitial:q.authorInitial,
+        replies:q.replies, childTag:q.child, childColor:q.childColor, opacity: decided?'.62':'1',
+        badge: decided?'Décidé':(q.urgent?'Avant le '+q.deadline:'Avant le '+q.deadline),
+        badgeColor: decided?'#226B60':(q.urgent?'#B85C36':'#7A7264'),
+        badgeSoft: decided?'#DCECE8':(q.urgent?'#F6E0D5':'#ECE5D9'),
+        onClick: ()=> this.openQ(id) };
+    });
+    const pending = FAM.pendingIds.map(id=>{
+      const q = qData[id];
+      return { title:q.title, author:q.author, authorColor:q.authorColor, authorInitial:q.authorInitial, replies:q.replies,
+        deadlineLabel:'Avant le '+q.deadline, deadlineColor: q.urgent?'#B85C36':'#7A7264', deadlineSoft: q.urgent?'#F6E0D5':'#ECE5D9',
+        onClick: ()=> this.openQ(id) };
+    });
+
+    // ---------- selected question ----------
+    let question = null;
+    if(qId){
+      const q = qData[qId]; const decided = q.status==='decided';
+      const validated = this.state.validated && qId===FAM.coloId;
+      const chosen = this.state.choice;
+      question = {
+        title:q.title, body:q.body, childTag:q.child, childColor:q.childColor, hasOptions: q.options.length>0,
+        statusLabel: decided ? ('Décidé : '+q.decided) : (validated ? ('Décision validée') : ('Réponse attendue avant le '+q.deadline)),
+        statusColor: (decided||validated) ? '#226B60' : (q.urgent?'#B85C36':'#7A7264'),
+        statusSoft: (decided||validated) ? '#DCECE8' : (q.urgent?'#F6E0D5':'#ECE5D9'),
+        options: q.options.map(o=>{
+          const sel = chosen===o.id;
+          return { label:o.label, sub:o.sub,
+            border: sel?ACCENT:'#EFEAE0', dotBorder: sel?ACCENT:'#CFC8BA',
+            dotBg: sel?ACCENT:'#fff', dotInner: sel?'#fff':'transparent',
+            onClick: ()=> this.choose(o.id) };
+        }),
+        validateBg: chosen ? '#292621' : '#C9C1B2',
+        validateLabel: validated ? '✓ Choix enregistré' : 'Valider mon choix',
+        onValidate: chosen ? ()=> this.validate() : ()=>{},
+        messages: q.messages.map(m=>{
+          const mine = m.who==='elodie';
+          return { initial:P[m.who].initial, color:P[m.who].color, author:P[m.who].name, time:m.time, text:m.text,
+            dir: mine?'row-reverse':'row', align: mine?'right':'left',
+            bubble: mine?'#FBF4EE':'#fff', bubbleBorder: mine?'#EFE0D4':'#EFEAE0' };
+        }),
+      };
+    }
+
+    // ---------- agenda ----------
+    const filter = this.state.filter;
+    const filterDefs = [ {k:'all',label:'Tout'}, {k:'sport',label:'Sport'}, {k:'musique',label:'Musique'}, {k:'ecole',label:'École'}, {k:'sante',label:'Santé'} ];
+    const filterCats = filterDefs.map(f=>{
+      const active = filter===f.k; const col = f.k==='all'?INK:cats[f.k].color;
+      return { label:f.label, onClick:()=> this.setFilter(f.k),
+        bg: active?col:'#fff', fg: active?'#fff':'#6F685C', border: active?col:'#E6E0D4' };
+    });
+    const evDays = Object.keys(events).map(Number).sort((a,b)=>a-b).filter(d=> filter==='all' || events[d].cat===filter);
+    const dayMap = {};
+    evDays.forEach(d=>{ const e=events[d]; (dayMap[d]=dayMap[d]||[]).push({ title:e.t, time:e.time, catLabel:cats[e.cat].label, catColor:cats[e.cat].color, catSoft:cats[e.cat].soft, child:e.child, loc:e.loc, who:'Avec '+e.who, external:false, extTag:'', barOpacity:'1' }); });
+    if(overlayOn){ Object.keys(extEvents).map(Number).filter(d=> filter==='all' || extEvents[d].cat===filter).forEach(d=>{ const e=extEvents[d]; (dayMap[d]=dayMap[d]||[]).push({ title:e.t, time:e.time, catLabel:cats[e.cat].label, catColor:cats[e.cat].color, catSoft:cats[e.cat].soft, child:e.child, loc:e.loc, who:'Avec '+e.who, external:true, extTag:linkedFam.short, barOpacity:'.45' }); }); }
+    const groupedEvents = Object.keys(dayMap).map(Number).sort((a,b)=>a-b).map(d=>({ dayLabel: wdLong[dow(d)]+' '+d, sub:'juin', items: dayMap[d].sort((a,b)=> a.time.localeCompare(b.time)) }));
+
+    // ---------- children ----------
+    const bd = (last)=> last ? 'none' : '1px solid #F1ECE2';
+    const childData = {};
+    FAM.children.forEach(c=> childData[c.id]=c);
+    const childList = FAM.children.map(c=>{
+      return { initial:c.initial, color:c.color, name:c.name, sub: c.sub+' · '+c.notes.length+' notes', onClick:()=> this.openChild(c.id) };
+    });
+    let child = null;
+    if(this.state.child && childData[this.state.child]){
+      const c = childData[this.state.child];
+      const access = [
+        { name:E.name, initial:E.initial, color:E.color, role:E.role, right:'Gérer', rightColor:'#226B60', rightSoft:'#DCECE8', border:bd(false) },
+        { name:M.name, initial:M.initial, color:M.color, role:M.role, right:'Gérer', rightColor:'#226B60', rightSoft:'#DCECE8', border:bd(FAM.steps.length===0) },
+      ];
+      FAM.steps.forEach((st,i)=> access.push({ name:st.name, initial:st.initial, color:st.color, role:st.role, right:'Lecture', rightColor:'#7A7264', rightSoft:'#ECE5D9', border:bd(i===FAM.steps.length-1) }));
+      child = { name:c.name, initial:c.initial, color:c.color, sub:c.sub,
+        info: c.info.map((f,i)=> ({ label:f[0], value:f[1], border: bd(i===c.info.length-1) })),
+        notes: c.notes.map(n=> ({ author:P[n.who].name, initial:P[n.who].initial, color:P[n.who].color, date:n.date, text:n.text })),
+        access };
+    }
+
+    // ---------- special periods ----------
+    const specialPeriods = FAM.specialPeriods;
+
+    // ---------- expenses ----------
+    const mkIcon = (paths)=>{ const h = React.createElement; return h('svg',{width:20,height:20,viewBox:'0 0 24 24',fill:'none'}, paths.map((pa,i)=> h(pa.t,{key:i,...pa.a}))); };
+    const exCats = {
+      sante:{ color:'#C75D5D', soft:'#F6E3E3', icon:[ {t:'path',a:{d:'M12 5v14M5 12h14', stroke:'currentColor', strokeWidth:2, strokeLinecap:'round'}} ] },
+      scolarite:{ color:'#C99A3F', soft:'#F6EDDA', icon:[ {t:'path',a:{d:'M3 8l9-4 9 4-9 4-9-4z', stroke:'currentColor', strokeWidth:1.8, strokeLinejoin:'round'}}, {t:'path',a:{d:'M7 10.5V15c0 1.1 2.2 2 5 2s5-.9 5-2v-4.5', stroke:'currentColor', strokeWidth:1.8, strokeLinecap:'round'}} ] },
+      activites:{ color:'#5E7CB8', soft:'#E4EAF5', icon:[ {t:'circle',a:{cx:12,cy:12,r:8.5, stroke:'currentColor', strokeWidth:1.8}}, {t:'path',a:{d:'M12 3.5c2.5 2.5 2.5 14.5 0 17M12 3.5c-2.5 2.5-2.5 14.5 0 17M3.5 12h17', stroke:'currentColor', strokeWidth:1.6}} ] },
+      vetements:{ color:'#7E9B7A', soft:'#E6EFE4', icon:[ {t:'path',a:{d:'M8 4l4 2 4-2 4 4-3 2v9H7v-9L4 8l4-4z', stroke:'currentColor', strokeWidth:1.8, strokeLinejoin:'round'}} ] },
+    };
+    const exData = FAM.exData;
+    const eur = (n)=> (Number.isInteger(n) ? n+' €' : n.toFixed(2).replace('.',',')+' €');
+    const expenseItems = exData.map(x=>{
+      const c = exCats[x.cat]; const pp = P[x.payer];
+      return { title:x.title, catColor:c.color, catSoft:c.soft, icon:mkIcon(c.icon),
+        payer:pp.name, payerColor:pp.color, payerInitial:pp.initial, date:x.date, amount:eur(x.amount),
+        statusLabel: x.settled ? 'Réglé' : 'À rembourser', statusColor: x.settled ? '#226B60' : '#B85C36',
+        opacity: x.settled ? '.6' : '1' };
+    });
+    let net = 0;
+    exData.filter(x=>!x.settled).forEach(x=>{ const half = x.amount/2; if(x.payer==='elodie') net += half; else net -= half; });
+    const viewerIsElodie = viewerSlot==='elodie';
+    const netViewer = viewerIsElodie ? net : -net;
+    const otherP = P[viewerIsElodie?'marc':'elodie'].name;
+    const owed = netViewer >= 0;
+    const balance = {
+      amount: (owed?'+ ':'– ')+eur(Math.abs(netViewer)), amountColor: owed ? '#226B60' : '#B85C36', barColor: owed ? B : A,
+      label: owed ? (otherP+' te doit ce montant') : ('Tu dois ce montant à '+otherP),
+      btnBg: owed ? '#292621' : '#C2643D', btnLabel: owed ? 'Envoyer un rappel' : 'Marquer comme réglé', onSettle:()=>{},
+    };
+    const expenses = { items:expenseItems };
+
+    // ---------- settings ----------
+    const bdS = (last)=> last ? 'none' : '1px solid #F1ECE2';
+    const setTab = this.state.setTab;
+    const settingsTabsM = [ {k:'compte',label:'Compte'}, {k:'membres',label:'Famille'}, {k:'garde',label:'Garde'} ].filter(t=> !(t.k==='garde'&&isIntact)).map(t=>{ const active = setTab===t.k; return { label:t.label, onClick:()=>this.setTab(t.k), bg: active?INK:'#fff', fg: active?'#fff':'#6F685C', border: active?INK:'#E6E0D4' }; });
+
+    const accountFields = [
+      { label:'Nom', value:'Lucie Carin' }, { label:'E-mail', value:'lucie.carin@email.com' },
+      { label:'Téléphone', value:'06 12 34 56 78' }, { label:'Langue', value:'Français' },
+    ].map((f,i,a)=> ({ ...f, border: bdS(i===a.length-1) }));
+
+    const notifDefs = [
+      { k:'garde', label:'Changements de garde', sub:'Échanges, exceptions' },
+      { k:'agenda', label:'Agenda', sub:'Rappels d’activités' },
+      { k:'depenses', label:'Dépenses', sub:'Frais et remboursements' },
+      { k:'echanges', label:'Messages & décisions', sub:'Questions et discussions' },
+    ];
+    const notifRows = notifDefs.map((n,i,a)=>{ const on = this.state.notif[n.k]; return { label:n.label, sub:n.sub, border: bdS(i===a.length-1), track: on?'#2E7D71':'#D8D1C3', justify: on?'flex-end':'flex-start', onToggle:()=> this.toggleNotif(n.k) }; });
+
+    const members = FAM.members.map(m=>({ initial:m.initial, color:m.color, name:m.name, role:m.role, right: m.right==='Administratrice'?'Admin.':m.right, rightColor:m.rightColor, rightSoft:m.rightSoft }));
+    const roleDefs = [ {k:'parent',label:'Parent'}, {k:'beauparent',label:'Beau-parent'} ];
+    const inviteRoles = roleDefs.map(r=>{ const sel = this.state.inviteRole===r.k; return { label:r.label, border: sel?ACCENT:'#E6E0D4', dotBorder: sel?ACCENT:'#CFC8BA', dotBg: sel?ACCENT:'#fff', dotInner: sel?'#fff':'transparent', onClick:()=> this.setInviteRole(r.k) }; });
+    const isParent = this.state.inviteRole==='parent';
+    const tick = React.createElement('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none'}, React.createElement('path',{d:'M5 12l5 5L19 7', stroke:'#fff', strokeWidth:3, strokeLinecap:'round', strokeLinejoin:'round'}));
+    const rightDefs = [ {k:'planning',label:'Voir le planning'}, {k:'agenda',label:'Modifier l’agenda'}, {k:'depenses',label:'Voir les dépenses'}, {k:'notes',label:'Voir les notes'} ];
+    const inviteRights = rightDefs.map(p=>{ const on = isParent ? true : this.state.rights[p.k]; return { label:p.label, locked: isParent?'Inclus':'', opacity: isParent?'.7':'1', onToggle: isParent?(()=>{}):(()=> this.toggleRight(p.k)), border: on?ACCENT:'#EFEAE0', boxBorder: on?ACCENT:'#CFC8BA', boxBg: on?ACCENT:'#fff', check: on?tick:'' }; });
+
+    const modeDefs = [
+      { k:'alterne', label:'Une semaine sur deux', desc:'7 jours chez chaque parent en alternance.' },
+      { k:'223', label:'Rythme 2-2-3', desc:'2 / 2 / 3 jours en rotation.' },
+      { k:'split', label:'Milieu de semaine + week-ends', desc:'Jours fixes en semaine, week-ends alternés.' },
+      { k:'custom', label:'Personnalisé', desc:'Compose ton rythme nuit par nuit.' },
+    ];
+    const custodyModes = modeDefs.map(m=>{ const sel = this.state.custodyMode===m.k; return { label:m.label, desc:m.desc, border: sel?ACCENT:'#E6E0D4', bg: sel?'#FBF4EE':'#fff', dotBorder: sel?ACCENT:'#CFC8BA', dotBg: sel?ACCENT:'#fff', dotInner: sel?'#fff':'transparent', onClick:()=> this.setCustodyMode(m.k) }; });
+    const wdb = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+    const mkWeekM = (key,label)=> ({ label, days: this.state[key].map((who,i)=>{ const p = P[who]; return { dow:wdb[i], initial:p.initial, bg:p.soft, nameColor:p.strong, onClick:()=>this.cycleDay(key,i) }; }) });
+    const patternWeeksM = [ mkWeekM('weekA','Semaine A (avec week-end)'), mkWeekM('weekB','Semaine B') ];
+    const modeLabelM = (modeDefs.find(m=>m.k===this.state.custodyMode)||{}).label;
+    const builderTitle = this.state.custodyMode==='custom' ? 'Rythme personnalisé · 2 semaines' : ('Aperçu · '+modeLabelM);
+    const builderSub = this.state.custodyMode==='custom' ? ('Ex. : lun.–mer. chez '+E.name+' chaque semaine, ven.–dim. une semaine sur deux') : 'Modifie une nuit pour personnaliser';
+
+    const holidayPeriods = [
+      { title:'Vacances d’été', dates:'4 juil. – 31 août', rule:'2 / 2 sem.' },
+      { title:'Toussaint', dates:'17 oct. – 2 nov.', rule:'Alterné' },
+      { title:'Noël', dates:'19 déc. – 4 janv.', rule:'Réveillon alt.' },
+    ];
+    const holidaysImported = this.state.holidaysImported;
+    const importBtnBg = holidaysImported ? '#DCECE8' : '#292621';
+    const importBtnFg = holidaysImported ? '#226B60' : '#fff';
+    const importBtnBorder = holidaysImported ? '#BFE0D8' : '#292621';
+    const importBtnLabel = holidaysImported ? 'Importé' : 'Importer le calendrier';
+    const importBtnIcon = holidaysImported
+      ? React.createElement('svg',{width:15,height:15,viewBox:'0 0 24 24',fill:'none'}, React.createElement('path',{d:'M5 12l5 5L19 7', stroke:'#226B60', strokeWidth:2.4, strokeLinecap:'round', strokeLinejoin:'round'}))
+      : React.createElement('svg',{width:15,height:15,viewBox:'0 0 24 24',fill:'none'}, [ React.createElement('path',{key:1,d:'M12 4v10m0 0l-4-4m4 4l4-4', stroke:'#fff', strokeWidth:2, strokeLinecap:'round', strokeLinejoin:'round'}), React.createElement('path',{key:2,d:'M5 18h14', stroke:'#fff', strokeWidth:2, strokeLinecap:'round'}) ]);
+    const exceptions = [
+      { title:'Échange de week-end', dates:'13–15 juin', parent:E.name, color:A },
+      { title:'Anniversaire de '+FAM.children[FAM.children.length-1].name, dates:'2 sept.', parent:M.name, color:B },
+    ];
+
+    // ---------- add-event sheet ----------
+    const evTypeDefs = [
+      { k:'sport', label:'Sport', color:cats.sport.color, soft:cats.sport.soft },
+      { k:'musique', label:'Musique', color:cats.musique.color, soft:cats.musique.soft },
+      { k:'ecole', label:'École', color:cats.ecole.color, soft:cats.ecole.soft },
+      { k:'sante', label:'Santé', color:cats.sante.color, soft:cats.sante.soft },
+      { k:'autre', label:'Autre', color:'#857E71', soft:'#ECE5D9' },
+    ];
+    const evTypes = evTypeDefs.map(t=>{ const sel = this.state.evType===t.k; return { label:t.label, dot:t.color, bg: sel?t.soft:'#fff', fg:'#292621', border: sel?t.color:'#E6E0D4', onClick:()=> this.setEvType(t.k) }; });
+    const evTick = React.createElement('svg',{width:13,height:13,viewBox:'0 0 24 24',fill:'none'}, React.createElement('path',{d:'M5 12l5 5L19 7', stroke:'#fff', strokeWidth:3, strokeLinecap:'round', strokeLinejoin:'round'}));
+    const evKids = FAM.children.map(c=>({ id:c.id, name:c.name, initial:c.initial, color:c.color }));
+    const evSel = this.state.evChildren.length ? this.state.evChildren : (evKids[0]?[evKids[0].id]:[]);
+    const evChildChips = evKids.map(k=>{ const on = evSel.includes(k.id); return { name:k.name, initial:k.initial, color:k.color, bg: on?'#FBF4EE':'#fff', border: on?ACCENT:'#E6E0D4', boxBorder: on?ACCENT:'#CFC8BA', boxBg: on?ACCENT:'#fff', check: on?evTick:'', onClick:()=> this.toggleEvChild(k.id) }; });
+    const evParentDefs = [ {k:'elodie',name:E.name,initial:E.initial,color:E.color,role:E.role}, {k:'marc',name:M.name,initial:M.initial,color:M.color,role:M.role}, ...FAM.steps.map(st=>({k:st.k,name:st.name,initial:st.initial,color:st.color,role:st.role})) ];
+    const evParents = evParentDefs.map(p=>{ const sel = this.state.evParent===p.k; return { name:p.name, initial:p.initial, color:p.color, role:p.role, bg: sel?'#FBF4EE':'#fff', border: sel?ACCENT:'#E6E0D4', onClick:()=> this.setEvParent(p.k) }; });
+    const recurOn = this.state.evRecur;
+    const freqDefs = [ {k:'weekly',label:'Hebdo.'}, {k:'biweekly',label:'1 sem./2'}, {k:'monthly',label:'Mensuel'} ];
+    const freqOptions = freqDefs.map(f=>{ const sel = this.state.evFreq===f.k; return { label:f.label, bg: sel?INK:'#F4F1EA', fg: sel?'#fff':'#6F685C', border: sel?INK:'#E6E0D4', onClick:()=> this.setEvFreq(f.k) }; });
+    const excludeOn = this.state.evExcludeHolidays;
+
+    // ---------- new discussion sheet ----------
+    const discBubble = React.createElement('svg',{width:18,height:18,viewBox:'0 0 24 24',fill:'none'}, React.createElement('path',{d:'M21 11.5a8.38 8.38 0 01-9 8.3L3 21l1.3-4A8.5 8.5 0 1121 11.5z', stroke:'currentColor', strokeWidth:1.9, strokeLinejoin:'round'}));
+    const discScale = React.createElement('svg',{width:18,height:18,viewBox:'0 0 24 24',fill:'none'}, [
+      React.createElement('path',{key:1,d:'M12 4v16M7 9l5-5 5 5', stroke:'currentColor', strokeWidth:1.9, strokeLinecap:'round', strokeLinejoin:'round'}),
+      React.createElement('path',{key:2,d:'M5 20h14', stroke:'currentColor', strokeWidth:1.9, strokeLinecap:'round'}),
+    ]);
+    const discTypeDefs = [
+      { k:'discussion', label:'Discussion', desc:'Échanger, sans choix figé.', icon:discBubble },
+      { k:'decision', label:'Décision', desc:'Proposer des options.', icon:discScale },
+    ];
+    const discTypes = discTypeDefs.map(t=>{ const sel = this.state.discType===t.k; return { label:t.label, desc:t.desc, icon:t.icon, border: sel?ACCENT:'#E6E0D4', bg: sel?'#FBF4EE':'#fff', iconBg: sel?ACCENT:'#EDE7DB', iconFg: sel?'#fff':'#857E71', onClick:()=> this.setDiscType(t.k) }; });
+    const discIsDecision = this.state.discType==='decision';
+    const discOptionRows = this.state.discOptions.map((v,i)=>{ const canRemove = this.state.discOptions.length>2; return { value:v, placeholder:'Option '+(i+1), onInput:(e)=> this.setOption(i, e.target.value), onRemove: canRemove?(()=> this.removeOption(i)):(()=>{}), removeCursor: canRemove?'pointer':'default', removeOpacity: canRemove?'1':'0' }; });
+    const discKidDefs = [ ...FAM.children.map(c=>({ k:c.id, name:c.name, initial:c.initial, color:c.color })), {k:'famille',name:'Famille',initial:'F',color:'#857E71'} ];
+    const discSel = this.state.discChild || (FAM.children[0] && FAM.children[0].id);
+    const discChildChips = discKidDefs.map(k=>{ const sel = discSel===k.k; return { name:k.name, initial:k.initial, color:k.color, bg: sel?'#FBF4EE':'#fff', border: sel?ACCENT:'#E6E0D4', onClick:()=> this.setDiscChild(k.k) }; });
+    const discDeadlineSub = discIsDecision ? 'Signalé en retard au-delà' : 'Optionnel';
+    const discCreateLabel = discIsDecision ? 'Publier la décision' : 'Lancer la discussion';
+
+    // ---------- nav ----------
+    const s = this.state.screen;
+    const nc = (k)=> s===k ? INK : MUTED;
+    const famList = ['flechel','carin'].map(id=>{ const f = FAMS[id]; const active = this.state.fam===id; const ftype = this.state.famTypes[id] || f.type; return { name:f.name, sub:f.counts, tag:f.tag, dot: active?ACCENT:'transparent', bgRow: active?'#FBF4EE':'#fff', borderRow: active?ACCENT:'#EFEAE0', united: ftype==='intact', onClick:()=> this.setFam(id) }; });
+
+    return {
+      isHome: s==='home', isCustody: s==='custody', isAgenda: s==='agenda', isExpenses: s==='expenses',
+      famName:FAM.name, famShort:FAM.short, famTag:FAM.tag, famCounts:FAM.counts, famList,
+      famMenuOpen:this.state.famMenuOpen, toggleFamMenu:()=>this.toggleFamMenu(),
+      isIntact, famIsUnited:isIntact, famNameValue:FAM.name,
+      famTypeOptions: [ {k:'separated',label:'Séparée'}, {k:'intact',label:'Famille unie'} ].map(o=>{ const sel = famType===o.k; return { label:o.label, bg: sel?'#FBF4EE':'#fff', border: sel?ACCENT:'#E6E0D4', dotBorder: sel?ACCENT:'#CFC8BA', dotBg: sel?ACCENT:'#fff', dotInner: sel?'#fff':'transparent', onClick:()=> this.setFamType(o.k) }; }),
+      showGardeTab: !isIntact, showExpensesTab: (!isIntact || this.state.expensesEnabled),
+      canOverlay, overlayOn, onToggleOverlay:()=>this.toggleOverlay(),
+      overlayTrack: overlayOn?'#2E7D71':'#D8D1C3', overlayJustify: overlayOn?'flex-end':'flex-start',
+      overlayLabel: linkedFam ? ('Voir · '+linkedFam.short) : 'Voir l’autre famille',
+      isSetGardeM: setTab==='garde' && !isIntact,
+      expensesEnabled:this.state.expensesEnabled, onToggleExpensesModule:()=>this.toggleExpensesModule(),
+      expModTrack: this.state.expensesEnabled?'#2E7D71':'#D8D1C3', expModJustify: this.state.expensesEnabled?'flex-end':'flex-start',
+      heroEyebrow, heroText, heroSub, heroShowClock,
+      profileName:E.name+' Carin', profileInitial:E.initial, profileColor:E.color, profileRole:E.role+' · Administratrice',
+      p1Name:E.name, p2Name:M.name,
+      isSettings: s==='settings', showNav: s!=='settings', goSettings:()=>this.goSettings(),
+      openEvent:()=>this.openEvent(), closeEvent:()=>this.closeEvent(), eventOpen:this.state.eventOpen,
+      evTypes, evChildChips, evParents, evRecur:recurOn,
+      recurTrack: recurOn?'#2E7D71':'#D8D1C3', recurJustify: recurOn?'flex-end':'flex-start', onToggleRecur:()=>this.toggleRecur(),
+      freqOptions, onToggleExclude:()=>this.toggleExcludeHolidays(),
+      excludeBg: excludeOn?'#FBF4EE':'#fff', excludeBorder: excludeOn?ACCENT:'#E6E0D4', excludeBoxBorder: excludeOn?ACCENT:'#CFC8BA', excludeBoxBg: excludeOn?ACCENT:'#fff', excludeCheck: excludeOn?evTick:'',
+      excludeSub: excludeOn?'Aucune occurrence pendant les congés scolaires':'Les occurrences tomberont aussi en vacances',
+      createLabel: recurOn ? 'Créer la série' : 'Créer l’événement',
+      openDisc:()=>this.openDisc(), closeDisc:()=>this.closeDisc(), discOpen:this.state.discOpen,
+      discTypes, discIsDecision, discOptionRows, onAddOption:()=>this.addOption(), discChildChips, discDeadlineSub, discCreateLabel,
+      isSetCompte: setTab==='compte', isSetMembres: setTab==='membres', isSetGarde: setTab==='garde' && !isIntact,
+      settingsTabsM, accountFields, notifRows, members, inviteRoles, inviteRights,
+      custodyModes, patternWeeksM, builderTitle, builderSub,
+      holidaysImported, holidayPeriods, importBtnBg, importBtnFg, importBtnBorder, importBtnLabel, importBtnIcon, onImportHolidays:()=>this.importHolidays(),
+      exceptions,
+      showChildList: s==='children' && !this.state.child,
+      showChildDetail: s==='children' && !!this.state.child,
+      showQList: s==='questions' && !this.state.q,
+      showQDetail: s==='questions' && !!this.state.q,
+      accentColor: ACCENT,
+      cHome:nc('home'), cCustody:nc('custody'), cAgenda:nc('agenda'), cChildren:nc('children'), cQuestions:nc('questions'), cExpenses:nc('expenses'),
+      hasPending:true,
+      goHome:()=>this.go('home'), goCustody:()=>this.go('custody'), goAgenda:()=>this.go('agenda'), goChildren:()=>this.go('children'), goQuestions:()=>this.go('questions'), goExpenses:()=>this.go('expenses'),
+      backToChildren:()=>this.setState({child:null}), backToQuestions:()=>this.setState({q:null}),
+      closeDay:()=>this.closeDay(), dayOpen: !!this.state.day, selectedDay,
+      // home
+      greeting:'Bonjour '+viewer, dateLabel:'Mardi 23 juin', weekText, weekSub, weekChipColor:todayP.color, kids, upcoming, pending,
+      // custody
+      monthLabel:'Juin 2026', weekdays:wdShort, calendarDays, specialPeriods, elodieColor:A, marcColor:B,
+      // agenda
+      filterCats, groupedEvents,
+      // expenses
+      expenses, balance,
+      // children / questions
+      children:childList, child, questions, question,
+    };
+  }
+}
+</script>
+</body>
+</html>

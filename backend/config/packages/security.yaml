@@ -32,9 +32,10 @@ security:
 
     # Seule la *première* règle correspondante s'applique.
     access_control:
-        # Endpoints publics : auth, acceptation d'invitation (token), documentation OpenAPI.
-        - { path: '^/api/(auth|invitations/accept|docs)', roles: PUBLIC_ACCESS }
-        # Tout le reste de l'API exige une authentification.
+        # Endpoints publics : auth et documentation OpenAPI.
+        - { path: '^/api/(auth|docs)', roles: PUBLIC_ACCESS }
+        # Tout le reste de l'API exige une authentification (dont l'acceptation d'invitation,
+        # nominative : l'utilisateur doit être connecté pour que son e-mail soit vérifié).
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:

@@ -6,6 +6,8 @@ namespace App\EventSubscriber;
 
 use App\Exception\FamilyAccessDeniedException;
 use App\Exception\FamilyScopeRequiredException;
+use App\Exception\InvalidInvitationException;
+use App\Exception\InvitationEmailMismatchException;
 use App\Security\Auth\Exception\AuthException;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -38,6 +40,8 @@ final class ProblemExceptionSubscriber
             $throwable instanceof AuthException => [$throwable->problemType(), $throwable->getMessage()],
             $throwable instanceof FamilyScopeRequiredException => [FamilyScopeRequiredException::TYPE, 'family.error.scope_required'],
             $throwable instanceof FamilyAccessDeniedException => [FamilyAccessDeniedException::TYPE, 'family.error.forbidden'],
+            $throwable instanceof InvalidInvitationException => [InvalidInvitationException::TYPE, $throwable->getMessage()],
+            $throwable instanceof InvitationEmailMismatchException => [InvitationEmailMismatchException::TYPE, $throwable->getMessage()],
             default => [null, null],
         };
 

@@ -12,6 +12,93 @@
         }
     ],
     "paths": {
+        "/api/invitations/accept": {
+            "post": {
+                "operationId": "api_invitationsaccept_post",
+                "tags": [
+                    "AcceptInvitationRequest"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "AcceptInvitationRequest resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AcceptInvitationRequest.FamilyResource"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AcceptInvitationRequest.FamilyResource.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a AcceptInvitationRequest resource.",
+                "description": "Creates a AcceptInvitationRequest resource.",
+                "parameters": [],
+                "requestBody": {
+                    "description": "The new AcceptInvitationRequest resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AcceptInvitationRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AcceptInvitationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
         "/api/families": {
             "get": {
                 "operationId": "api_families_get_collection",
@@ -519,6 +606,41 @@
                 "description": "Retrieves a Me resource.",
                 "parameters": []
             },
+            "delete": {
+                "operationId": "api_me_delete",
+                "tags": [
+                    "Me"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Me resource deleted"
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Removes the Me resource.",
+                "description": "Removes the Me resource.",
+                "parameters": []
+            },
             "patch": {
                 "operationId": "api_me_patch",
                 "tags": [
@@ -619,6 +741,81 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/Me-me.write.jsonMergePatch"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/me/export": {
+            "post": {
+                "operationId": "api_meexport_post",
+                "tags": [
+                    "Me"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Me resource created",
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a Me resource.",
+                "description": "Creates a Me resource.",
+                "parameters": [],
+                "requestBody": {
+                    "description": "The new Me resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Me-me.write"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Me-me.write"
                             }
                         }
                     },
@@ -887,6 +1084,129 @@
                 }
             }
         },
+        "/api/admin/rgpd/compliance-report": {
+            "get": {
+                "operationId": "api_adminrgpdcompliance-report_get_collection",
+                "tags": [
+                    "RgpdAdmin"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "RgpdAdmin collection"
+                    }
+                },
+                "summary": "Retrieves the collection of RgpdAdmin resources.",
+                "description": "Retrieves the collection of RgpdAdmin resources.",
+                "parameters": []
+            }
+        },
+        "/api/admin/rgpd/operations": {
+            "get": {
+                "operationId": "api_adminrgpdoperations_get_collection",
+                "tags": [
+                    "RgpdAdmin"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "RgpdAdmin collection"
+                    }
+                },
+                "summary": "Retrieves the collection of RgpdAdmin resources.",
+                "description": "Retrieves the collection of RgpdAdmin resources.",
+                "parameters": []
+            }
+        },
+        "/api/admin/rgpd/purge": {
+            "post": {
+                "operationId": "api_adminrgpdpurge_post",
+                "tags": [
+                    "RgpdAdmin"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "RgpdAdmin resource created",
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a RgpdAdmin resource.",
+                "description": "Creates a RgpdAdmin resource.",
+                "parameters": [],
+                "requestBody": {
+                    "description": "The new RgpdAdmin resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RgpdAdmin"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RgpdAdmin"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/admin/rgpd/register": {
+            "get": {
+                "operationId": "api_adminrgpdregister_get_collection",
+                "tags": [
+                    "RgpdAdmin"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "RgpdAdmin collection"
+                    }
+                },
+                "summary": "Retrieves the collection of RgpdAdmin resources.",
+                "description": "Retrieves the collection of RgpdAdmin resources.",
+                "parameters": []
+            }
+        },
         "/api/auth/verify-email": {
             "post": {
                 "operationId": "api_authverify-email_post",
@@ -977,6 +1297,127 @@
     },
     "components": {
         "schemas": {
+            "AcceptInvitationRequest": {
+                "type": "object",
+                "description": "US-ONB-1 sc.3-5 \u2014 accepter une invitation (squelette Lot 0). Authentification requise :\nl'e-mail du compte connect\u00e9 doit correspondre \u00e0 l'invit\u00e9. Renvoie la famille rejointe.",
+                "required": [
+                    "token"
+                ],
+                "properties": {
+                    "token": {
+                        "maxLength": 512,
+                        "default": "",
+                        "type": "string"
+                    }
+                }
+            },
+            "AcceptInvitationRequest.FamilyResource": {
+                "type": "object",
+                "description": "US-ONB-1 sc.3-5 \u2014 accepter une invitation (squelette Lot 0). Authentification requise :\nl'e-mail du compte connect\u00e9 doit correspondre \u00e0 l'invit\u00e9. Renvoie la famille rejointe.",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "name": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "type": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "timezone": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "schoolZone": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "academy": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "expensesEnabled": {
+                        "default": false,
+                        "type": "boolean"
+                    },
+                    "hasCustody": {
+                        "default": false,
+                        "type": "boolean"
+                    },
+                    "role": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "isAdmin": {
+                        "default": false,
+                        "type": "boolean"
+                    }
+                }
+            },
+            "AcceptInvitationRequest.FamilyResource.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "name": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "type": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "timezone": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "schoolZone": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "academy": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "expensesEnabled": {
+                                "default": false,
+                                "type": "boolean"
+                            },
+                            "hasCustody": {
+                                "default": false,
+                                "type": "boolean"
+                            },
+                            "role": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "isAdmin": {
+                                "default": false,
+                                "type": "boolean"
+                            }
+                        }
+                    }
+                ],
+                "description": "US-ONB-1 sc.3-5 \u2014 accepter une invitation (squelette Lot 0). Authentification requise :\nl'e-mail du compte connect\u00e9 doit correspondre \u00e0 l'invit\u00e9. Renvoie la famille rejointe."
+            },
             "ConstraintViolation": {
                 "type": "object",
                 "description": "Unprocessable entity",
@@ -1695,6 +2136,33 @@
                     }
                 }
             },
+            "Me-me.write": {
+                "type": "object",
+                "description": "US-SET-1 (sous-ensemble Lot 0) \u2014 profil du compte courant. `/api/me` est implicitement scop\u00e9 \u00e0\nl'utilisateur du token (jamais un autre compte). `full_name`/`phone` \ud83d\udd12 d\u00e9chiffr\u00e9s en lecture.\n\n`avatarUrl`, `email`, `status`, `emailVerified` sont en lecture seule (groupe `me:read` uniquement) :\nun PATCH les ignore (cf. \u00a74.5 pour avatar_url).",
+                "properties": {
+                    "locale": {
+                        "maxLength": 16,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "fullName": {
+                        "maxLength": 200,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "phone": {
+                        "maxLength": 40,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
             "Me-me.write.jsonMergePatch": {
                 "type": "object",
                 "description": "US-SET-1 (sous-ensemble Lot 0) \u2014 profil du compte courant. `/api/me` est implicitement scop\u00e9 \u00e0\nl'utilisateur du token (jamais un autre compte). `full_name`/`phone` \ud83d\udd12 d\u00e9chiffr\u00e9s en lecture.\n\n`avatarUrl`, `email`, `status`, `emailVerified` sont en lecture seule (groupe `me:read` uniquement) :\nun PATCH les ignore (cf. \u00a74.5 pour avatar_url).",
@@ -1953,6 +2421,10 @@
                 ],
                 "description": "US-AUTH-2 sc.9 \u2014 r\u00e9initialisation effective (token usage unique ; r\u00e9voque tous les refresh)."
             },
+            "RgpdAdmin": {
+                "type": "object",
+                "description": "Endpoints d'administration RGPD (cdc \u00a76.2). Rout\u00e9s et pr\u00e9sents dans l'OpenAPI mais **501**\njusqu'au Lot 8 (d\u00e9cision D7). Auth technique renforc\u00e9e et logique r\u00e9elles = Lot 8."
+            },
             "VerifyEmailRequest": {
                 "type": "object",
                 "description": "US-AUTH-1 sc.5 \u2014 v\u00e9rification d'e-mail. Endpoint API unique (d\u00e9cision D5) appel\u00e9 par la page\nweb GET /verify-email et par le deep link mobile.",
@@ -2035,8 +2507,16 @@
             "description": "Repr\u00e9sentation d'une famille du point de vue du membre courant (US-ONB-1, US-HOME-1).\n`role`/`isAdmin` refl\u00e8tent la perspective de l'utilisateur connect\u00e9 dans cette famille."
         },
         {
+            "name": "AcceptInvitationRequest",
+            "description": "US-ONB-1 sc.3-5 \u2014 accepter une invitation (squelette Lot 0). Authentification requise :\nl'e-mail du compte connect\u00e9 doit correspondre \u00e0 l'invit\u00e9. Renvoie la famille rejointe."
+        },
+        {
             "name": "Me",
             "description": "US-SET-1 (sous-ensemble Lot 0) \u2014 profil du compte courant. `/api/me` est implicitement scop\u00e9 \u00e0\nl'utilisateur du token (jamais un autre compte). `full_name`/`phone` \ud83d\udd12 d\u00e9chiffr\u00e9s en lecture.\n\n`avatarUrl`, `email`, `status`, `emailVerified` sont en lecture seule (groupe `me:read` uniquement) :\nun PATCH les ignore (cf. \u00a74.5 pour avatar_url)."
+        },
+        {
+            "name": "RgpdAdmin",
+            "description": "Endpoints d'administration RGPD (cdc \u00a76.2). Rout\u00e9s et pr\u00e9sents dans l'OpenAPI mais **501**\njusqu'au Lot 8 (d\u00e9cision D7). Auth technique renforc\u00e9e et logique r\u00e9elles = Lot 8."
         }
     ],
     "webhooks": {}

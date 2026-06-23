@@ -57,10 +57,10 @@ Extensions PHP présentes : pdo_pgsql, pgsql, sodium, openssl, intl, redis, apcu
 | 5 | Chiffrement AES-256-GCM des champs 🔒 | ✅ | 7 tests unitaires |
 | 7 | Voters par domaine + scope X-Family-Id | 🟡 | RBAC unit-testé ; test fonctionnel HTTP du resolver à faire (besoin d'un endpoint scopé) |
 | 3 | Infra docker-compose dev (full : +Redis, worker, scheduler, app) | ⬜ | compose Symfony de base présent (db/mercure/mailpit) |
-| 6 | Auth HTTP (register/login/refresh/reset/verify/logout) | 🟡 | **7 endpoints + `/api/me` + `/api/families` faits & testés (audit sécu passé)** ; reste : `/api/invitations/accept` (squelette US-ONB-1), endpoints 501 RGPD |
-| 8 | i18n fr-FR ICU + Mailer localisé + Messenger async | 🟡 | **catalogue ICU, 3 e-mails Twig localisés, envoi async Messenger : faits** (câblés par l'auth) |
+| 6 | Auth HTTP + compte + onboarding | ✅ | 7 endpoints auth + `/api/me` + `/api/families` + `/api/invitations/accept` + endpoints 501 RGPD ; audit sécu passé |
+| 8 | i18n fr-FR ICU + Mailer localisé + Messenger async | ✅ | catalogue ICU, 3 e-mails Twig localisés, envoi async (cœur Lot 0 ; prefs notif détaillées = Lot 7) |
 | 9 | Mercure + /api/realtime/token (claims vides) | ⬜ | |
-| 10 | Squelette RGPD + registre-donnees + test cohérence CI | 🟡 | registre + test cohérence verts ; reste : namespace RgpdManager + endpoints 501 |
+| 10 | Squelette RGPD + registre-donnees + test cohérence CI | ✅ | registre + test cohérence + attribut PersonalData + endpoints 501 (D7) ; RGPD Manager complet = Lot 8 |
 | 11 | Front web : shell + design system + écrans auth | ⬜ | maquettes dans `specs/design/` |
 | 12 | App mobile Flutter : squelette + client généré + auth | ⬜ | |
 | 13 | Harnais tests + CI + INSTALL.md | 🟡 | **PHPUnit unit+RGPD+fonctionnel (19 tests), PHPStan niv.8, php-cs-fixer, base de test+DAMA : verts** ; reste : Playwright, flutter test, couverture, CI, INSTALL |
@@ -149,6 +149,17 @@ php bin/console lint:container
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-06-24 — Acceptation d'invitation + endpoints 501 RGPD
+- **`POST /api/invitations/accept`** (US-ONB-1 sc.3-5) : auth requise, e-mail du compte = invité
+  (sinon 403), token haché vérifié (sinon 400), crée le Membership (rôle + droits proposés ;
+  parent = edit forcé), idempotent si déjà membre, `AuditLog invitation.accepted`.
+- **Endpoints 501** (décision D7) routés et dans l'OpenAPI : `POST /api/me/export`, `DELETE /api/me`,
+  `GET /api/admin/rgpd/{register,operations,compliance-report}`, `POST /api/admin/rgpd/purge`
+  (`NotImplementedProvider`/`Processor`, `deserialize:false` pour les POST sans corps).
+- Acceptation d'invitation désormais **non publique** (auth requise) ; exceptions invitation mappées RFC 7807.
+- Base de test partagée `ApiAuthTestCase` ; `InvitationAndStubsTest` (5 tests : accept, mismatch, invalide,
+  401, 501). **Suite : 28 tests / 127 assertions**, PHPStan niv.8, cs-fixer verts. OpenAPI à jour.
 
 ### 2026-06-24 — /api/me + /api/families
 - **`/api/me`** (GET/PATCH) : profil + locale + `full_name`/`phone` 🔒 (déchiffrés en lecture, persistés

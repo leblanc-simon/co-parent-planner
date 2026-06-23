@@ -57,7 +57,7 @@ Extensions PHP présentes : pdo_pgsql, pgsql, sodium, openssl, intl, redis, apcu
 | 5 | Chiffrement AES-256-GCM des champs 🔒 | ✅ | 7 tests unitaires |
 | 7 | Voters par domaine + scope X-Family-Id | 🟡 | RBAC unit-testé ; test fonctionnel HTTP du resolver à faire (besoin d'un endpoint scopé) |
 | 3 | Infra docker-compose dev (full : +Redis, worker, scheduler, app) | ⬜ | compose Symfony de base présent (db/mercure/mailpit) |
-| 6 | Auth HTTP (register/login/refresh/reset/verify/logout) | 🟡 | **7 endpoints faits & testés (API Platform + OpenAPI), 4 tests fonctionnels verts** ; reste : `/api/me`, `/api/families` (US-ONB-1), `/api/invitations/accept` |
+| 6 | Auth HTTP (register/login/refresh/reset/verify/logout) | 🟡 | **7 endpoints + `/api/me` + `/api/families` faits & testés (audit sécu passé)** ; reste : `/api/invitations/accept` (squelette US-ONB-1), endpoints 501 RGPD |
 | 8 | i18n fr-FR ICU + Mailer localisé + Messenger async | 🟡 | **catalogue ICU, 3 e-mails Twig localisés, envoi async Messenger : faits** (câblés par l'auth) |
 | 9 | Mercure + /api/realtime/token (claims vides) | ⬜ | |
 | 10 | Squelette RGPD + registre-donnees + test cohérence CI | 🟡 | registre + test cohérence verts ; reste : namespace RgpdManager + endpoints 501 |
@@ -65,7 +65,9 @@ Extensions PHP présentes : pdo_pgsql, pgsql, sodium, openssl, intl, redis, apcu
 | 12 | App mobile Flutter : squelette + client généré + auth | ⬜ | |
 | 13 | Harnais tests + CI + INSTALL.md | 🟡 | **PHPUnit unit+RGPD+fonctionnel (19 tests), PHPStan niv.8, php-cs-fixer, base de test+DAMA : verts** ; reste : Playwright, flutter test, couverture, CI, INSTALL |
 
-**Portes qualité actuellement vertes** : `symfony php bin/phpunit` (19 tests, 52 assertions), `vendor/bin/phpstan` (niveau 8, 0 erreur), `php-cs-fixer --dry-run` (0), `doctrine:schema:validate`, `lint:container`. OpenAPI exporté dans `contracts/openapi.json` (7 endpoints auth).
+**Portes qualité actuellement vertes** : `symfony php bin/phpunit` (**23 tests, 85 assertions**), `vendor/bin/phpstan` (niveau 8, 0 erreur), `php-cs-fixer --dry-run` (0), `doctrine:schema:validate`, `lint:container`. OpenAPI exporté dans `contracts/openapi.json` (auth + `/api/me` + `/api/families`).
+
+> ⚠️ **Le conteneur DB doit tourner** pour les tests fonctionnels : `cd backend && docker compose up -d database` (il n'est pas auto-démarré ; sans lui, `symfony` retombe sur un PostgreSQL local 5432 et l'auth échoue).
 
 Légende : ⬜ à faire · 🟡 en cours · ✅ fait
 
@@ -147,6 +149,16 @@ php bin/console lint:container
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-06-24 — /api/me + /api/families
+- **`/api/me`** (GET/PATCH) : profil + locale + `full_name`/`phone` 🔒 (déchiffrés en lecture, persistés
+  chiffrés) ; `email`/`status`/`avatar_url` en lecture seule ; scopé à l'utilisateur du token.
+- **`/api/families`** : `GET` (mes familles via memberships), `POST` (US-ONB-1 → crée Family +
+  Membership parent+admin actif, `AuditLog family.created`), `GET /{id}` (membre actif uniquement,
+  sinon 404 anti-énumération).
+- DTO + Providers/Processors API Platform ; `patch_formats` (merge-patch+json + json).
+- `MeAndFamiliesTest` : 4 tests (GET/PATCH me, 401 sans auth, create+list familles, 422 type invalide).
+  **Suite : 23 tests / 85 assertions**, PHPStan niv.8, cs-fixer verts. OpenAPI à jour.
 
 ### 2026-06-24 — Authentification HTTP
 - **7 endpoints auth** (register, login, refresh, verify-email, password/forgot, password/reset,

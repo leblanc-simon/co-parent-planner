@@ -6,6 +6,9 @@ api_platform:
     formats:
         json: ['application/json']
         jsonld: ['application/ld+json']
+    # PATCH : accepte merge-patch+json (standard) et application/json (commodité client).
+    patch_formats:
+        json: ['application/merge-patch+json', 'application/json']
     defaults:
         stateless: true
         cache_headers:

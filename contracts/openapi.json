@@ -12,6 +12,204 @@
         }
     ],
     "paths": {
+        "/api/families": {
+            "get": {
+                "operationId": "api_families_get_collection",
+                "tags": [
+                    "Family"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Family collection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Family"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "Family.jsonld collection.",
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/HydraCollectionBaseSchemaNoPagination"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "member"
+                                            ],
+                                            "properties": {
+                                                "member": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Family.jsonld"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Retrieves the collection of Family resources.",
+                "description": "Retrieves the collection of Family resources.",
+                "parameters": []
+            },
+            "post": {
+                "operationId": "api_families_post",
+                "tags": [
+                    "Family"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Family resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Family"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Family.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a Family resource.",
+                "description": "Creates a Family resource.",
+                "parameters": [],
+                "requestBody": {
+                    "description": "The new Family resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Family.CreateFamilyRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Family.CreateFamilyRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/families/{id}": {
+            "get": {
+                "operationId": "api_families_id_get",
+                "tags": [
+                    "Family"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Family resource",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Family"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Family.jsonld"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Retrieves a Family resource.",
+                "description": "Retrieves a Family resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Family identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            }
+        },
         "/api/auth/password/forgot": {
             "post": {
                 "operationId": "api_authpasswordforgot_post",
@@ -266,6 +464,161 @@
                         "application/ld+json": {
                             "schema": {
                                 "$ref": "#/components/schemas/LogoutRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/me": {
+            "get": {
+                "operationId": "api_me_get",
+                "tags": [
+                    "Me"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Me resource",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Me-me.read"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Me.jsonld-me.read"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Retrieves a Me resource.",
+                "description": "Retrieves a Me resource.",
+                "parameters": []
+            },
+            "patch": {
+                "operationId": "api_me_patch",
+                "tags": [
+                    "Me"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Me resource updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Me-me.read"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Me.jsonld-me.read"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Updates the Me resource.",
+                "description": "Updates the Me resource.",
+                "parameters": [],
+                "requestBody": {
+                    "description": "The updated Me resource",
+                    "content": {
+                        "application/merge-patch+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Me-me.write.jsonMergePatch"
+                            }
+                        },
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Me-me.write.jsonMergePatch"
                             }
                         }
                     },
@@ -869,6 +1222,137 @@
                 ],
                 "description": "A representation of common errors."
             },
+            "Family": {
+                "type": "object",
+                "description": "Repr\u00e9sentation d'une famille du point de vue du membre courant (US-ONB-1, US-HOME-1).\n`role`/`isAdmin` refl\u00e8tent la perspective de l'utilisateur connect\u00e9 dans cette famille.",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "name": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "type": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "timezone": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "schoolZone": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "academy": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "expensesEnabled": {
+                        "default": false,
+                        "type": "boolean"
+                    },
+                    "hasCustody": {
+                        "default": false,
+                        "type": "boolean"
+                    },
+                    "role": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "isAdmin": {
+                        "default": false,
+                        "type": "boolean"
+                    }
+                }
+            },
+            "Family.CreateFamilyRequest": {
+                "type": "object",
+                "description": "Repr\u00e9sentation d'une famille du point de vue du membre courant (US-ONB-1, US-HOME-1).\n`role`/`isAdmin` refl\u00e8tent la perspective de l'utilisateur connect\u00e9 dans cette famille.",
+                "required": [
+                    "name",
+                    "type"
+                ],
+                "properties": {
+                    "name": {
+                        "minLength": 1,
+                        "maxLength": 120,
+                        "default": "",
+                        "type": "string"
+                    },
+                    "type": {
+                        "enum": [
+                            "separated",
+                            "intact"
+                        ],
+                        "default": "",
+                        "type": "string"
+                    }
+                }
+            },
+            "Family.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "name": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "type": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "timezone": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "schoolZone": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "academy": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "expensesEnabled": {
+                                "default": false,
+                                "type": "boolean"
+                            },
+                            "hasCustody": {
+                                "default": false,
+                                "type": "boolean"
+                            },
+                            "role": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "isAdmin": {
+                                "default": false,
+                                "type": "boolean"
+                            }
+                        }
+                    }
+                ],
+                "description": "Repr\u00e9sentation d'une famille du point de vue du membre courant (US-ONB-1, US-HOME-1).\n`role`/`isAdmin` refl\u00e8tent la perspective de l'utilisateur connect\u00e9 dans cette famille."
+            },
             "ForgotPasswordRequest": {
                 "type": "object",
                 "description": "US-AUTH-2 sc.8 \u2014 demande de reset (r\u00e9ponse toujours g\u00e9n\u00e9rique, anti-\u00e9num\u00e9ration, rate-limit\u00e9).",
@@ -911,6 +1395,112 @@
                     }
                 ],
                 "description": "US-AUTH-2 sc.8 \u2014 demande de reset (r\u00e9ponse toujours g\u00e9n\u00e9rique, anti-\u00e9num\u00e9ration, rate-limit\u00e9)."
+            },
+            "HydraCollectionBaseSchema": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraCollectionBaseSchemaNoPagination"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "view": {
+                                "type": "object",
+                                "properties": {
+                                    "@id": {
+                                        "type": "string",
+                                        "format": "iri-reference"
+                                    },
+                                    "@type": {
+                                        "type": "string"
+                                    },
+                                    "first": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "iri-reference"
+                                    },
+                                    "last": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "iri-reference"
+                                    },
+                                    "previous": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "iri-reference"
+                                    },
+                                    "next": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "iri-reference"
+                                    }
+                                },
+                                "example": {
+                                    "@id": "string",
+                                    "@type": "string",
+                                    "first": "string",
+                                    "last": "string",
+                                    "previous": "string",
+                                    "next": "string"
+                                }
+                            }
+                        }
+                    }
+                ]
+            },
+            "HydraCollectionBaseSchemaNoPagination": {
+                "type": "object",
+                "properties": {
+                    "totalItems": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "search": {
+                        "type": "object",
+                        "properties": {
+                            "@type": {
+                                "type": "string"
+                            },
+                            "template": {
+                                "type": "string"
+                            },
+                            "variableRepresentation": {
+                                "type": "string"
+                            },
+                            "mapping": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "@type": {
+                                            "type": "string"
+                                        },
+                                        "variable": {
+                                            "type": "string"
+                                        },
+                                        "property": {
+                                            "type": [
+                                                "string",
+                                                "null"
+                                            ]
+                                        },
+                                        "required": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             },
             "HydraItemBaseSchema": {
                 "type": "object",
@@ -1053,6 +1643,142 @@
                     }
                 ],
                 "description": "US-AUTH-2 sc.7 \u2014 d\u00e9connexion : r\u00e9voque le refresh courant (corps/cookie) et efface les cookies."
+            },
+            "Me-me.read": {
+                "type": "object",
+                "description": "US-SET-1 (sous-ensemble Lot 0) \u2014 profil du compte courant. `/api/me` est implicitement scop\u00e9 \u00e0\nl'utilisateur du token (jamais un autre compte). `full_name`/`phone` \ud83d\udd12 d\u00e9chiffr\u00e9s en lecture.\n\n`avatarUrl`, `email`, `status`, `emailVerified` sont en lecture seule (groupe `me:read` uniquement) :\nun PATCH les ignore (cf. \u00a74.5 pour avatar_url).",
+                "properties": {
+                    "id": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "email": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "locale": {
+                        "maxLength": 16,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "fullName": {
+                        "maxLength": 200,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "phone": {
+                        "maxLength": 40,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "avatarUrl": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "emailVerified": {
+                        "default": false,
+                        "type": "boolean"
+                    },
+                    "status": {
+                        "default": "",
+                        "type": "string"
+                    }
+                }
+            },
+            "Me-me.write.jsonMergePatch": {
+                "type": "object",
+                "description": "US-SET-1 (sous-ensemble Lot 0) \u2014 profil du compte courant. `/api/me` est implicitement scop\u00e9 \u00e0\nl'utilisateur du token (jamais un autre compte). `full_name`/`phone` \ud83d\udd12 d\u00e9chiffr\u00e9s en lecture.\n\n`avatarUrl`, `email`, `status`, `emailVerified` sont en lecture seule (groupe `me:read` uniquement) :\nun PATCH les ignore (cf. \u00a74.5 pour avatar_url).",
+                "properties": {
+                    "locale": {
+                        "maxLength": 16,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "fullName": {
+                        "maxLength": 200,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "phone": {
+                        "maxLength": 40,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "Me.jsonld-me.read": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "email": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "locale": {
+                                "maxLength": 16,
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "fullName": {
+                                "maxLength": 200,
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "phone": {
+                                "maxLength": 40,
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "avatarUrl": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "emailVerified": {
+                                "default": false,
+                                "type": "boolean"
+                            },
+                            "status": {
+                                "default": "",
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "description": "US-SET-1 (sous-ensemble Lot 0) \u2014 profil du compte courant. `/api/me` est implicitement scop\u00e9 \u00e0\nl'utilisateur du token (jamais un autre compte). `full_name`/`phone` \ud83d\udd12 d\u00e9chiffr\u00e9s en lecture.\n\n`avatarUrl`, `email`, `status`, `emailVerified` sont en lecture seule (groupe `me:read` uniquement) :\nun PATCH les ignore (cf. \u00a74.5 pour avatar_url)."
             },
             "RefreshRequest": {
                 "type": "object",
@@ -1303,6 +2029,14 @@
         {
             "name": "VerifyEmailRequest",
             "description": "US-AUTH-1 sc.5 \u2014 v\u00e9rification d'e-mail. Endpoint API unique (d\u00e9cision D5) appel\u00e9 par la page\nweb GET /verify-email et par le deep link mobile."
+        },
+        {
+            "name": "Family",
+            "description": "Repr\u00e9sentation d'une famille du point de vue du membre courant (US-ONB-1, US-HOME-1).\n`role`/`isAdmin` refl\u00e8tent la perspective de l'utilisateur connect\u00e9 dans cette famille."
+        },
+        {
+            "name": "Me",
+            "description": "US-SET-1 (sous-ensemble Lot 0) \u2014 profil du compte courant. `/api/me` est implicitement scop\u00e9 \u00e0\nl'utilisateur du token (jamais un autre compte). `full_name`/`phone` \ud83d\udd12 d\u00e9chiffr\u00e9s en lecture.\n\n`avatarUrl`, `email`, `status`, `emailVerified` sont en lecture seule (groupe `me:read` uniquement) :\nun PATCH les ignore (cf. \u00a74.5 pour avatar_url)."
         }
     ],
     "webhooks": {}

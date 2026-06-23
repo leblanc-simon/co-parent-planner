@@ -17,3 +17,9 @@ framework:
         # Namespaced pools use the above "app" backend by default
         #pools:
             #my.dedicated.cache: null
+
+when@test:
+    framework:
+        cache:
+            # En test, cache non persistant : isole l'état des rate limiters entre les runs.
+            app: cache.adapter.array

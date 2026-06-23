@@ -5,7 +5,7 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-06-23** — Lot 0 en cours (socle backend + sécurité posés et testés).
+Dernière mise à jour : **2026-06-24** — Lot 0 : authentification HTTP livrée et testée (API).
 
 ---
 
@@ -55,17 +55,17 @@ Extensions PHP présentes : pdo_pgsql, pgsql, sodium, openssl, intl, redis, apcu
 | 2 | Backend Symfony 8.1 + bundles (API Platform, JWT, Mercure, rate-limiter, PHPStan, php-cs-fixer, Foundry…) | ✅ | kernel boot OK |
 | 4 | Entités + enums + migration | ✅ | `schema:validate` en sync |
 | 5 | Chiffrement AES-256-GCM des champs 🔒 | ✅ | 7 tests unitaires |
-| 7 | Voters par domaine + scope X-Family-Id | 🟡 | RBAC unit-testé ; test fonctionnel HTTP du resolver à faire (besoin auth) |
+| 7 | Voters par domaine + scope X-Family-Id | 🟡 | RBAC unit-testé ; test fonctionnel HTTP du resolver à faire (besoin d'un endpoint scopé) |
 | 3 | Infra docker-compose dev (full : +Redis, worker, scheduler, app) | ⬜ | compose Symfony de base présent (db/mercure/mailpit) |
-| 6 | Auth complète (register/login/refresh/reset/verify/logout) | ⬜ | |
-| 8 | i18n fr-FR ICU + Mailer localisé + Messenger async | ⬜ | |
+| 6 | Auth HTTP (register/login/refresh/reset/verify/logout) | 🟡 | **7 endpoints faits & testés (API Platform + OpenAPI), 4 tests fonctionnels verts** ; reste : `/api/me`, `/api/families` (US-ONB-1), `/api/invitations/accept` |
+| 8 | i18n fr-FR ICU + Mailer localisé + Messenger async | 🟡 | **catalogue ICU, 3 e-mails Twig localisés, envoi async Messenger : faits** (câblés par l'auth) |
 | 9 | Mercure + /api/realtime/token (claims vides) | ⬜ | |
-| 10 | Squelette RGPD + registre-donnees + test cohérence CI | 🟡 | **registre + test cohérence faits & verts** ; reste : namespace RgpdManager + endpoints 501 (avec API/auth) |
+| 10 | Squelette RGPD + registre-donnees + test cohérence CI | 🟡 | registre + test cohérence verts ; reste : namespace RgpdManager + endpoints 501 |
 | 11 | Front web : shell + design system + écrans auth | ⬜ | maquettes dans `specs/design/` |
 | 12 | App mobile Flutter : squelette + client généré + auth | ⬜ | |
-| 13 | Harnais tests + CI + INSTALL.md | 🟡 | **PHPUnit unit (15 tests), PHPStan niv.8, php-cs-fixer : verts** ; reste : fonctionnel/API, Playwright, flutter test, couverture, CI, INSTALL |
+| 13 | Harnais tests + CI + INSTALL.md | 🟡 | **PHPUnit unit+RGPD+fonctionnel (19 tests), PHPStan niv.8, php-cs-fixer, base de test+DAMA : verts** ; reste : Playwright, flutter test, couverture, CI, INSTALL |
 
-**Portes qualité actuellement vertes** : `php bin/phpunit tests/Unit tests/Rgpd` (15 tests), `vendor/bin/phpstan` (niveau 8, 0 erreur), `php-cs-fixer --dry-run` (0), `doctrine:schema:validate`, `lint:container`.
+**Portes qualité actuellement vertes** : `symfony php bin/phpunit` (19 tests, 52 assertions), `vendor/bin/phpstan` (niveau 8, 0 erreur), `php-cs-fixer --dry-run` (0), `doctrine:schema:validate`, `lint:container`. OpenAPI exporté dans `contracts/openapi.json` (7 endpoints auth).
 
 Légende : ⬜ à faire · 🟡 en cours · ✅ fait
 
@@ -95,10 +95,17 @@ Config clé : `config/packages/doctrine.yaml` (types citext/encrypted_string), `
 `.env` (APP_ENCRYPTION_KEY dev, TTL tokens, MAILER→Mailpit).
 
 **Points d'attention / dette connue :**
-- Le resolver `FamilyContext` lève des `HttpException` standard ; le **formatage RFC 7807 exact**
-  (champ `type` de §6.5, messages localisés) reste à câbler via un exception subscriber (avec Tâche 8).
 - `Invitation.invitedBy` pointe vers `User` (au lieu de Membership) — à reconsidérer au Lot 1.
 - Couche offline mobile, PWA, RGPD complet = lots ultérieurs (8) — hors Lot 0.
+
+**Audit sécurité du module auth (2026-06-24)** — risque résiduel faible après corrections :
+- ✅ Corrigés : `trusted_proxies` (IP fiable pour le rate-limit), atomicité `ResetPasswordProcessor`
+  (transaction), **jeton OTT chiffré en transit** dans Messenger, validation `locale`, forgot limité
+  aux comptes actifs, flag cookie `Secure` forçable (`COOKIE_SECURE`).
+- ⏸️ Conservés (décisions assumées) : login `403` si e-mail non vérifié = **imposé par D1/§3.2**
+  (UX > anti-énumération stricte) ; secrets dans `.env` = **valeurs dev-only** (prod via vault, cdc §4.8) ;
+  `lock_factory: null` des rate-limiters = OK mono-instance, **à passer en Redis pour la prod multi-instance**
+  (à documenter dans INSTALL.md) ; rate-limit sur verify-email/reset non ajouté (jetons 256 bits non brute-forçables).
 
 ---
 
@@ -121,8 +128,11 @@ symfony console <commande>            # ex: doctrine:migrations:migrate -n
 symfony console doctrine:schema:validate
 
 # Tests
-php bin/phpunit                       # tout
-php bin/phpunit tests/Unit            # unitaires (sans DB)
+symfony php bin/phpunit                # TOUT (passe par l'env Docker → bon port DB). 19 tests verts.
+php bin/phpunit tests/Unit             # unitaires/RGPD seuls (sans DB)
+# Base de test (une fois) :
+symfony console --env=test doctrine:database:create --if-not-exists
+symfony console --env=test doctrine:migrations:migrate -n
 
 # Clés JWT (déjà générées dans config/jwt/, non committées)
 php bin/console lexik:jwt:generate-keypair --overwrite -n
@@ -137,6 +147,25 @@ php bin/console lint:container
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-06-24 — Authentification HTTP
+- **7 endpoints auth** (register, login, refresh, verify-email, password/forgot, password/reset,
+  logout) via **API Platform DTO + State Processors** (`src/Dto/Auth`, `src/State/Auth`) → présents
+  dans l'OpenAPI exporté (`contracts/openapi.json`).
+- **Sécurité** : Argon2id (sodium) ; JWT court (lexik, extracteurs header **et** cookie) ;
+  **refresh rotatif + détection de réutilisation** (famille de tokens, `RefreshTokenManager`) ;
+  jetons usage-unique hachés (`OneTimeTokenManager`) ; **anti-énumération** (register/login/forgot) ;
+  vérification en **temps quasi-constant** (hash factice) ; **rate-limit + lockout** (login/register/forgot) ;
+  refus login si e-mail non vérifié (D1) ; reset ⇒ révocation de tous les refresh ; `AuditLog` partout.
+- **Cookies HttpOnly/SameSite=Lax** (web, `AuthCookieSubscriber`) + Bearer (mobile).
+- **RFC 7807** localisé (`ProblemExceptionSubscriber`) ; **e-mails async** localisés (Messenger + Twig).
+- **Tests** : base `app_test` + isolation **DAMA** + transport Messenger in-memory en test ;
+  `AuthFlowTest` (parcours complet + anti-énum + 401 + 422) → 4 verts. Suite : **19 tests, 52 assertions**.
+- Config : `security.yaml` (firewall API stateless JWT), `lexik`, `rate_limiter.yaml`, `api_platform.yaml`
+  (formats json+jsonld), `cache.yaml` (array en test), bundles DAMA/Fixtures/Foundry enregistrés.
+- ✅ Revue de sécurité adversariale (agent security-auditor) : 0 P0, 2 P1, 3 P2, 4 P3. Corrigés
+  (trusted_proxies, atomicité reset, jeton OTT chiffré en transit, locale, forgot/actifs, cookie Secure) ;
+  items conservés documentés en §4 (login 403 = D1, secrets dev, lock prod). Suite reste verte (19 tests).
 
 ### 2026-06-23 (suite)
 - **Registre RGPD** : attribut `#[PersonalData]` + scanner `PersonalDataRegistry` (réflexion) +

@@ -1,39 +1,47 @@
 security:
-    # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
+    # Hachage Argon2id (sodium) — invariant sécurité (cdc §3.1, §7).
     password_hashers:
-        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+            algorithm: sodium
 
-    # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
+    # Provider basé sur l'entité User (identifiant = e-mail, citext).
     providers:
-        users_in_memory: { memory: null }
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: email
 
     firewalls:
         dev:
-            # Ensure dev tools and static assets are always allowed
-            pattern: ^/(_profiler|_wdt|assets|build)/
+            pattern: ^/(_(profiler|wdt)|css|images|js|assets|build)/
             security: false
+
+        # API REST (mobile + web) : sans état, JWT (header Bearer OU cookie HttpOnly — décision D2).
+        api:
+            pattern: ^/api
+            stateless: true
+            provider: app_user_provider
+            jwt: ~
+
+        # Front web server-rendered (écrans/coquille) — étoffé au Lot 11. JWT en cookie également.
         main:
             lazy: true
-            provider: users_in_memory
+            provider: app_user_provider
+            jwt:
+                authenticator: lexik_jwt_authentication.security.jwt_authenticator
 
-            # Activate different ways to authenticate:
-            # https://symfony.com/doc/current/security.html#the-firewall
-
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
-
-    # Note: Only the *first* matching rule is applied
+    # Seule la *première* règle correspondante s'applique.
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        # Endpoints publics : auth, acceptation d'invitation (token), documentation OpenAPI.
+        - { path: '^/api/(auth|invitations/accept|docs)', roles: PUBLIC_ACCESS }
+        # Tout le reste de l'API exige une authentification.
+        - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:
         password_hashers:
-            # Password hashers are resource-intensive by design to ensure security.
-            # In tests, it's safe to reduce their cost to improve performance.
             Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
                 algorithm: auto
-                cost: 4 # Lowest possible value for bcrypt
-                time_cost: 3 # Lowest possible value for argon
-                memory_cost: 10 # Lowest possible value for argon
+                cost: 4 # bcrypt minimal
+                time_cost: 3 # argon minimal
+                memory_cost: 10 # argon minimal

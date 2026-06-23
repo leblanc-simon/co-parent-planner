@@ -1,0 +1,53 @@
+# Catalogue fr-FR (format ICU). Ajouter une langue = nouveau fichier, sans changement de code.
+
+email:
+    verification:
+        subject: 'Vérifiez votre adresse e-mail — CoParentPlanner'
+        title: 'Bienvenue sur CoParentPlanner'
+        intro: 'Pour activer votre compte, confirmez votre adresse e-mail en cliquant sur le bouton ci-dessous.'
+        cta: 'Vérifier mon e-mail'
+        ignore: "Si vous n'êtes pas à l'origine de cette inscription, ignorez cet e-mail."
+    reset:
+        subject: 'Réinitialisation de votre mot de passe — CoParentPlanner'
+        title: 'Réinitialisation du mot de passe'
+        intro: 'Vous avez demandé à réinitialiser votre mot de passe. Cliquez sur le bouton ci-dessous pour en choisir un nouveau.'
+        cta: 'Choisir un nouveau mot de passe'
+        ignore: "Si vous n'êtes pas à l'origine de cette demande, ignorez cet e-mail : votre mot de passe reste inchangé."
+    password_changed:
+        subject: 'Votre mot de passe a été modifié — CoParentPlanner'
+        title: 'Mot de passe modifié'
+        body: 'Votre mot de passe vient d''être modifié. Toutes vos sessions ont été déconnectées.'
+        warning: "Si vous n'êtes pas à l'origine de ce changement, contactez-nous immédiatement."
+
+auth:
+    error:
+        invalid_credentials: 'Identifiants invalides.'
+        email_not_verified: 'Veuillez vérifier votre adresse e-mail avant de vous connecter.'
+        invalid_refresh_token: 'Session expirée, veuillez vous reconnecter.'
+        refresh_reuse: 'Session invalidée pour raison de sécurité, veuillez vous reconnecter.'
+        invalid_token: 'Lien invalide ou expiré.'
+        too_many_attempts: 'Trop de tentatives. Veuillez réessayer plus tard.'
+    registered: 'Si cette adresse est disponible, un e-mail de vérification vient de vous être envoyé.'
+    forgot_sent: "Si un compte existe pour cette adresse, un e-mail de réinitialisation vient d'être envoyé."
+    password_reset_done: 'Votre mot de passe a été réinitialisé. Vous pouvez vous connecter.'
+    email_verified: 'Votre adresse e-mail est vérifiée. Vous pouvez vous connecter.'
+    logged_out: 'Vous êtes déconnecté.'
+
+problem:
+    title:
+        bad_request: 'Requête invalide'
+        unauthorized: 'Authentification requise'
+        forbidden: 'Action non autorisée'
+        too_many_requests: 'Trop de requêtes'
+        validation: 'Données invalides'
+
+invitation:
+    error:
+        invalid: 'Invitation invalide ou expirée.'
+        email_mismatch: "Cette invitation est destinée à une autre adresse e-mail."
+    accepted: 'Invitation acceptée.'
+
+family:
+    error:
+        scope_required: 'Le header X-Family-Id est requis pour cette ressource.'
+        forbidden: 'Famille non autorisée.'

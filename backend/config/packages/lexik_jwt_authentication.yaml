@@ -2,3 +2,15 @@ lexik_jwt_authentication:
     secret_key: '%env(resolve:JWT_SECRET_KEY)%'
     public_key: '%env(resolve:JWT_PUBLIC_KEY)%'
     pass_phrase: '%env(JWT_PASSPHRASE)%'
+    # JWT d'accès court (décision : ~15 min). L'autorisation métier est revérifiée en base
+    # à chaque requête (§4.11) ; le JWT ne porte que l'identité.
+    token_ttl: '%env(int:ACCESS_TOKEN_TTL)%'
+    # Le JWT est lu depuis l'en-tête Authorization (mobile) OU un cookie HttpOnly (web — décision D2).
+    token_extractors:
+        authorization_header:
+            enabled: true
+            prefix: Bearer
+            name: Authorization
+        cookie:
+            enabled: true
+            name: access_token

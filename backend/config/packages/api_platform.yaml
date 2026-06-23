@@ -1,6 +1,11 @@
 api_platform:
-    title: Hello API Platform
+    title: CoParentPlanner API
     version: 1.0.0
+    description: 'API REST de CoParentPlanner (source de vérité du client mobile généré).'
+    # Formats exposés : JSON (mobile + Stimulus) et JSON-LD (Hydra).
+    formats:
+        json: ['application/json']
+        jsonld: ['application/ld+json']
     defaults:
         stateless: true
         cache_headers:

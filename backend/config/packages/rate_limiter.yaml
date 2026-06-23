@@ -1,0 +1,23 @@
+framework:
+    rate_limiter:
+        # Connexion : par (IP, e-mail). Verrouillage temporel (§3.2 sc.4).
+        login:
+            policy: sliding_window
+            limit: 5
+            interval: '15 minutes'
+            cache_pool: cache.app
+            lock_factory: null
+        # Inscription : par IP (anti-abus, §3.1).
+        register:
+            policy: sliding_window
+            limit: 10
+            interval: '1 hour'
+            cache_pool: cache.app
+            lock_factory: null
+        # Mot de passe oublié : par (IP, e-mail) (§3.4, anti-abus).
+        forgot:
+            policy: sliding_window
+            limit: 5
+            interval: '1 hour'
+            cache_pool: cache.app
+            lock_factory: null

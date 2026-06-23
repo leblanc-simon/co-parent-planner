@@ -1,0 +1,1309 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "CoParentPlanner API",
+        "description": "API REST de CoParentPlanner (source de v\u00e9rit\u00e9 du client mobile g\u00e9n\u00e9r\u00e9).",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "/",
+            "description": ""
+        }
+    ],
+    "paths": {
+        "/api/auth/password/forgot": {
+            "post": {
+                "operationId": "api_authpasswordforgot_post",
+                "tags": [
+                    "ForgotPasswordRequest"
+                ],
+                "responses": {
+                    "202": {
+                        "description": "ForgotPasswordRequest resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ForgotPasswordRequest.MessageResponse"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ForgotPasswordRequest.MessageResponse.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a ForgotPasswordRequest resource.",
+                "description": "Creates a ForgotPasswordRequest resource.",
+                "parameters": [],
+                "requestBody": {
+                    "description": "The new ForgotPasswordRequest resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ForgotPasswordRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ForgotPasswordRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/auth/login": {
+            "post": {
+                "operationId": "api_authlogin_post",
+                "tags": [
+                    "LoginRequest"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "LoginRequest resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LoginRequest.TokenResponse"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LoginRequest.TokenResponse.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a LoginRequest resource.",
+                "description": "Creates a LoginRequest resource.",
+                "parameters": [],
+                "requestBody": {
+                    "description": "The new LoginRequest resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/auth/logout": {
+            "post": {
+                "operationId": "api_authlogout_post",
+                "tags": [
+                    "LogoutRequest"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "LogoutRequest resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LogoutRequest.MessageResponse"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LogoutRequest.MessageResponse.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a LogoutRequest resource.",
+                "description": "Creates a LogoutRequest resource.",
+                "parameters": [],
+                "requestBody": {
+                    "description": "The new LogoutRequest resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LogoutRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LogoutRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/auth/refresh": {
+            "post": {
+                "operationId": "api_authrefresh_post",
+                "tags": [
+                    "RefreshRequest"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "RefreshRequest resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RefreshRequest.TokenResponse"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RefreshRequest.TokenResponse.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a RefreshRequest resource.",
+                "description": "Creates a RefreshRequest resource.",
+                "parameters": [],
+                "requestBody": {
+                    "description": "The new RefreshRequest resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RefreshRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RefreshRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/auth/register": {
+            "post": {
+                "operationId": "api_authregister_post",
+                "tags": [
+                    "RegisterRequest"
+                ],
+                "responses": {
+                    "202": {
+                        "description": "RegisterRequest resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RegisterRequest.MessageResponse"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RegisterRequest.MessageResponse.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a RegisterRequest resource.",
+                "description": "Creates a RegisterRequest resource.",
+                "parameters": [],
+                "requestBody": {
+                    "description": "The new RegisterRequest resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/auth/password/reset": {
+            "post": {
+                "operationId": "api_authpasswordreset_post",
+                "tags": [
+                    "ResetPasswordRequest"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ResetPasswordRequest resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResetPasswordRequest.MessageResponse"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ResetPasswordRequest.MessageResponse.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a ResetPasswordRequest resource.",
+                "description": "Creates a ResetPasswordRequest resource.",
+                "parameters": [],
+                "requestBody": {
+                    "description": "The new ResetPasswordRequest resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResetPasswordRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ResetPasswordRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/auth/verify-email": {
+            "post": {
+                "operationId": "api_authverify-email_post",
+                "tags": [
+                    "VerifyEmailRequest"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "VerifyEmailRequest resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VerifyEmailRequest.MessageResponse"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VerifyEmailRequest.MessageResponse.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a VerifyEmailRequest resource.",
+                "description": "Creates a VerifyEmailRequest resource.",
+                "parameters": [],
+                "requestBody": {
+                    "description": "The new VerifyEmailRequest resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VerifyEmailRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VerifyEmailRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "ConstraintViolation": {
+                "type": "object",
+                "description": "Unprocessable entity",
+                "properties": {
+                    "status": {
+                        "default": 422,
+                        "type": "integer"
+                    },
+                    "violations": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "propertyPath": {
+                                    "type": "string",
+                                    "description": "The property path of the violation"
+                                },
+                                "message": {
+                                    "type": "string",
+                                    "description": "The message associated with the violation"
+                                },
+                                "code": {
+                                    "type": "string",
+                                    "description": "The code of the violation"
+                                },
+                                "hint": {
+                                    "type": "string",
+                                    "description": "An extra hint to understand the violation"
+                                },
+                                "payload": {
+                                    "type": "object",
+                                    "additionalProperties": true,
+                                    "description": "The serialized payload of the violation"
+                                }
+                            },
+                            "required": [
+                                "propertyPath",
+                                "message"
+                            ]
+                        }
+                    },
+                    "detail": {
+                        "readOnly": true,
+                        "type": "string"
+                    },
+                    "type": {
+                        "readOnly": true,
+                        "type": "string"
+                    },
+                    "title": {
+                        "readOnly": true,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "instance": {
+                        "readOnly": true,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "ConstraintViolation.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "status": {
+                                "default": 422,
+                                "type": "integer"
+                            },
+                            "violations": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "propertyPath": {
+                                            "type": "string",
+                                            "description": "The property path of the violation"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "description": "The message associated with the violation"
+                                        },
+                                        "code": {
+                                            "type": "string",
+                                            "description": "The code of the violation"
+                                        },
+                                        "hint": {
+                                            "type": "string",
+                                            "description": "An extra hint to understand the violation"
+                                        },
+                                        "payload": {
+                                            "type": "object",
+                                            "additionalProperties": true,
+                                            "description": "The serialized payload of the violation"
+                                        }
+                                    },
+                                    "required": [
+                                        "propertyPath",
+                                        "message"
+                                    ]
+                                }
+                            },
+                            "detail": {
+                                "readOnly": true,
+                                "type": "string"
+                            },
+                            "description": {
+                                "readOnly": true,
+                                "type": "string"
+                            },
+                            "type": {
+                                "readOnly": true,
+                                "type": "string"
+                            },
+                            "title": {
+                                "readOnly": true,
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "instance": {
+                                "readOnly": true,
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "description": "Unprocessable entity"
+            },
+            "Error": {
+                "type": "object",
+                "description": "A representation of common errors.",
+                "properties": {
+                    "title": {
+                        "readOnly": true,
+                        "description": "A short, human-readable summary of the problem.",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "detail": {
+                        "readOnly": true,
+                        "description": "A human-readable explanation specific to this occurrence of the problem.",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "status": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "examples": [
+                            404
+                        ],
+                        "default": 400
+                    },
+                    "instance": {
+                        "readOnly": true,
+                        "description": "A URI reference that identifies the specific occurrence of the problem. It may or may not yield further information if dereferenced.",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "type": {
+                        "readOnly": true,
+                        "description": "A URI reference that identifies the problem type",
+                        "type": "string"
+                    }
+                }
+            },
+            "Error.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "title": {
+                                "readOnly": true,
+                                "description": "A short, human-readable summary of the problem.",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "detail": {
+                                "readOnly": true,
+                                "description": "A human-readable explanation specific to this occurrence of the problem.",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "status": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "examples": [
+                                    404
+                                ],
+                                "default": 400
+                            },
+                            "instance": {
+                                "readOnly": true,
+                                "description": "A URI reference that identifies the specific occurrence of the problem. It may or may not yield further information if dereferenced.",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "type": {
+                                "readOnly": true,
+                                "description": "A URI reference that identifies the problem type",
+                                "type": "string"
+                            },
+                            "description": {
+                                "readOnly": true,
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "description": "A representation of common errors."
+            },
+            "ForgotPasswordRequest": {
+                "type": "object",
+                "description": "US-AUTH-2 sc.8 \u2014 demande de reset (r\u00e9ponse toujours g\u00e9n\u00e9rique, anti-\u00e9num\u00e9ration, rate-limit\u00e9).",
+                "required": [
+                    "email"
+                ],
+                "properties": {
+                    "email": {
+                        "format": "email",
+                        "maxLength": 255,
+                        "externalDocs": {
+                            "url": "https://schema.org/email"
+                        },
+                        "default": "",
+                        "type": "string"
+                    }
+                }
+            },
+            "ForgotPasswordRequest.MessageResponse": {
+                "type": "object",
+                "description": "US-AUTH-2 sc.8 \u2014 demande de reset (r\u00e9ponse toujours g\u00e9n\u00e9rique, anti-\u00e9num\u00e9ration, rate-limit\u00e9).",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    }
+                }
+            },
+            "ForgotPasswordRequest.MessageResponse.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "description": "US-AUTH-2 sc.8 \u2014 demande de reset (r\u00e9ponse toujours g\u00e9n\u00e9rique, anti-\u00e9num\u00e9ration, rate-limit\u00e9)."
+            },
+            "HydraItemBaseSchema": {
+                "type": "object",
+                "properties": {
+                    "@context": {
+                        "oneOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "@vocab": {
+                                        "type": "string"
+                                    },
+                                    "hydra": {
+                                        "type": "string",
+                                        "enum": [
+                                            "http://www.w3.org/ns/hydra/core#"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "@vocab",
+                                    "hydra"
+                                ],
+                                "additionalProperties": true
+                            }
+                        ]
+                    },
+                    "@id": {
+                        "type": "string"
+                    },
+                    "@type": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "@id",
+                    "@type"
+                ]
+            },
+            "LoginRequest": {
+                "type": "object",
+                "description": "US-AUTH-2 sc.1 \u2014 connexion : JWT + refresh rotatif (rate-limit + lockout, anti-\u00e9num\u00e9ration).",
+                "required": [
+                    "email",
+                    "password"
+                ],
+                "properties": {
+                    "email": {
+                        "maxLength": 255,
+                        "default": "",
+                        "type": "string"
+                    },
+                    "password": {
+                        "maxLength": 128,
+                        "default": "",
+                        "type": "string"
+                    }
+                }
+            },
+            "LoginRequest.TokenResponse": {
+                "type": "object",
+                "description": "US-AUTH-2 sc.1 \u2014 connexion : JWT + refresh rotatif (rate-limit + lockout, anti-\u00e9num\u00e9ration).",
+                "properties": {
+                    "accessToken": {
+                        "type": "string"
+                    },
+                    "refreshToken": {
+                        "type": "string"
+                    },
+                    "expiresIn": {
+                        "type": "integer"
+                    },
+                    "tokenType": {
+                        "type": "string"
+                    }
+                }
+            },
+            "LoginRequest.TokenResponse.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "accessToken": {
+                                "type": "string"
+                            },
+                            "refreshToken": {
+                                "type": "string"
+                            },
+                            "expiresIn": {
+                                "type": "integer"
+                            },
+                            "tokenType": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "description": "US-AUTH-2 sc.1 \u2014 connexion : JWT + refresh rotatif (rate-limit + lockout, anti-\u00e9num\u00e9ration)."
+            },
+            "LogoutRequest": {
+                "type": "object",
+                "description": "US-AUTH-2 sc.7 \u2014 d\u00e9connexion : r\u00e9voque le refresh courant (corps/cookie) et efface les cookies.",
+                "properties": {
+                    "refreshToken": {
+                        "maxLength": 512,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "LogoutRequest.MessageResponse": {
+                "type": "object",
+                "description": "US-AUTH-2 sc.7 \u2014 d\u00e9connexion : r\u00e9voque le refresh courant (corps/cookie) et efface les cookies.",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    }
+                }
+            },
+            "LogoutRequest.MessageResponse.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "description": "US-AUTH-2 sc.7 \u2014 d\u00e9connexion : r\u00e9voque le refresh courant (corps/cookie) et efface les cookies."
+            },
+            "RefreshRequest": {
+                "type": "object",
+                "description": "US-AUTH-2 sc.5/6 \u2014 rafra\u00eechissement rotatif (token depuis le corps OU le cookie HttpOnly).",
+                "properties": {
+                    "refreshToken": {
+                        "maxLength": 512,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "RefreshRequest.TokenResponse": {
+                "type": "object",
+                "description": "US-AUTH-2 sc.5/6 \u2014 rafra\u00eechissement rotatif (token depuis le corps OU le cookie HttpOnly).",
+                "properties": {
+                    "accessToken": {
+                        "type": "string"
+                    },
+                    "refreshToken": {
+                        "type": "string"
+                    },
+                    "expiresIn": {
+                        "type": "integer"
+                    },
+                    "tokenType": {
+                        "type": "string"
+                    }
+                }
+            },
+            "RefreshRequest.TokenResponse.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "accessToken": {
+                                "type": "string"
+                            },
+                            "refreshToken": {
+                                "type": "string"
+                            },
+                            "expiresIn": {
+                                "type": "integer"
+                            },
+                            "tokenType": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "description": "US-AUTH-2 sc.5/6 \u2014 rafra\u00eechissement rotatif (token depuis le corps OU le cookie HttpOnly)."
+            },
+            "RegisterRequest": {
+                "type": "object",
+                "description": "US-AUTH-1 \u2014 inscription (anti-\u00e9num\u00e9ration, e-mail de v\u00e9rification async, aucun token).",
+                "required": [
+                    "email",
+                    "password"
+                ],
+                "properties": {
+                    "email": {
+                        "format": "email",
+                        "maxLength": 255,
+                        "externalDocs": {
+                            "url": "https://schema.org/email"
+                        },
+                        "default": "",
+                        "type": "string"
+                    },
+                    "password": {
+                        "minLength": 12,
+                        "maxLength": 128,
+                        "default": "",
+                        "type": "string"
+                    },
+                    "fullName": {
+                        "maxLength": 200,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "phone": {
+                        "maxLength": 40,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "locale": {
+                        "maxLength": 16,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "RegisterRequest.MessageResponse": {
+                "type": "object",
+                "description": "US-AUTH-1 \u2014 inscription (anti-\u00e9num\u00e9ration, e-mail de v\u00e9rification async, aucun token).",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    }
+                }
+            },
+            "RegisterRequest.MessageResponse.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "description": "US-AUTH-1 \u2014 inscription (anti-\u00e9num\u00e9ration, e-mail de v\u00e9rification async, aucun token)."
+            },
+            "ResetPasswordRequest": {
+                "type": "object",
+                "description": "US-AUTH-2 sc.9 \u2014 r\u00e9initialisation effective (token usage unique ; r\u00e9voque tous les refresh).",
+                "required": [
+                    "token",
+                    "password"
+                ],
+                "properties": {
+                    "token": {
+                        "maxLength": 512,
+                        "default": "",
+                        "type": "string"
+                    },
+                    "password": {
+                        "minLength": 12,
+                        "maxLength": 128,
+                        "default": "",
+                        "type": "string"
+                    }
+                }
+            },
+            "ResetPasswordRequest.MessageResponse": {
+                "type": "object",
+                "description": "US-AUTH-2 sc.9 \u2014 r\u00e9initialisation effective (token usage unique ; r\u00e9voque tous les refresh).",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    }
+                }
+            },
+            "ResetPasswordRequest.MessageResponse.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "description": "US-AUTH-2 sc.9 \u2014 r\u00e9initialisation effective (token usage unique ; r\u00e9voque tous les refresh)."
+            },
+            "VerifyEmailRequest": {
+                "type": "object",
+                "description": "US-AUTH-1 sc.5 \u2014 v\u00e9rification d'e-mail. Endpoint API unique (d\u00e9cision D5) appel\u00e9 par la page\nweb GET /verify-email et par le deep link mobile.",
+                "required": [
+                    "token"
+                ],
+                "properties": {
+                    "token": {
+                        "maxLength": 512,
+                        "default": "",
+                        "type": "string"
+                    }
+                }
+            },
+            "VerifyEmailRequest.MessageResponse": {
+                "type": "object",
+                "description": "US-AUTH-1 sc.5 \u2014 v\u00e9rification d'e-mail. Endpoint API unique (d\u00e9cision D5) appel\u00e9 par la page\nweb GET /verify-email et par le deep link mobile.",
+                "properties": {
+                    "message": {
+                        "type": "string"
+                    }
+                }
+            },
+            "VerifyEmailRequest.MessageResponse.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "message": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "description": "US-AUTH-1 sc.5 \u2014 v\u00e9rification d'e-mail. Endpoint API unique (d\u00e9cision D5) appel\u00e9 par la page\nweb GET /verify-email et par le deep link mobile."
+            }
+        },
+        "responses": {},
+        "parameters": {},
+        "examples": {},
+        "requestBodies": {},
+        "headers": {},
+        "securitySchemes": {}
+    },
+    "security": [],
+    "tags": [
+        {
+            "name": "ForgotPasswordRequest",
+            "description": "US-AUTH-2 sc.8 \u2014 demande de reset (r\u00e9ponse toujours g\u00e9n\u00e9rique, anti-\u00e9num\u00e9ration, rate-limit\u00e9)."
+        },
+        {
+            "name": "LoginRequest",
+            "description": "US-AUTH-2 sc.1 \u2014 connexion : JWT + refresh rotatif (rate-limit + lockout, anti-\u00e9num\u00e9ration)."
+        },
+        {
+            "name": "LogoutRequest",
+            "description": "US-AUTH-2 sc.7 \u2014 d\u00e9connexion : r\u00e9voque le refresh courant (corps/cookie) et efface les cookies."
+        },
+        {
+            "name": "RefreshRequest",
+            "description": "US-AUTH-2 sc.5/6 \u2014 rafra\u00eechissement rotatif (token depuis le corps OU le cookie HttpOnly)."
+        },
+        {
+            "name": "RegisterRequest",
+            "description": "US-AUTH-1 \u2014 inscription (anti-\u00e9num\u00e9ration, e-mail de v\u00e9rification async, aucun token)."
+        },
+        {
+            "name": "ResetPasswordRequest",
+            "description": "US-AUTH-2 sc.9 \u2014 r\u00e9initialisation effective (token usage unique ; r\u00e9voque tous les refresh)."
+        },
+        {
+            "name": "VerifyEmailRequest",
+            "description": "US-AUTH-1 sc.5 \u2014 v\u00e9rification d'e-mail. Endpoint API unique (d\u00e9cision D5) appel\u00e9 par la page\nweb GET /verify-email et par le deep link mobile."
+        }
+    ],
+    "webhooks": {}
+}

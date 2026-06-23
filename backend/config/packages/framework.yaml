@@ -2,6 +2,12 @@
 framework:
     secret: '%env(APP_SECRET)%'
 
+    # Proxies de confiance (cdc §4.8 : reverse-proxy/LB en prod). Sans valeur → aucun proxy de
+    # confiance → getClientIp() = REMOTE_ADDR (X-Forwarded-* ignoré, donc non usurpable). En prod
+    # derrière un proxy, définir TRUSTED_PROXIES (CIDR) pour fiabiliser le rate-limit (sécurité).
+    trusted_proxies: '%env(default::TRUSTED_PROXIES)%'
+    trusted_headers: ['x-forwarded-for', 'x-forwarded-proto', 'x-forwarded-host', 'x-forwarded-port']
+
     # i18n (cdc §4.6) : seule fr-FR est livrée ; ajouter une langue = ajouter un catalogue (config, pas de code).
     default_locale: fr
     enabled_locales: ['fr']

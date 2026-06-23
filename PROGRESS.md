@@ -55,11 +55,11 @@ Extensions PHP présentes : pdo_pgsql, pgsql, sodium, openssl, intl, redis, apcu
 | 2 | Backend Symfony 8.1 + bundles (API Platform, JWT, Mercure, rate-limiter, PHPStan, php-cs-fixer, Foundry…) | ✅ | kernel boot OK |
 | 4 | Entités + enums + migration | ✅ | `schema:validate` en sync |
 | 5 | Chiffrement AES-256-GCM des champs 🔒 | ✅ | 7 tests unitaires |
-| 7 | Voters par domaine + scope X-Family-Id | 🟡 | RBAC unit-testé ; test fonctionnel HTTP du resolver à faire (besoin d'un endpoint scopé) |
+| 7 | Voters par domaine + scope X-Family-Id | ✅ | 6 Voters + `FamilyContextResolver` ; RBAC + resolver unit-testés (header requis / UUID / membre / anti-énum) |
+| 9 | Mercure + /api/realtime/token (claims vides) | ✅ | JWT Mercure scopé famille, `subscribe` vide au Lot 0, recalcul à la bascule ; 3 tests fonctionnels |
 | 3 | Infra docker-compose dev (full : +Redis, worker, scheduler, app) | ⬜ | compose Symfony de base présent (db/mercure/mailpit) |
 | 6 | Auth HTTP + compte + onboarding | ✅ | 7 endpoints auth + `/api/me` + `/api/families` + `/api/invitations/accept` + endpoints 501 RGPD ; audit sécu passé |
 | 8 | i18n fr-FR ICU + Mailer localisé + Messenger async | ✅ | catalogue ICU, 3 e-mails Twig localisés, envoi async (cœur Lot 0 ; prefs notif détaillées = Lot 7) |
-| 9 | Mercure + /api/realtime/token (claims vides) | ⬜ | |
 | 10 | Squelette RGPD + registre-donnees + test cohérence CI | ✅ | registre + test cohérence + attribut PersonalData + endpoints 501 (D7) ; RGPD Manager complet = Lot 8 |
 | 11 | Front web : shell + design system + écrans auth | ⬜ | maquettes dans `specs/design/` |
 | 12 | App mobile Flutter : squelette + client généré + auth | ⬜ | |
@@ -149,6 +149,16 @@ php bin/console lint:container
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-06-24 — Mercure /api/realtime/token + clôture du scope (Tâches 9 & 7)
+- **`GET /api/realtime/token`** : émet un JWT Mercure (via la fabrique du hub) scopé par famille
+  active (X-Family-Id optionnel) ; claims `subscribe`/`publish` **vides au Lot 0** (aucun topic
+  métier) ; recalcul à la bascule ; serveur seule autorité. `RealtimeTokenTest` (3 tests : émission,
+  subscribe vide, scopé famille, 401).
+- **Scope X-Family-Id (Tâche 7) clos** : `FamilyContextResolverTest` (unit, stubs) couvre header
+  requis / UUID invalide / non-membre (403 anti-énum) / membre actif → contexte résolu.
+- **Surface API backend du Lot 0 complète.** Suite : **36 tests / 161 assertions**, PHPStan niv.8,
+  cs-fixer verts. OpenAPI à jour (`/api/realtime/token`).
 
 ### 2026-06-24 — Acceptation d'invitation + endpoints 501 RGPD
 - **`POST /api/invitations/accept`** (US-ONB-1 sc.3-5) : auth requise, e-mail du compte = invité

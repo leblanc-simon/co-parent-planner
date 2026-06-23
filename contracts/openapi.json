@@ -823,6 +823,55 @@
                 }
             }
         },
+        "/api/realtime/token": {
+            "get": {
+                "operationId": "api_realtimetoken_get",
+                "tags": [
+                    "RealtimeToken"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "RealtimeToken resource",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RealtimeToken"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RealtimeToken.jsonld"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Retrieves a RealtimeToken resource.",
+                "description": "Retrieves a RealtimeToken resource.",
+                "parameters": []
+            }
+        },
         "/api/auth/refresh": {
             "post": {
                 "operationId": "api_authrefresh_post",
@@ -2248,6 +2297,37 @@
                 ],
                 "description": "US-SET-1 (sous-ensemble Lot 0) \u2014 profil du compte courant. `/api/me` est implicitement scop\u00e9 \u00e0\nl'utilisateur du token (jamais un autre compte). `full_name`/`phone` \ud83d\udd12 d\u00e9chiffr\u00e9s en lecture.\n\n`avatarUrl`, `email`, `status`, `emailVerified` sont en lecture seule (groupe `me:read` uniquement) :\nun PATCH les ignore (cf. \u00a74.5 pour avatar_url)."
             },
+            "RealtimeToken": {
+                "type": "object",
+                "description": "Jeton Mercure scop\u00e9 par famille active (cdc \u00a74.5, \u00a73.12). Distinct du JWT d'acc\u00e8s API ; \u00e9mis\npar le serveur (seule autorit\u00e9 sur `subscribe`). Au Lot 0, `subscribe` est **vide** (aucun topic\nm\u00e9tier) ; recalcul\u00e9 \u00e0 chaque bascule de famille (nouveau X-Family-Id).",
+                "properties": {
+                    "token": {
+                        "type": "string"
+                    },
+                    "hub": {
+                        "type": "string"
+                    }
+                }
+            },
+            "RealtimeToken.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "token": {
+                                "type": "string"
+                            },
+                            "hub": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "description": "Jeton Mercure scop\u00e9 par famille active (cdc \u00a74.5, \u00a73.12). Distinct du JWT d'acc\u00e8s API ; \u00e9mis\npar le serveur (seule autorit\u00e9 sur `subscribe`). Au Lot 0, `subscribe` est **vide** (aucun topic\nm\u00e9tier) ; recalcul\u00e9 \u00e0 chaque bascule de famille (nouveau X-Family-Id)."
+            },
             "RefreshRequest": {
                 "type": "object",
                 "description": "US-AUTH-2 sc.5/6 \u2014 rafra\u00eechissement rotatif (token depuis le corps OU le cookie HttpOnly).",
@@ -2513,6 +2593,10 @@
         {
             "name": "Me",
             "description": "US-SET-1 (sous-ensemble Lot 0) \u2014 profil du compte courant. `/api/me` est implicitement scop\u00e9 \u00e0\nl'utilisateur du token (jamais un autre compte). `full_name`/`phone` \ud83d\udd12 d\u00e9chiffr\u00e9s en lecture.\n\n`avatarUrl`, `email`, `status`, `emailVerified` sont en lecture seule (groupe `me:read` uniquement) :\nun PATCH les ignore (cf. \u00a74.5 pour avatar_url)."
+        },
+        {
+            "name": "RealtimeToken",
+            "description": "Jeton Mercure scop\u00e9 par famille active (cdc \u00a74.5, \u00a73.12). Distinct du JWT d'acc\u00e8s API ; \u00e9mis\npar le serveur (seule autorit\u00e9 sur `subscribe`). Au Lot 0, `subscribe` est **vide** (aucun topic\nm\u00e9tier) ; recalcul\u00e9 \u00e0 chaque bascule de famille (nouveau X-Family-Id)."
         },
         {
             "name": "RgpdAdmin",

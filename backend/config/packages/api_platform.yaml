@@ -9,6 +9,12 @@ api_platform:
     # PATCH : accepte merge-patch+json (standard) et application/json (commodité client).
     patch_formats:
         json: ['application/merge-patch+json', 'application/json']
+    # Documentation : /api/docs.json (OpenAPI), Swagger UI HTML, variantes JSON-LD/OpenAPI.
+    docs_formats:
+        json: ['application/json']
+        jsonld: ['application/ld+json']
+        jsonopenapi: ['application/vnd.openapi+json']
+        html: ['text/html']
     defaults:
         stateless: true
         cache_headers:

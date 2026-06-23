@@ -52,16 +52,35 @@ Implémentation séquentielle, chaque lot livré en web ET mobile, conditionnant
 
 **DoD générale par lot** : tests unitaires + fonctionnels (API) + E2E web (Playwright) verts (+ tests Flutter si écran mobile), migrations fournies, OpenAPI à jour, i18n câblée, registre données à jour si nouveaux champs personnels, INSTALL.md à jour si dépendance change, analyse statique propre, écrans conformes au design system §8.
 
-## Outillage prévu (à mettre en place au Lot 0 — n'existe pas encore)
+## Outillage (Lot 0 échafaudé — commandes réelles)
 
-Une fois le backend échafaudé, les commandes seront du type :
-- Backend tests : `php bin/phpunit` (unitaire + fonctionnel/API)
-- Analyse statique : PHPStan (niveau élevé), `php-cs-fixer`
-- E2E web : Playwright
-- Mobile : `flutter test`, `dart analyze`, `dart format`
-- Dev : `docker compose up` (PHP-FPM/FrankenPHP, PostgreSQL 16, Redis, Mercure, MailHog, worker Messenger, scheduler)
+> Avancement détaillé et point de reprise : **`PROGRESS.md`** à la racine.
 
-Mettre à jour cette section avec les commandes réelles dès que le Lot 0 est échafaudé.
+Backend Symfony 8.1 dans `/backend`. La base de dev tourne via Docker ; le binaire `symfony`
+injecte l'env (port DB auto). **Le conteneur DB doit tourner pour les tests fonctionnels.**
+
+```bash
+# Base de dev (rapide) :
+cd backend && docker compose up -d database      # PostgreSQL (port hôte auto)
+# Tests (DB requise) — via symfony pour injecter l'env Docker :
+symfony php bin/phpunit                            # unitaire + fonctionnel/API
+php bin/phpunit tests/Unit tests/Rgpd              # sous-ensemble sans DB
+# Analyse statique & style :
+vendor/bin/phpstan analyse --memory-limit=1G       # niveau 8, 0 erreur
+PHP_CS_FIXER_IGNORE_ENV=1 vendor/bin/php-cs-fixer fix --dry-run --diff
+# Contrat OpenAPI (source du client mobile) :
+php bin/console api:openapi:export --output=../contracts/openapi.json
+# Base de test (une fois) :
+symfony console --env=test doctrine:database:create --if-not-exists
+symfony console --env=test doctrine:migrations:migrate -n
+
+# Stack complète (app FrankenPHP + worker + scheduler + PG + Redis + Mercure + Mailpit) :
+cd infra && docker compose up --build              # app: http://localhost:8000
+
+# À venir : E2E web (Playwright), mobile (flutter test, dart analyze/format), CI.
+```
+
+Installation détaillée (Docker **et** bare-metal) : `infra/INSTALL.md`.
 
 ## Design system (cdc §8 — fait foi pour le rendu)
 

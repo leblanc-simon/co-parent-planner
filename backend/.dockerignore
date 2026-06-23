@@ -1,0 +1,12 @@
+# Exclus du contexte de build : régénérés/spécifiques à l'hôte.
+vendor/
+var/
+node_modules/
+.git/
+config/jwt/*.pem
+.env.local
+.env.*.local
+.phpunit.cache/
+.php-cs-fixer.cache
+.phpstan.cache
+tests/.phpunit.result.cache

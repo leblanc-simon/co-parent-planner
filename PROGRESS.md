@@ -57,7 +57,7 @@ Extensions PHP présentes : pdo_pgsql, pgsql, sodium, openssl, intl, redis, apcu
 | 5 | Chiffrement AES-256-GCM des champs 🔒 | ✅ | 7 tests unitaires |
 | 7 | Voters par domaine + scope X-Family-Id | ✅ | 6 Voters + `FamilyContextResolver` ; RBAC + resolver unit-testés (header requis / UUID / membre / anti-énum) |
 | 9 | Mercure + /api/realtime/token (claims vides) | ✅ | JWT Mercure scopé famille, `subscribe` vide au Lot 0, recalcul à la bascule ; 3 tests fonctionnels |
-| 3 | Infra docker-compose dev (full : +Redis, worker, scheduler, app) | ⬜ | compose Symfony de base présent (db/mercure/mailpit) |
+| 3 | Infra docker-compose dev + INSTALL.md | ✅ | stack complète (app FrankenPHP + worker + scheduler + PG + Redis + Mercure + Mailpit) **vérifiée** ; `INSTALL.md` Docker+bare-metal ; Scheduler + job de santé |
 | 6 | Auth HTTP + compte + onboarding | ✅ | 7 endpoints auth + `/api/me` + `/api/families` + `/api/invitations/accept` + endpoints 501 RGPD ; audit sécu passé |
 | 8 | i18n fr-FR ICU + Mailer localisé + Messenger async | ✅ | catalogue ICU, 3 e-mails Twig localisés, envoi async (cœur Lot 0 ; prefs notif détaillées = Lot 7) |
 | 10 | Squelette RGPD + registre-donnees + test cohérence CI | ✅ | registre + test cohérence + attribut PersonalData + endpoints 501 (D7) ; RGPD Manager complet = Lot 8 |
@@ -149,6 +149,20 @@ php bin/console lint:container
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-06-24 — Infra Docker complète + INSTALL.md + Scheduler (Tâche 3)
+- **`/infra/docker-compose.yml`** : app FrankenPHP + worker Messenger + scheduler + PostgreSQL 16 +
+  Redis + Mercure + Mailpit. `backend/Dockerfile` (FrankenPHP, extensions), `entrypoint.sh`
+  (attente DB, clés JWT, migrations), `.dockerignore`.
+- **Vérifié end-to-end** (image construite + lancée) : boot, migrations, `/api/docs.json` → 200,
+  `POST /api/auth/register` → 202. (Sur cette machine, ports 5432/1025/8025 pris par d'autres stacks ⇒
+  utiliser des ports libres ou arrêter les autres pour `docker compose up`.)
+- **Scheduler** (cdc §0.2) : `symfony/scheduler` + `src/Schedule.php` (stateful) avec un job de
+  santé `HealthPing` (horaire) ; consommé par `messenger:consume scheduler_default`.
+- **`/infra/INSTALL.md`** : guide Docker **et** bare-metal pas à pas + table des variables d'env.
+- `CLAUDE.md` § Outillage mis à jour avec les commandes réelles (DoD §8.11).
+- `api_platform.yaml` : `docs_formats` (json/jsonld/openapi/html) pour servir `/api/docs.json` (200).
+- Suite : **36 tests / 161 assertions**, PHPStan niv.8, cs-fixer verts.
 
 ### 2026-06-24 — Mercure /api/realtime/token + clôture du scope (Tâches 9 & 7)
 - **`GET /api/realtime/token`** : émet un JWT Mercure (via la fabrique du hub) scopé par famille

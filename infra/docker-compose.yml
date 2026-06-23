@@ -1,0 +1,128 @@
+# Stack de développement complète CoParentPlanner (cdc §4.8). Démarrage : `docker compose up`.
+# - app        : FrankenPHP servant l'API + le front web (http://localhost:8000)
+# - worker     : consommateur Messenger (e-mails, jobs async)
+# - scheduler  : tâches planifiées (job de santé au Lot 0)
+# - database   : PostgreSQL 16   - redis : cache/rate-limit/transport
+# - mercure    : hub temps réel  - mailpit : capture des e-mails (http://localhost:8025)
+
+x-app: &app
+  build:
+    context: ../backend
+    dockerfile: Dockerfile
+  image: coparentplanner/app:dev
+  depends_on:
+    database:
+      condition: service_healthy
+    redis:
+      condition: service_started
+  environment: &app-env
+    APP_ENV: dev
+    APP_SECRET: dev_only_change_in_prod_3f8a1c9e7b2d4f6a8c0e1d3b5f7a9c2e
+    DATABASE_URL: "postgresql://app:!ChangeMe!@database:5432/app?serverVersion=16&charset=utf8"
+    MESSENGER_TRANSPORT_DSN: "doctrine://default?auto_setup=0"
+    MAILER_DSN: "smtp://mailpit:1025"
+    MAILER_FROM: "no-reply@coparentplanner.test"
+    MERCURE_URL: "http://mercure/.well-known/mercure"
+    MERCURE_PUBLIC_URL: "http://localhost:3000/.well-known/mercure"
+    MERCURE_JWT_SECRET: "!ChangeThisMercureHubJWTSecretKey!"
+    APP_ENCRYPTION_KEY: "ERA17y4xejfPQrEqVvRDYXRYv8PlWwz6feNlAvXEpNs="
+    ACCESS_TOKEN_TTL: "900"
+    REFRESH_TOKEN_TTL: "2592000"
+    ONE_TIME_TOKEN_TTL: "3600"
+    COOKIE_SECURE: "false"
+  volumes:
+    # Clés JWT générées par le service `app` puis partagées (persistées).
+    - app_jwt:/app/config/jwt
+
+services:
+  app:
+    <<: *app
+    environment:
+      <<: *app-env
+      RUN_MIGRATIONS: "1"
+    ports:
+      - "8000:80"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost/api/docs.json"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  worker:
+    <<: *app
+    command: ["php", "bin/console", "messenger:consume", "async", "-v", "--time-limit=3600", "--memory-limit=192M"]
+    depends_on:
+      database:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      app:
+        condition: service_started
+
+  scheduler:
+    <<: *app
+    command: ["php", "bin/console", "messenger:consume", "scheduler_default", "-v", "--time-limit=3600"]
+    depends_on:
+      database:
+        condition: service_healthy
+      app:
+        condition: service_started
+
+  database:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: "!ChangeMe!"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-d", "app", "-U", "app"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  mercure:
+    image: dunglas/mercure
+    environment:
+      SERVER_NAME: ":80"
+      MERCURE_PUBLISHER_JWT_KEY: "!ChangeThisMercureHubJWTSecretKey!"
+      MERCURE_SUBSCRIBER_JWT_KEY: "!ChangeThisMercureHubJWTSecretKey!"
+      MERCURE_EXTRA_DIRECTIVES: |
+        cors_origins http://localhost:8000
+    command: /usr/bin/caddy run --config /etc/caddy/dev.Caddyfile
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    ports:
+      - "3000:80"
+    volumes:
+      - mercure_data:/data
+      - mercure_config:/config
+
+  mailpit:
+    image: axllent/mailpit
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  db_data:
+  app_jwt:
+  mercure_data:
+  mercure_config:

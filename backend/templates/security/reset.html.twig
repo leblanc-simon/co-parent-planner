@@ -1,0 +1,27 @@
+{% extends 'base.html.twig' %}
+{% block title %}Nouveau mot de passe · CoParentPlanner{% endblock %}
+{% block body %}
+<div class="auth">
+    <div class="auth__card" data-controller="auth-form">
+        <div class="auth__brand">🧡 CoParentPlanner</div>
+        <h1 class="auth__title">Nouveau mot de passe</h1>
+        <p class="auth__sub">Choisissez un nouveau mot de passe pour votre compte.</p>
+
+        <p class="form-note" data-auth-form-target="notice" role="status" hidden>
+            Mot de passe réinitialisé. <a href="{{ path('app_login') }}">Se connecter</a>.
+        </p>
+
+        <form data-auth-form-target="form" data-action="submit->auth-form#submit"
+              action="/api/auth/password/reset" novalidate>
+            <input type="hidden" name="token" value="{{ token }}">
+            <div class="field">
+                <label for="password">Nouveau mot de passe</label>
+                <input id="password" name="password" type="password" autocomplete="new-password" required minlength="12">
+                <p class="form-note">12 caractères minimum.</p>
+            </div>
+            <p class="form-error" data-auth-form-target="error" role="alert"></p>
+            <button class="btn btn--primary btn--block" type="submit" data-auth-form-target="submit">Réinitialiser</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

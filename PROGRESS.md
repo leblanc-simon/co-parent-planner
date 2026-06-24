@@ -61,7 +61,7 @@ Extensions PHP présentes : pdo_pgsql, pgsql, sodium, openssl, intl, redis, apcu
 | 6 | Auth HTTP + compte + onboarding | ✅ | 7 endpoints auth + `/api/me` + `/api/families` + `/api/invitations/accept` + endpoints 501 RGPD ; audit sécu passé |
 | 8 | i18n fr-FR ICU + Mailer localisé + Messenger async | ✅ | catalogue ICU, 3 e-mails Twig localisés, envoi async (cœur Lot 0 ; prefs notif détaillées = Lot 7) |
 | 10 | Squelette RGPD + registre-donnees + test cohérence CI | ✅ | registre + test cohérence + attribut PersonalData + endpoints 501 (D7) ; RGPD Manager complet = Lot 8 |
-| 11 | Front web : shell + design system + écrans auth | ⬜ | maquettes dans `specs/design/` |
+| 11 | Front web : shell + design system + écrans auth | ✅ | tokens §8, shell sidebar responsive + sélecteur famille, écrans auth (login/register/forgot/reset/verify) + onboarding + accueil ; auth par cookie JWT (D2) testée. Polish visuel fin vs maquette = ultérieur |
 | 12 | App mobile Flutter : squelette + client généré + auth | ⬜ | |
 | 13 | Harnais tests + CI + INSTALL.md | 🟡 | **PHPUnit unit+RGPD+fonctionnel (19 tests), PHPStan niv.8, php-cs-fixer, base de test+DAMA : verts** ; reste : Playwright, flutter test, couverture, CI, INSTALL |
 
@@ -149,6 +149,19 @@ php bin/console lint:container
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-06-24 — Front web : design system + shell + écrans d'auth (Tâche 11)
+- **Design system §8** dans `assets/styles/app.css` : tokens (couleurs/typos Bricolage+Hanken/formes),
+  composants (cartes, pastilles, boutons, formulaires, sidebar, sélecteur famille), responsive.
+- **Shell** (`app/shell.html.twig`) : sidebar sombre 252px + zone principale, repliable sous breakpoint ;
+  **accueil** (US-HOME-1) avec sélecteur de famille (Stimulus) + encarts en état vide (encart garde
+  masqué si famille unie) ; **onboarding** (créer 1re famille → POST /api/families).
+- **Écrans d'auth** (login, register, forgot, reset, verify — D5) : formulaires postant en JSON à
+  l'API via le contrôleur Stimulus `auth-form` ; cookies HttpOnly posés par le serveur (D2).
+- **Contrôleurs** `HomeController` (/, /onboarding) + `SecurityController` (pages auth + logout
+  révoquant le refresh) ; firewall web `main` (JWT en cookie).
+- **WebPagesTest** (4 tests) : rendu des pages, redirections login/onboarding, **accueil authentifié
+  via cookie JWT** vérifié. Suite : **40 tests / 184 assertions**, PHPStan niv.8, cs-fixer verts.
 
 ### 2026-06-24 — Infra Docker complète + INSTALL.md + Scheduler (Tâche 3)
 - **`/infra/docker-compose.yml`** : app FrankenPHP + worker Messenger + scheduler + PostgreSQL 16 +

@@ -1,0 +1,28 @@
+{% extends 'base.html.twig' %}
+{% block title %}Connexion · CoParentPlanner{% endblock %}
+{% block body %}
+<div class="auth">
+    <div class="auth__card">
+        <div class="auth__brand">🧡 CoParentPlanner</div>
+        <h1 class="auth__title">Connexion</h1>
+        <p class="auth__sub">Accédez à votre espace familial.</p>
+
+        <form data-controller="auth-form" data-auth-form-redirect-value="{{ path('app_home') }}"
+              data-action="submit->auth-form#submit" action="/api/auth/login" novalidate>
+            <div class="field">
+                <label for="email">Adresse e-mail</label>
+                <input id="email" name="email" type="email" autocomplete="email" required>
+            </div>
+            <div class="field">
+                <label for="password">Mot de passe</label>
+                <input id="password" name="password" type="password" autocomplete="current-password" required>
+            </div>
+            <p class="form-error" data-auth-form-target="error" role="alert"></p>
+            <button class="btn btn--primary btn--block" type="submit" data-auth-form-target="submit">Se connecter</button>
+        </form>
+
+        <p class="auth__alt"><a href="{{ path('app_forgot') }}">Mot de passe oublié ?</a></p>
+        <p class="auth__alt">Pas encore de compte ? <a href="{{ path('app_register') }}">Créer un compte</a></p>
+    </div>
+</div>
+{% endblock %}

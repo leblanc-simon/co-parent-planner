@@ -1,3 +1,167 @@
-body {
-    background-color: skyblue;
+/* CoParentPlanner — design system (cdc §8). Tokens, base et composants partagés.
+ * Polices : Bricolage Grotesque (titres), Hanken Grotesk (corps).
+ * NB : fonts via CDN en dev ; à auto-héberger pour la PWA/offline (Lot 8). */
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400..700&display=swap');
+
+:root {
+    /* Surfaces & encre */
+    --app-bg: #E5E0D6;
+    --surface: #F4F1EA;
+    --card: #FFFFFF;
+    --ink: #292621;
+    --ink-2: #544E45;
+    --muted: #857E71;
+    --muted-2: #A39B8C;
+    --sidebar: #2B2722;
+
+    /* Accents */
+    --accent: #C2643D;          /* terracotta */
+    --accent-strong: #A8512B;
+    --accent-soft: #FBF4EE;
+    --accent-soft-2: #F6E0D5;
+    --positive: #2E7D71;        /* teal / parent B */
+    --positive-strong: #226B60;
+    --positive-soft: #DCECE8;
+    --linked: #9C6FB0;          /* famille liée (overlay) */
+
+    /* Catégories agenda */
+    --cat-sport: #5E7CB8;       --cat-sport-bg: #E4EAF5;
+    --cat-music: #9C6FB0;       --cat-music-bg: #EFE6F4;
+    --cat-school: #C99A3F;      --cat-school-bg: #F6EDDA;
+    --cat-health: #C75D5D;      --cat-health-bg: #F6E3E3;
+    --cat-other: #857E71;       --cat-other-bg: #ECE5D9;
+
+    /* Bordures */
+    --border: #EFEAE0;
+    --border-2: #EAE4D9;
+    --border-3: #E3DCD0;
+
+    /* Formes & ombres */
+    --radius-card: 18px;
+    --radius-card-lg: 22px;
+    --radius-nav: 11px;
+    --radius-pill: 999px;
+    --shadow-soft: 0 1px 2px rgba(41, 38, 33, .04), 0 8px 24px rgba(41, 38, 33, .06);
+    --shadow-pop: 0 8px 30px rgba(41, 38, 33, .14);
+
+    --font-title: 'Bricolage Grotesque', system-ui, sans-serif;
+    --font-body: 'Hanken Grotesk', system-ui, sans-serif;
+
+    --sidebar-w: 252px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--app-bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { font-family: var(--font-title); color: var(--ink); margin: 0 0 .4em; line-height: 1.1; }
+h1 { font-size: 2rem; font-weight: 700; }
+h2 { font-size: 1.3rem; font-weight: 600; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ---------- Boutons ---------- */
+.btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+    font-family: var(--font-body); font-weight: 600; font-size: .95rem;
+    padding: .7rem 1.25rem; border-radius: var(--radius-pill);
+    border: 1px solid transparent; cursor: pointer; transition: background .15s, opacity .15s;
+}
+.btn--primary { background: var(--accent); color: #fff; }
+.btn--primary:hover { background: var(--accent-strong); text-decoration: none; }
+.btn--ghost { background: transparent; color: var(--ink-2); border-color: var(--border-3); }
+.btn--ghost:hover { background: var(--surface); text-decoration: none; }
+.btn--block { width: 100%; }
+.btn:disabled { opacity: .6; cursor: not-allowed; }
+
+/* ---------- Cartes ---------- */
+.card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius-card); box-shadow: var(--shadow-soft); padding: 1.25rem 1.4rem;
+}
+.card--accent { border-left: 4px solid var(--accent); }
+
+/* ---------- Pastilles de catégorie ---------- */
+.pill {
+    display: inline-block; font-size: .78rem; font-weight: 600;
+    padding: .2rem .65rem; border-radius: var(--radius-pill);
+}
+.pill--sport { color: var(--cat-sport); background: var(--cat-sport-bg); }
+.pill--music { color: var(--cat-music); background: var(--cat-music-bg); }
+.pill--school { color: var(--cat-school); background: var(--cat-school-bg); }
+.pill--health { color: var(--cat-health); background: var(--cat-health-bg); }
+.pill--other { color: var(--cat-other); background: var(--cat-other-bg); }
+
+/* ---------- Formulaires ---------- */
+.field { margin-bottom: 1rem; }
+.field label { display: block; font-weight: 600; font-size: .85rem; color: var(--ink-2); margin-bottom: .35rem; }
+.field input, .field select {
+    width: 100%; padding: .7rem .85rem; font: inherit; color: var(--ink);
+    background: var(--card); border: 1px solid var(--border-3); border-radius: 12px;
+}
+.field input:focus, .field select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft-2); }
+.form-error { color: var(--cat-health); font-size: .85rem; margin: .5rem 0; min-height: 1.2em; }
+.form-note { color: var(--muted); font-size: .85rem; }
+
+/* ---------- Layout d'authentification ---------- */
+.auth { min-height: 100vh; display: grid; place-items: center; padding: 2rem; }
+.auth__card { width: 100%; max-width: 420px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card-lg); box-shadow: var(--shadow-soft); padding: 2rem 2.2rem; }
+.auth__brand { font-family: var(--font-title); font-weight: 800; font-size: 1.15rem; color: var(--accent); margin-bottom: 1.2rem; }
+.auth__title { font-size: 1.6rem; margin-bottom: .3rem; }
+.auth__sub { color: var(--muted); margin-bottom: 1.5rem; }
+.auth__alt { text-align: center; margin-top: 1.25rem; color: var(--muted); font-size: .9rem; }
+
+/* ---------- Shell applicatif (desktop) ---------- */
+.app-shell { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
+.sidebar { background: var(--sidebar); color: #EDE7DB; padding: 1.4rem 1rem; display: flex; flex-direction: column; gap: .4rem; }
+.sidebar__brand { font-family: var(--font-title); font-weight: 800; font-size: 1.15rem; color: #fff; padding: .4rem .6rem 1rem; }
+.sidebar__nav a {
+    display: flex; align-items: center; gap: .7rem; color: #C9C1B2; font-weight: 600;
+    padding: .6rem .7rem; border-radius: var(--radius-nav); text-decoration: none;
+}
+.sidebar__nav a:hover { background: rgba(255,255,255,.06); color: #fff; }
+.sidebar__nav a.is-active { background: var(--accent); color: #fff; }
+.sidebar__spacer { flex: 1; }
+
+.main { padding: 2rem 2.5rem; max-width: 1320px; }
+.main__header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; gap: 1rem; }
+.eyebrow { text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; font-weight: 700; color: var(--muted); }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+.empty-state { color: var(--muted); font-size: .92rem; padding: .5rem 0; }
+
+/* ---------- Sélecteur de famille ---------- */
+.family-select { position: relative; }
+.family-select__button {
+    display: inline-flex; align-items: center; gap: .5rem; background: var(--card);
+    border: 1px solid var(--border-3); border-radius: var(--radius-pill);
+    padding: .45rem .9rem; font-weight: 600; cursor: pointer; color: var(--ink);
+}
+.family-select__menu {
+    position: absolute; right: 0; top: calc(100% + .5rem); min-width: 260px; z-index: 20;
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    box-shadow: var(--shadow-pop); padding: .4rem; display: none;
+}
+.family-select__menu.is-open { display: block; }
+.family-select__item { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: .6rem .7rem; border-radius: 12px; cursor: pointer; font: inherit; color: var(--ink); }
+.family-select__item:hover, .family-select__item.is-active { background: var(--accent-soft); }
+.family-select__item small { color: var(--muted); display: block; }
+
+/* ---------- Responsive : sidebar repliée sous breakpoint ---------- */
+@media (max-width: 900px) {
+    .app-shell { grid-template-columns: 1fr; }
+    .sidebar { flex-direction: row; align-items: center; overflow-x: auto; padding: .6rem .8rem; gap: .2rem; }
+    .sidebar__brand { padding: .4rem .6rem; }
+    .sidebar__spacer { display: none; }
+    .sidebar__nav { display: flex; }
+    .main { padding: 1.25rem 1.1rem; }
+    .grid-2 { grid-template-columns: 1fr; }
 }

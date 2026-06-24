@@ -1,0 +1,32 @@
+{% extends 'base.html.twig' %}
+{% block title %}Bienvenue · CoParentPlanner{% endblock %}
+{% block body %}
+<div class="auth">
+    <div class="auth__card" data-controller="auth-form" data-auth-form-redirect-value="{{ path('app_home') }}">
+        <div class="auth__brand">🧡 CoParentPlanner</div>
+        <h1 class="auth__title">Bienvenue</h1>
+        <p class="auth__sub">Créez votre première famille pour commencer.</p>
+
+        <form data-action="submit->auth-form#submit" action="/api/families" novalidate>
+            <div class="field">
+                <label for="name">Nom de la famille</label>
+                <input id="name" name="name" type="text" maxlength="120" required placeholder="Famille Martin">
+            </div>
+            <div class="field">
+                <label for="type">Type de famille</label>
+                <select id="type" name="type" required>
+                    <option value="separated">Famille séparée (planning de garde)</option>
+                    <option value="intact">Famille unie (sans garde)</option>
+                </select>
+            </div>
+            <p class="form-error" data-auth-form-target="error" role="alert"></p>
+            <button class="btn btn--primary btn--block" type="submit" data-auth-form-target="submit">Créer ma famille</button>
+        </form>
+
+        <p class="auth__alt">Vous avez reçu une invitation ? Ouvrez le lien reçu par e-mail.</p>
+        <form action="{{ path('app_logout') }}" method="post" class="auth__alt">
+            <button class="btn btn--ghost" type="submit">Se déconnecter</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

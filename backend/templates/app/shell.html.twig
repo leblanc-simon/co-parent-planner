@@ -1,0 +1,20 @@
+{% extends 'base.html.twig' %}
+
+{% block body %}
+<div class="app-shell">
+    <aside class="sidebar">
+        <div class="sidebar__brand">🧡 CoParentPlanner</div>
+        <nav class="sidebar__nav">
+            <a href="{{ path('app_home') }}" class="is-active">Accueil</a>
+            {# Onglets métier (Garde, Agenda, Enfants, Échanges, Paramètres) ajoutés aux lots suivants. #}
+        </nav>
+        <div class="sidebar__spacer"></div>
+        <form action="{{ path('app_logout') }}" method="post">
+            <button class="btn btn--ghost btn--block" type="submit">Se déconnecter</button>
+        </form>
+    </aside>
+    <main class="main">
+        {% block main %}{% endblock %}
+    </main>
+</div>
+{% endblock %}

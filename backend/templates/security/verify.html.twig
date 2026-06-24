@@ -1,0 +1,24 @@
+{% extends 'base.html.twig' %}
+{% block title %}Vérification de l'e-mail · CoParentPlanner{% endblock %}
+{% block body %}
+<div class="auth">
+    <div class="auth__card" data-controller="auth-form" data-auth-form-auto-value="true">
+        <div class="auth__brand">🧡 CoParentPlanner</div>
+        <h1 class="auth__title">Vérification de l'e-mail</h1>
+
+        <p class="form-note" data-auth-form-target="notice" role="status" hidden>
+            Votre adresse est vérifiée. <a href="{{ path('app_login') }}">Se connecter</a>.
+        </p>
+
+        <form data-auth-form-target="form" data-action="submit->auth-form#submit"
+              action="/api/auth/verify-email" novalidate>
+            <input type="hidden" name="token" value="{{ token }}">
+            <p class="auth__sub">Validation de votre adresse en cours…</p>
+            <p class="form-error" data-auth-form-target="error" role="alert"></p>
+            <button class="btn btn--primary btn--block" type="submit" data-auth-form-target="submit">Vérifier mon e-mail</button>
+        </form>
+
+        <p class="auth__alt"><a href="{{ path('app_login') }}">Retour à la connexion</a></p>
+    </div>
+</div>
+{% endblock %}

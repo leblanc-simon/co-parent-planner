@@ -143,4 +143,101 @@ final class AuthFlowTest extends ApiTestCase
 
         self::assertSame(422, $weak['status']);
     }
+
+    /**
+     * Inscrit, vérifie et connecte un compte, puis renvoie les jetons délivrés.
+     *
+     * @return array{accessToken: string, refreshToken: string}
+     */
+    private function registerVerifyLogin(Client $client, string $email): array
+    {
+        $register = $this->json($client, 'POST', '/api/auth/register', ['email' => $email, 'password' => self::PASSWORD]);
+        self::assertSame(202, $register['status']);
+
+        $token = $this->lastEmailToken(AuthEmailType::Verification);
+        $verify = $this->json($client, 'POST', '/api/auth/verify-email', ['token' => $token]);
+        self::assertSame(200, $verify['status']);
+
+        $login = $this->json($client, 'POST', '/api/auth/login', ['email' => $email, 'password' => self::PASSWORD]);
+        self::assertSame(200, $login['status']);
+        self::assertNotEmpty($login['body']['accessToken']);
+        self::assertNotEmpty($login['body']['refreshToken']);
+
+        return [
+            'accessToken' => $login['body']['accessToken'],
+            'refreshToken' => $login['body']['refreshToken'],
+        ];
+    }
+
+    public function testForgotPasswordIsGenericAndDispatchesReset(): void
+    {
+        $client = self::createClient();
+        $client->disableReboot();
+        $email = 'dave@example.com';
+
+        // Compte existant et actif : la demande renvoie 202 et déclenche bien un e-mail de reset.
+        $this->registerVerifyLogin($client, $email);
+        $existing = $this->json($client, 'POST', '/api/auth/password/forgot', ['email' => $email]);
+        self::assertSame(202, $existing['status']);
+        // Un jeton de reset a été dispatché pour le compte existant.
+        $this->lastEmailToken(AuthEmailType::PasswordReset);
+
+        // E-mail inconnu : réponse strictement identique (anti-énumération).
+        $unknown = $this->json($client, 'POST', '/api/auth/password/forgot', ['email' => 'nobody@example.com']);
+        self::assertSame(202, $unknown['status']);
+        self::assertSame($existing['body'], $unknown['body']);
+    }
+
+    public function testResetPasswordChangesPasswordAndRevokesSessions(): void
+    {
+        $client = self::createClient();
+        $client->disableReboot();
+        $email = 'erin@example.com';
+        $newPassword = 'NouveauMotDePasse99!';
+
+        $tokens = $this->registerVerifyLogin($client, $email);
+        $oldRefreshToken = $tokens['refreshToken'];
+
+        // Demande de reset puis capture du jeton dispatché.
+        $forgot = $this->json($client, 'POST', '/api/auth/password/forgot', ['email' => $email]);
+        self::assertSame(202, $forgot['status']);
+        $resetToken = $this->lastEmailToken(AuthEmailType::PasswordReset);
+
+        // Réinitialisation effective.
+        $reset = $this->json($client, 'POST', '/api/auth/password/reset', ['token' => $resetToken, 'password' => $newPassword]);
+        self::assertSame(200, $reset['status']);
+
+        // Les sessions sont révoquées : l'ancien refresh token ne fonctionne plus.
+        $refresh = $this->json($client, 'POST', '/api/auth/refresh', ['refreshToken' => $oldRefreshToken]);
+        self::assertSame(401, $refresh['status']);
+
+        // Le nouveau mot de passe permet de se connecter.
+        $login = $this->json($client, 'POST', '/api/auth/login', ['email' => $email, 'password' => $newPassword]);
+        self::assertSame(200, $login['status']);
+        self::assertNotEmpty($login['body']['accessToken']);
+    }
+
+    public function testResetWithInvalidTokenIsRejected(): void
+    {
+        $client = self::createClient();
+
+        $reset = $this->json($client, 'POST', '/api/auth/password/reset', ['token' => 'invalide', 'password' => 'NouveauMotDePasse99!']);
+        self::assertSame(400, $reset['status']);
+    }
+
+    public function testLogoutRevokesRefreshToken(): void
+    {
+        $client = self::createClient();
+        $client->disableReboot();
+
+        $tokens = $this->registerVerifyLogin($client, 'frank@example.com');
+        $refreshToken = $tokens['refreshToken'];
+
+        $logout = $this->json($client, 'POST', '/api/auth/logout', ['refreshToken' => $refreshToken]);
+        self::assertSame(200, $logout['status']);
+
+        // Le refresh token révoqué ne peut plus être rejoué.
+        $refresh = $this->json($client, 'POST', '/api/auth/refresh', ['refreshToken' => $refreshToken]);
+        self::assertSame(401, $refresh['status']);
+    }
 }

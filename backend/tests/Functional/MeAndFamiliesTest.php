@@ -11,6 +11,7 @@ use App\Enum\UserStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Clock\Clock;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * US-SET-1 (/api/me) et US-ONB-1 (/api/families) : profil, onboarding, scope par utilisateur,
@@ -134,5 +135,28 @@ final class MeAndFamiliesTest extends ApiTestCase
         ]);
 
         self::assertSame(422, $response->getStatusCode());
+    }
+
+    public function testGetFamilyItemReturnsFamilyForMember(): void
+    {
+        [$client, $token] = $this->authenticatedClient('member@example.com');
+        $auth = ['Authorization' => 'Bearer '.$token, 'Accept' => 'application/json'];
+
+        $create = $client->request('POST', '/api/families', [
+            'json' => ['name' => 'Famille Durand', 'type' => 'separated'],
+            'headers' => $auth,
+        ]);
+        self::assertSame(201, $create->getStatusCode());
+        $id = $create->toArray()['id'];
+        self::assertIsString($id);
+
+        // Le membre actif obtient le détail de sa famille.
+        $get = $client->request('GET', '/api/families/'.$id, ['headers' => $auth]);
+        self::assertSame(200, $get->getStatusCode());
+        self::assertSame('Famille Durand', $get->toArray()['name']);
+
+        // Famille inconnue : 404 (anti-énumération, jamais membre).
+        $missing = $client->request('GET', '/api/families/'.Uuid::v4()->toRfc4122(), ['headers' => $auth]);
+        self::assertSame(404, $missing->getStatusCode());
     }
 }

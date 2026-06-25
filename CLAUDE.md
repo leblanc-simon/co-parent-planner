@@ -94,7 +94,16 @@ dart analyze                                           # 0 issue (exclut lib/api
 flutter test --coverage                                # tests ; couverture ≥ 70% (D8), 84,3% actuel
 ```
 
-À venir (Tâche 13) : E2E web (Playwright), CI (GitHub Actions, jobs backend+mobile+drift OpenAPI).
+E2E web (Playwright) dans `/web-e2e` (parcours inscription → vérif e-mail Mailpit → connexion) :
+
+```bash
+cd web-e2e && npm install && npx playwright install chromium
+web-e2e/scripts/e2e-local.sh            # démarre la stack (DB + Mailpit + serve) et lance les tests
+```
+
+CI : `.github/workflows/ci.yml` (jobs `backend` + `web-e2e` + `mobile`) encode toutes les portes
+qualité ci-dessus + les garde-fous de couverture (`backend/bin/coverage-gate.php` ≥80 %,
+`mobile/tool/check_coverage.py` ≥70 %) et la détection de drift (OpenAPI + client Dart).
 
 Installation détaillée (Docker **et** bare-metal) : `infra/INSTALL.md`.
 

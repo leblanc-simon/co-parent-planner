@@ -1,0 +1,163 @@
+# CI Lot 0 (cdc §3.8, §8.10) : backend (lint+analyse+tests+couverture+drift OpenAPI),
+# E2E web (Playwright), mobile (drift client + analyse + tests + couverture).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PHP_VERSION: '8.4'
+  FLUTTER_VERSION: '3.38.9'
+  DB_URL: 'postgresql://app:app@127.0.0.1:5432/app?serverVersion=16&charset=utf8'
+  APP_ENCRYPTION_KEY: 'ERA17y4xejfPQrEqVvRDYXRYv8PlWwz6feNlAvXEpNs='
+  JWT_PASSPHRASE: 'ci-test-passphrase'
+
+jobs:
+  # ---------------------------------------------------------------------------
+  backend:
+    name: Backend (PHPUnit + PHPStan + couverture + OpenAPI)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U app"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      APP_ENV: test
+      DATABASE_URL: 'postgresql://app:app@127.0.0.1:5432/app?serverVersion=16&charset=utf8'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: pdo_pgsql, pgsql, sodium, intl, redis, apcu, mbstring, zip
+          coverage: pcov
+          tools: composer:v2
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Clés JWT
+        run: php bin/console lexik:jwt:generate-keypair --overwrite -n
+      - name: Style (php-cs-fixer)
+        run: PHP_CS_FIXER_IGNORE_ENV=1 vendor/bin/php-cs-fixer fix --dry-run --diff
+      - name: Analyse statique (PHPStan niveau 8)
+        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+      - name: Base de test + migrations
+        run: |
+          php bin/console --env=test doctrine:database:create --if-not-exists
+          php bin/console --env=test doctrine:migrations:migrate -n
+      - name: Tests (PHPUnit + couverture)
+        run: php bin/phpunit --coverage-clover=var/coverage/clover.xml
+      - name: Seuil de couverture (>= 80 %, D8)
+        run: php bin/coverage-gate.php var/coverage/clover.xml 80
+      - name: Drift OpenAPI (le contrat doit être à jour)
+        run: |
+          php bin/console api:openapi:export --output=../contracts/openapi.json
+          git diff --exit-code ../contracts/openapi.json \
+            || { echo "::error::OpenAPI désaligné — relancez api:openapi:export et committez."; exit 1; }
+
+  # ---------------------------------------------------------------------------
+  web-e2e:
+    name: E2E web (Playwright)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U app"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+      mailpit:
+        image: axllent/mailpit
+        ports: ['8025:8025', '1025:1025']
+    env:
+      APP_ENV: dev
+      DATABASE_URL: 'postgresql://app:app@127.0.0.1:5432/app?serverVersion=16&charset=utf8'
+      # L'e-mail d'auth part en synchrone (transport async -> sync://) : pas de worker.
+      MESSENGER_TRANSPORT_DSN: 'sync://'
+      MAILER_DSN: 'smtp://127.0.0.1:1025'
+      MAILER_FROM: 'no-reply@coparentplanner.test'
+      APP_WEB_BASE_URL: 'http://127.0.0.1:8000'
+      E2E_BASE_URL: 'http://127.0.0.1:8000'
+      MAILPIT_API: 'http://127.0.0.1:8025'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: pdo_pgsql, pgsql, sodium, intl, redis, apcu, mbstring, zip
+          tools: composer:v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Backend — install + clés + DB
+        working-directory: backend
+        run: |
+          composer install --no-interaction --no-progress --prefer-dist
+          php bin/console lexik:jwt:generate-keypair --overwrite -n
+          php bin/console doctrine:database:create --if-not-exists
+          php bin/console doctrine:migrations:migrate -n
+      - name: Démarrer l'app (serveur PHP intégré)
+        working-directory: backend
+        run: |
+          php -S 127.0.0.1:8000 -t public public/index.php &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/login >/dev/null && break; sleep 1; done
+      - name: Playwright — install
+        working-directory: web-e2e
+        run: |
+          npm ci || npm install
+          npx playwright install --with-deps chromium
+      - name: Playwright — parcours E2E
+        working-directory: web-e2e
+        run: npm test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: web-e2e/playwright-report/
+
+  # ---------------------------------------------------------------------------
+  mobile:
+    name: Mobile (Flutter — drift client + analyse + tests + couverture)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - run: flutter pub get
+      - name: Régénérer le client + vérifier le drift OpenAPI
+        run: |
+          dart run swagger_parser
+          dart run build_runner build --delete-conflicting-outputs --force-jit
+          git diff --exit-code lib/api/generated \
+            || { echo "::error::Client Dart désaligné de l'OpenAPI — régénérez et committez."; exit 1; }
+      - name: Format (hors code généré)
+        run: dart format --output=none --set-exit-if-changed lib/core lib/features lib/routing lib/app.dart lib/main.dart test
+      - name: Analyse statique
+        run: dart analyze
+      - name: Tests + couverture
+        run: flutter test --coverage
+      - name: Seuil de couverture (>= 70 %, D8)
+        run: python3 tool/check_coverage.py coverage/lcov.info 70

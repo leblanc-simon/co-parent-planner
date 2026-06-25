@@ -5,20 +5,19 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-06-25** — Lot 0 : **app mobile Flutter livrée et testée** (squelette + client OpenAPI + auth).
+Dernière mise à jour : **2026-06-25** — **Lot 0 terminé** : CI + E2E web Playwright + couverture backend ≥80 %.
 
 ---
 
 ## 0. Où en est-on ?
 
-**Lot courant : Lot 0 — Fondations** (`specs/lots/lot-0-fondations.md`).
-Statut : 🟡 backend + front web + **mobile Flutter** livrés et vérifiés. Surface API, auth web
-ET mobile, onboarding, shell : OK. **Reste pour clore le Lot 0 : Tâche 13 — CI (GitHub Actions),
-E2E web Playwright, couverture backend mesurée.**
+**Lot 0 — Fondations** (`specs/lots/lot-0-fondations.md`) : ✅ **TERMINÉ** (toutes tâches 1→13).
+Prochaine étape : **Lot 1 — Familles/membres/droits/invitations/liens** (`specs/lots/lot-1-*.md`).
 
-- Backend : démarre, schéma migré, **40 tests** (unit+RGPD+fonctionnel), PHPStan niv.8, cs-fixer verts.
-- Mobile : **105 tests verts, couverture 84,3 %** (hors code généré, seuil D8 = 70 %),
-  `dart analyze` propre, `dart format` propre, client OpenAPI régénérable sans drift.
+- **Backend** : **68 tests / 428 assertions**, couverture **86,9 %** (≥ seuil D8 80 %), PHPStan niv.8, cs-fixer verts.
+- **Mobile** : **105 tests**, couverture **84,3 %** (≥ seuil D8 70 %), `dart analyze`/`format` propres, client OpenAPI sans drift.
+- **E2E web (Playwright)** : **4 tests verts** (inscription → vérif e-mail Mailpit → connexion ; identifiants invalides ; responsive desktop+mobile).
+- **CI** : `.github/workflows/ci.yml` (jobs backend + web-e2e + mobile), garde-fous de couverture + drift OpenAPI/client.
 
 ---
 
@@ -66,11 +65,12 @@ Extensions PHP présentes : pdo_pgsql, pgsql, sodium, openssl, intl, redis, apcu
 | 10 | Squelette RGPD + registre-donnees + test cohérence CI | ✅ | registre + test cohérence + attribut PersonalData + endpoints 501 (D7) ; RGPD Manager complet = Lot 8 |
 | 11 | Front web : shell + design system + écrans auth | ✅ | tokens §8, shell sidebar responsive + sélecteur famille, écrans auth (login/register/forgot/reset/verify) + onboarding + accueil ; auth par cookie JWT (D2) testée. Polish visuel fin vs maquette = ultérieur |
 | 12 | App mobile Flutter : squelette + client généré + auth | ✅ | projet iOS+Android, client **dio/retrofit généré depuis l'OpenAPI** (swagger_parser, pur Dart), Riverpod, Drift (outbox), deep links, i18n ARB, thème §8 ; **105 tests, couverture 84,3 %** |
-| 13 | Harnais tests + CI + INSTALL.md | 🟡 | **Backend** : PHPUnit (40 tests), PHPStan niv.8, php-cs-fixer, base test+DAMA. **Mobile** : `flutter test` (105), `dart analyze`/`format`, couverture 84,3 %. **Reste : CI GitHub Actions, E2E web Playwright, couverture backend mesurée** |
+| 13 | Harnais tests + CI + INSTALL.md | ✅ | **CI** `.github/workflows/ci.yml` (backend+web-e2e+mobile). **Backend** : 68 tests, couverture **86,9 %** (garde-fou `bin/coverage-gate.php`). **E2E** Playwright `/web-e2e` (4 tests : inscription→vérif Mailpit→connexion + responsive). **Mobile** : 105 tests, 84,3 %, drift client vérifié. INSTALL.md à jour |
 
-**Portes qualité actuellement vertes**
-- **Backend** : `symfony php bin/phpunit` (**40 tests**), `vendor/bin/phpstan` (niveau 8, 0 erreur), `php-cs-fixer --dry-run` (0), `doctrine:schema:validate`, `lint:container`. OpenAPI exporté dans `contracts/openapi.json`.
-- **Mobile** (`/mobile`) : `flutter test` (**105 tests verts**), couverture **84,3 %** (hors code généré ; seuil D8 = 70 %), `dart analyze` (0), `dart format` (0). Client OpenAPI régénérable **sans drift** (idempotent).
+**Portes qualité actuellement vertes** (toutes encodées dans `.github/workflows/ci.yml`)
+- **Backend** : `phpunit` (**68 tests / 428 assertions**), couverture **86,9 %** (≥80 %, `php bin/coverage-gate.php`), `phpstan` (niveau 8, 0), `php-cs-fixer --dry-run` (0), drift OpenAPI (`api:openapi:export` + `git diff`).
+- **Mobile** (`/mobile`) : `flutter test` (**105 tests**), couverture **84,3 %** (≥70 %, `python3 tool/check_coverage.py`), `dart analyze` (0), `dart format` (0), drift client (`git diff lib/api/generated`).
+- **E2E web** (`/web-e2e`, Playwright) : **4 tests verts** ; lancement local : `web-e2e/scripts/e2e-local.sh` (DB + Mailpit + `symfony serve` avec `async`→`sync://`).
 
 > ⚠️ **Le conteneur DB doit tourner** pour les tests fonctionnels : `cd backend && docker compose up -d database` (il n'est pas auto-démarré ; sans lui, `symfony` retombe sur un PostgreSQL local 5432 et l'auth échoue).
 
@@ -164,13 +164,41 @@ dart analyze                                              # 0 issue (exclut lib/
 dart format --output=none --set-exit-if-changed lib/core lib/features lib/routing lib/app.dart lib/main.dart test
 flutter test --coverage                                   # 105 tests ; couverture 84,3% (hors genere)
 ```
-À venir (Tâche 13) : **CI GitHub Actions** (jobs backend + mobile + drift OpenAPI), **E2E web Playwright**,
-mesure de couverture backend. (Lancer un device : `flutter run` ; l'émulateur Android utilise
+### E2E web (`/web-e2e`, Playwright) — commandes réelles (validées)
+```bash
+cd web-e2e && npm install && npx playwright install chromium
+# Stack + tests en une commande (DB conteneur + Mailpit + symfony serve, async->sync://) :
+web-e2e/scripts/e2e-local.sh                  # 4 tests verts (desktop + mobile)
+web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
+```
+
+(Lancer l'app mobile sur un device : `flutter run` ; l'émulateur Android utilise
 `API_BASE_URL=http://10.0.2.2:8000`, surchargeable par `--dart-define`.)
 
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-06-25 — CI + E2E web Playwright + couverture backend (Tâche 13 → Lot 0 clos)
+- **CI GitHub Actions** `.github/workflows/ci.yml`, 3 jobs :
+  - `backend` : services PostgreSQL 16 ; composer, clés JWT, php-cs-fixer, PHPStan niv.8, base de
+    test + migrations, PHPUnit + **couverture pcov** + garde-fou `bin/coverage-gate.php` (≥80 %),
+    **drift OpenAPI** (`api:openapi:export` + `git diff`).
+  - `web-e2e` : services PostgreSQL + **Mailpit** ; serveur PHP intégré (transport `async`→`sync://`
+    pour envoyer l'e-mail sans worker), Playwright (`npm test`), upload du rapport si échec.
+  - `mobile` : Flutter ; **régénération du client + drift** (`swagger_parser` + `build_runner --force-jit`
+    + `git diff lib/api/generated`), `dart format`/`analyze`, `flutter test --coverage` + garde-fou
+    `tool/check_coverage.py` (≥70 %).
+- **E2E web Playwright** dans `/web-e2e` : parcours **inscription → vérification e-mail (Mailpit) →
+  connexion** (lit le lien dans l'API Mailpit), + identifiants invalides non énumérant, + smoke
+  **responsive desktop & mobile**. **4 tests verts en local** via `web-e2e/scripts/e2e-local.sh`
+  (DB conteneur + Mailpit + `symfony serve`, `async`→`sync://`). Navigateur installé via `npx playwright install`.
+- **Couverture backend remontée 67,3 % → 86,9 %** (≥ seuil D8 80 %) : tests unitaires entités
+  (round-trips getters/setters, append-only AuditLog) + `SendAuthEmailHandler` (lien e-mail), et
+  fonctionnels **forgot/reset/logout** (révocation des refresh) + `GET /api/families/{id}` (200/404).
+  **Backend : 68 tests / 428 assertions, PHPStan niv.8, cs-fixer verts.**
+- Garde-fous de couverture réutilisables : `backend/bin/coverage-gate.php`, `mobile/tool/check_coverage.py`.
+- Docs : `PROGRESS.md`, `CLAUDE.md`, `infra/INSTALL.md`, `contracts/README.md` à jour.
 
 ### 2026-06-25 — App mobile Flutter : squelette + client OpenAPI + auth (Tâche 12)
 - **Projet Flutter** `/mobile` (iOS + Android), package `coparentplanner`, Dart 3.10 / Flutter 3.38.9.

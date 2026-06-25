@@ -56,7 +56,7 @@ docker compose down -v         # arrête + supprime les volumes (base, clés JWT
 | Symfony CLI | ≥ 5 | recommandé (`symfony server`, injection d'env) |
 | Binaire Mercure | récent | optionnel en dev (temps réel) |
 | Node.js | optionnel | AssetMapper ne requiert pas Node |
-| Flutter SDK | 3.x | pour l'app mobile (`/mobile`, à venir) |
+| Flutter SDK | 3.38.x (Dart 3.10.x) | app mobile `/mobile` (génération client = pur Dart, sans JVM) |
 
 Vérifier : `php -v && php -m | grep -E 'pdo_pgsql|sodium|intl|redis'`.
 
@@ -117,8 +117,39 @@ curl -s -X POST http://127.0.0.1:8000/api/auth/register \
 ```
 
 ### B.3 Mobile (Flutter)
-À venir (Lot 0, partie mobile). Le client Dart est **généré depuis l'OpenAPI** exporté par le
-backend (`contracts/openapi.json`).
+
+Prérequis : **Flutter 3.38.x / Dart 3.10.x** (`flutter doctor` au vert pour Android ; iOS nécessite
+un macOS + Xcode). **Aucune JVM n'est requise pour la génération du client** (elle est pure Dart).
+
+```bash
+cd mobile
+flutter pub get
+
+# 1) Le backend exporte l'OpenAPI (voir C) -> contracts/openapi.json
+# 2) Générer le client Dart (clients retrofit/dio + modèles) depuis ce contrat :
+dart run swagger_parser
+# 3) Générer le code (.g.dart : json_serializable, retrofit, drift) :
+dart run build_runner build --delete-conflicting-outputs --force-jit
+#    /!\ --force-jit est IMPÉRATIF : certaines dépendances natives (sqlite3,
+#        path_provider_foundation) embarquent un hook/build.dart (native-assets) qui fait
+#        échouer la compilation AOT du script build_runner sous Dart 3.10. Le mode JIT l'évite.
+# 4) Localisations (si chaînes i18n modifiées) :
+flutter gen-l10n
+
+# Lancer l'app sur un device/émulateur :
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000   # 10.0.2.2 = hôte depuis l'émulateur Android
+#   Sur simulateur iOS / web : --dart-define=API_BASE_URL=http://localhost:8000
+
+# Qualité & tests :
+dart analyze
+flutter test --coverage          # seuil de couverture ≥ 70 % (décision D8)
+```
+
+Le dossier `lib/api/generated/` est **commité et ne doit jamais être édité à la main** : il est
+régénéré par les commandes ci-dessus (la régénération est idempotente ; toute divergence avec
+`contracts/openapi.json` est détectée en CI par `git diff --exit-code lib/api/generated/`).
+Les polices du design system (Bricolage Grotesque, Hanken Grotesk) sont **auto-hébergées** sous
+`mobile/assets/fonts/` (OFL).
 
 ---
 

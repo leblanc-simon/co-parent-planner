@@ -1773,7 +1773,6 @@
                     "name": {
                         "minLength": 1,
                         "maxLength": 120,
-                        "default": "",
                         "type": "string"
                     },
                     "type": {
@@ -1781,7 +1780,6 @@
                             "separated",
                             "intact"
                         ],
-                        "default": "",
                         "type": "string"
                     }
                 }

@@ -43,6 +43,9 @@ final class CreateFamilyProcessor implements ProcessorInterface
         $user = $this->security->getUser();
         \assert($user instanceof User);
 
+        // Garanti non-null par la validation (NotBlank) executee avant ce processor.
+        \assert(null !== $data->name && null !== $data->type);
+
         $family = (new Family())
             ->setName(trim($data->name))
             ->setType(FamilyType::from($data->type));

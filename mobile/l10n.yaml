@@ -1,0 +1,8 @@
+# Generation des localisations (cdc i18n) : catalogues ARB -> AppL10n.
+# Seule la locale fr-FR est livree au Lot 0 ; ajouter une langue = ajouter un
+# fichier ARB, sans changer le code.
+arb-dir: lib/l10n
+template-arb-file: app_fr.arb
+output-localization-file: app_localizations.dart
+output-class: AppL10n
+nullable-getter: false

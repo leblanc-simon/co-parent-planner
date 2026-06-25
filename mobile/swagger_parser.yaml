@@ -1,0 +1,21 @@
+# Generation du client Dart depuis l'OpenAPI exporte par le backend.
+# Source de verite des types = ../contracts/openapi.json (cdc §3.9).
+# Outil PUR DART (aucune JVM/openapi-generator) : `dart run swagger_parser`
+# puis `dart run build_runner build` pour les .g.dart.
+# Le dossier lib/api/generated/ est COMMITE et NE DOIT PAS etre edite a la main.
+# La CI detecte le drift via `git diff --exit-code lib/api/generated/`.
+swagger_parser:
+  schema_path: ../contracts/openapi.json
+  output_directory: lib/api/generated
+  language: dart
+  json_serializer: json_serializable
+  default_content_type: application/json
+  root_client: false
+  export_file: true
+  put_in_folder: false
+  put_clients_in_folder: true
+  client_postfix: Client
+  enums_to_json: true
+  enums_parent_prefix: true
+  unknown_enum_value: true
+  mark_files_as_generated: true

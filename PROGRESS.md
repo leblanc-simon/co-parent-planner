@@ -5,17 +5,20 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-06-24** — Lot 0 : authentification HTTP livrée et testée (API).
+Dernière mise à jour : **2026-06-25** — Lot 0 : **app mobile Flutter livrée et testée** (squelette + client OpenAPI + auth).
 
 ---
 
 ## 0. Où en est-on ?
 
 **Lot courant : Lot 0 — Fondations** (`specs/lots/lot-0-fondations.md`).
-Statut : 🟡 socle technique backend posé et **vérifié** (entités+migration+chiffrement+RBAC).
-Reste : auth HTTP, i18n/mailer, Mercure token, RGPD registre, front web, mobile, CI/INSTALL.
+Statut : 🟡 backend + front web + **mobile Flutter** livrés et vérifiés. Surface API, auth web
+ET mobile, onboarding, shell : OK. **Reste pour clore le Lot 0 : Tâche 13 — CI (GitHub Actions),
+E2E web Playwright, couverture backend mesurée.**
 
-Backend démarre, schéma migré et en sync, 12 tests unitaires verts.
+- Backend : démarre, schéma migré, **40 tests** (unit+RGPD+fonctionnel), PHPStan niv.8, cs-fixer verts.
+- Mobile : **105 tests verts, couverture 84,3 %** (hors code généré, seuil D8 = 70 %),
+  `dart analyze` propre, `dart format` propre, client OpenAPI régénérable sans drift.
 
 ---
 
@@ -62,10 +65,12 @@ Extensions PHP présentes : pdo_pgsql, pgsql, sodium, openssl, intl, redis, apcu
 | 8 | i18n fr-FR ICU + Mailer localisé + Messenger async | ✅ | catalogue ICU, 3 e-mails Twig localisés, envoi async (cœur Lot 0 ; prefs notif détaillées = Lot 7) |
 | 10 | Squelette RGPD + registre-donnees + test cohérence CI | ✅ | registre + test cohérence + attribut PersonalData + endpoints 501 (D7) ; RGPD Manager complet = Lot 8 |
 | 11 | Front web : shell + design system + écrans auth | ✅ | tokens §8, shell sidebar responsive + sélecteur famille, écrans auth (login/register/forgot/reset/verify) + onboarding + accueil ; auth par cookie JWT (D2) testée. Polish visuel fin vs maquette = ultérieur |
-| 12 | App mobile Flutter : squelette + client généré + auth | ⬜ | |
-| 13 | Harnais tests + CI + INSTALL.md | 🟡 | **PHPUnit unit+RGPD+fonctionnel (19 tests), PHPStan niv.8, php-cs-fixer, base de test+DAMA : verts** ; reste : Playwright, flutter test, couverture, CI, INSTALL |
+| 12 | App mobile Flutter : squelette + client généré + auth | ✅ | projet iOS+Android, client **dio/retrofit généré depuis l'OpenAPI** (swagger_parser, pur Dart), Riverpod, Drift (outbox), deep links, i18n ARB, thème §8 ; **105 tests, couverture 84,3 %** |
+| 13 | Harnais tests + CI + INSTALL.md | 🟡 | **Backend** : PHPUnit (40 tests), PHPStan niv.8, php-cs-fixer, base test+DAMA. **Mobile** : `flutter test` (105), `dart analyze`/`format`, couverture 84,3 %. **Reste : CI GitHub Actions, E2E web Playwright, couverture backend mesurée** |
 
-**Portes qualité actuellement vertes** : `symfony php bin/phpunit` (**23 tests, 85 assertions**), `vendor/bin/phpstan` (niveau 8, 0 erreur), `php-cs-fixer --dry-run` (0), `doctrine:schema:validate`, `lint:container`. OpenAPI exporté dans `contracts/openapi.json` (auth + `/api/me` + `/api/families`).
+**Portes qualité actuellement vertes**
+- **Backend** : `symfony php bin/phpunit` (**40 tests**), `vendor/bin/phpstan` (niveau 8, 0 erreur), `php-cs-fixer --dry-run` (0), `doctrine:schema:validate`, `lint:container`. OpenAPI exporté dans `contracts/openapi.json`.
+- **Mobile** (`/mobile`) : `flutter test` (**105 tests verts**), couverture **84,3 %** (hors code généré ; seuil D8 = 70 %), `dart analyze` (0), `dart format` (0). Client OpenAPI régénérable **sans drift** (idempotent).
 
 > ⚠️ **Le conteneur DB doit tourner** pour les tests fonctionnels : `cd backend && docker compose up -d database` (il n'est pas auto-démarré ; sans lui, `symfony` retombe sur un PostgreSQL local 5432 et l'auth échoue).
 
@@ -144,11 +149,53 @@ vendor/bin/phpstan analyse --memory-limit=1G          # niveau 8, 0 erreur
 PHP_CS_FIXER_IGNORE_ENV=1 vendor/bin/php-cs-fixer fix --dry-run --diff
 php bin/console lint:container
 ```
-À venir : tests fonctionnels/API (DB de test), Playwright, `flutter test`, génération client Dart, CI.
+
+### Mobile (`/mobile`) — commandes réelles (validées)
+```bash
+cd mobile && flutter pub get
+# Regenerer le client depuis l'OpenAPI (apres un export backend) :
+dart run swagger_parser                                   # OpenAPI -> sources retrofit/dio
+dart run build_runner build --delete-conflicting-outputs --force-jit
+#   ^ --force-jit OBLIGATOIRE : des deps (sqlite3, path_provider_foundation) ont un
+#     hook/build.dart natif qui casse l'AOT du script build_runner sous Dart 3.10.
+flutter gen-l10n                                          # ARB -> AppL10n (si chaines i18n modifiees)
+# Qualite & tests :
+dart analyze                                              # 0 issue (exclut lib/api/generated)
+dart format --output=none --set-exit-if-changed lib/core lib/features lib/routing lib/app.dart lib/main.dart test
+flutter test --coverage                                   # 105 tests ; couverture 84,3% (hors genere)
+```
+À venir (Tâche 13) : **CI GitHub Actions** (jobs backend + mobile + drift OpenAPI), **E2E web Playwright**,
+mesure de couverture backend. (Lancer un device : `flutter run` ; l'émulateur Android utilise
+`API_BASE_URL=http://10.0.2.2:8000`, surchargeable par `--dart-define`.)
 
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-06-25 — App mobile Flutter : squelette + client OpenAPI + auth (Tâche 12)
+- **Projet Flutter** `/mobile` (iOS + Android), package `coparentplanner`, Dart 3.10 / Flutter 3.38.9.
+- **Client HTTP généré depuis l'OpenAPI** — `swagger_parser` (**pur Dart, pas de Java/openapi-generator**)
+  → clients **retrofit sur dio** + modèles `json_serializable`, dans `lib/api/generated/` (commité, non édité).
+  Régénération : `dart run swagger_parser && dart run build_runner build --force-jit`. **Idempotente, drift détectable**.
+- **Correctif backend lié** : `Dto/Family/CreateFamilyRequest` (`name`/`type` rendus nullables + `NotBlank`)
+  — un `default: ""` exposé dans l'OpenAPI cassait la génération de l'enum côté Dart. OpenAPI ré-exporté, PHPStan/cs-fixer/test familles verts.
+- **Pile réseau dio** (intercepteurs, ordre) : `Accept-Language` → `X-Family-Id` (scope §3.6, fige le header outbox)
+  → `Idempotency-Key` (outbox §3.11) → **Auth Bearer + refresh rotatif single-flight** (D3, `QueuedInterceptor` + détection de token déjà rafraîchi) → retry idempotent/backoff.
+- **État Riverpod** (D6) : `authController`/`AuthState` (sealed : Unauthenticated/PendingVerification/Authenticated),
+  `familyContext` (X-Family-Id actif, persisté), `localeController` (négociation §3.5), providers réseau/storage.
+- **Offline (squelette §3.10)** : Drift (`outbox_entry` + DAO + machine d'état pending/sending/done/conflict/failed),
+  `Idempotency-Key` UUID, rejeu FIFO au retour en ligne (`connectivity_plus`). Stockage tokens : `flutter_secure_storage`.
+- **Routing** go_router : guard `computeRedirect` (auth/famille), shell `StatefulShellRoute` à 4 onglets ;
+  **deep links** `app_links` (`coparentplanner://verify-email|reset-password?token=…`, D5) câblés natif (AndroidManifest + Info.plist).
+- **Écrans** : auth (login, register, check-email, forgot, reset, verify), onboarding (créer/rejoindre/famille),
+  shell (accueil états vides — encart garde masqué si famille unie, agenda/enfants placeholders, réglages profil/langue/logout).
+- **Thème §8** : tokens couleurs/typo (Bricolage+Hanken **auto-hébergées** OFL), `ThemeData` explicite, helper « liquid glass » iOS.
+- **i18n** : `flutter gen-l10n` (ARB `app_fr.arb` → `AppL10n`), fr-FR livrée, fallback sans changement de code.
+- **Tests** : **105 verts** (intercepteurs single-flight, outbox, ApiException RFC7807, auth/onboarding/family
+  repos+controllers, redirect guard, écrans widget, intégration shell). **Couverture 84,3 %** (≥ seuil D8 70 %).
+- **Dépendances figées** (Dart 3.10 / éviter les `hook/build.dart` qui cassent build_runner) :
+  `flutter_riverpod 2.6.1` (la 3.x tire `test` en runtime → conflit analyzer), `sqlite3 <3.2`, `flutter_secure_storage 9.x`,
+  `drift_dev 2.34.0`, build_runner lancé en **`--force-jit`** (les hooks natifs cassent l'AOT du build script).
 
 ### 2026-06-24 — Front web : design system + shell + écrans d'auth (Tâche 11)
 - **Design system §8** dans `assets/styles/app.css` : tokens (couleurs/typos Bricolage+Hanken/formes),

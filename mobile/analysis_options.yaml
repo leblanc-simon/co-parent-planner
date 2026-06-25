@@ -1,0 +1,21 @@
+# Analyse statique (cdc DoD §8.3 : `dart analyze` propre).
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  # Le code genere (client OpenAPI, *.g.dart, drift) n'est pas analyse/lint :
+  # il appartient au generateur (regenere en CI, cf. swagger_parser.yaml).
+  exclude:
+    - lib/api/generated/**
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+  language:
+    strict-casts: true
+    strict-raw-types: true
+
+linter:
+  rules:
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    prefer_final_locals: true
+    unawaited_futures: true
+    avoid_print: true

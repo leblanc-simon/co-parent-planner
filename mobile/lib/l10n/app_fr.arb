@@ -1,0 +1,101 @@
+{
+  "@@locale": "fr",
+  "appTitle": "CoParentPlanner",
+
+  "actionContinue": "Continuer",
+  "actionCancel": "Annuler",
+  "actionRetry": "Reessayer",
+  "actionSave": "Enregistrer",
+  "genericError": "Une erreur est survenue. Veuillez reessayer.",
+  "fieldRequired": "Ce champ est requis.",
+  "emailLabel": "Adresse e-mail",
+  "passwordLabel": "Mot de passe",
+  "invalidEmail": "Adresse e-mail invalide.",
+
+  "loginTitle": "Connexion",
+  "loginSubtitle": "Accedez a l'espace de votre famille.",
+  "loginAction": "Se connecter",
+  "loginForgot": "Mot de passe oublie ?",
+  "loginNoAccount": "Pas encore de compte ?",
+  "loginRegisterLink": "Creer un compte",
+
+  "registerTitle": "Creer un compte",
+  "registerSubtitle": "Quelques informations pour demarrer.",
+  "registerFullName": "Nom complet (optionnel)",
+  "registerPhone": "Telephone (optionnel)",
+  "registerAction": "Creer mon compte",
+  "registerHasAccount": "Deja un compte ?",
+  "registerLoginLink": "Se connecter",
+  "passwordPolicyHint": "Au moins 12 caracteres.",
+  "passwordTooShort": "Le mot de passe doit comporter au moins 12 caracteres.",
+
+  "checkEmailTitle": "Verifiez votre e-mail",
+  "checkEmailBody": "Un e-mail de verification a ete envoye a {email}. Ouvrez le lien qu'il contient pour activer votre compte.",
+  "@checkEmailBody": {
+    "placeholders": { "email": { "type": "String" } }
+  },
+  "checkEmailBackToLogin": "Revenir a la connexion",
+
+  "forgotTitle": "Mot de passe oublie",
+  "forgotSubtitle": "Saisissez votre e-mail pour recevoir un lien de reinitialisation.",
+  "forgotAction": "Envoyer le lien",
+  "forgotGenericSuccess": "Si un compte existe pour cette adresse, un e-mail de reinitialisation vient d'etre envoye.",
+
+  "resetTitle": "Nouveau mot de passe",
+  "resetSubtitle": "Choisissez un nouveau mot de passe.",
+  "resetNewPassword": "Nouveau mot de passe",
+  "resetConfirmPassword": "Confirmer le mot de passe",
+  "resetAction": "Reinitialiser",
+  "resetPasswordsMismatch": "Les mots de passe ne correspondent pas.",
+  "resetSuccess": "Votre mot de passe a ete reinitialise. Vous pouvez vous connecter.",
+
+  "verifyInProgress": "Verification en cours...",
+  "verifySuccess": "Votre adresse e-mail est verifiee. Vous pouvez vous connecter.",
+  "verifyError": "Lien invalide ou expire.",
+  "verifyGoToLogin": "Aller a la connexion",
+
+  "emailNotVerified": "Veuillez verifier votre adresse e-mail avant de vous connecter.",
+  "sessionExpired": "Session expiree, veuillez vous reconnecter.",
+
+  "onboardingTitle": "Bienvenue",
+  "onboardingSubtitle": "Creez votre premiere famille ou rejoignez-en une via une invitation.",
+  "onboardingCreate": "Creer une famille",
+  "onboardingJoin": "Rejoindre via une invitation",
+
+  "createFamilyTitle": "Creer une famille",
+  "familyNameLabel": "Nom de la famille",
+  "familyTypeLabel": "Type de famille",
+  "familyTypeSeparated": "Parents separes",
+  "familyTypeIntact": "Famille unie",
+  "createFamilyAction": "Creer la famille",
+
+  "joinFamilyTitle": "Rejoindre une famille",
+  "joinFamilySubtitle": "Saisissez le code d'invitation recu.",
+  "invitationTokenLabel": "Code d'invitation",
+  "joinFamilyAction": "Rejoindre",
+
+  "tabHome": "Accueil",
+  "tabAgenda": "Agenda",
+  "tabNotes": "Enfants",
+  "tabSettings": "Reglages",
+
+  "homeGreeting": "Bonjour",
+  "homeUpcomingTitle": "A venir",
+  "homeUpcomingEmpty": "Aucun evenement a venir.",
+  "homeDecisionsTitle": "A decider",
+  "homeDecisionsEmpty": "Rien a decider pour le moment.",
+  "homeNotesTitle": "Dernieres notes",
+  "homeNotesEmpty": "Aucune note pour le moment.",
+  "homeCustodyTitle": "Garde de la semaine",
+  "homeCustodyEmpty": "Aucun planning de garde pour le moment.",
+  "homeFamilyIntact": "Toute la famille reunie.",
+
+  "settingsTitle": "Reglages",
+  "settingsProfile": "Profil",
+  "settingsFullName": "Nom complet",
+  "settingsPhone": "Telephone",
+  "settingsLanguage": "Langue",
+  "settingsLogout": "Se deconnecter",
+  "settingsProfileUpdated": "Profil mis a jour.",
+  "settingsActiveFamily": "Famille active"
+}

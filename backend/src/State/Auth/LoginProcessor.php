@@ -16,6 +16,7 @@ use App\Security\Auth\Exception\EmailNotVerifiedException;
 use App\Security\Auth\Exception\InvalidCredentialsException;
 use App\Security\Auth\Exception\TooManyAttemptsException;
 use App\Security\Auth\RefreshTokenManager;
+use App\Security\Encryption\BlindIndexHasher;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Component\Clock\Clock;
@@ -42,6 +43,7 @@ final class LoginProcessor implements ProcessorInterface
         private readonly JWTTokenManagerInterface $jwtManager,
         private readonly RefreshTokenManager $refreshTokens,
         private readonly AuditLogger $audit,
+        private readonly BlindIndexHasher $blind,
         private readonly RequestStack $requestStack,
         private readonly RateLimiterFactoryInterface $loginLimiter,
         #[Autowire('%env(int:ACCESS_TOKEN_TTL)%')]
@@ -60,7 +62,8 @@ final class LoginProcessor implements ProcessorInterface
         $limiter = $this->loginLimiter->create(($ip ?? 'anon').'|'.$email);
         $limit = $limiter->consume(1);
         if (!$limit->isAccepted()) {
-            $this->audit->log(AuditAction::UserLoginLocked, ip: $ip, metadata: ['email' => $email]);
+            // Empreinte aveugle de l'e-mail (pas de donnée Contact en clair dans audit_logs.metadata).
+            $this->audit->log(AuditAction::UserLoginLocked, ip: $ip, metadata: ['email_hash' => $this->blind->hash($email)]);
             throw new TooManyAttemptsException($limit->getRetryAfter()->getTimestamp() - Clock::get()->now()->getTimestamp());
         }
 

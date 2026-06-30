@@ -199,6 +199,7 @@ class Membership
 
     /**
      * Niveau effectif sur un domaine (table de vérité §2.2 + §3.7) :
+     * - **précondition** : un membership non actif (invité/retiré) n'a aucun droit (§3.1) ;
      * - family_settings : édition réservée aux admins ; un parent non-admin n'a que `view`, les autres `none` ;
      * - parent → `edit` forcé sur tous les autres domaines ;
      * - child → `expenses` et structure (`family_settings`) forcés `none` ;
@@ -206,6 +207,12 @@ class Membership
      */
     public function effectiveLevel(RightDomain $domain): RightLevel
     {
+        // Précondition (§3.1) : aucun droit pour un membership non actif — défense en profondeur,
+        // indépendante du pré-filtrage des appelants.
+        if (!$this->isActive()) {
+            return RightLevel::None;
+        }
+
         // Garde-fou structure : l'édition family_settings exige le flag admin.
         if ($domain->requiresAdminToEdit() && !$this->isAdmin) {
             return MembershipRole::Parent === $this->role ? RightLevel::View : RightLevel::None;

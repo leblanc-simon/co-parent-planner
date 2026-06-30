@@ -51,21 +51,18 @@ final class RemoveMembershipProcessor implements ProcessorInterface
         }
 
         $membershipId = (string) $membership->getId();
+        $action = $isSelf ? AuditAction::MembershipLeft : AuditAction::MembershipRemoved;
+        $ip = $this->requestStack->getCurrentRequest()?->getClientIp();
 
-        $this->em->wrapInTransaction(function () use ($membership): void {
+        // Mutation + audit committés atomiquement (pas de trou append-only si le flush échoue).
+        $this->em->wrapInTransaction(function () use ($membership, $membershipId, $action, $ip, $ctx): void {
             $this->lastAdmin->assertNotLastAdmin($membership);
             $this->em->remove($membership);
+            $this->audit->persist(
+                $action, $ctx->user(), $ctx->family, ip: $ip,
+                metadata: ['membership' => $membershipId], entityType: 'Membership', entityId: $membershipId,
+            );
         });
-
-        $this->audit->log(
-            $isSelf ? AuditAction::MembershipLeft : AuditAction::MembershipRemoved,
-            $ctx->user(),
-            $ctx->family,
-            ip: $this->requestStack->getCurrentRequest()?->getClientIp(),
-            metadata: ['membership' => $membershipId],
-            entityType: 'Membership',
-            entityId: $membershipId,
-        );
 
         return null;
     }

@@ -21,6 +21,8 @@ final class AuditLogger
     }
 
     /**
+     * Journalise et **flush** immédiatement. À utiliser hors d'une transaction métier explicite.
+     *
      * @param array<string, mixed> $metadata
      */
     public function log(
@@ -32,7 +34,25 @@ final class AuditLogger
         ?string $entityType = null,
         ?string $entityId = null,
     ): void {
-        $this->em->persist(new AuditLog($action, $actor, $family, $ip, $metadata, $entityType, $entityId));
+        $this->persist($action, $actor, $family, $ip, $metadata, $entityType, $entityId);
         $this->em->flush();
+    }
+
+    /**
+     * Journalise **sans flush** : à appeler DANS une transaction métier (`wrapInTransaction`) pour que
+     * l'entrée d'audit soit committée **atomiquement** avec la mutation (pas de trou append-only).
+     *
+     * @param array<string, mixed> $metadata
+     */
+    public function persist(
+        AuditAction $action,
+        ?User $actor = null,
+        ?Family $family = null,
+        ?string $ip = null,
+        array $metadata = [],
+        ?string $entityType = null,
+        ?string $entityId = null,
+    ): void {
+        $this->em->persist(new AuditLog($action, $actor, $family, $ip, $metadata, $entityType, $entityId));
     }
 }

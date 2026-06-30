@@ -124,6 +124,13 @@ final class InvitationLot1Test extends ApiAuthTestCase
         $family = $accept->toArray();
         self::assertSame('parent', $family['role']);
         self::assertTrue($family['isAdmin']);
+
+        // L'acceptation journalise invitation.accepted ET membership.created (§3.3, action sensible).
+        $actions = $this->em()->getConnection()->fetchFirstColumn(
+            "SELECT action FROM audit_logs WHERE action IN ('invitation.accepted', 'membership.created')",
+        );
+        self::assertContains('invitation.accepted', $actions);
+        self::assertContains('membership.created', $actions);
     }
 
     public function testAcceptChildInvitationNormalizesRights(): void

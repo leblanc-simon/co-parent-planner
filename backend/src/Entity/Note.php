@@ -33,10 +33,15 @@ class Note
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private Child $child;
 
-    /** Auteur (membership). Peut pointer un membre anonymisé après le Lot 8 (fil préservé). */
+    /**
+     * Auteur (membership). **Nullable + ON DELETE SET NULL** : au retrait d'un membre, ses notes
+     * sont **préservées** (auteur anonymisé « membre supprimé ») au lieu d'être détruites — invariant
+     * de rétention Lot 2 §4.8/§5.2. (L'anonymisation riche viendra au Lot 8 ; ici on évite la perte
+     * de contenu familial via un CASCADE destructeur.).
+     */
     #[ORM\ManyToOne(targetEntity: Membership::class)]
-    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    private Membership $authorMembership;
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?Membership $authorMembership = null;
 
     #[PersonalData(
         category: DataCategory::Content,
@@ -74,12 +79,12 @@ class Note
         return $this;
     }
 
-    public function getAuthorMembership(): Membership
+    public function getAuthorMembership(): ?Membership
     {
         return $this->authorMembership;
     }
 
-    public function setAuthorMembership(Membership $authorMembership): static
+    public function setAuthorMembership(?Membership $authorMembership): static
     {
         $this->authorMembership = $authorMembership;
 

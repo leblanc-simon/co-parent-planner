@@ -57,8 +57,10 @@ final class AcceptInvitationProcessor implements ProcessorInterface
         \assert($user instanceof User);
 
         $tokenHash = $this->hasher->hash($data->token);
+        $ip = $this->requestStack->getCurrentRequest()?->getClientIp();
 
-        $membership = $this->em->wrapInTransaction(function () use ($tokenHash, $user): Membership {
+        // Tout (membership + transition pending→accepted + audits) est committé atomiquement.
+        $membership = $this->em->wrapInTransaction(function () use ($tokenHash, $user, $ip): Membership {
             $invitation = $this->invitations->findOneByTokenHashForUpdate($tokenHash);
 
             // Introuvable / révoquée / déjà acceptée → réponse non énumérante (400 générique).
@@ -74,23 +76,13 @@ final class AcceptInvitationProcessor implements ProcessorInterface
                 throw new InvitationEmailMismatchException();
             }
 
-            return $this->createMembership($invitation, $user);
+            return $this->createMembership($invitation, $user, $ip);
         });
-
-        $this->audit->log(
-            AuditAction::MembershipCreated,
-            $user,
-            $membership->getFamily(),
-            ip: $this->requestStack->getCurrentRequest()?->getClientIp(),
-            metadata: ['via' => 'invitation'],
-            entityType: 'Membership',
-            entityId: (string) $membership->getId(),
-        ); // flush
 
         return FamilyResource::fromMembership($membership);
     }
 
-    private function createMembership(Invitation $invitation, User $user): Membership
+    private function createMembership(Invitation $invitation, User $user, ?string $ip): Membership
     {
         $family = $invitation->getFamily();
 
@@ -108,6 +100,17 @@ final class AcceptInvitationProcessor implements ProcessorInterface
 
         $this->em->persist($membership);
         $invitation->setStatus(InvitationStatus::Accepted);
+
+        // Audits journalisés DANS la transaction (atomiques avec l'écriture) : la consommation de
+        // l'invitation (action sensible §3.3) ET la création du membership sont traçables.
+        $this->audit->persist(
+            AuditAction::InvitationAccepted, $user, $family, ip: $ip,
+            entityType: 'Invitation', entityId: (string) $invitation->getId(),
+        );
+        $this->audit->persist(
+            AuditAction::MembershipCreated, $user, $family, ip: $ip, metadata: ['via' => 'invitation'],
+            entityType: 'Membership', entityId: (string) $membership->getId(),
+        );
 
         return $membership;
     }

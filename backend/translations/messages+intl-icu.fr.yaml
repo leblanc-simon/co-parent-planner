@@ -89,6 +89,7 @@ child:
         info_too_long: "Une information pratique dépasse la longueur autorisée."
         info_too_many: "Trop d'informations pratiques (50 maximum)."
         deletion_blocked: "Impossible de supprimer ce profil : il est rattaché à un compte. Détachez-le d'abord."
+        conflict: "Ce profil a été modifié entre-temps. Rechargez la fiche puis réessayez."
     health_warning: "Ne saisissez pas de données de santé (allergies, traitements, diagnostics…). Utilisez des informations pratiques générales uniquement."
 
 note:

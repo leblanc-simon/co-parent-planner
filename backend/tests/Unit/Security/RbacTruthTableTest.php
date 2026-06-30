@@ -7,6 +7,7 @@ namespace App\Tests\Unit\Security;
 use App\Entity\Membership;
 use App\Entity\Right;
 use App\Enum\MembershipRole;
+use App\Enum\MembershipStatus;
 use App\Enum\RightDomain;
 use App\Enum\RightLevel;
 use PHPUnit\Framework\TestCase;
@@ -77,6 +78,16 @@ final class RbacTruthTableTest extends TestCase
         self::assertSame(RightLevel::None, $step->effectiveLevel(RightDomain::Exchanges));
         // family_settings : step_parent jamais (none).
         self::assertSame(RightLevel::None, $step->effectiveLevel(RightDomain::FamilySettings));
+    }
+
+    public function testInactiveMembershipHasNoRightsEvenAsParent(): void
+    {
+        // Précondition §3.1 : un membership non actif ne résout aucun droit, même rôle parent/admin.
+        $invited = $this->membership(MembershipRole::Parent, admin: true)->setStatus(MembershipStatus::Invited);
+
+        foreach (RightDomain::cases() as $domain) {
+            self::assertSame(RightLevel::None, $invited->effectiveLevel($domain), "non actif → none sur {$domain->value}");
+        }
     }
 
     public function testLevelOrderingSatisfies(): void

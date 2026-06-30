@@ -42,6 +42,18 @@ final class AgeCalculatorTest extends TestCase
         self::assertSame(10, $this->calculator('2026-06-24 12:00')->age($birth), 'lendemain');
     }
 
+    public function testWestOfUtcTimezoneDoesNotShiftBirthday(): void
+    {
+        // Régression revue : la date de naissance (calendaire) ne doit pas être décalée par le fuseau
+        // famille. Né le 15/06/2016 ; avec l'ancien code, la naissance reculait au 14/06 en fuseau ouest,
+        // faisant croire à un anniversaire un jour trop tôt.
+        $birth = $this->date('2016-06-15');
+        // Horloge = 14 juin 20:00 UTC → 14 juin 13:00 à Los Angeles (anniversaire PAS encore atteint).
+        self::assertSame(9, $this->calculator('2026-06-14 22:00')->age($birth, 'America/Los_Angeles'), 'veille (fuseau ouest) → 9');
+        // Horloge = 15 juin 20:00 UTC → 15 juin à Los Angeles (jour de l'anniversaire).
+        self::assertSame(10, $this->calculator('2026-06-15 22:00')->age($birth, 'America/Los_Angeles'), 'jour J (fuseau ouest) → 10');
+    }
+
     public function testLeapYearBirthday(): void
     {
         $birth = $this->date('2016-02-29');

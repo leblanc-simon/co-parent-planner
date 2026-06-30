@@ -20,16 +20,17 @@ final class NoteDateValidator
 
     public function validate(\DateTimeImmutable $noteDate, Child $child, string $timezone = 'Europe/Paris'): void
     {
-        $tz = new \DateTimeZone($timezone);
-        $today = $this->clock->now()->setTimezone($tz)->format('Y-m-d');
-        $date = $noteDate->setTimezone($tz)->format('Y-m-d');
+        // « Aujourd'hui » dans le fuseau famille ; note_date et birth_date sont des dates CALENDAIRES
+        // (lues telles quelles, sans conversion de fuseau qui les décalerait d'un jour).
+        $today = $this->clock->now()->setTimezone(new \DateTimeZone($timezone))->format('Y-m-d');
+        $date = $noteDate->format('Y-m-d');
 
         if ($date > $today) {
             throw new ChildInputException('note.error.date_future');
         }
 
         $birth = $child->getBirthDate();
-        if (null !== $birth && $date < $birth->setTimezone($tz)->format('Y-m-d')) {
+        if (null !== $birth && $date < $birth->format('Y-m-d')) {
             throw new ChildInputException('note.error.date_before_birth');
         }
     }

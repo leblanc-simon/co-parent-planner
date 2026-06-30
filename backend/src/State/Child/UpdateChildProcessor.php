@@ -10,11 +10,15 @@ use App\Dto\Child\ChildResource;
 use App\Dto\Child\UpdateChildRequest;
 use App\Enum\AuditAction;
 use App\Enum\ChildNotesAction;
+use App\Exception\ChildConflictException;
 use App\Security\Auth\AuditLogger;
 use App\Security\Child\ChildAccess;
 use App\Service\Child\AgeCalculator;
 use App\Service\Child\ChildWriter;
 use App\State\Concern\ReadsProvidedKeys;
+use Doctrine\DBAL\LockMode;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\OptimisticLockException;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
@@ -27,6 +31,7 @@ final class UpdateChildProcessor implements ProcessorInterface
     use ReadsProvidedKeys;
 
     public function __construct(
+        private readonly EntityManagerInterface $em,
         private readonly ChildAccess $access,
         private readonly ChildWriter $writer,
         private readonly AgeCalculator $age,
@@ -42,6 +47,16 @@ final class UpdateChildProcessor implements ProcessorInterface
         $ctx = $this->access->context();
         $child = $this->access->child($ctx, $uriVariables['id'] ?? null);
         $this->access->authorize($ctx, ChildNotesAction::ChildManage);
+
+        // Verrou optimiste (§4.2) : si le client fournit la version qu'il a vue et qu'elle a changé
+        // entre-temps, on refuse (409) au lieu d'écraser silencieusement `info`.
+        if (null !== $data->expectedVersion) {
+            try {
+                $this->em->lock($child, LockMode::OPTIMISTIC, $data->expectedVersion);
+            } catch (OptimisticLockException) {
+                throw new ChildConflictException();
+            }
+        }
 
         $this->writer->applyUpdate($child, $data, $this->providedKeys());
 

@@ -48,6 +48,9 @@ final class ChildNotesPolicy
             return true; // parent/admin : modération de toute note
         }
 
-        return $note->getAuthorMembership()->getId()->equals($membership->getId());
+        $author = $note->getAuthorMembership();
+
+        // Note d'un auteur retiré (anonymisé) : seul un parent/admin peut la modérer.
+        return null !== $author && $author->getId()->equals($membership->getId());
     }
 }

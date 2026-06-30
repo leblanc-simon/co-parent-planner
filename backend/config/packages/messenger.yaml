@@ -24,6 +24,9 @@ framework:
 
             # E-mails transactionnels d'auth, traités hors requête (§3.1, §4.6).
             App\Message\SendAuthEmail: async
+            # E-mail d'invitation : async (découple la création d'invitation ; rend effectif le
+            # chiffrement-en-transit du token dans la file — §3.3.B).
+            App\Message\SendInvitationEmail: async
 
 when@test:
     framework:

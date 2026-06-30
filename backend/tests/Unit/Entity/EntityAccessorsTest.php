@@ -187,6 +187,14 @@ final class EntityAccessorsTest extends TestCase
         $log->preventUpdate();
     }
 
+    public function testAuditLogCannotBeDeleted(): void
+    {
+        $log = new AuditLog(AuditAction::UserLogout);
+
+        $this->expectException(\LogicException::class);
+        $log->preventDelete();
+    }
+
     public function testRightAccessors(): void
     {
         $right = new Right();

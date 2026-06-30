@@ -71,8 +71,10 @@ final class UpdateMembershipProcessor implements ProcessorInterface
         $this->scope->denyUnless($ctx, RightDomain::FamilySettings, RightLevel::Edit);
 
         $before = $this->snapshot($membership);
+        $ip = $this->requestStack->getCurrentRequest()?->getClientIp();
 
-        $this->em->wrapInTransaction(function () use ($membership, $data, $provided): void {
+        // Mutation + audit (avant/après) committés atomiquement.
+        $this->em->wrapInTransaction(function () use ($membership, $data, $provided, $before, $ip, $ctx): void {
             [$role, $isAdmin] = $this->resolveRoleAndAdmin($membership, $data, $provided);
 
             // §3.2 : si l'opération retire l'admin d'un membre actuellement admin → protection du dernier admin.
@@ -89,17 +91,13 @@ final class UpdateMembershipProcessor implements ProcessorInterface
             if (\in_array('displayColor', $provided, true)) {
                 $membership->setDisplayColor($data->displayColor);
             }
-        });
 
-        $this->audit->log(
-            AuditAction::MembershipRightsUpdated,
-            $ctx->user(),
-            $ctx->family,
-            ip: $this->requestStack->getCurrentRequest()?->getClientIp(),
-            metadata: ['membership' => (string) $membership->getId(), 'before' => $before, 'after' => $this->snapshot($membership)],
-            entityType: 'Membership',
-            entityId: (string) $membership->getId(),
-        );
+            $this->audit->persist(
+                AuditAction::MembershipRightsUpdated, $ctx->user(), $ctx->family, ip: $ip,
+                metadata: ['membership' => (string) $membership->getId(), 'before' => $before, 'after' => $this->snapshot($membership)],
+                entityType: 'Membership', entityId: (string) $membership->getId(),
+            );
+        });
 
         return MemberResource::fromMembership($membership, self: $isSelf);
     }

@@ -12,8 +12,22 @@ export default class extends Controller {
     // ---- Réglages famille ----
     saveFamily(event) {
         event.preventDefault();
-        const body = this._formObject(event.currentTarget, ['name', 'type', 'timezone', 'schoolZone', 'academy', 'handoverWeekday', 'handoverTime']);
-        if (body.handoverWeekday) body.handoverWeekday = parseInt(body.handoverWeekday, 10);
+        const data = new FormData(event.currentTarget);
+        const body = {};
+        // Champs requis/non effaçables : envoyés seulement si non vides.
+        ['name', 'type', 'timezone'].forEach((f) => {
+            const v = data.get(f);
+            if (v !== null && v !== '') body[f] = v;
+        });
+        // Champs optionnels EFFACABLES : un champ vidé est envoyé à null pour effacer la valeur serveur.
+        const academy = data.get('academy');
+        body.academy = academy === '' || academy === null ? null : academy;
+        const zone = data.get('schoolZone');
+        body.schoolZone = zone === '' || zone === null ? null : zone;
+        const hw = data.get('handoverWeekday');
+        body.handoverWeekday = hw === '' || hw === null ? null : parseInt(hw, 10);
+        const ht = data.get('handoverTime');
+        body.handoverTime = ht === '' || ht === null ? null : ht;
         this._send('PATCH', `/api/families/${this.familyIdValue}`, body);
     }
 
@@ -98,16 +112,6 @@ export default class extends Controller {
             rights[domain] = sel.value;
         });
         return rights;
-    }
-
-    _formObject(form, fields) {
-        const data = new FormData(form);
-        const out = {};
-        fields.forEach((f) => {
-            const v = data.get(f);
-            if (v !== null && v !== '') out[f] = v;
-        });
-        return out;
     }
 
     async _send(method, url, body) {

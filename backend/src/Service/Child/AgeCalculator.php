@@ -25,18 +25,21 @@ final class AgeCalculator
             return null;
         }
 
-        $tz = new \DateTimeZone($timezone);
-        $today = $this->clock->now()->setTimezone($tz);
-        $birth = $birthDate->setTimezone($tz);
+        // « Aujourd'hui » dans le fuseau famille. La date de naissance est une date CALENDAIRE :
+        // on la lit telle quelle (format), sans conversion de fuseau qui la décalerait d'un jour
+        // pour les fuseaux à l'ouest d'UTC (la colonne `date` est stockée à minuit UTC).
+        $today = $this->clock->now()->setTimezone(new \DateTimeZone($timezone));
+        $todayYmd = $today->format('Y-m-d');
+        $birthYmd = $birthDate->format('Y-m-d');
 
         // Date de naissance future : défense (devrait être bloquée en validation).
-        if ($birth->format('Y-m-d') > $today->format('Y-m-d')) {
+        if ($birthYmd > $todayYmd) {
             return null;
         }
 
-        $age = (int) $today->format('Y') - (int) $birth->format('Y');
-        // Anniversaire pas encore passé cette année → -1.
-        if ($today->format('m-d') < $birth->format('m-d')) {
+        $age = (int) substr($todayYmd, 0, 4) - (int) substr($birthYmd, 0, 4);
+        // Anniversaire pas encore passé cette année → -1 (comparaison m-d).
+        if (substr($todayYmd, 5) < substr($birthYmd, 5)) {
             --$age;
         }
 

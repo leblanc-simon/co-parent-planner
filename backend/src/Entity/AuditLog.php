@@ -91,6 +91,12 @@ class AuditLog
         throw new \LogicException('AuditLog est append-only : toute modification est interdite (cdc §5.4).');
     }
 
+    #[ORM\PreRemove]
+    public function preventDelete(): never
+    {
+        throw new \LogicException('AuditLog est append-only : toute suppression est interdite (cdc §5.4).');
+    }
+
     public function getId(): Uuid
     {
         return $this->id;

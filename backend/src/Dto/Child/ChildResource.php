@@ -60,6 +60,8 @@ class ChildResource
     public ?string $schoolLabel = null;
     /** @var list<array{label: string, value: string}> */
     public array $info = [];
+    /** Version (verrou optimiste) : à renvoyer en `expectedVersion` pour une édition concurrente sûre. */
+    public int $version = 1;
 
     public static function fromChild(Child $child, ?int $age): self
     {
@@ -72,6 +74,7 @@ class ChildResource
         $dto->age = $age;
         $dto->schoolLabel = $child->getSchoolLabel();
         $dto->info = $child->getInfo();
+        $dto->version = $child->getVersion();
 
         return $dto;
     }

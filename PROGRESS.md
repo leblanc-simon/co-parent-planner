@@ -214,6 +214,24 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 
 ## 6. Journal (du plus récent au plus ancien)
 
+### 2026-07-01 — Revue de code Lots 1 & 2 : 11 défauts confirmés corrigés
+Revue multi-agents (8 dimensions → vérification adversariale). 11 confirmés / 12, tous corrigés :
+- **P0** — FK `notes.author_membership_id` était `ON DELETE CASCADE` : retirer un membre **détruisait
+  ses notes**. Passé en **nullable + `ON DELETE SET NULL`** (note préservée, auteur « Membre supprimé »),
+  migration `Version20260630220008` + test de survie. (Invariant rétention §4.8.)
+- **P1** — acceptation d'invitation : audit `invitation.accepted` manquant → ajouté **dans la
+  transaction** (atomique avec `membership.created`) + test.
+- **P2** — `Membership::effectiveLevel()` ignorait le statut → garde `isActive()` (défense en
+  profondeur) + test ; verrou optimiste `Child.info` jamais armé → **implémenté** (`version` exposée,
+  `expectedVersion` → 409) + test ; audit écrit hors transaction (retrait/maj membre, acceptation) →
+  `AuditLogger::persist()` **dans** la transaction ; `AgeCalculator`/`NoteDateValidator` décalaient la
+  date de naissance (fuseau ≠ UTC) → comparaison en date calendaire brute + test fuseau ouest.
+- **P3** — e-mail en clair dans `audit_logs.metadata` (login verrouillé) → blind index ; `AuditLog`
+  sans garde `PreRemove` → ajouté + test ; `SendInvitationEmail` non routé async → routé ; réglages
+  famille : champs non effaçables (academy/zone/jour) → envoi `null` à l'effacement.
+- Portes : backend **134 tests / 946 assertions, couverture 85,5 %**, PHPStan/cs-fixer ; mobile **110**,
+  analyze propre ; **E2E 6/6** ; OpenAPI + client Dart régénérés (sans drift).
+
 ### 2026-06-30 — Lot 2 : enfants & notes (clos)
 - **Modèle** : `Child` (info jsonb paires libres, verrou optimiste, first_name au registre non chiffré),
   `Note` (`text` chiffré AES-256-GCM) ; migration `Version20260630205954` (FK, index, cascade).

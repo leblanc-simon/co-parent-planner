@@ -196,6 +196,68 @@ final class ChildNotesLot2Test extends ApiAuthTestCase
         self::assertSame(404, $response->getStatusCode());
     }
 
+    public function testOptimisticLockRejectsStaleUpdate(): void
+    {
+        [$client, $auth, $familyId] = $this->adminWithFamily('c-lock@example.com');
+        $scoped = $auth + ['X-Family-Id' => $familyId];
+        $childId = $this->createChild($client, $auth, $familyId);
+
+        $version = $client->request('GET', '/api/children/'.$childId, ['headers' => $scoped])->toArray()['version'];
+        self::assertSame(1, $version);
+
+        // 1re édition avec la bonne version → 200 (version passe à 2).
+        $ok = $client->request('PATCH', '/api/children/'.$childId, [
+            'json' => ['schoolLabel' => 'CM1', 'expectedVersion' => 1],
+            'headers' => $scoped + ['Content-Type' => 'application/merge-patch+json'],
+        ]);
+        self::assertSame(200, $ok->getStatusCode());
+        self::assertSame(2, $ok->toArray()['version']);
+
+        // 2e édition avec une version périmée (1) → 409 conflit.
+        $stale = $client->request('PATCH', '/api/children/'.$childId, [
+            'json' => ['schoolLabel' => 'CM2', 'expectedVersion' => 1],
+            'headers' => $scoped + ['Content-Type' => 'application/merge-patch+json'],
+        ]);
+        self::assertSame(409, $stale->getStatusCode());
+        self::assertSame('/errors/conflict', $stale->toArray(false)['type']);
+    }
+
+    public function testNotesSurviveAuthorRemoval(): void
+    {
+        // P0 (revue) : retirer un membre auteur d'une note ne doit PAS détruire la note (§4.8).
+        [$client, $auth, $familyId] = $this->adminWithFamily('c-survive@example.com');
+        $childId = $this->createChild($client, $auth, $familyId);
+        $this->addMember($familyId, 'c-author@example.com', MembershipRole::StepParent, RightLevel::Edit);
+
+        $spClient = self::createClient();
+        $spClient->disableReboot();
+        $spScoped = $this->bearer($this->login($spClient, 'c-author@example.com')) + ['X-Family-Id' => $familyId];
+        $spClient->request('POST', '/api/children/'.$childId.'/notes', [
+            'json' => ['text' => 'note qui doit survivre'],
+            'headers' => $spScoped,
+        ]);
+
+        // L'admin retire le beau-parent auteur.
+        $members = $client->request('GET', '/api/families/'.$familyId.'/members', [
+            'headers' => $auth + ['X-Family-Id' => $familyId],
+        ])->toArray();
+        $authorMembership = array_values(array_filter($members, static fn ($m) => 'c-author@example.com' === $m['email']))[0]['id'];
+        $delete = $client->request('DELETE', '/api/memberships/'.$authorMembership, [
+            'headers' => $auth + ['X-Family-Id' => $familyId],
+        ]);
+        self::assertSame(204, $delete->getStatusCode());
+
+        // La note survit, auteur anonymisé.
+        $notes = $client->request('GET', '/api/children/'.$childId.'/notes', [
+            'headers' => $auth + ['X-Family-Id' => $familyId],
+        ]);
+        self::assertSame(200, $notes->getStatusCode());
+        $body = $notes->toArray();
+        self::assertCount(1, $body, 'la note doit survivre au retrait de son auteur');
+        self::assertSame('note qui doit survivre', $body[0]['text']);
+        self::assertSame('Membre supprimé', $body[0]['authorName']);
+    }
+
     public function testAccessBlockListsMembersByLevel(): void
     {
         [$client, $auth, $familyId] = $this->adminWithFamily('c-admin6@example.com');

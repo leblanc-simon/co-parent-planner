@@ -66,9 +66,14 @@ class NoteResource
         $dto->childId = (string) $note->getChild()->getId();
         $dto->text = $note->getText();
         $dto->noteDate = $note->getNoteDate()->format('Y-m-d');
-        $dto->authorMembershipId = (string) $author->getId();
-        $dto->authorName = $author->getUser()->getFullName() ?? $author->getUser()->getEmail();
-        $dto->authorColor = $author->getDisplayColor();
+        // Auteur anonymisé (membre retiré) : fil préservé, identité neutralisée (§4.8).
+        if (null !== $author) {
+            $dto->authorMembershipId = (string) $author->getId();
+            $dto->authorName = $author->getUser()->getFullName() ?? $author->getUser()->getEmail();
+            $dto->authorColor = $author->getDisplayColor();
+        } else {
+            $dto->authorName = 'Membre supprimé';
+        }
         $dto->createdAt = $note->getCreatedAt()->format(\DATE_ATOM);
 
         return $dto;

@@ -12,9 +12,11 @@ use App\Exception\FamilyScopeRequiredException;
 use App\Repository\MembershipRepository;
 use App\Security\FamilyContext;
 use App\Security\FamilyContextResolver;
+use App\Security\FamilyScope;
 use PHPUnit\Framework\TestCase;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
 use Symfony\Component\Uid\Uuid;
 
@@ -37,7 +39,9 @@ final class FamilyContextResolverTest extends TestCase
         $repo = $this->createStub(MembershipRepository::class);
         $repo->method('findActive')->willReturn($membership);
 
-        return new FamilyContextResolver($security, $repo);
+        $scope = new FamilyScope($security, $repo, $this->createStub(RequestStack::class));
+
+        return new FamilyContextResolver($security, $scope);
     }
 
     private function request(?string $familyId): Request

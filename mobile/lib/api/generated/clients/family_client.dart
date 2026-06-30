@@ -7,6 +7,7 @@ import 'package:retrofit/retrofit.dart';
 
 import '../models/family.dart';
 import '../models/family_create_family_request.dart';
+import '../models/family_update_family_request_json_merge_patch.dart';
 
 part 'family_client.g.dart';
 
@@ -36,5 +37,16 @@ abstract class FamilyClient {
   @GET('/api/families/{id}')
   Future<Family> apiFamiliesIdGet({
     @Path('id') required String id,
+  });
+
+  /// Updates the Family resource.
+  ///
+  /// Updates the Family resource.
+  ///
+  /// [id] - Family identifier.
+  @PATCH('/api/families/{id}')
+  Future<Family> apiFamiliesIdPatch({
+    @Path('id') required String id,
+    @Body() required FamilyUpdateFamilyRequestJsonMergePatch body,
   });
 }

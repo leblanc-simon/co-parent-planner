@@ -1,0 +1,204 @@
+{% extends 'app/shell.html.twig' %}
+{% block title %}Paramètres · CoParentPlanner{% endblock %}
+{% set nav_active = 'settings' %}
+
+{% set editableDomains = ['custody', 'agenda', 'children_notes', 'exchanges'] %}
+{% set levels = ['none', 'view', 'edit'] %}
+
+{% block main %}
+<div data-controller="settings" data-settings-family-id-value="{{ family.id }}">
+<header class="main__header">
+    <div>
+        <div class="eyebrow">Paramètres</div>
+        <h1>Compte &amp; Famille</h1>
+    </div>
+    {{ include('app/_family_select.html.twig') }}
+</header>
+
+<p class="form-error" data-settings-target="error" role="alert" hidden></p>
+
+{# ───────────── Réglages de la famille (US-SET-2a) ───────────── #}
+<section class="card" style="margin-bottom:1.25rem">
+    <div class="eyebrow">Réglages de la famille</div>
+    {% if not isAdmin %}<p class="empty-state">Seul·e un·e administrateur·rice peut modifier ces réglages.</p>{% endif %}
+    <form data-settings-target="familyForm" data-action="submit->settings#saveFamily">
+        <div class="grid-2">
+            <div class="field">
+                <label for="f-name">Nom</label>
+                <input id="f-name" name="name" value="{{ family.name }}" {{ isAdmin ? '' : 'disabled' }} required>
+            </div>
+            <div class="field">
+                <label for="f-type">Type</label>
+                <select id="f-type" name="type" {{ isAdmin ? '' : 'disabled' }}>
+                    <option value="separated" {{ family.type.value == 'separated' ? 'selected' }}>Séparée</option>
+                    <option value="intact" {{ family.type.value == 'intact' ? 'selected' }}>Unie</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="f-tz">Fuseau horaire</label>
+                <input id="f-tz" name="timezone" value="{{ family.timezone }}" {{ isAdmin ? '' : 'disabled' }}>
+            </div>
+            <div class="field">
+                <label for="f-zone">Zone scolaire</label>
+                <select id="f-zone" name="schoolZone" {{ isAdmin ? '' : 'disabled' }}>
+                    <option value="">—</option>
+                    {% for z in ['A', 'B', 'C'] %}<option value="{{ z }}" {{ family.schoolZone == z ? 'selected' }}>{{ z }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="f-academy">Académie</label>
+                <input id="f-academy" name="academy" value="{{ family.academy }}" {{ isAdmin ? '' : 'disabled' }}>
+            </div>
+            <div class="field">
+                <label for="f-hw">Jour d'échange</label>
+                <select id="f-hw" name="handoverWeekday" {{ isAdmin ? '' : 'disabled' }}>
+                    <option value="">—</option>
+                    {% set days = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'] %}
+                    {% set hw = family.settings['handover_weekday']|default(null) %}
+                    {% for d in 1..7 %}<option value="{{ d }}" {{ hw == d ? 'selected' }}>{{ days[d-1] }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="f-ht">Heure d'échange</label>
+                <input id="f-ht" name="handoverTime" type="time" value="{{ family.settings['handover_time']|default('') }}" {{ isAdmin ? '' : 'disabled' }}>
+            </div>
+        </div>
+        {% if isAdmin %}<button class="btn btn--primary" type="submit">Enregistrer</button>{% endif %}
+    </form>
+</section>
+
+{# ───────────── Membres (US-MBR-1/2/3/5) ───────────── #}
+<section class="card" style="margin-bottom:1.25rem">
+    <div class="eyebrow">Membres ({{ members|length }})</div>
+    <div class="members">
+        {% for m in members %}
+        <form class="member-row" data-action="submit->settings#saveMember" data-membership-id="{{ m.id }}">
+            <div class="member-row__head">
+                <span class="member-dot" style="background: {{ m.displayColor ?: '#C2643D' }}"></span>
+                <div>
+                    <strong>{{ m.user.fullName ?: m.user.email }}</strong>
+                    <small>{{ m.user.email }}{{ m.user.id == activeMembership.user.id ? ' · vous' }}</small>
+                </div>
+            </div>
+
+            <div class="member-row__grid">
+                <label>Rôle
+                    <select name="role" {{ isAdmin ? '' : 'disabled' }}>
+                        {% for r in ['parent','step_parent','child'] %}<option value="{{ r }}" {{ m.role.value == r ? 'selected' }}>{{ r }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label class="member-row__admin">
+                    <input type="checkbox" name="isAdmin" {{ m.isAdmin ? 'checked' }} {{ isAdmin ? '' : 'disabled' }}> Admin
+                </label>
+                <label>Couleur
+                    <input type="color" name="displayColor" value="{{ m.displayColor ?: '#C2643D' }}"
+                           {{ (isAdmin or m.user.id == activeMembership.user.id) ? '' : 'disabled' }}>
+                </label>
+            </div>
+
+            {% set memberRights = m.effectiveRights %}
+            <div class="member-row__rights">
+                {% for domain in editableDomains %}
+                    <label>{{ domain }}
+                        <select name="rights[{{ domain }}]" {{ isAdmin ? '' : 'disabled' }}>
+                            {% for lvl in levels %}<option value="{{ lvl }}" {{ memberRights[domain] == lvl ? 'selected' }}>{{ lvl }}</option>{% endfor %}
+                        </select>
+                    </label>
+                {% endfor %}
+            </div>
+
+            <div class="member-row__actions">
+                {% if isAdmin or m.user.id == activeMembership.user.id %}<button class="btn btn--ghost" type="submit">Enregistrer</button>{% endif %}
+                {% if isAdmin and m.user.id != activeMembership.user.id %}
+                    <button class="btn btn--ghost" type="button" data-action="settings#removeMember" data-membership-id="{{ m.id }}">Retirer</button>
+                {% endif %}
+                {% if m.user.id == activeMembership.user.id and not m.isAdmin %}
+                    <button class="btn btn--ghost" type="button" data-action="settings#removeMember" data-membership-id="{{ m.id }}">Quitter</button>
+                {% endif %}
+            </div>
+        </form>
+        {% endfor %}
+    </div>
+</section>
+
+{# ───────────── Invitations (US-INV-1/2) ───────────── #}
+{% if isAdmin %}
+<section class="card" style="margin-bottom:1.25rem">
+    <div class="eyebrow">Inviter une personne</div>
+    <form data-action="submit->settings#invite" data-settings-target="inviteForm">
+        <div class="grid-2">
+            <div class="field">
+                <label for="i-email">Adresse e-mail</label>
+                <input id="i-email" name="email" type="email" required>
+            </div>
+            <div class="field">
+                <label for="i-role">Rôle</label>
+                <select id="i-role" name="role" data-action="change->settings#refreshSummary" data-settings-target="inviteRole">
+                    <option value="step_parent">Beau-parent</option>
+                    <option value="parent">Parent</option>
+                    <option value="child">Enfant</option>
+                </select>
+            </div>
+        </div>
+        <div class="invite-rights" data-settings-target="inviteRights">
+            {% for domain in editableDomains %}
+                <label>{{ domain }}
+                    <select name="rights[{{ domain }}]" data-action="change->settings#refreshSummary">
+                        {% for lvl in levels %}<option value="{{ lvl }}">{{ lvl }}</option>{% endfor %}
+                    </select>
+                </label>
+            {% endfor %}
+        </div>
+        <p class="invite-summary" data-settings-target="summary"></p>
+        <button class="btn btn--primary" type="submit">Envoyer l'invitation</button>
+    </form>
+
+    {% if invitations|length %}
+    <div class="eyebrow" style="margin-top:1.25rem">Invitations en attente</div>
+    <ul class="invitations">
+        {% for inv in invitations %}
+        <li>
+            <span>{{ inv.email }} · {{ inv.role.value }} · expire le {{ inv.expiresAt|date('d/m/Y') }}</span>
+            <button class="btn btn--ghost" type="button" data-action="settings#revokeInvitation" data-invitation-id="{{ inv.id }}">Révoquer</button>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</section>
+{% endif %}
+
+{# ───────────── Familles liées (US-LINK-1/2/3) ───────────── #}
+<section class="card">
+    <div class="eyebrow">Familles liées</div>
+    {% if links|length %}
+    <ul class="links">
+        {% for link in links %}
+        <li>
+            <span>{{ link.otherFamily(family).name }} · <em>{{ link.status.value }}</em></span>
+            <span>
+                {% if isAdmin and link.status.value == 'pending' and link.linkedFamily.id == family.id %}
+                    <button class="btn btn--ghost" type="button" data-action="settings#activateLink" data-link-id="{{ link.id }}">Activer</button>
+                {% endif %}
+                {% if isAdmin %}
+                    <button class="btn btn--ghost" type="button" data-action="settings#removeLink" data-link-id="{{ link.id }}">Délier</button>
+                {% endif %}
+            </span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty-state">Aucune famille liée.</p>
+    {% endif %}
+
+    {% if isAdmin %}
+    <form data-action="submit->settings#createLink" style="margin-top:1rem">
+        <div class="field">
+            <label for="l-id">Identifiant de la famille à lier</label>
+            <input id="l-id" name="linkedFamilyId" placeholder="UUID de la famille" required>
+        </div>
+        <button class="btn btn--ghost" type="submit">Proposer un lien</button>
+    </form>
+    {% endif %}
+</section>
+</div>
+{% endblock %}

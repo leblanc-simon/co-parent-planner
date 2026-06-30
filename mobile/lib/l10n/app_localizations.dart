@@ -578,6 +578,150 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Famille active'**
   String get settingsActiveFamily;
+
+  /// No description provided for @settingsSwitchFamily.
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer de famille'**
+  String get settingsSwitchFamily;
+
+  /// No description provided for @settingsMembers.
+  ///
+  /// In fr, this message translates to:
+  /// **'Membres de la famille'**
+  String get settingsMembers;
+
+  /// No description provided for @membersTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Membres'**
+  String get membersTitle;
+
+  /// No description provided for @membersEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun membre.'**
+  String get membersEmpty;
+
+  /// No description provided for @membersRoleParent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Parent'**
+  String get membersRoleParent;
+
+  /// No description provided for @membersRoleStepParent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Beau-parent'**
+  String get membersRoleStepParent;
+
+  /// No description provided for @membersRoleChild.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enfant'**
+  String get membersRoleChild;
+
+  /// No description provided for @membersAdminBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'admin'**
+  String get membersAdminBadge;
+
+  /// No description provided for @membersInvite.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inviter une personne'**
+  String get membersInvite;
+
+  /// No description provided for @membersPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'Invitations en attente'**
+  String get membersPending;
+
+  /// No description provided for @membersRevoke.
+  ///
+  /// In fr, this message translates to:
+  /// **'Revoquer'**
+  String get membersRevoke;
+
+  /// No description provided for @membersInvited.
+  ///
+  /// In fr, this message translates to:
+  /// **'Invitation envoyee.'**
+  String get membersInvited;
+
+  /// No description provided for @membersRevoked.
+  ///
+  /// In fr, this message translates to:
+  /// **'Invitation revoquee.'**
+  String get membersRevoked;
+
+  /// No description provided for @inviteTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Inviter une personne'**
+  String get inviteTitle;
+
+  /// No description provided for @inviteEmail.
+  ///
+  /// In fr, this message translates to:
+  /// **'Adresse e-mail'**
+  String get inviteEmail;
+
+  /// No description provided for @inviteRole.
+  ///
+  /// In fr, this message translates to:
+  /// **'Role'**
+  String get inviteRole;
+
+  /// No description provided for @inviteSend.
+  ///
+  /// In fr, this message translates to:
+  /// **'Envoyer l\'invitation'**
+  String get inviteSend;
+
+  /// No description provided for @inviteRightAgenda.
+  ///
+  /// In fr, this message translates to:
+  /// **'Agenda'**
+  String get inviteRightAgenda;
+
+  /// No description provided for @inviteRightCustody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Garde'**
+  String get inviteRightCustody;
+
+  /// No description provided for @inviteRightNotes.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notes enfants'**
+  String get inviteRightNotes;
+
+  /// No description provided for @inviteRightExchanges.
+  ///
+  /// In fr, this message translates to:
+  /// **'Echanges'**
+  String get inviteRightExchanges;
+
+  /// No description provided for @rightNone.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun'**
+  String get rightNone;
+
+  /// No description provided for @rightView.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lecture'**
+  String get rightView;
+
+  /// No description provided for @rightEdit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Edition'**
+  String get rightEdit;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

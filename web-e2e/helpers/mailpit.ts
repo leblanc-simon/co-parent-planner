@@ -25,6 +25,24 @@ export async function waitForVerificationToken(
   return decodeURIComponent(match![1]);
 }
 
+/**
+ * Attend l'e-mail d'invitation adresse a `email` et en extrait le token du lien
+ * `/invitations/accept?token=...`.
+ */
+export async function waitForInvitationToken(
+  request: APIRequestContext,
+  email: string,
+): Promise<string> {
+  const messageId = await pollForMessage(request, email);
+  const res = await request.get(`${MAILPIT_API}/api/v1/message/${messageId}`);
+  expect(res.ok()).toBeTruthy();
+  const body = await res.json();
+  const html: string = body.HTML || body.Text || '';
+  const match = html.match(/\/invitations\/accept\?token=([^"'\s<>&]+)/);
+  expect(match, `lien d'invitation introuvable dans l'e-mail`).not.toBeNull();
+  return decodeURIComponent(match![1]);
+}
+
 async function pollForMessage(
   request: APIRequestContext,
   email: string,

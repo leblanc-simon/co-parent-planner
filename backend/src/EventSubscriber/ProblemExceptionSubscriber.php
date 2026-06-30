@@ -8,6 +8,7 @@ use App\Exception\FamilyAccessDeniedException;
 use App\Exception\FamilyScopeRequiredException;
 use App\Exception\InvalidInvitationException;
 use App\Exception\InvitationEmailMismatchException;
+use App\Exception\ProblemException;
 use App\Security\Auth\Exception\AuthException;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -36,13 +37,15 @@ final class ProblemExceptionSubscriber
             return;
         }
 
-        [$type, $detailKey] = match (true) {
-            $throwable instanceof AuthException => [$throwable->problemType(), $throwable->getMessage()],
-            $throwable instanceof FamilyScopeRequiredException => [FamilyScopeRequiredException::TYPE, 'family.error.scope_required'],
-            $throwable instanceof FamilyAccessDeniedException => [FamilyAccessDeniedException::TYPE, 'family.error.forbidden'],
-            $throwable instanceof InvalidInvitationException => [InvalidInvitationException::TYPE, $throwable->getMessage()],
-            $throwable instanceof InvitationEmailMismatchException => [InvitationEmailMismatchException::TYPE, $throwable->getMessage()],
-            default => [null, null],
+        [$type, $detailKey, $detailParams] = match (true) {
+            // Exceptions métier déclaratives (Lot 1+) : type + clé + params portés par l'exception.
+            $throwable instanceof ProblemException => [$throwable->problemType(), $throwable->detailKey(), $throwable->detailParams()],
+            $throwable instanceof AuthException => [$throwable->problemType(), $throwable->getMessage(), []],
+            $throwable instanceof FamilyScopeRequiredException => [FamilyScopeRequiredException::TYPE, 'family.error.scope_required', []],
+            $throwable instanceof FamilyAccessDeniedException => [FamilyAccessDeniedException::TYPE, 'family.error.forbidden', []],
+            $throwable instanceof InvalidInvitationException => [InvalidInvitationException::TYPE, $throwable->getMessage(), []],
+            $throwable instanceof InvitationEmailMismatchException => [InvitationEmailMismatchException::TYPE, $throwable->getMessage(), []],
+            default => [null, null, []],
         };
 
         if (null === $type) {
@@ -56,7 +59,7 @@ final class ProblemExceptionSubscriber
             'type' => $type,
             'title' => $this->translator->trans($this->titleKey($status)),
             'status' => $status,
-            'detail' => $this->translator->trans((string) $detailKey),
+            'detail' => $this->translator->trans((string) $detailKey, $detailParams),
         ], $status, ['Content-Type' => 'application/problem+json']);
 
         foreach ($throwable->getHeaders() as $name => $value) {
@@ -73,6 +76,10 @@ final class ProblemExceptionSubscriber
             400 => 'bad_request',
             401 => 'unauthorized',
             403 => 'forbidden',
+            404 => 'not_found',
+            409 => 'conflict',
+            410 => 'gone',
+            422 => 'unprocessable',
             429 => 'too_many_requests',
             default => 'bad_request',
         };

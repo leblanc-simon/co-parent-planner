@@ -23,6 +23,8 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Entity(repositoryClass: InvitationRepository::class)]
 #[ORM\Table(name: 'invitations')]
 #[ORM\Index(name: 'idx_invitation_token', columns: ['token_hash'])]
+#[ORM\Index(name: 'idx_invitation_family_email', columns: ['family_id', 'email_hash'])]
+#[ORM\UniqueConstraint(name: 'uniq_invitation_pending', columns: ['family_id', 'email_hash'], options: ['where' => "((status)::text = 'pending'::text)"])]
 #[ORM\HasLifecycleCallbacks]
 class Invitation
 {
@@ -47,12 +49,31 @@ class Invitation
     #[ORM\Column(type: EncryptedStringType::NAME)]
     private string $email;
 
+    /**
+     * Empreinte déterministe keyée de l'e-mail (blind index, §5.1) : permet l'unicité
+     * « un seul pending par (famille, email) » sans déchiffrer le ciphertext. Jamais réversible sans clé.
+     */
+    #[PersonalData(
+        category: DataCategory::Contact,
+        purpose: 'Index aveugle (HMAC) de l\'e-mail invité — unicité d\'une invitation pending sans déchiffrer.',
+        legalBasis: 'Intérêt légitime (intégrité des invitations).',
+        retention: 'Identique à l\'invitation (jusqu\'à acceptation/expiration ; purge Lot 8).',
+        recipients: 'Interne (jamais exposé).',
+        encrypted: false,
+    )]
+    #[ORM\Column(length: 64)]
+    private string $emailHash;
+
     #[ORM\Column(length: 16, enumType: MembershipRole::class)]
     private MembershipRole $role;
 
     /** @var array<string, string> domaine → niveau proposé */
     #[ORM\Column(type: 'json', options: ['default' => '{}'])]
     private array $proposedRights = [];
+
+    /** Admin proposé — honoré uniquement si `role = parent` (invariant §3.7). */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $proposedAdmin = false;
 
     #[ORM\Column(length: 64, unique: true)]
     private string $tokenHash;
@@ -101,6 +122,18 @@ class Invitation
         return $this;
     }
 
+    public function getEmailHash(): string
+    {
+        return $this->emailHash;
+    }
+
+    public function setEmailHash(string $emailHash): static
+    {
+        $this->emailHash = $emailHash;
+
+        return $this;
+    }
+
     public function getRole(): MembershipRole
     {
         return $this->role;
@@ -123,6 +156,18 @@ class Invitation
     public function setProposedRights(array $rights): static
     {
         $this->proposedRights = $rights;
+
+        return $this;
+    }
+
+    public function isProposedAdmin(): bool
+    {
+        return $this->proposedAdmin;
+    }
+
+    public function setProposedAdmin(bool $proposedAdmin): static
+    {
+        $this->proposedAdmin = $proposedAdmin;
 
         return $this;
     }

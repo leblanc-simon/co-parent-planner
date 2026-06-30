@@ -23,4 +23,21 @@ enum AuditAction: string
     // Onboarding (Lot 0)
     case FamilyCreated = 'family.created';
     case InvitationAccepted = 'invitation.accepted';
+
+    // Familles, membres, droits (Lot 1)
+    case FamilySettingsUpdated = 'family.settings.updated';
+    case MembershipCreated = 'membership.created';
+    case MembershipRightsUpdated = 'membership.rights.updated';
+    case MembershipRemoved = 'membership.removed';
+    case MembershipLeft = 'membership.left';
+
+    // Invitations (Lot 1)
+    case InvitationCreated = 'invitation.created';
+    case InvitationRevoked = 'invitation.revoked';
+    case InvitationExpired = 'invitation.expired';
+
+    // Liens entre familles (Lot 1)
+    case FamilyLinkCreated = 'familylink.created';
+    case FamilyLinkActivated = 'familylink.activated';
+    case FamilyLinkRemoved = 'familylink.removed';
 }

@@ -18,6 +18,7 @@ services:
             int $refreshTokenTtl: '%env(int:REFRESH_TOKEN_TTL)%'
             int $oneTimeTokenTtl: '%env(int:ONE_TIME_TOKEN_TTL)%'
             int $accessTokenTtl: '%env(int:ACCESS_TOKEN_TTL)%'
+            int $invitationTtl: '%env(int:INVITATION_TTL)%'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -26,6 +27,11 @@ services:
 
     # Chiffrement applicatif des champs 🔒 (cdc §5.3). Clé hors base, via env (base64 → 32 octets bruts).
     App\Security\Encryption\FieldEncryptor:
+        arguments:
+            $key: '%env(base64:APP_ENCRYPTION_KEY)%'
+
+    # Blind index (HMAC keyé) pour l'unicité sur champs chiffrés (Invitation.email_hash — §5.1).
+    App\Security\Encryption\BlindIndexHasher:
         arguments:
             $key: '%env(base64:APP_ENCRYPTION_KEY)%'
 

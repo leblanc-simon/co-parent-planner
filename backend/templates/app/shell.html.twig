@@ -5,8 +5,10 @@
     <aside class="sidebar">
         <div class="sidebar__brand">🧡 CoParentPlanner</div>
         <nav class="sidebar__nav">
-            <a href="{{ path('app_home') }}" class="is-active">Accueil</a>
-            {# Onglets métier (Garde, Agenda, Enfants, Échanges, Paramètres) ajoutés aux lots suivants. #}
+            {% set nav = nav_active|default('home') %}
+            <a href="{{ path('app_home') }}" class="{{ nav == 'home' ? 'is-active' }}">Accueil</a>
+            <a href="{{ path('app_settings') }}" class="{{ nav == 'settings' ? 'is-active' }}">Paramètres</a>
+            {# Onglets métier (Garde, Agenda, Enfants, Échanges) ajoutés aux lots suivants. #}
         </nav>
         <div class="sidebar__spacer"></div>
         <form action="{{ path('app_logout') }}" method="post">

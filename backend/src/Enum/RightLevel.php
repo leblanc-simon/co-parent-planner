@@ -28,6 +28,12 @@ enum RightLevel: string
         return $this->rank() >= $required->rank();
     }
 
+    /** Plafonne ce niveau à un maximum (ex. enfant : custody/agenda/exchanges → au plus `view`). */
+    public function atMost(self $max): self
+    {
+        return $this->rank() <= $max->rank() ? $this : $max;
+    }
+
     public function allowsView(): bool
     {
         return $this->satisfies(self::View);

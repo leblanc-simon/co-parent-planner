@@ -18,6 +18,12 @@ email:
         title: 'Mot de passe modifié'
         body: 'Votre mot de passe vient d''être modifié. Toutes vos sessions ont été déconnectées.'
         warning: "Si vous n'êtes pas à l'origine de ce changement, contactez-nous immédiatement."
+    invitation:
+        subject: 'Vous êtes invité·e à rejoindre {family} sur CoParentPlanner'
+        title: 'Invitation à rejoindre une famille'
+        intro: 'Vous avez été invité·e à rejoindre la famille « {family} » sur CoParentPlanner. Cliquez ci-dessous pour accepter l''invitation.'
+        cta: "Rejoindre la famille"
+        ignore: "Si vous ne vous attendiez pas à cette invitation, ignorez simplement cet e-mail."
 
 auth:
     error:
@@ -38,6 +44,10 @@ problem:
         bad_request: 'Requête invalide'
         unauthorized: 'Authentification requise'
         forbidden: 'Action non autorisée'
+        not_found: 'Ressource introuvable'
+        conflict: 'Conflit'
+        gone: 'Ressource expirée'
+        unprocessable: 'Données invalides'
         too_many_requests: 'Trop de requêtes'
         validation: 'Données invalides'
 
@@ -45,9 +55,26 @@ invitation:
     error:
         invalid: 'Invitation invalide ou expirée.'
         email_mismatch: "Cette invitation est destinée à une autre adresse e-mail."
+        expired: "Cette invitation a expiré."
+        already_member: 'Cette personne est déjà membre de la famille.'
+        not_found: 'Invitation introuvable.'
     accepted: 'Invitation acceptée.'
+
+membership:
+    error:
+        admin_requires_parent: "Seul un parent peut être administrateur de la famille."
+        not_found: 'Membre introuvable.'
 
 family:
     error:
         scope_required: 'Le header X-Family-Id est requis pour cette ressource.'
+        scope_mismatch: "L'identifiant de famille du chemin ne correspond pas au header X-Family-Id."
         forbidden: 'Famille non autorisée.'
+        last_admin_protected: "Impossible de retirer ou rétrograder le dernier administrateur de la famille."
+        right_required: "Droit '{right}' requis."
+
+familylink:
+    error:
+        self_link: 'Une famille ne peut pas être liée à elle-même.'
+        already_exists: 'Un lien existe déjà entre ces deux familles.'
+        not_found: 'Lien entre familles introuvable.'

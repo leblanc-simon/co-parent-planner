@@ -23,11 +23,14 @@ final class InvitationAndStubsTest extends ApiAuthTestCase
     {
         $hasher = self::getContainer()->get(TokenHasher::class);
         self::assertInstanceOf(TokenHasher::class, $hasher);
+        $blind = self::getContainer()->get(\App\Security\Encryption\BlindIndexHasher::class);
+        self::assertInstanceOf(\App\Security\Encryption\BlindIndexHasher::class, $blind);
 
         $family = (new Family())->setName('Famille invitante')->setType(FamilyType::Separated);
         $invitation = (new Invitation())
             ->setFamily($family)
             ->setEmail($invitedEmail)
+            ->setEmailHash($blind->hash($invitedEmail))
             ->setRole($role)
             ->setProposedRights($rights)
             ->setTokenHash($hasher->hash($plaintextToken))

@@ -13,6 +13,7 @@ use App\Repository\CustodyExceptionRepository;
 use App\Security\Auth\AuditLogger;
 use App\Security\Custody\CustodyAccess;
 use App\Service\Custody\CustodyGenerator;
+use App\Service\Custody\CustodyPublisher;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Uid\Uuid;
@@ -29,6 +30,7 @@ final class DeleteExceptionProcessor implements ProcessorInterface
         private readonly CustodyAccess $access,
         private readonly CustodyExceptionRepository $exceptions,
         private readonly CustodyGenerator $generator,
+        private readonly CustodyPublisher $publisher,
         private readonly AuditLogger $audit,
         private readonly RequestStack $requestStack,
     ) {
@@ -54,6 +56,7 @@ final class DeleteExceptionProcessor implements ProcessorInterface
         ); // flush (la suppression est committée avant le recalcul)
 
         $this->generator->recomputeWindow($ctx->family, $start, $end);
+        $this->publisher->publish($ctx->family);
 
         return null;
     }

@@ -221,3 +221,33 @@ a:hover { text-decoration: underline; }
 .access-list__role { color: var(--muted); font-size: .85rem; }
 .access-list__level { margin-left: auto; font-weight: 600; color: var(--accent); }
 @media (max-width: 900px) { .children__layout { grid-template-columns: 1fr; } }
+
+/* ---------- Lot 3 : Garde (calendrier) ---------- */
+.garde-cal__nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: .8rem; }
+.garde-cal__title { font-size: 1.1rem; text-transform: capitalize; }
+.garde-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.garde-cal__dow { text-align: center; font-size: .75rem; color: var(--muted); font-weight: 600; padding-bottom: .3rem; }
+.garde-day { position: relative; min-height: 52px; border-radius: 10px; padding: .35rem; background: var(--surface); border: 1px solid var(--border); }
+.garde-day--a { background: var(--accent-soft); border-color: var(--accent); }
+.garde-day--b { background: #DCEDEA; border-color: var(--positive); }
+.garde-day--none { background: var(--surface); }
+.garde-day--out { opacity: .35; }
+.garde-day--exception { border-style: dashed; border-width: 2px; }
+.garde-day[role="button"] { cursor: pointer; }
+.garde-day[role="button"]:hover { filter: brightness(0.97); }
+.garde-day__num { font-weight: 600; font-size: .85rem; }
+.garde-day__tag { position: absolute; bottom: .25rem; right: .35rem; font-size: .65rem; color: var(--muted); }
+.garde-legend { display: flex; gap: 1.2rem; margin-top: .8rem; font-size: .8rem; color: var(--ink-2); }
+.garde-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: middle; }
+.garde-dot--a { background: var(--accent); }
+.garde-dot--b { background: var(--positive); }
+.garde-dot--exc { background: transparent; border: 2px dashed var(--ink-2); }
+.garde-stats { display: flex; flex-wrap: wrap; gap: 1.5rem; }
+.garde-config .garde-custom { margin: 1rem 0; }
+.garde-custom__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.garde-custom__grid select { padding: .3rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.garde-exc-form, .garde-rule-form { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: .6rem; }
+.garde-exc-form input, .garde-exc-form select, .garde-rule-form select { padding: .4rem .6rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font: inherit; }
+.garde-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: .5rem; }
+.garde-list li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; padding: .6rem .8rem; background: var(--surface); border-radius: 12px; }
+.garde-holidays-actions { margin-bottom: .8rem; }

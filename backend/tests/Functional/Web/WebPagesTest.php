@@ -146,4 +146,23 @@ final class WebPagesTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertStringContainsString('Enfants', (string) $client->getResponse()->getContent());
     }
+
+    public function testGardePageRendersForSeparatedFamily(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser($client, withFamily: true); // FamilyType::Separated → garde active
+        $this->login($client);
+
+        $client->request('GET', '/garde');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        // Sans rythme configuré : message + builder de configuration (parent admin → canEdit).
+        self::assertStringContainsString('Aucun rythme de garde configuré', $html);
+        self::assertStringContainsString('Configurer le rythme', $html);
+        // L'onglet Garde figure dans la barre latérale d'une famille séparée.
+        self::assertStringContainsString('href="/garde"', $html);
+        // Abonnement temps réel câblé.
+        self::assertStringContainsString('turbo-stream-source', $html);
+    }
 }

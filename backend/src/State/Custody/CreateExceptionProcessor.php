@@ -12,6 +12,7 @@ use App\Enum\AuditAction;
 use App\Security\Auth\AuditLogger;
 use App\Security\Custody\CustodyAccess;
 use App\Service\Custody\CustodyGenerator;
+use App\Service\Custody\CustodyPublisher;
 use App\Service\Custody\ExceptionWriter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -29,6 +30,7 @@ final class CreateExceptionProcessor implements ProcessorInterface
         private readonly CustodyAccess $access,
         private readonly ExceptionWriter $writer,
         private readonly CustodyGenerator $generator,
+        private readonly CustodyPublisher $publisher,
         private readonly AuditLogger $audit,
         private readonly RequestStack $requestStack,
     ) {
@@ -52,6 +54,7 @@ final class CreateExceptionProcessor implements ProcessorInterface
         ); // flush
 
         $this->generator->applyException($exception);
+        $this->publisher->publish($ctx->family);
 
         return CustodyExceptionResource::fromException($exception);
     }

@@ -7,6 +7,7 @@ namespace App\MessageHandler;
 use App\Entity\Family;
 use App\Message\RegenerateCustody;
 use App\Service\Custody\CustodyGenerator;
+use App\Service\Custody\CustodyPublisher;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Uid\Uuid;
@@ -18,6 +19,7 @@ final class RegenerateCustodyHandler
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly CustodyGenerator $generator,
+        private readonly CustodyPublisher $publisher,
     ) {
     }
 
@@ -29,6 +31,7 @@ final class RegenerateCustodyHandler
         $family = $this->em->getRepository(Family::class)->find(Uuid::fromString($message->familyId));
         if ($family instanceof Family && $family->getType()->hasCustody()) {
             $this->generator->generate($family);
+            $this->publisher->publish($family);
         }
     }
 }

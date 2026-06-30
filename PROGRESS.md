@@ -5,7 +5,7 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-07-01** — **Lot 3 : backend + moteur + contrat TERMINÉS** (garde) ; UI web/mobile + E2E à faire.
+Dernière mise à jour : **2026-07-01** — **Lot 3 : backend + moteur + contrat + UI web + E2E + temps réel TERMINÉS** (garde) ; reste **UI mobile + revue de code**.
 
 ---
 
@@ -15,11 +15,12 @@ Dernière mise à jour : **2026-07-01** — **Lot 3 : backend + moteur + contrat
 **Lot 1 — Familles/membres/droits/invitations/liens** : ✅ **TERMINÉ** (+ revue de code).
 **Lot 2 — Enfants & notes** : ✅ **TERMINÉ** (+ revue de code).
 
-**Lot 3 — Garde (moteur + vacances)** (`specs/lots/lot-3-*.md`) : 🟡 **backend + moteur + adaptateur vacances + async/scheduler + endpoints + contrat OpenAPI + client Dart TERMINÉS et testés** ; reste **UI web + UI mobile + E2E Playwright + publication Mercure des mutations + revue de code**.
+**Lot 3 — Garde (moteur + vacances)** (`specs/lots/lot-3-*.md`) : 🟡 **backend + moteur + adaptateur vacances + async/scheduler + endpoints + contrat OpenAPI + client Dart + UI web + E2E + temps réel TERMINÉS et testés** ; reste **UI mobile + revue de code**.
 
-- **Backend** : **154 tests / 1096 assertions**, couverture **85,1 %** (≥80 %), PHPStan niv.8, cs-fixer, schéma en sync.
+- **Backend** : **155 tests / 1104 assertions**, couverture **85,1 %** (≥80 %), PHPStan niv.8, cs-fixer, schéma en sync.
 - **Mobile** : client régénéré depuis l'OpenAPI Lot 3 (sans drift), **110 tests** verts, `dart analyze` propre.
-- **Reste Lot 3** : écran Garde web (calendrier coloré A/B, jours exceptionnels pointillés, stats, détail jour + « échanger ce jour », Paramètres › Garde : builder dont custom 2 semaines, import vacances, exceptions), écrans mobile, **publication Turbo Stream/SSE sur `/families/{id}/custody`** (topic déjà dans les claims ; publication effective sur mutation à câbler côté processors), E2E Playwright, revue de code.
+- **UI web Garde** : écran `GET /garde` (calendrier mensuel coloré A/B, jours exceptionnels en bordure pointillée, marqueur vacances, stats du mois, « échanger ce jour » au clic, builder de rythme dont `custom` 14 jours, exceptions par plage, import + règles vacances), onglet masqué si famille unie, Voter `custody`. **Temps réel** câblé : `CustodyPublisher` (Turbo Stream `refresh` sur `/families/{id}/custody`) sur les 3 chemins de mutation + `<turbo-stream-source>` + cookie Mercure scopé. **E2E Playwright : 7/7** (dont parcours Garde complet).
+- **Reste Lot 3** : écran(s) Garde mobile (Flutter), revue de code.
 
 ### Surface backend Lot 3 livrée
 - **Moteur** (`Service/Custody/`) : `BasePatternResolver` (4 modèles, motif 2_2_3 figé), `HolidayRuleResolver` (5 genres dont `eve_alternating` ancré année civile), `CustodyDateMath` (dates calendaires — **bug de fuseau évité** : comparaison Y-m-d, pas d'instants), `CustodyGenerator` (pipeline base→vacances→exceptions, **upsert idempotent** `(family,date)`, advisory lock, **passé figé**, priorité exception>holiday>base), `CustodyStatsCalculator`, `PatternWriter`/`ExceptionWriter`/`RuleValidator`.

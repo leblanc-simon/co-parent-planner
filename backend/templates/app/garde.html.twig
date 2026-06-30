@@ -1,0 +1,186 @@
+{% extends 'app/shell.html.twig' %}
+{% block title %}Garde · CoParentPlanner{% endblock %}
+{% set nav_active = 'garde' %}
+
+{% block main %}
+<header class="main__header">
+    <div>
+        <div class="eyebrow">Planning</div>
+        <h1>Garde</h1>
+    </div>
+    {{ include('app/_family_select.html.twig') }}
+</header>
+
+{% if intact %}
+    <section class="card"><p class="empty-state">Toute la famille est réunie — pas de planning de garde.</p></section>
+{% elseif not canView %}
+    <section class="card"><p class="empty-state">Vous n'avez pas accès au planning de garde de cette famille.</p></section>
+{% else %}
+<div data-controller="garde"
+     data-garde-family-id-value="{{ family.id }}"
+     data-garde-parent-a-value="{{ parentAId }}"
+     data-garde-parent-b-value="{{ parentBId }}">
+    <p class="form-error" data-garde-target="error" role="alert" hidden></p>
+
+    {# Abonnement temps réel : un changement de garde rafraîchit la page (Turbo Stream). #}
+    <turbo-stream-source src="{{ mercureHub }}?topic={{ custodyTopic|url_encode }}"></turbo-stream-source>
+
+    {% if pattern is null %}
+        <section class="card">
+            <p class="empty-state">Aucun rythme de garde configuré.</p>
+            {% if canEdit %}<p>Configurez un modèle ci-dessous pour générer le planning.</p>{% endif %}
+        </section>
+    {% else %}
+    {# ───────── Calendrier mensuel ───────── #}
+    <section class="card">
+        <div class="garde-cal__nav">
+            <a class="btn btn--ghost" href="{{ path('app_garde', { month: prevMonth }) }}">←</a>
+            <strong class="garde-cal__title">{{ monthLabel }}</strong>
+            <a class="btn btn--ghost" href="{{ path('app_garde', { month: nextMonth }) }}">→</a>
+        </div>
+        <div class="garde-cal">
+            {% for d in ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'] %}<div class="garde-cal__dow">{{ d }}</div>{% endfor %}
+            {% for week in weeks %}
+                {% for cell in week %}
+                    <div class="garde-day garde-day--{{ cell.slot == 'A' ? 'a' : (cell.slot == 'B' ? 'b' : 'none') }}
+                                {{ cell.source == 'exception' ? 'garde-day--exception' }}
+                                {{ not cell.inMonth ? 'garde-day--out' }}"
+                         {% if canEdit and cell.inMonth and cell.slot %}
+                            data-action="click->garde#swapDay" data-date="{{ cell.date }}" data-slot="{{ cell.slot }}" role="button" title="Échanger ce jour"
+                         {% endif %}>
+                        <span class="garde-day__num">{{ cell.day }}</span>
+                        {% if cell.source == 'holiday' %}<span class="garde-day__tag">vac.</span>{% endif %}
+                    </div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        <div class="garde-legend">
+            <span><i class="garde-dot garde-dot--a"></i> Parent A</span>
+            <span><i class="garde-dot garde-dot--b"></i> Parent B</span>
+            <span><i class="garde-dot garde-dot--exc"></i> Exceptionnel</span>
+        </div>
+    </section>
+
+    {# ───────── Statistiques ───────── #}
+    <section class="card" style="margin-top:1.25rem">
+        <div class="eyebrow">Statistiques du mois</div>
+        <div class="garde-stats">
+            <div><strong>{{ stats.parentACount }}</strong> jour(s) Parent A ({{ stats.pctA }} %)</div>
+            <div><strong>{{ stats.parentBCount }}</strong> jour(s) Parent B ({{ stats.pctB }} %)</div>
+            <div>Total : {{ stats.total }}</div>
+        </div>
+    </section>
+    {% endif %}
+
+    {# ───────── Configuration (Paramètres › Garde) ───────── #}
+    {% if canEdit %}
+    <section class="card" style="margin-top:1.25rem">
+        <div class="eyebrow">Configurer le rythme</div>
+        <form data-action="submit->garde#savePattern" class="garde-config">
+            <div class="grid-2">
+                <div class="field">
+                    <label for="g-kind">Modèle</label>
+                    <select id="g-kind" name="kind" data-garde-target="kind" data-action="change->garde#toggleCustom">
+                        <option value="alternating" {{ pattern and pattern.kind.value == 'alternating' ? 'selected' }}>Une semaine sur deux</option>
+                        <option value="pattern_2_2_3" {{ pattern and pattern.kind.value == 'pattern_2_2_3' ? 'selected' }}>2-2-3</option>
+                        <option value="custom" {{ pattern and pattern.kind.value == 'custom' ? 'selected' }}>Personnalisé (14 jours)</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="g-anchor">Date d'ancrage</label>
+                    <input id="g-anchor" name="anchorDate" type="date" value="{{ pattern ? pattern.anchorDate|date('Y-m-d') }}" required>
+                </div>
+                <div class="field">
+                    <label for="g-weekday">Jour d'échange</label>
+                    <select id="g-weekday" name="handoverWeekday">
+                        {% set dows = {0:'Dimanche',1:'Lundi',2:'Mardi',3:'Mercredi',4:'Jeudi',5:'Vendredi',6:'Samedi'} %}
+                        {% for v, label in dows %}<option value="{{ v }}" {{ pattern and pattern.handoverWeekday == v ? 'selected' }}>{{ label }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="g-time">Heure d'échange</label>
+                    <input id="g-time" name="handoverTime" type="time" value="{{ pattern ? pattern.handoverTime : '19:00' }}">
+                </div>
+                <div class="field">
+                    <label for="g-pa">Parent A</label>
+                    <select id="g-pa" name="parentAMembershipId">
+                        {% for m in parents %}<option value="{{ m.id }}" {{ parentAId and m.id == parentAId ? 'selected' }}>{{ m.user.fullName ?: m.user.email }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="g-pb">Parent B</label>
+                    <select id="g-pb" name="parentBMembershipId">
+                        {% for m in parents %}<option value="{{ m.id }}" {{ parentBId and m.id == parentBId ? 'selected' }}>{{ m.user.fullName ?: m.user.email }}</option>{% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="garde-custom" data-garde-target="customGrid" hidden>
+                <div class="eyebrow">Motif personnalisé (14 nuits)</div>
+                <div class="garde-custom__grid">
+                    {% for i in 0..13 %}
+                        {% set v = pattern and pattern.customPattern ? (pattern.customPattern[i] ?? 'A') : 'A' %}
+                        <select name="custom[]"><option value="A" {{ v == 'A' ? 'selected' }}>A</option><option value="B" {{ v == 'B' ? 'selected' }}>B</option></select>
+                    {% endfor %}
+                </div>
+            </div>
+            <button class="btn btn--primary" type="submit">Enregistrer le rythme</button>
+        </form>
+    </section>
+
+    {# ───────── Exceptions ───────── #}
+    <section class="card" style="margin-top:1.25rem">
+        <div class="eyebrow">Exceptions</div>
+        <form data-action="submit->garde#addException" class="garde-exc-form">
+            <input name="startDate" type="date" required>
+            <input name="endDate" type="date" required>
+            <select name="parentMembershipId">{% for m in parents %}<option value="{{ m.id }}">{{ m.user.fullName ?: m.user.email }}</option>{% endfor %}</select>
+            <input name="reason" placeholder="Motif (optionnel)" maxlength="200">
+            <button class="btn btn--ghost" type="submit">Ajouter</button>
+        </form>
+        {% if exceptions|length %}
+        <ul class="garde-list">
+            {% for e in exceptions %}
+            <li>
+                <span>{{ e.startDate|date('d/m/Y') }} → {{ e.endDate|date('d/m/Y') }}{% if e.reason %} · {{ e.reason }}{% endif %}</span>
+                <button class="btn btn--ghost" type="button" data-action="garde#deleteException" data-exception-id="{{ e.id }}">Supprimer</button>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </section>
+
+    {# ───────── Vacances ───────── #}
+    <section class="card" style="margin-top:1.25rem">
+        <div class="eyebrow">Vacances scolaires</div>
+        <div class="garde-holidays-actions">
+            <button class="btn btn--ghost" type="button" data-action="garde#importHolidays">Importer les vacances officielles</button>
+        </div>
+        <form data-action="submit->garde#addHoliday" class="garde-exc-form">
+            <input name="label" placeholder="Libellé" required maxlength="160">
+            <input name="startDate" type="date" required>
+            <input name="endDate" type="date" required>
+            <button class="btn btn--ghost" type="submit">Ajouter une période</button>
+        </form>
+        {% if holidays|length %}
+        <ul class="garde-list">
+            {% for h in holidays %}
+            <li>
+                <span>{{ h.label }} · {{ h.startDate|date('d/m') }}→{{ h.endDate|date('d/m') }}{% if h.rule %} · règle : {{ h.rule.kind.value }}{% endif %}</span>
+                <form data-action="submit->garde#saveRule" data-holiday-id="{{ h.id }}" class="garde-rule-form">
+                    <select name="kind">
+                        {% for k in ['alternating_weeks','split_50_50','fixed_parent','eve_alternating'] %}
+                            <option value="{{ k }}" {{ h.rule and h.rule.kind.value == k ? 'selected' }}>{{ k }}</option>
+                        {% endfor %}
+                    </select>
+                    <select name="parent"><option value="A">A</option><option value="B">B</option></select>
+                    <button class="btn btn--ghost" type="submit">Appliquer</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </section>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

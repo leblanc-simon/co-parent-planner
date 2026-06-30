@@ -125,6 +125,7 @@ final class CustodyApiLot3Test extends ApiAuthTestCase
         self::assertSame(204, $client->request('DELETE', '/api/families/'.$familyId.'/custody/exceptions/'.$excId, ['headers' => $h])->getStatusCode());
     }
 
+    /** @param array<string, string> $h */
     private function putPattern(Client $client, array $h, string $familyId, string $pa, string $pb): void
     {
         $client->request('PUT', '/api/families/'.$familyId.'/custody/pattern', [

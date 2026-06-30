@@ -92,6 +92,26 @@ child:
         conflict: "Ce profil a été modifié entre-temps. Rechargez la fiche puis réessayez."
     health_warning: "Ne saisissez pas de données de santé (allergies, traitements, diagnostics…). Utilisez des informations pratiques générales uniquement."
 
+custody:
+    error:
+        not_applicable: "La garde ne s'applique qu'aux familles séparées."
+        not_found: 'Garde introuvable.'
+        kind_invalid: 'Modèle de rythme invalide.'
+        anchor_invalid: "La date d'ancrage est invalide."
+        weekday_invalid: "Le jour d'échange doit être compris entre 0 (dimanche) et 6 (samedi)."
+        handover_time_invalid: "L'heure d'échange doit être au format HH:MM."
+        parents_invalid: 'Les parents A et B doivent être deux membres parents distincts de la famille.'
+        custom_invalid: 'Le motif personnalisé doit contenir exactement 14 créneaux (A ou B).'
+        settings_invalid: 'La configuration du modèle « jours fixes + week-ends » est invalide.'
+        config_conflict: "La configuration fournie ne correspond pas au modèle choisi."
+        date_invalid: 'Date invalide.'
+        range_invalid: 'La date de fin doit être postérieure ou égale à la date de début.'
+        out_of_horizon: "La plage est hors de l'horizon de garde (passé ou au-delà de 18 mois)."
+        exception_parent_invalid: "Le parent de l'exception doit être un membre actif de la famille."
+        holidays_settings_required: "Zone scolaire et académie requises pour l'import (réglages famille)."
+        rule_kind_invalid: 'Genre de règle de vacances invalide.'
+        rule_params_invalid: 'Les paramètres de la règle de vacances sont invalides.'
+
 note:
     error:
         not_found: 'Note introuvable.'

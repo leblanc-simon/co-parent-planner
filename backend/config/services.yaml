@@ -35,5 +35,14 @@ services:
         arguments:
             $key: '%env(base64:APP_ENCRYPTION_KEY)%'
 
+    # Adaptateur des vacances scolaires : la source officielle est encapsulée (cdc §4.7, Lot 3 §3.10).
+    App\Service\Custody\Holidays\SchoolHolidaysProvider: '@App\Service\Custody\Holidays\OpendatasoftSchoolHolidaysProvider'
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+when@test:
+    services:
+        # En test : aucun appel réseau ; le provider de vacances renvoie des fixtures.
+        App\Tests\Support\FakeSchoolHolidaysProvider: ~
+        App\Service\Custody\Holidays\SchoolHolidaysProvider: '@App\Tests\Support\FakeSchoolHolidaysProvider'

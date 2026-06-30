@@ -5,21 +5,28 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-06-30** — **Lot 2 TERMINÉ** (enfants & notes) : backend + web + mobile + E2E.
+Dernière mise à jour : **2026-07-01** — **Lot 3 : backend + moteur + contrat TERMINÉS** (garde) ; UI web/mobile + E2E à faire.
 
 ---
 
 ## 0. Où en est-on ?
 
 **Lot 0 — Fondations** : ✅ **TERMINÉ**.
-**Lot 1 — Familles/membres/droits/invitations/liens** : ✅ **TERMINÉ** (backend, OpenAPI, client Dart, web, mobile, E2E).
+**Lot 1 — Familles/membres/droits/invitations/liens** : ✅ **TERMINÉ** (+ revue de code).
+**Lot 2 — Enfants & notes** : ✅ **TERMINÉ** (+ revue de code).
 
-**Lot 2 — Enfants & notes** (`specs/lots/lot-2-*.md`) : ✅ **TERMINÉ** (backend, contrat, web, mobile, E2E).
-Prochaine étape : **Lot 3 — Garde (moteur + vacances)** (`specs/lots/lot-3-*.md`).
+**Lot 3 — Garde (moteur + vacances)** (`specs/lots/lot-3-*.md`) : 🟡 **backend + moteur + adaptateur vacances + async/scheduler + endpoints + contrat OpenAPI + client Dart TERMINÉS et testés** ; reste **UI web + UI mobile + E2E Playwright + publication Mercure des mutations + revue de code**.
 
-- **Backend** : **129 tests / 902 assertions**, couverture **85,8 %** (≥80 %), PHPStan niv.8, cs-fixer, schéma en sync.
-- **Mobile** : client régénéré (sans drift), **110 tests**, couverture **79,8 %** (≥70 %), analyze/format propres.
-- **E2E web (Playwright)** : **6 tests verts** (+ parcours Lot 2 : créer enfant → bandeau anti-santé → ajouter note → Accès & droits).
+- **Backend** : **154 tests / 1096 assertions**, couverture **85,1 %** (≥80 %), PHPStan niv.8, cs-fixer, schéma en sync.
+- **Mobile** : client régénéré depuis l'OpenAPI Lot 3 (sans drift), **110 tests** verts, `dart analyze` propre.
+- **Reste Lot 3** : écran Garde web (calendrier coloré A/B, jours exceptionnels pointillés, stats, détail jour + « échanger ce jour », Paramètres › Garde : builder dont custom 2 semaines, import vacances, exceptions), écrans mobile, **publication Turbo Stream/SSE sur `/families/{id}/custody`** (topic déjà dans les claims ; publication effective sur mutation à câbler côté processors), E2E Playwright, revue de code.
+
+### Surface backend Lot 3 livrée
+- **Moteur** (`Service/Custody/`) : `BasePatternResolver` (4 modèles, motif 2_2_3 figé), `HolidayRuleResolver` (5 genres dont `eve_alternating` ancré année civile), `CustodyDateMath` (dates calendaires — **bug de fuseau évité** : comparaison Y-m-d, pas d'instants), `CustodyGenerator` (pipeline base→vacances→exceptions, **upsert idempotent** `(family,date)`, advisory lock, **passé figé**, priorité exception>holiday>base), `CustodyStatsCalculator`, `PatternWriter`/`ExceptionWriter`/`RuleValidator`.
+- **Adaptateur vacances isolé** (`Holidays/`) : interface `SchoolHolidaysProvider` + impl Opendatasoft v2.1 (UTC→Paris, filtrage population, cache, pagination) + `SchoolHolidayImporter` (upsert idempotent) + double de test.
+- **Async/Scheduler** : messages `RegenerateCustody`/`ImportSchoolHolidays`/`ExtendCustodyHorizon`/`RefreshSchoolHolidays` + handlers, routés async ; Scheduler (horizon quotidien, vacances mensuel).
+- **Endpoints** : `GET/PUT /custody/pattern`, `GET /custody/days`, `GET/POST/DELETE /custody/exceptions`, `GET /custody/stats`, `GET/POST /holidays`, `POST /holidays/import` (202), `PUT /holidays/{id}/rule`. Scope + Voter `custody` ; famille `intact` → **404 lecture / 409 mutation** ; topic Mercure custody dans les claims.
+- **Modèle** : `CustodyPattern`/`CustodyDay`/`CustodyException`/`SchoolHoliday`/`HolidayRule` (+ enums) ; migration `Version20260630222450` (unicité `(family,date)`, clé naturelle vacances, FK membres en `SET NULL`).
 
 ### Surface Lot 2 livrée
 - Entités **Child** (first_name au registre non chiffré §5.4#4, info jsonb paires libres, verrou optimiste) et **Note** (`text` 🔒 chiffré) ; migration `Version20260630205954`.
@@ -213,6 +220,26 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-07-01 — Lot 3 : moteur de garde + vacances + endpoints (backend)
+- **Moteur idempotent** : 4 modèles (`alternating`/`pattern_2_2_3` motif figé/`midweek_weekends`/`custom`),
+  5 genres de règles vacances (dont `eve_alternating` ancré sur l'**année civile**), pipeline
+  base→vacances→exceptions avec **upsert `(family,date)`**, advisory lock, **passé figé**, priorité
+  exception>holiday>base. Bug de fuseau **évité** (`CustodyDateMath::daysBetween` compare des dates
+  calendaires Y-m-d, pas des instants — sinon off-by-one anchor UTC vs aujourd'hui Paris ; trouvé et
+  corrigé via le test d'intégration).
+- **Adaptateur vacances isolé** : Opendatasoft v2.1 (schéma vérifié §3.10, conversion UTC→Paris,
+  filtrage population « élèves », cache, pagination) derrière une interface + double de test ;
+  `SchoolHolidayImporter` upsert idempotent.
+- **Async/Scheduler** : `RegenerateCustody`/`ImportSchoolHolidays`/`ExtendCustodyHorizon`/
+  `RefreshSchoolHolidays` (routés async, idempotents) ; horizon glissant quotidien + vacances mensuel.
+- **Endpoints** : pattern (GET/PUT), days, exceptions (GET/POST/DELETE), stats, holidays (GET/POST/import
+  202), rule (PUT). Scope + Voter custody ; famille unie → 404 lecture / 409 mutation ; topic Mercure
+  custody dans les claims (filtré `custody ≥ view`).
+- **Tests** : moteur (4 modèles, 5 règles, priorité, idempotence, passé figé, suppression d'exception →
+  recalcul), provider via `MockHttpClient`, API fonctionnelle (pattern/days/stats/exceptions/holidays/
+  import/règle, validations 422, intact 404/409). **Backend 154 tests / 1096 assertions, couverture
+  85,1 %.** OpenAPI exporté + client Dart régénéré (sans drift). **Reste : UI web/mobile + E2E + revue.**
 
 ### 2026-07-01 — Revue de code Lots 1 & 2 : 11 défauts confirmés corrigés
 Revue multi-agents (8 dimensions → vérification adversariale). 11 confirmés / 12, tous corrigés :

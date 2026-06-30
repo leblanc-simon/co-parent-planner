@@ -81,9 +81,14 @@ final class RealtimeTokenProvider implements ProviderInterface
         }
 
         $topics = [];
+        $familyId = $membership->getFamily()->getId();
         // Notes (Lot 2) : abonnement filtré sur le droit children_notes ≥ view (US-CH-3).
         if ($membership->can(RightDomain::ChildrenNotes, RightLevel::View)) {
-            $topics[] = \sprintf('/families/%s/notes', $membership->getFamily()->getId());
+            $topics[] = \sprintf('/families/%s/notes', $familyId);
+        }
+        // Garde (Lot 3) : abonnement filtré sur le droit custody ≥ view (US-CUST-5).
+        if ($membership->can(RightDomain::Custody, RightLevel::View)) {
+            $topics[] = \sprintf('/families/%s/custody', $familyId);
         }
 
         return $topics;

@@ -49,4 +49,12 @@ enum AuditAction: string
     case NoteUpdated = 'note.updated';
     case NoteDeleted = 'note.deleted';
     case NoteAccessed = 'note.accessed';
+
+    // Garde (Lot 3)
+    case CustodyPatternUpdated = 'custody.pattern.updated';
+    case CustodyExceptionCreated = 'custody.exception.created';
+    case CustodyExceptionDeleted = 'custody.exception.deleted';
+    case CustodyHolidayImported = 'custody.holiday.imported';
+    case CustodyHolidayCreated = 'custody.holiday.created';
+    case CustodyRuleUpdated = 'custody.rule.updated';
 }

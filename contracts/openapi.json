@@ -554,6 +554,537 @@
                 ]
             }
         },
+        "/api/families/{familyId}/custody/days": {
+            "get": {
+                "operationId": "api_families_familyIdcustodydays_get_collection",
+                "tags": [
+                    "CustodyDay"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CustodyDay collection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CustodyDay"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "CustodyDay.jsonld collection.",
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/HydraCollectionBaseSchemaNoPagination"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "member"
+                                            ],
+                                            "properties": {
+                                                "member": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/CustodyDay.jsonld"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Retrieves the collection of CustodyDay resources.",
+                "description": "Retrieves the collection of CustodyDay resources.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            }
+        },
+        "/api/families/{familyId}/custody/exceptions": {
+            "get": {
+                "operationId": "api_families_familyIdcustodyexceptions_get_collection",
+                "tags": [
+                    "CustodyException"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CustodyException collection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CustodyException"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "CustodyException.jsonld collection.",
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/HydraCollectionBaseSchemaNoPagination"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "member"
+                                            ],
+                                            "properties": {
+                                                "member": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/CustodyException.jsonld"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Retrieves the collection of CustodyException resources.",
+                "description": "Retrieves the collection of CustodyException resources.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "api_families_familyIdcustodyexceptions_post",
+                "tags": [
+                    "CustodyException"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "CustodyException resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustodyException"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustodyException.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a CustodyException resource.",
+                "description": "Creates a CustodyException resource.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The new CustodyException resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CustodyException.CreateExceptionRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CustodyException.CreateExceptionRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/families/{familyId}/custody/exceptions/{exceptionId}": {
+            "delete": {
+                "operationId": "api_families_familyIdcustodyexceptions_exceptionId_delete",
+                "tags": [
+                    "CustodyException"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "CustodyException resource deleted"
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Removes the CustodyException resource.",
+                "description": "Removes the CustodyException resource.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    },
+                    {
+                        "name": "exceptionId",
+                        "in": "path",
+                        "description": "CustodyException identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            }
+        },
+        "/api/families/{familyId}/custody/pattern": {
+            "get": {
+                "operationId": "api_families_familyIdcustodypattern_get",
+                "tags": [
+                    "CustodyPattern"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CustodyPattern resource",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustodyPattern"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustodyPattern.jsonld"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Retrieves a CustodyPattern resource.",
+                "description": "Retrieves a CustodyPattern resource.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            },
+            "put": {
+                "operationId": "api_families_familyIdcustodypattern_put",
+                "tags": [
+                    "CustodyPattern"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CustodyPattern resource updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustodyPattern"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustodyPattern.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Replaces the CustodyPattern resource.",
+                "description": "Replaces the CustodyPattern resource.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The updated CustodyPattern resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CustodyPattern.UpdatePatternRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CustodyPattern.UpdatePatternRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/families/{familyId}/custody/stats": {
+            "get": {
+                "operationId": "api_families_familyIdcustodystats_get",
+                "tags": [
+                    "CustodyStats"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CustodyStats resource",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustodyStats"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustodyStats.jsonld"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Retrieves a CustodyStats resource.",
+                "description": "Retrieves a CustodyStats resource.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            }
+        },
         "/api/families": {
             "get": {
                 "operationId": "api_families_get_collection",
@@ -2942,6 +3473,361 @@
                 "parameters": []
             }
         },
+        "/api/families/{familyId}/holidays": {
+            "get": {
+                "operationId": "api_families_familyIdholidays_get_collection",
+                "tags": [
+                    "SchoolHoliday"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "SchoolHoliday collection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/SchoolHoliday"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "SchoolHoliday.jsonld collection.",
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/HydraCollectionBaseSchemaNoPagination"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "member"
+                                            ],
+                                            "properties": {
+                                                "member": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/SchoolHoliday.jsonld"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Retrieves the collection of SchoolHoliday resources.",
+                "description": "Retrieves the collection of SchoolHoliday resources.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "api_families_familyIdholidays_post",
+                "tags": [
+                    "SchoolHoliday"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "SchoolHoliday resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SchoolHoliday"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SchoolHoliday.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a SchoolHoliday resource.",
+                "description": "Creates a SchoolHoliday resource.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The new SchoolHoliday resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SchoolHoliday.CreateHolidayRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SchoolHoliday.CreateHolidayRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/families/{familyId}/holidays/import": {
+            "post": {
+                "operationId": "api_families_familyIdholidaysimport_post",
+                "tags": [
+                    "SchoolHoliday"
+                ],
+                "responses": {
+                    "202": {
+                        "description": "SchoolHoliday resource created",
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a SchoolHoliday resource.",
+                "description": "Creates a SchoolHoliday resource.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            }
+        },
+        "/api/holidays/{id}/rule": {
+            "put": {
+                "operationId": "api_holidays_idrule_put",
+                "tags": [
+                    "SchoolHoliday"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "SchoolHoliday resource updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SchoolHoliday"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SchoolHoliday.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Replaces the SchoolHoliday resource.",
+                "description": "Replaces the SchoolHoliday resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "SchoolHoliday identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The updated SchoolHoliday resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SchoolHoliday.UpdateRuleRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SchoolHoliday.UpdateRuleRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
         "/api/auth/verify-email": {
             "post": {
                 "operationId": "api_authverify-email_post",
@@ -3569,6 +4455,447 @@
                     }
                 ],
                 "description": "Unprocessable entity"
+            },
+            "CustodyDay": {
+                "type": "object",
+                "description": "Jour de garde effectif expos\u00e9 (US-CUST-5).",
+                "properties": {
+                    "date": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "parentMembershipId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "source": {
+                        "default": "",
+                        "type": "string"
+                    }
+                }
+            },
+            "CustodyDay.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "date": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "parentMembershipId": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "source": {
+                                "default": "",
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "description": "Jour de garde effectif expos\u00e9 (US-CUST-5)."
+            },
+            "CustodyException": {
+                "type": "object",
+                "description": "Exception de garde expos\u00e9e (US-CUST-4).",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "startDate": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "endDate": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "parentMembershipId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "reason": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "CustodyException.CreateExceptionRequest": {
+                "type": "object",
+                "description": "Exception de garde expos\u00e9e (US-CUST-4).",
+                "required": [
+                    "startDate",
+                    "endDate",
+                    "parentMembershipId"
+                ],
+                "properties": {
+                    "startDate": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "endDate": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "parentMembershipId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "reason": {
+                        "maxLength": 200,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "CustodyException.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "startDate": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "endDate": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "parentMembershipId": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "reason": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "description": "Exception de garde expos\u00e9e (US-CUST-4)."
+            },
+            "CustodyPattern": {
+                "type": "object",
+                "description": "Rythme de garde expos\u00e9 (US-CUST-1).",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "kind": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "anchorDate": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "handoverWeekday": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "handoverTime": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "customPattern": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "settings": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "additionalProperties": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    },
+                    "parentAMembershipId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "parentBMembershipId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "CustodyPattern.UpdatePatternRequest": {
+                "type": "object",
+                "description": "Rythme de garde expos\u00e9 (US-CUST-1).",
+                "properties": {
+                    "kind": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "anchorDate": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "handoverWeekday": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "handoverTime": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "customPattern": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "settings": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "additionalProperties": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    },
+                    "parentAMembershipId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "parentBMembershipId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "CustodyPattern.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "kind": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "anchorDate": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "handoverWeekday": {
+                                "default": 0,
+                                "type": "integer"
+                            },
+                            "handoverTime": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "customPattern": {
+                                "type": [
+                                    "array",
+                                    "null"
+                                ],
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "settings": {
+                                "type": [
+                                    "object",
+                                    "null"
+                                ],
+                                "additionalProperties": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                }
+                            },
+                            "parentAMembershipId": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "parentBMembershipId": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "description": "Rythme de garde expos\u00e9 (US-CUST-1)."
+            },
+            "CustodyStats": {
+                "type": "object",
+                "description": "Statistiques de garde sur une fen\u00eatre (US-CUST-5).",
+                "properties": {
+                    "id": {
+                        "default": "stats",
+                        "type": "string"
+                    },
+                    "parentACount": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "parentBCount": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "otherCount": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "total": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "pctA": {
+                        "default": 0,
+                        "type": "number"
+                    },
+                    "pctB": {
+                        "default": 0,
+                        "type": "number"
+                    },
+                    "from": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "to": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "CustodyStats.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "default": "stats",
+                                "type": "string"
+                            },
+                            "parentACount": {
+                                "default": 0,
+                                "type": "integer"
+                            },
+                            "parentBCount": {
+                                "default": 0,
+                                "type": "integer"
+                            },
+                            "otherCount": {
+                                "default": 0,
+                                "type": "integer"
+                            },
+                            "total": {
+                                "default": 0,
+                                "type": "integer"
+                            },
+                            "pctA": {
+                                "default": 0,
+                                "type": "number"
+                            },
+                            "pctB": {
+                                "default": 0,
+                                "type": "number"
+                            },
+                            "from": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "to": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "description": "Statistiques de garde sur une fen\u00eatre (US-CUST-5)."
             },
             "Error": {
                 "type": "object",
@@ -5072,6 +6399,191 @@
                 "type": "object",
                 "description": "Endpoints d'administration RGPD (cdc \u00a76.2). Rout\u00e9s et pr\u00e9sents dans l'OpenAPI mais **501**\njusqu'au Lot 8 (d\u00e9cision D7). Auth technique renforc\u00e9e et logique r\u00e9elles = Lot 8."
             },
+            "SchoolHoliday": {
+                "type": "object",
+                "description": "P\u00e9riode de vacances expos\u00e9e (US-CUST-3) avec sa r\u00e8gle \u00e9ventuelle.",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "label": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "startDate": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "endDate": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "zone": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "academy": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "schoolYear": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "source": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "ruleKind": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "ruleParams": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "additionalProperties": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    }
+                }
+            },
+            "SchoolHoliday.CreateHolidayRequest": {
+                "type": "object",
+                "description": "P\u00e9riode de vacances expos\u00e9e (US-CUST-3) avec sa r\u00e8gle \u00e9ventuelle.",
+                "required": [
+                    "label",
+                    "startDate",
+                    "endDate"
+                ],
+                "properties": {
+                    "label": {
+                        "maxLength": 160,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "startDate": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "endDate": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "SchoolHoliday.UpdateRuleRequest": {
+                "type": "object",
+                "description": "P\u00e9riode de vacances expos\u00e9e (US-CUST-3) avec sa r\u00e8gle \u00e9ventuelle.",
+                "properties": {
+                    "kind": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "params": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "additionalProperties": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    }
+                }
+            },
+            "SchoolHoliday.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "label": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "startDate": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "endDate": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "zone": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "academy": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "schoolYear": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "source": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "ruleKind": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "ruleParams": {
+                                "type": [
+                                    "object",
+                                    "null"
+                                ],
+                                "additionalProperties": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                ],
+                "description": "P\u00e9riode de vacances expos\u00e9e (US-CUST-3) avec sa r\u00e8gle \u00e9ventuelle."
+            },
             "VerifyEmailRequest": {
                 "type": "object",
                 "description": "US-AUTH-1 sc.5 \u2014 v\u00e9rification d'e-mail. Endpoint API unique (d\u00e9cision D5) appel\u00e9 par la page\nweb GET /verify-email et par le deep link mobile.",
@@ -5156,6 +6668,26 @@
         {
             "name": "Child",
             "description": "Profil enfant expos\u00e9 (US-CH-1/4/5). `age` est **calcul\u00e9** (jamais stock\u00e9) au fuseau famille."
+        },
+        {
+            "name": "CustodyDay",
+            "description": "Jour de garde effectif expos\u00e9 (US-CUST-5)."
+        },
+        {
+            "name": "CustodyException",
+            "description": "Exception de garde expos\u00e9e (US-CUST-4)."
+        },
+        {
+            "name": "CustodyPattern",
+            "description": "Rythme de garde expos\u00e9 (US-CUST-1)."
+        },
+        {
+            "name": "CustodyStats",
+            "description": "Statistiques de garde sur une fen\u00eatre (US-CUST-5)."
+        },
+        {
+            "name": "SchoolHoliday",
+            "description": "P\u00e9riode de vacances expos\u00e9e (US-CUST-3) avec sa r\u00e8gle \u00e9ventuelle."
         },
         {
             "name": "Family",

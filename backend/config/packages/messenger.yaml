@@ -27,6 +27,9 @@ framework:
             # E-mail d'invitation : async (découple la création d'invitation ; rend effectif le
             # chiffrement-en-transit du token dans la file — §3.3.B).
             App\Message\SendInvitationEmail: async
+            # Garde (Lot 3) : génération/import asynchrones, idempotents.
+            App\Message\RegenerateCustody: async
+            App\Message\ImportSchoolHolidays: async
 
 when@test:
     framework:

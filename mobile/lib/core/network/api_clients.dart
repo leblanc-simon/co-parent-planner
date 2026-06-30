@@ -23,7 +23,12 @@ class ApiClients {
       children = api.ChildClient(dio),
       notes = api.NoteClient(dio),
       acceptInvitation = api.AcceptInvitationRequestClient(dio),
-      realtime = api.RealtimeTokenClient(dio);
+      realtime = api.RealtimeTokenClient(dio),
+      custodyPattern = api.CustodyPatternClient(dio),
+      custodyDays = api.CustodyDayClient(dio),
+      custodyExceptions = api.CustodyExceptionClient(dio),
+      custodyStats = api.CustodyStatsClient(dio),
+      holidays = api.SchoolHolidayClient(dio);
 
   final api.RegisterRequestClient register;
   final api.LoginRequestClient login;
@@ -40,6 +45,11 @@ class ApiClients {
   final api.NoteClient notes;
   final api.AcceptInvitationRequestClient acceptInvitation;
   final api.RealtimeTokenClient realtime;
+  final api.CustodyPatternClient custodyPattern;
+  final api.CustodyDayClient custodyDays;
+  final api.CustodyExceptionClient custodyExceptions;
+  final api.CustodyStatsClient custodyStats;
+  final api.SchoolHolidayClient holidays;
 }
 
 final apiClientsProvider = Provider<ApiClients>(

@@ -372,4 +372,173 @@ class AppL10nFr extends AppL10n {
   @override
   String get childHealthWarning =>
       'Ne saisissez pas de données de santé (allergies, traitements, diagnostics). Informations pratiques générales uniquement.';
+
+  @override
+  String get custodyTitle => 'Garde';
+
+  @override
+  String get custodyOpen => 'Ouvrir le planning';
+
+  @override
+  String get custodyIntact =>
+      'La garde ne s\'applique qu\'aux familles séparées.';
+
+  @override
+  String get custodyNoPattern => 'Aucun rythme de garde configuré.';
+
+  @override
+  String get custodyConfigure => 'Configurer le rythme';
+
+  @override
+  String get custodyParentA => 'Parent A';
+
+  @override
+  String get custodyParentB => 'Parent B';
+
+  @override
+  String get custodyExceptional => 'Exceptionnel';
+
+  @override
+  String get custodyHoliday => 'Vacances';
+
+  @override
+  String get custodyStatsTitle => 'Statistiques du mois';
+
+  @override
+  String custodyStatsDays(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count jours',
+      one: '$count jour',
+      zero: 'aucun jour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get custodyDayDetailTitle => 'Détail du jour';
+
+  @override
+  String get custodySource => 'Origine';
+
+  @override
+  String get custodySourceBase => 'Rythme de base';
+
+  @override
+  String get custodySourceHoliday => 'Vacances';
+
+  @override
+  String get custodySourceException => 'Exception';
+
+  @override
+  String get custodySwapDay => 'Échanger ce jour';
+
+  @override
+  String get custodyAssignedTo => 'Confié à';
+
+  @override
+  String get custodyNoParent => 'Non attribué';
+
+  @override
+  String get custodySwapped => 'Jour échangé.';
+
+  @override
+  String get custodyExceptionsTitle => 'Exceptions';
+
+  @override
+  String get custodyExceptionsEmpty => 'Aucune exception.';
+
+  @override
+  String get custodyAddException => 'Ajouter une exception';
+
+  @override
+  String get custodyStartDate => 'Début';
+
+  @override
+  String get custodyEndDate => 'Fin';
+
+  @override
+  String get custodyParent => 'Parent';
+
+  @override
+  String get custodyReason => 'Motif (optionnel)';
+
+  @override
+  String get custodyDelete => 'Supprimer';
+
+  @override
+  String get custodyExceptionAdded => 'Exception ajoutée.';
+
+  @override
+  String get custodyExceptionDeleted => 'Exception supprimée.';
+
+  @override
+  String get custodyHolidaysTitle => 'Vacances scolaires';
+
+  @override
+  String get custodyHolidaysEmpty => 'Aucune période de vacances.';
+
+  @override
+  String get custodyImportHolidays => 'Importer les vacances officielles';
+
+  @override
+  String get custodyHolidaysImported => 'Import des vacances lancé.';
+
+  @override
+  String get custodySettingsTitle => 'Rythme de garde';
+
+  @override
+  String get custodyKind => 'Modèle';
+
+  @override
+  String get custodyKindAlternating => 'Une semaine sur deux';
+
+  @override
+  String get custodyKind223 => '2-2-3';
+
+  @override
+  String get custodyKindCustom => 'Personnalisé (14 jours)';
+
+  @override
+  String get custodyAnchorDate => 'Date d\'ancrage';
+
+  @override
+  String get custodyHandoverWeekday => 'Jour d\'échange';
+
+  @override
+  String get custodyHandoverTime => 'Heure d\'échange';
+
+  @override
+  String get custodyCustomPattern => 'Motif personnalisé (14 nuits)';
+
+  @override
+  String get custodySave => 'Enregistrer le rythme';
+
+  @override
+  String get custodySaved => 'Rythme enregistré.';
+
+  @override
+  String get custodyPatternSaving => 'Génération du planning en cours…';
+
+  @override
+  String get weekdaySunday => 'Dimanche';
+
+  @override
+  String get weekdayMonday => 'Lundi';
+
+  @override
+  String get weekdayTuesday => 'Mardi';
+
+  @override
+  String get weekdayWednesday => 'Mercredi';
+
+  @override
+  String get weekdayThursday => 'Jeudi';
+
+  @override
+  String get weekdayFriday => 'Vendredi';
+
+  @override
+  String get weekdaySaturday => 'Samedi';
 }

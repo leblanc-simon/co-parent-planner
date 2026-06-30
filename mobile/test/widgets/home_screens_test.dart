@@ -53,10 +53,9 @@ void main() {
       ),
     );
     expect(find.textContaining('Bonjour'), findsOneWidget);
-    expect(
-      find.text('Aucun planning de garde pour le moment.'),
-      findsOneWidget,
-    );
+    // La carte Garde est une entrée de navigation vers le planning.
+    expect(find.byKey(const ValueKey('home-custody-card')), findsOneWidget);
+    expect(find.text('Ouvrir le planning'), findsOneWidget);
   });
 
   testWidgets('HomeTab : famille unie -> « toute la famille reunie »', (

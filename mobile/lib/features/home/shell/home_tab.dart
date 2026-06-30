@@ -7,6 +7,7 @@ import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/application/auth_state.dart';
+import '../../custody/presentation/custody_screen.dart';
 import '../../family/application/family_context.dart';
 
 /// US-HOME-1 : accueil = perspective de la famille active + encarts en etat vide
@@ -41,7 +42,16 @@ class HomeTab extends ConsumerWidget {
             ],
             const SizedBox(height: 24),
             if (family != null && !family.isIntact)
-              _EmptyCard(title: l.homeCustodyTitle, message: l.homeCustodyEmpty)
+              _EmptyCard(
+                key: const ValueKey('home-custody-card'),
+                title: l.homeCustodyTitle,
+                message: l.custodyOpen,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const CustodyScreen(),
+                  ),
+                ),
+              )
             else if (family != null && family.isIntact)
               _EmptyCard(
                 title: l.homeCustodyTitle,
@@ -72,30 +82,48 @@ class _EmptyCard extends StatelessWidget {
     required this.title,
     required this.message,
     this.positive = false,
+    this.onTap,
+    super.key,
   });
 
   final String title;
   final String message;
   final bool positive;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title.toUpperCase(), style: AppTypography.eyebrow),
-          const SizedBox(height: 10),
-          Text(
-            message,
-            style: TextStyle(
-              fontFamily: AppFonts.body,
-              fontSize: 14,
-              color: positive ? AppColors.positiveStrong : AppColors.muted,
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(title.toUpperCase(), style: AppTypography.eyebrow),
             ),
+            if (onTap != null)
+              const Icon(Icons.chevron_right, color: AppColors.muted, size: 20),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Text(
+          message,
+          style: TextStyle(
+            fontFamily: AppFonts.body,
+            fontSize: 14,
+            color: positive ? AppColors.positiveStrong : AppColors.muted,
           ),
-        ],
-      ),
+        ),
+      ],
+    );
+
+    if (onTap == null) {
+      return AppCard(child: content);
+    }
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadii.card),
+      child: AppCard(child: content),
     );
   }
 }

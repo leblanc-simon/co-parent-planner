@@ -782,6 +782,324 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Ne saisissez pas de données de santé (allergies, traitements, diagnostics). Informations pratiques générales uniquement.'**
   String get childHealthWarning;
+
+  /// No description provided for @custodyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Garde'**
+  String get custodyTitle;
+
+  /// No description provided for @custodyOpen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir le planning'**
+  String get custodyOpen;
+
+  /// No description provided for @custodyIntact.
+  ///
+  /// In fr, this message translates to:
+  /// **'La garde ne s\'applique qu\'aux familles séparées.'**
+  String get custodyIntact;
+
+  /// No description provided for @custodyNoPattern.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun rythme de garde configuré.'**
+  String get custodyNoPattern;
+
+  /// No description provided for @custodyConfigure.
+  ///
+  /// In fr, this message translates to:
+  /// **'Configurer le rythme'**
+  String get custodyConfigure;
+
+  /// No description provided for @custodyParentA.
+  ///
+  /// In fr, this message translates to:
+  /// **'Parent A'**
+  String get custodyParentA;
+
+  /// No description provided for @custodyParentB.
+  ///
+  /// In fr, this message translates to:
+  /// **'Parent B'**
+  String get custodyParentB;
+
+  /// No description provided for @custodyExceptional.
+  ///
+  /// In fr, this message translates to:
+  /// **'Exceptionnel'**
+  String get custodyExceptional;
+
+  /// No description provided for @custodyHoliday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vacances'**
+  String get custodyHoliday;
+
+  /// No description provided for @custodyStatsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Statistiques du mois'**
+  String get custodyStatsTitle;
+
+  /// No description provided for @custodyStatsDays.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{aucun jour} one{{count} jour} other{{count} jours}}'**
+  String custodyStatsDays(num count);
+
+  /// No description provided for @custodyDayDetailTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Détail du jour'**
+  String get custodyDayDetailTitle;
+
+  /// No description provided for @custodySource.
+  ///
+  /// In fr, this message translates to:
+  /// **'Origine'**
+  String get custodySource;
+
+  /// No description provided for @custodySourceBase.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rythme de base'**
+  String get custodySourceBase;
+
+  /// No description provided for @custodySourceHoliday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vacances'**
+  String get custodySourceHoliday;
+
+  /// No description provided for @custodySourceException.
+  ///
+  /// In fr, this message translates to:
+  /// **'Exception'**
+  String get custodySourceException;
+
+  /// No description provided for @custodySwapDay.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échanger ce jour'**
+  String get custodySwapDay;
+
+  /// No description provided for @custodyAssignedTo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confié à'**
+  String get custodyAssignedTo;
+
+  /// No description provided for @custodyNoParent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non attribué'**
+  String get custodyNoParent;
+
+  /// No description provided for @custodySwapped.
+  ///
+  /// In fr, this message translates to:
+  /// **'Jour échangé.'**
+  String get custodySwapped;
+
+  /// No description provided for @custodyExceptionsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Exceptions'**
+  String get custodyExceptionsTitle;
+
+  /// No description provided for @custodyExceptionsEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune exception.'**
+  String get custodyExceptionsEmpty;
+
+  /// No description provided for @custodyAddException.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter une exception'**
+  String get custodyAddException;
+
+  /// No description provided for @custodyStartDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Début'**
+  String get custodyStartDate;
+
+  /// No description provided for @custodyEndDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fin'**
+  String get custodyEndDate;
+
+  /// No description provided for @custodyParent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Parent'**
+  String get custodyParent;
+
+  /// No description provided for @custodyReason.
+  ///
+  /// In fr, this message translates to:
+  /// **'Motif (optionnel)'**
+  String get custodyReason;
+
+  /// No description provided for @custodyDelete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get custodyDelete;
+
+  /// No description provided for @custodyExceptionAdded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Exception ajoutée.'**
+  String get custodyExceptionAdded;
+
+  /// No description provided for @custodyExceptionDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Exception supprimée.'**
+  String get custodyExceptionDeleted;
+
+  /// No description provided for @custodyHolidaysTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vacances scolaires'**
+  String get custodyHolidaysTitle;
+
+  /// No description provided for @custodyHolidaysEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune période de vacances.'**
+  String get custodyHolidaysEmpty;
+
+  /// No description provided for @custodyImportHolidays.
+  ///
+  /// In fr, this message translates to:
+  /// **'Importer les vacances officielles'**
+  String get custodyImportHolidays;
+
+  /// No description provided for @custodyHolidaysImported.
+  ///
+  /// In fr, this message translates to:
+  /// **'Import des vacances lancé.'**
+  String get custodyHolidaysImported;
+
+  /// No description provided for @custodySettingsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rythme de garde'**
+  String get custodySettingsTitle;
+
+  /// No description provided for @custodyKind.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modèle'**
+  String get custodyKind;
+
+  /// No description provided for @custodyKindAlternating.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une semaine sur deux'**
+  String get custodyKindAlternating;
+
+  /// No description provided for @custodyKind223.
+  ///
+  /// In fr, this message translates to:
+  /// **'2-2-3'**
+  String get custodyKind223;
+
+  /// No description provided for @custodyKindCustom.
+  ///
+  /// In fr, this message translates to:
+  /// **'Personnalisé (14 jours)'**
+  String get custodyKindCustom;
+
+  /// No description provided for @custodyAnchorDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date d\'ancrage'**
+  String get custodyAnchorDate;
+
+  /// No description provided for @custodyHandoverWeekday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Jour d\'échange'**
+  String get custodyHandoverWeekday;
+
+  /// No description provided for @custodyHandoverTime.
+  ///
+  /// In fr, this message translates to:
+  /// **'Heure d\'échange'**
+  String get custodyHandoverTime;
+
+  /// No description provided for @custodyCustomPattern.
+  ///
+  /// In fr, this message translates to:
+  /// **'Motif personnalisé (14 nuits)'**
+  String get custodyCustomPattern;
+
+  /// No description provided for @custodySave.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer le rythme'**
+  String get custodySave;
+
+  /// No description provided for @custodySaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rythme enregistré.'**
+  String get custodySaved;
+
+  /// No description provided for @custodyPatternSaving.
+  ///
+  /// In fr, this message translates to:
+  /// **'Génération du planning en cours…'**
+  String get custodyPatternSaving;
+
+  /// No description provided for @weekdaySunday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dimanche'**
+  String get weekdaySunday;
+
+  /// No description provided for @weekdayMonday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lundi'**
+  String get weekdayMonday;
+
+  /// No description provided for @weekdayTuesday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mardi'**
+  String get weekdayTuesday;
+
+  /// No description provided for @weekdayWednesday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mercredi'**
+  String get weekdayWednesday;
+
+  /// No description provided for @weekdayThursday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Jeudi'**
+  String get weekdayThursday;
+
+  /// No description provided for @weekdayFriday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vendredi'**
+  String get weekdayFriday;
+
+  /// No description provided for @weekdaySaturday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Samedi'**
+  String get weekdaySaturday;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

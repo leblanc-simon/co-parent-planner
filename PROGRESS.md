@@ -5,14 +5,34 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-06-25** — **Lot 0 terminé** : CI + E2E web Playwright + couverture backend ≥80 %.
+Dernière mise à jour : **2026-06-30** — **Lot 1 TERMINÉ** (familles/membres/droits/invitations/liens) : backend + web + mobile + E2E.
 
 ---
 
 ## 0. Où en est-on ?
 
-**Lot 0 — Fondations** (`specs/lots/lot-0-fondations.md`) : ✅ **TERMINÉ** (toutes tâches 1→13).
-Prochaine étape : **Lot 1 — Familles/membres/droits/invitations/liens** (`specs/lots/lot-1-*.md`).
+**Lot 0 — Fondations** : ✅ **TERMINÉ**.
+
+**Lot 1 — Familles/membres/droits/invitations/liens** (`specs/lots/lot-1-*.md`) : ✅ **TERMINÉ** (backend, contrat OpenAPI, client Dart, UI web, UI mobile, E2E).
+Prochaine étape : **Lot 2 — Enfants & notes** (`specs/lots/lot-2-*.md`).
+
+- **Backend** : **101 tests / 748 assertions**, couverture **88,4 %** (≥80 %), PHPStan niv.8, cs-fixer verts, schéma en sync.
+- **Mobile** : client régénéré depuis l'OpenAPI Lot 1 (sans drift), **108 tests** verts, couverture **81 %** (≥70 %), `dart analyze`/`format` propres.
+- **E2E web (Playwright)** : **5 tests verts** (Lot 0 auth + responsive + **Lot 1 : créer famille → réglages → inviter → accepter (Mailpit) → vérifier accès → ajuster droits**).
+- **UI web** : `/settings` (Paramètres › Compte & Famille) — réglages famille (admin), membres + matrice de droits, invitation + récap droits, invitations en attente + révocation, familles liées (créer/activer/délier) ; sélecteur de famille persisté (cookie `cpp_family`) ; page web `/invitations/accept`.
+- **UI mobile** : écran Membres (liste + invitations en attente + révocation), formulaire d'invitation (rôle + droits), bascule de famille active (→ X-Family-Id), branchés dans l'onglet Réglages.
+- **Correctif Lot 0** : `data-controller="auth-form"` était sur la carte d'onboarding (et non le `<form>`) → création de famille via le front cassée ; déplacé sur le formulaire.
+
+### Surface backend Lot 1 livrée
+- `PATCH /api/families/{id}` (réglages, `family_settings:edit`), réglages garde **persistés** (settings jsonb), non interprétés.
+- `GET /api/families/{id}/members` (matrice de droits effectifs, identité 🔒 déchiffrée).
+- `PATCH /api/memberships/{id}` (rôle/admin/droits/couleur ; invariant `is_admin⇒parent` 422 ; dernier admin 409 ; couleur self sans droit), `DELETE /api/memberships/{id}` (retrait/auto-départ).
+- `POST|GET /api/families/{id}/invitations`, `DELETE /api/invitations/{id}`, `POST /api/invitations/accept` durci (expiré 410, déjà-membre 409, mismatch 403, concurrence FOR UPDATE, droits normalisés, admin honoré si parent). E-mail d'invitation async (Messenger + Twig localisé). Purge planifiée (Scheduler).
+- `GET|POST /api/families/{id}/links`, `POST .../links/{linkId}/activate`, `DELETE .../links/{linkId}` (paire canonique unique, anti-auto-lien, **sans overlay**).
+- Scope `X-Family-Id` durci : cohérence path/header (`/errors/family-scope-mismatch`), `FamilyScope` (service partagé providers/processors) + `FamilyContextResolver` (contrôleurs).
+- Services : `RightsNormalizer`, `MembershipWriter` (invariant §3.7), `LastAdminGuard` (FOR UPDATE), `BlindIndexHasher` (email_hash).
+- Modèle : entité **FamilyLink** + enum `FamilyLinkStatus` ; `Invitation.emailHash` (blind index) + `proposedAdmin` ; CHECK `is_admin=false OR role='parent'` ; index unique partiel `pending` ; migration `Version20260630193850`.
+- Exceptions RFC 7807 déclaratives (`ProblemException` + `AbstractProblemException`) ; registre RGPD à jour (`Invitation.emailHash`) ; OpenAPI exporté + client Dart régénéré.
 
 - **Backend** : **68 tests / 428 assertions**, couverture **86,9 %** (≥ seuil D8 80 %), PHPStan niv.8, cs-fixer verts.
 - **Mobile** : **105 tests**, couverture **84,3 %** (≥ seuil D8 70 %), `dart analyze`/`format` propres, client OpenAPI sans drift.
@@ -178,6 +198,27 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-06-30 — Lot 1 : familles, membres, droits, invitations, liens (clos)
+- **Modèle** : entité `FamilyLink` (+ `FamilyLinkStatus`, paire canonique unique, CHECK anti-auto-lien) ;
+  `Invitation.emailHash` (blind index HMAC) + `proposedAdmin` ; CHECK `is_admin=false OR role='parent'` ;
+  index unique partiel `pending` ; migration `Version20260630193850`.
+- **Services** : `FamilyScope` (scope X-Family-Id + cohérence path/header §3.4, partagé providers/processors),
+  `RightsNormalizer` (§3.1), `MembershipWriter` (invariant `is_admin⇒parent` §3.7), `LastAdminGuard`
+  (FOR UPDATE §3.2), `BlindIndexHasher`. Exceptions RFC 7807 déclaratives (`ProblemException`).
+- **API** : réglages famille (`PATCH /families/{id}`), membres (`GET /families/{id}/members`,
+  `PATCH`/`DELETE /memberships/{id}`), invitations (`POST`/`GET /families/{id}/invitations`,
+  `DELETE /invitations/{id}`, `POST /invitations/accept` durci : expiré 410, déjà-membre 409, mismatch 403,
+  concurrence FOR UPDATE), liens (`GET`/`POST /families/{id}/links`, `.../activate`, `DELETE .../{linkId}`).
+  E-mail d'invitation async (Messenger + Twig localisé), purge planifiée (Scheduler).
+- **Web** : page `/settings` (Compte & Famille) — réglages, membres + matrice de droits, invitation +
+  récap, invitations en attente, familles liées ; sélecteur de famille persisté (cookie) ;
+  `/invitations/accept`. Stimulus `settings` + `family-select`. Correctif onboarding (`auth-form`).
+- **Mobile** : clients Member/Invitation/FamilyLink, `MembersRepository`, écran Membres + formulaire
+  d'invitation + bascule de famille active (→ X-Family-Id). **108 tests, 81 %**.
+- **Contrat** : OpenAPI ré-exporté, client Dart régénéré (sans drift). Registre RGPD : `Invitation.emailHash`.
+- **Portes vertes** : backend **101 tests / 748 assertions, couverture 88,4 %**, PHPStan niv.8, cs-fixer ;
+  mobile `dart analyze`/`format` ; **E2E Playwright 5/5** (dont le parcours Lot 1 complet via Mailpit).
 
 ### 2026-06-25 — CI + E2E web Playwright + couverture backend (Tâche 13 → Lot 0 clos)
 - **CI GitHub Actions** `.github/workflows/ci.yml`, 3 jobs :

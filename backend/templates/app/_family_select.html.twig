@@ -1,0 +1,14 @@
+<div class="family-select" data-controller="family-select">
+    <button class="family-select__button" type="button" data-action="family-select#toggle">
+        {{ activeMembership.family.name }} ▾
+    </button>
+    <div class="family-select__menu" data-family-select-target="menu">
+        {% for m in memberships %}
+            <button type="button" class="family-select__item {{ m.id == activeMembership.id ? 'is-active' }}"
+                    data-action="family-select#select" data-family-id="{{ m.family.id }}">
+                {{ m.family.name }}
+                <small>{{ m.role.value }}{{ m.isAdmin ? ' · admin' }}</small>
+            </button>
+        {% endfor %}
+    </div>
+</div>

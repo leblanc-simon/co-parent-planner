@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\User;
-use App\Repository\MembershipRepository;
+use App\Web\ActiveFamilyResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,7 +20,7 @@ final class HomeController extends AbstractController
 {
     public function __construct(
         private readonly Security $security,
-        private readonly MembershipRepository $memberships,
+        private readonly ActiveFamilyResolver $activeFamily,
     ) {
     }
 
@@ -32,7 +32,7 @@ final class HomeController extends AbstractController
             return $this->redirectToRoute('app_login');
         }
 
-        $memberships = $this->memberships->findActiveForUser($user);
+        $memberships = $this->activeFamily->memberships();
         if ([] === $memberships) {
             return $this->redirectToRoute('app_onboarding');
         }
@@ -40,7 +40,7 @@ final class HomeController extends AbstractController
         return $this->render('app/home.html.twig', [
             'user' => $user,
             'memberships' => $memberships,
-            'activeMembership' => $memberships[0],
+            'activeMembership' => $this->activeFamily->active($memberships),
         ]);
     }
 
@@ -52,5 +52,20 @@ final class HomeController extends AbstractController
         }
 
         return $this->render('app/onboarding.html.twig');
+    }
+
+    /**
+     * Page d'acceptation d'invitation (US-INV-3 / US-ONB-1b). Le token est porté par le lien
+     * d'e-mail ; la page le poste à l'API au nom de l'utilisateur connecté. Non connecté → login
+     * (puis l'utilisateur rouvre le lien après authentification).
+     */
+    #[Route('/invitations/accept', name: 'app_accept_invitation', methods: ['GET'])]
+    public function acceptInvitation(): Response
+    {
+        if (!$this->security->getUser() instanceof User) {
+            return $this->redirectToRoute('app_login');
+        }
+
+        return $this->render('app/accept_invitation.html.twig');
     }
 }

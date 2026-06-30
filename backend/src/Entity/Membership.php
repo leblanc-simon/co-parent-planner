@@ -178,6 +178,25 @@ class Membership
         return $this;
     }
 
+    public function removeRight(Right $right): static
+    {
+        $this->rights->removeElement($right);
+
+        return $this;
+    }
+
+    /** Right matérialisé pour un domaine donné, le cas échéant. */
+    public function rightFor(RightDomain $domain): ?Right
+    {
+        foreach ($this->rights as $right) {
+            if ($right->getDomain() === $domain) {
+                return $right;
+            }
+        }
+
+        return null;
+    }
+
     /**
      * Niveau effectif sur un domaine (table de vérité §2.2 + §3.7) :
      * - family_settings : édition réservée aux admins ; un parent non-admin n'a que `view`, les autres `none` ;
@@ -200,6 +219,11 @@ class Membership
             return RightLevel::None;
         }
 
+        // step_parent : `expenses` inerte tant que le module Dépenses n'est pas activé (§3.1, v2).
+        if ($domain->isV2() && !$this->family->isExpensesEnabled()) {
+            return RightLevel::None;
+        }
+
         foreach ($this->rights as $right) {
             if ($right->getDomain() === $domain) {
                 return $right->getLevel();
@@ -212,5 +236,20 @@ class Membership
     public function can(RightDomain $domain, RightLevel $required): bool
     {
         return $this->effectiveLevel($domain)->satisfies($required);
+    }
+
+    /**
+     * Matrice des niveaux effectifs par domaine (pour le rendu UI, sans appel d'enum en Twig).
+     *
+     * @return array<string, string> domaine → niveau
+     */
+    public function effectiveRights(): array
+    {
+        $map = [];
+        foreach (RightDomain::cases() as $domain) {
+            $map[$domain->value] = $this->effectiveLevel($domain)->value;
+        }
+
+        return $map;
     }
 }

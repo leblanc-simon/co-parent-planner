@@ -9,6 +9,9 @@ import '../../../l10n/app_localizations.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/application/auth_state.dart';
 import '../../family/application/family_context.dart';
+import '../../family/data/family_repository.dart';
+import '../../members/data/members_repository.dart';
+import '../../members/presentation/members_screen.dart';
 
 /// US-SET-1 (sous-ensemble Lot 0) : profil (nom/telephone), langue, famille
 /// active, deconnexion.
@@ -65,6 +68,40 @@ class _SettingsTabState extends ConsumerState<SettingsTab> {
     }
   }
 
+  /// US-SCOPE-1 — bascule de famille active (persiste le contexte → header X-Family-Id).
+  Future<void> _switchFamily(BuildContext context) async {
+    final families = await ref.read(myFamiliesProvider.future);
+    if (!context.mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final f in families)
+              ListTile(
+                title: Text(f.name),
+                subtitle: Text(f.type),
+                onTap: () async {
+                  await ref
+                      .read(familyContextProvider.notifier)
+                      .setActive(
+                        FamilyContext(
+                          familyId: f.id,
+                          familyName: f.name,
+                          type: f.type,
+                        ),
+                      );
+                  ref.invalidate(familyMembersProvider);
+                  if (sheetContext.mounted) Navigator.of(sheetContext).pop();
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppL10n.of(context);
@@ -92,7 +129,26 @@ class _SettingsTabState extends ConsumerState<SettingsTab> {
                     family.familyName,
                     style: AppTypography.textTheme.titleLarge,
                   ),
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    key: const ValueKey('settings-switch-family'),
+                    onPressed: () => _switchFamily(context),
+                    icon: const Icon(Icons.swap_horiz),
+                    label: Text(l.settingsSwitchFamily),
+                  ),
                 ],
+              ),
+            ),
+          const SizedBox(height: 12),
+          if (family != null)
+            ListTile(
+              key: const ValueKey('settings-members'),
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.group_outlined),
+              title: Text(l.settingsMembers),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const MembersScreen()),
               ),
             ),
           const SizedBox(height: 16),

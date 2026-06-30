@@ -260,4 +260,76 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get settingsActiveFamily => 'Famille active';
+
+  @override
+  String get settingsSwitchFamily => 'Changer de famille';
+
+  @override
+  String get settingsMembers => 'Membres de la famille';
+
+  @override
+  String get membersTitle => 'Membres';
+
+  @override
+  String get membersEmpty => 'Aucun membre.';
+
+  @override
+  String get membersRoleParent => 'Parent';
+
+  @override
+  String get membersRoleStepParent => 'Beau-parent';
+
+  @override
+  String get membersRoleChild => 'Enfant';
+
+  @override
+  String get membersAdminBadge => 'admin';
+
+  @override
+  String get membersInvite => 'Inviter une personne';
+
+  @override
+  String get membersPending => 'Invitations en attente';
+
+  @override
+  String get membersRevoke => 'Revoquer';
+
+  @override
+  String get membersInvited => 'Invitation envoyee.';
+
+  @override
+  String get membersRevoked => 'Invitation revoquee.';
+
+  @override
+  String get inviteTitle => 'Inviter une personne';
+
+  @override
+  String get inviteEmail => 'Adresse e-mail';
+
+  @override
+  String get inviteRole => 'Role';
+
+  @override
+  String get inviteSend => 'Envoyer l\'invitation';
+
+  @override
+  String get inviteRightAgenda => 'Agenda';
+
+  @override
+  String get inviteRightCustody => 'Garde';
+
+  @override
+  String get inviteRightNotes => 'Notes enfants';
+
+  @override
+  String get inviteRightExchanges => 'Echanges';
+
+  @override
+  String get rightNone => 'Aucun';
+
+  @override
+  String get rightView => 'Lecture';
+
+  @override
+  String get rightEdit => 'Edition';
 }

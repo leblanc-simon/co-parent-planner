@@ -8,19 +8,7 @@
         <h1>Bonjour {{ user.fullName ?: user.email }}</h1>
     </div>
 
-    <div class="family-select" data-controller="family-select">
-        <button class="family-select__button" type="button" data-action="family-select#toggle">
-            {{ activeMembership.family.name }} ▾
-        </button>
-        <div class="family-select__menu" data-family-select-target="menu">
-            {% for m in memberships %}
-                <button type="button" class="family-select__item {{ m.id == activeMembership.id ? 'is-active' }}">
-                    {{ m.family.name }}
-                    <small>{{ m.role.value }}{{ m.isAdmin ? ' · admin' }}</small>
-                </button>
-            {% endfor %}
-        </div>
-    </div>
+    {{ include('app/_family_select.html.twig') }}
 </header>
 
 {% if activeMembership.family.hasCustody %}

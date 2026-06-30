@@ -107,4 +107,31 @@ final class WebPagesTest extends WebTestCase
         self::assertStringContainsString('Bonjour', (string) $client->getResponse()->getContent());
         self::assertStringContainsString('Famille Web', (string) $client->getResponse()->getContent());
     }
+
+    public function testSettingsPageRendersForAdmin(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser($client, withFamily: true);
+        $this->login($client);
+
+        $client->request('GET', '/settings');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('Compte', $html);
+        self::assertStringContainsString('Réglages de la famille', $html);
+        self::assertStringContainsString('Inviter une personne', $html);
+        self::assertStringContainsString('Familles liées', $html);
+    }
+
+    public function testSettingsRedirectsToOnboardingWhenNoFamily(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser($client, withFamily: false);
+        $this->login($client);
+
+        $client->request('GET', '/settings');
+        self::assertResponseRedirects('/onboarding');
+    }
 }

@@ -7,11 +7,13 @@ namespace App\Dto\Family;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use App\Entity\Membership;
 use App\State\Family\CreateFamilyProcessor;
 use App\State\Family\FamilyItemProvider;
 use App\State\Family\MyFamiliesProvider;
+use App\State\Family\UpdateFamilyProcessor;
 
 /**
  * Représentation d'une famille du point de vue du membre courant (US-ONB-1, US-HOME-1).
@@ -35,6 +37,12 @@ use App\State\Family\MyFamiliesProvider;
             input: CreateFamilyRequest::class,
             processor: CreateFamilyProcessor::class,
         ),
+        new Patch(
+            uriTemplate: '/families/{id}',
+            input: UpdateFamilyRequest::class,
+            read: false,
+            processor: UpdateFamilyProcessor::class,
+        ),
     ],
 )]
 class FamilyResource
@@ -47,12 +55,15 @@ class FamilyResource
     public ?string $academy = null;
     public bool $expensesEnabled = false;
     public bool $hasCustody = false;
+    public ?int $handoverWeekday = null;
+    public ?string $handoverTime = null;
     public string $role = '';
     public bool $isAdmin = false;
 
     public static function fromMembership(Membership $membership): self
     {
         $family = $membership->getFamily();
+        $settings = $family->getSettings();
 
         $dto = new self();
         $dto->id = (string) $family->getId();
@@ -63,6 +74,8 @@ class FamilyResource
         $dto->academy = $family->getAcademy();
         $dto->expensesEnabled = $family->isExpensesEnabled();
         $dto->hasCustody = $family->hasCustody();
+        $dto->handoverWeekday = \is_int($settings['handover_weekday'] ?? null) ? $settings['handover_weekday'] : null;
+        $dto->handoverTime = \is_string($settings['handover_time'] ?? null) ? $settings['handover_time'] : null;
         $dto->role = $membership->getRole()->value;
         $dto->isAdmin = $membership->isAdmin();
 

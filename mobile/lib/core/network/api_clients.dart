@@ -17,6 +17,9 @@ class ApiClients {
       logout = api.LogoutRequestClient(dio),
       me = api.MeClient(dio),
       families = api.FamilyClient(dio),
+      members = api.MemberClient(dio),
+      invitations = api.InvitationClient(dio),
+      familyLinks = api.FamilyLinkClient(dio),
       acceptInvitation = api.AcceptInvitationRequestClient(dio),
       realtime = api.RealtimeTokenClient(dio);
 
@@ -28,6 +31,9 @@ class ApiClients {
   final api.LogoutRequestClient logout;
   final api.MeClient me;
   final api.FamilyClient families;
+  final api.MemberClient members;
+  final api.InvitationClient invitations;
+  final api.FamilyLinkClient familyLinks;
   final api.AcceptInvitationRequestClient acceptInvitation;
   final api.RealtimeTokenClient realtime;
 }

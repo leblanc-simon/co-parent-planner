@@ -9,6 +9,7 @@ use App\Entity\Membership;
 use App\Entity\User;
 use App\Enum\MembershipStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\LockMode;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Uid\Uuid;
 
@@ -56,6 +57,27 @@ class MembershipRepository extends ServiceEntityRepository
         return $result;
     }
 
+    /**
+     * Membres actifs d'une famille (liste des membres US-MBR-1), parents/admins d'abord.
+     *
+     * @return list<Membership>
+     */
+    public function findActiveByFamily(Family $family): array
+    {
+        /** @var list<Membership> $result */
+        $result = $this->createQueryBuilder('m')
+            ->andWhere('m.family = :family')
+            ->andWhere('m.status = :status')
+            ->setParameter('family', $family)
+            ->setParameter('status', MembershipStatus::Active)
+            ->orderBy('m.isAdmin', 'DESC')
+            ->addOrderBy('m.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return $result;
+    }
+
     /** Nombre d'admins actifs d'une famille (protection du dernier admin — invariant). */
     public function countActiveAdmins(Family $family): int
     {
@@ -68,5 +90,39 @@ class MembershipRepository extends ServiceEntityRepository
             ->setParameter('status', MembershipStatus::Active)
             ->getQuery()
             ->getSingleScalarResult();
+    }
+
+    /**
+     * Verrouille (SELECT … FOR UPDATE) les admins actifs de la famille et les compte (§3.2).
+     * Sérialise les retraits/rétrogradations concurrents. **À appeler dans une transaction.**.
+     */
+    public function lockAndCountActiveAdmins(Family $family): int
+    {
+        $admins = $this->createQueryBuilder('m')
+            ->andWhere('m.family = :family')
+            ->andWhere('m.isAdmin = true')
+            ->andWhere('m.status = :status')
+            ->setParameter('family', $family)
+            ->setParameter('status', MembershipStatus::Active)
+            ->getQuery()
+            ->setLockMode(LockMode::PESSIMISTIC_WRITE)
+            ->getResult();
+
+        return \is_array($admins) ? \count($admins) : 0;
+    }
+
+    /** Membership actif ciblant un e-mail dans une famille (via l'utilisateur du compte). */
+    public function findActiveByEmail(Family $family, string $email): ?Membership
+    {
+        return $this->createQueryBuilder('m')
+            ->join('m.user', 'u')
+            ->andWhere('m.family = :family')
+            ->andWhere('u.email = :email')
+            ->andWhere('m.status = :status')
+            ->setParameter('family', $family)
+            ->setParameter('email', $email)
+            ->setParameter('status', MembershipStatus::Active)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 }

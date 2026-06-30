@@ -6,30 +6,25 @@ namespace App\Security;
 
 use App\Entity\User;
 use App\Exception\FamilyAccessDeniedException;
-use App\Exception\FamilyScopeRequiredException;
-use App\Repository\MembershipRepository;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Controller\ValueResolverInterface;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
-use Symfony\Component\Uid\Uuid;
 
 /**
- * Résout l'argument contrôleur `FamilyContext` à partir du header `X-Family-Id` (§3.6).
+ * Résout l'argument contrôleur `FamilyContext` à partir du header `X-Family-Id` (§3.4, §3.6).
  *
- * Un contrôleur qui type-hint `FamilyContext` déclare ainsi qu'il est **scopé à la famille active** :
- *  - header absent/malformé → 400 (anti-énumération neutre) ;
- *  - membership inactif / inexistant / autre utilisateur → 403 indistinct.
- *
- * L'autorisation fine (domaine/niveau) est ensuite déléguée aux Voters.
+ * Un contrôleur qui type-hint `FamilyContext` déclare ainsi qu'il est **scopé à la famille active**.
+ * La logique (header requis, cohérence path/header, membership actif) vit dans {@see FamilyScope} ;
+ * ce resolver ne fait que la brancher sur le pipeline de contrôleurs Symfony.
  */
 final class FamilyContextResolver implements ValueResolverInterface
 {
-    public const string HEADER = 'X-Family-Id';
+    public const string HEADER = FamilyScope::HEADER;
 
     public function __construct(
         private readonly Security $security,
-        private readonly MembershipRepository $memberships,
+        private readonly FamilyScope $scope,
     ) {
     }
 
@@ -47,20 +42,6 @@ final class FamilyContextResolver implements ValueResolverInterface
             throw new FamilyAccessDeniedException();
         }
 
-        $raw = $request->headers->get(self::HEADER);
-        if (null === $raw || '' === $raw) {
-            throw new FamilyScopeRequiredException();
-        }
-        if (!Uuid::isValid($raw)) {
-            throw new FamilyScopeRequiredException('Le header X-Family-Id doit être un UUID valide.');
-        }
-
-        $membership = $this->memberships->findActive($user, Uuid::fromString($raw));
-        if (null === $membership) {
-            // Ne distingue pas "famille inexistante" de "pas membre" (anti-énumération).
-            throw new FamilyAccessDeniedException();
-        }
-
-        return [new FamilyContext($membership->getFamily(), $membership)];
+        return [$this->scope->resolve($request, $user)];
     }
 }

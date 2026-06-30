@@ -295,6 +295,461 @@
                         "explode": false
                     }
                 ]
+            },
+            "patch": {
+                "operationId": "api_families_id_patch",
+                "tags": [
+                    "Family"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Family resource updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Family"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Family.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Updates the Family resource.",
+                "description": "Updates the Family resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Family identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The updated Family resource",
+                    "content": {
+                        "application/merge-patch+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Family.UpdateFamilyRequest.jsonMergePatch"
+                            }
+                        },
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Family.UpdateFamilyRequest.jsonMergePatch"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/families/{familyId}/links": {
+            "get": {
+                "operationId": "api_families_familyIdlinks_get_collection",
+                "tags": [
+                    "FamilyLink"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "FamilyLink collection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/FamilyLink"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "FamilyLink.jsonld collection.",
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/HydraCollectionBaseSchemaNoPagination"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "member"
+                                            ],
+                                            "properties": {
+                                                "member": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/FamilyLink.jsonld"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Retrieves the collection of FamilyLink resources.",
+                "description": "Retrieves the collection of FamilyLink resources.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "api_families_familyIdlinks_post",
+                "tags": [
+                    "FamilyLink"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "FamilyLink resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FamilyLink"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FamilyLink.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a FamilyLink resource.",
+                "description": "Creates a FamilyLink resource.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The new FamilyLink resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FamilyLink.CreateLinkRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FamilyLink.CreateLinkRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/families/{familyId}/links/{linkId}": {
+            "delete": {
+                "operationId": "api_families_familyIdlinks_linkId_delete",
+                "tags": [
+                    "FamilyLink"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "FamilyLink resource deleted"
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Removes the FamilyLink resource.",
+                "description": "Removes the FamilyLink resource.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    },
+                    {
+                        "name": "linkId",
+                        "in": "path",
+                        "description": "FamilyLink identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            }
+        },
+        "/api/families/{familyId}/links/{linkId}/activate": {
+            "post": {
+                "operationId": "api_families_familyIdlinks_linkIdactivate_post",
+                "tags": [
+                    "FamilyLink"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "FamilyLink resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FamilyLink"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FamilyLink.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a FamilyLink resource.",
+                "description": "Creates a FamilyLink resource.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    },
+                    {
+                        "name": "linkId",
+                        "in": "path",
+                        "description": "FamilyLink identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The new FamilyLink resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FamilyLink"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FamilyLink"
+                            }
+                        }
+                    },
+                    "required": true
+                }
             }
         },
         "/api/auth/password/forgot": {
@@ -382,6 +837,218 @@
                     },
                     "required": true
                 }
+            }
+        },
+        "/api/families/{familyId}/invitations": {
+            "get": {
+                "operationId": "api_families_familyIdinvitations_get_collection",
+                "tags": [
+                    "Invitation"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Invitation collection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Invitation"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "Invitation.jsonld collection.",
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/HydraCollectionBaseSchemaNoPagination"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "member"
+                                            ],
+                                            "properties": {
+                                                "member": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Invitation.jsonld"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Retrieves the collection of Invitation resources.",
+                "description": "Retrieves the collection of Invitation resources.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "api_families_familyIdinvitations_post",
+                "tags": [
+                    "Invitation"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Invitation resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Invitation"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Invitation.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a Invitation resource.",
+                "description": "Creates a Invitation resource.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The new Invitation resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Invitation.CreateInvitationRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Invitation.CreateInvitationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/invitations/{id}": {
+            "delete": {
+                "operationId": "api_invitations_id_delete",
+                "tags": [
+                    "Invitation"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Invitation resource deleted"
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Removes the Invitation resource.",
+                "description": "Removes the Invitation resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Invitation identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
             }
         },
         "/api/auth/login": {
@@ -816,6 +1483,239 @@
                         "application/ld+json": {
                             "schema": {
                                 "$ref": "#/components/schemas/Me-me.write"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/families/{familyId}/members": {
+            "get": {
+                "operationId": "api_families_familyIdmembers_get_collection",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Member collection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Member"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "Member.jsonld collection.",
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/HydraCollectionBaseSchemaNoPagination"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "member"
+                                            ],
+                                            "properties": {
+                                                "member": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Member.jsonld"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Retrieves the collection of Member resources.",
+                "description": "Retrieves the collection of Member resources.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            }
+        },
+        "/api/memberships/{id}": {
+            "delete": {
+                "operationId": "api_memberships_id_delete",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Member resource deleted"
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Removes the Member resource.",
+                "description": "Removes the Member resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Member identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            },
+            "patch": {
+                "operationId": "api_memberships_id_patch",
+                "tags": [
+                    "Member"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Member resource updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Member"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Member.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Updates the Member resource.",
+                "description": "Updates the Member resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Member identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The updated Member resource",
+                    "content": {
+                        "application/merge-patch+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Member.UpdateMembershipRequest.jsonMergePatch"
+                            }
+                        },
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Member.UpdateMembershipRequest.jsonMergePatch"
                             }
                         }
                     },
@@ -1784,6 +2684,77 @@
                     }
                 }
             },
+            "Family.UpdateFamilyRequest.jsonMergePatch": {
+                "type": "object",
+                "description": "Repr\u00e9sentation d'une famille du point de vue du membre courant (US-ONB-1, US-HOME-1).\n`role`/`isAdmin` refl\u00e8tent la perspective de l'utilisateur connect\u00e9 dans cette famille.",
+                "properties": {
+                    "name": {
+                        "minLength": 1,
+                        "maxLength": 120,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "type": {
+                        "enum": [
+                            "separated",
+                            "intact"
+                        ],
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "timezone": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "schoolZone": {
+                        "enum": [
+                            "A",
+                            "B",
+                            "C"
+                        ],
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "academy": {
+                        "maxLength": 120,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "expensesEnabled": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ]
+                    },
+                    "handoverWeekday": {
+                        "minimum": 1,
+                        "maximum": 7,
+                        "description": "Jour d'\u00e9change de garde : 1 (lundi) \u2026 7 (dimanche) \u2014 ISO-8601.",
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "handoverTime": {
+                        "pattern": "^(.*(^([01]\\d|2[0-3]):[0-5]\\d$).*)$",
+                        "description": "Heure d'\u00e9change locale famille, format HH:MM (00:00\u201323:59).",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
             "Family.jsonld": {
                 "allOf": [
                     {
@@ -1840,6 +2811,86 @@
                     }
                 ],
                 "description": "Repr\u00e9sentation d'une famille du point de vue du membre courant (US-ONB-1, US-HOME-1).\n`role`/`isAdmin` refl\u00e8tent la perspective de l'utilisateur connect\u00e9 dans cette famille."
+            },
+            "FamilyLink": {
+                "type": "object",
+                "description": "Lien entre familles, vu depuis la famille active (US-LINK-1/2/3). N'expose **que** l'identit\u00e9 et\nle statut de l'autre famille \u2014 **aucune** donn\u00e9e interne (membres, enfants, agenda). Pas d'overlay.",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "status": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "otherFamilyId": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "otherFamilyName": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "initiatedByMe": {
+                        "description": "Vrai si la famille active est \u00e0 l'origine du lien (sinon elle l'a re\u00e7u).",
+                        "default": false,
+                        "type": "boolean"
+                    }
+                }
+            },
+            "FamilyLink.CreateLinkRequest": {
+                "type": "object",
+                "description": "Lien entre familles, vu depuis la famille active (US-LINK-1/2/3). N'expose **que** l'identit\u00e9 et\nle statut de l'autre famille \u2014 **aucune** donn\u00e9e interne (membres, enfants, agenda). Pas d'overlay.",
+                "required": [
+                    "linkedFamilyId"
+                ],
+                "properties": {
+                    "linkedFamilyId": {
+                        "format": "uuid",
+                        "externalDocs": {
+                            "url": "https://schema.org/identifier"
+                        },
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "FamilyLink.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "status": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "otherFamilyId": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "otherFamilyName": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "initiatedByMe": {
+                                "description": "Vrai si la famille active est \u00e0 l'origine du lien (sinon elle l'a re\u00e7u).",
+                                "default": false,
+                                "type": "boolean"
+                            }
+                        }
+                    }
+                ],
+                "description": "Lien entre familles, vu depuis la famille active (US-LINK-1/2/3). N'expose **que** l'identit\u00e9 et\nle statut de l'autre famille \u2014 **aucune** donn\u00e9e interne (membres, enfants, agenda). Pas d'overlay."
             },
             "ForgotPasswordRequest": {
                 "type": "object",
@@ -2030,6 +3081,150 @@
                     "@id",
                     "@type"
                 ]
+            },
+            "Invitation": {
+                "type": "object",
+                "description": "Vue d'une invitation pour l'admin (US-INV-1/2) : jamais le token en clair. L'e-mail est\nd\u00e9chiffr\u00e9 \u00e0 la vol\u00e9e pour l'admin habilit\u00e9.",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "email": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "role": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "proposedRights": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    },
+                    "proposedAdmin": {
+                        "default": false,
+                        "type": "boolean"
+                    },
+                    "status": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "expiresAt": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "createdAt": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "Invitation.CreateInvitationRequest": {
+                "type": "object",
+                "description": "Vue d'une invitation pour l'admin (US-INV-1/2) : jamais le token en clair. L'e-mail est\nd\u00e9chiffr\u00e9 \u00e0 la vol\u00e9e pour l'admin habilit\u00e9.",
+                "required": [
+                    "email",
+                    "role"
+                ],
+                "properties": {
+                    "email": {
+                        "format": "email",
+                        "maxLength": 180,
+                        "externalDocs": {
+                            "url": "https://schema.org/email"
+                        },
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "role": {
+                        "enum": [
+                            "parent",
+                            "step_parent",
+                            "child"
+                        ],
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "rights": {
+                        "description": "domaine \u2192 niveau propos\u00e9",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    },
+                    "isAdmin": {
+                        "description": "Admin propos\u00e9 (honor\u00e9 seulement pour role=parent).",
+                        "type": [
+                            "boolean",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "Invitation.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "email": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "role": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "proposedRights": {
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "string"
+                                }
+                            },
+                            "proposedAdmin": {
+                                "default": false,
+                                "type": "boolean"
+                            },
+                            "status": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "expiresAt": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "createdAt": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "description": "Vue d'une invitation pour l'admin (US-INV-1/2) : jamais le token en clair. L'e-mail est\nd\u00e9chiffr\u00e9 \u00e0 la vol\u00e9e pour l'admin habilit\u00e9."
             },
             "LoginRequest": {
                 "type": "object",
@@ -2294,6 +3489,181 @@
                     }
                 ],
                 "description": "US-SET-1 (sous-ensemble Lot 0) \u2014 profil du compte courant. `/api/me` est implicitement scop\u00e9 \u00e0\nl'utilisateur du token (jamais un autre compte). `full_name`/`phone` \ud83d\udd12 d\u00e9chiffr\u00e9s en lecture.\n\n`avatarUrl`, `email`, `status`, `emailVerified` sont en lecture seule (groupe `me:read` uniquement) :\nun PATCH les ignore (cf. \u00a74.5 pour avatar_url)."
+            },
+            "Member": {
+                "type": "object",
+                "description": "Vue d'un membre d'une famille (US-MBR-1) : r\u00f4le, admin, couleur, matrice de droits **effectifs**,\net identit\u00e9 \ud83d\udd12 d\u00e9chiffr\u00e9e \u00e0 la vol\u00e9e pour les membres habilit\u00e9s (jamais en clair dans un dump).",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "userId": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "role": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "isAdmin": {
+                        "default": false,
+                        "type": "boolean"
+                    },
+                    "displayColor": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "fullName": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "email": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "phone": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "childId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "rights": {
+                        "description": "domaine \u2192 niveau effectif",
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    },
+                    "self": {
+                        "description": "Vrai s'il s'agit du membre correspondant \u00e0 l'utilisateur courant.",
+                        "default": false,
+                        "type": "boolean"
+                    }
+                }
+            },
+            "Member.UpdateMembershipRequest.jsonMergePatch": {
+                "type": "object",
+                "description": "Vue d'un membre d'une famille (US-MBR-1) : r\u00f4le, admin, couleur, matrice de droits **effectifs**,\net identit\u00e9 \ud83d\udd12 d\u00e9chiffr\u00e9e \u00e0 la vol\u00e9e pour les membres habilit\u00e9s (jamais en clair dans un dump).",
+                "properties": {
+                    "role": {
+                        "enum": [
+                            "parent",
+                            "step_parent",
+                            "child"
+                        ],
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "isAdmin": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ]
+                    },
+                    "rights": {
+                        "description": "domaine \u2192 niveau propos\u00e9",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    },
+                    "displayColor": {
+                        "pattern": "^(#[0-9A-Fa-f]{6})$",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "Member.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "userId": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "role": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "isAdmin": {
+                                "default": false,
+                                "type": "boolean"
+                            },
+                            "displayColor": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "fullName": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "email": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "phone": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "childId": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "rights": {
+                                "description": "domaine \u2192 niveau effectif",
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "string"
+                                }
+                            },
+                            "self": {
+                                "description": "Vrai s'il s'agit du membre correspondant \u00e0 l'utilisateur courant.",
+                                "default": false,
+                                "type": "boolean"
+                            }
+                        }
+                    }
+                ],
+                "description": "Vue d'un membre d'une famille (US-MBR-1) : r\u00f4le, admin, couleur, matrice de droits **effectifs**,\net identit\u00e9 \ud83d\udd12 d\u00e9chiffr\u00e9e \u00e0 la vol\u00e9e pour les membres habilit\u00e9s (jamais en clair dans un dump)."
             },
             "RealtimeToken": {
                 "type": "object",
@@ -2585,12 +3955,24 @@
             "description": "Repr\u00e9sentation d'une famille du point de vue du membre courant (US-ONB-1, US-HOME-1).\n`role`/`isAdmin` refl\u00e8tent la perspective de l'utilisateur connect\u00e9 dans cette famille."
         },
         {
+            "name": "FamilyLink",
+            "description": "Lien entre familles, vu depuis la famille active (US-LINK-1/2/3). N'expose **que** l'identit\u00e9 et\nle statut de l'autre famille \u2014 **aucune** donn\u00e9e interne (membres, enfants, agenda). Pas d'overlay."
+        },
+        {
             "name": "AcceptInvitationRequest",
             "description": "US-ONB-1 sc.3-5 \u2014 accepter une invitation (squelette Lot 0). Authentification requise :\nl'e-mail du compte connect\u00e9 doit correspondre \u00e0 l'invit\u00e9. Renvoie la famille rejointe."
         },
         {
+            "name": "Invitation",
+            "description": "Vue d'une invitation pour l'admin (US-INV-1/2) : jamais le token en clair. L'e-mail est\nd\u00e9chiffr\u00e9 \u00e0 la vol\u00e9e pour l'admin habilit\u00e9."
+        },
+        {
             "name": "Me",
             "description": "US-SET-1 (sous-ensemble Lot 0) \u2014 profil du compte courant. `/api/me` est implicitement scop\u00e9 \u00e0\nl'utilisateur du token (jamais un autre compte). `full_name`/`phone` \ud83d\udd12 d\u00e9chiffr\u00e9s en lecture.\n\n`avatarUrl`, `email`, `status`, `emailVerified` sont en lecture seule (groupe `me:read` uniquement) :\nun PATCH les ignore (cf. \u00a74.5 pour avatar_url)."
+        },
+        {
+            "name": "Member",
+            "description": "Vue d'un membre d'une famille (US-MBR-1) : r\u00f4le, admin, couleur, matrice de droits **effectifs**,\net identit\u00e9 \ud83d\udd12 d\u00e9chiffr\u00e9e \u00e0 la vol\u00e9e pour les membres habilit\u00e9s (jamais en clair dans un dump)."
         },
         {
             "name": "RealtimeToken",

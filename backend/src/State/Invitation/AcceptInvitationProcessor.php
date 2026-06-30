@@ -8,27 +8,30 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Dto\Family\FamilyResource;
 use App\Dto\Invitation\AcceptInvitationRequest;
+use App\Entity\Invitation;
 use App\Entity\Membership;
-use App\Entity\Right;
 use App\Entity\User;
 use App\Enum\AuditAction;
 use App\Enum\InvitationStatus;
 use App\Enum\MembershipStatus;
-use App\Enum\RightDomain;
-use App\Enum\RightLevel;
+use App\Exception\AlreadyMemberException;
 use App\Exception\InvalidInvitationException;
 use App\Exception\InvitationEmailMismatchException;
+use App\Exception\InvitationExpiredException;
 use App\Repository\InvitationRepository;
 use App\Repository\MembershipRepository;
 use App\Security\Auth\AuditLogger;
 use App\Security\Auth\TokenHasher;
+use App\Security\Membership\MembershipWriter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\Clock\Clock;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
- * US-ONB-1 sc.3-5 — consomme une invitation et crée le Membership (rôle + droits proposés).
- * Idempotent si l'utilisateur est déjà membre. Authentification requise (firewall).
+ * US-INV-3 / US-ONB-1b (§3.3 C) — consomme une invitation et crée le Membership (rôle + droits
+ * normalisés ; admin honoré uniquement pour un parent). Usage unique, expirant, non énumérant.
+ * Sérialise les acceptations concurrentes (verrou sur l'invitation). Authentification requise.
  *
  * @implements ProcessorInterface<AcceptInvitationRequest, FamilyResource>
  */
@@ -39,6 +42,7 @@ final class AcceptInvitationProcessor implements ProcessorInterface
         private readonly Security $security,
         private readonly InvitationRepository $invitations,
         private readonly MembershipRepository $memberships,
+        private readonly MembershipWriter $writer,
         private readonly TokenHasher $hasher,
         private readonly AuditLogger $audit,
         private readonly RequestStack $requestStack,
@@ -52,49 +56,59 @@ final class AcceptInvitationProcessor implements ProcessorInterface
         $user = $this->security->getUser();
         \assert($user instanceof User);
 
-        $invitation = $this->invitations->findOneByTokenHash($this->hasher->hash($data->token));
-        if (null === $invitation || !$invitation->isAcceptable()) {
-            throw new InvalidInvitationException();
-        }
+        $tokenHash = $this->hasher->hash($data->token);
 
-        // L'invitation est nominative : l'e-mail du compte connecté doit correspondre (sc.5).
-        if (mb_strtolower(trim($invitation->getEmail())) !== $user->getEmail()) {
-            throw new InvitationEmailMismatchException();
-        }
+        $membership = $this->em->wrapInTransaction(function () use ($tokenHash, $user): Membership {
+            $invitation = $this->invitations->findOneByTokenHashForUpdate($tokenHash);
 
+            // Introuvable / révoquée / déjà acceptée → réponse non énumérante (400 générique).
+            if (null === $invitation || InvitationStatus::Pending !== $invitation->getStatus()) {
+                throw new InvalidInvitationException();
+            }
+            // Le marquage `expired` est assuré par la purge planifiée (§3.3.E) — ici on refuse seulement.
+            if ($invitation->getExpiresAt() <= Clock::get()->now()) {
+                throw new InvitationExpiredException();
+            }
+            // Nominative : l'e-mail du compte connecté doit correspondre (sc.5).
+            if (mb_strtolower(trim($invitation->getEmail())) !== $user->getEmail()) {
+                throw new InvitationEmailMismatchException();
+            }
+
+            return $this->createMembership($invitation, $user);
+        });
+
+        $this->audit->log(
+            AuditAction::MembershipCreated,
+            $user,
+            $membership->getFamily(),
+            ip: $this->requestStack->getCurrentRequest()?->getClientIp(),
+            metadata: ['via' => 'invitation'],
+            entityType: 'Membership',
+            entityId: (string) $membership->getId(),
+        ); // flush
+
+        return FamilyResource::fromMembership($membership);
+    }
+
+    private function createMembership(Invitation $invitation, User $user): Membership
+    {
         $family = $invitation->getFamily();
-        $ip = $this->requestStack->getCurrentRequest()?->getClientIp();
 
-        // Acceptation idempotente si déjà membre.
-        $existing = $this->memberships->findOneBy(['user' => $user, 'family' => $family]);
-        if ($existing instanceof Membership) {
-            $invitation->setStatus(InvitationStatus::Accepted);
-            $this->audit->log(AuditAction::InvitationAccepted, $user, $family, ip: $ip);
-
-            return FamilyResource::fromMembership($existing);
+        if (null !== $this->memberships->findOneBy(['user' => $user, 'family' => $family])) {
+            throw new AlreadyMemberException();
         }
 
         $membership = (new Membership())
             ->setUser($user)
             ->setFamily($family)
-            ->setRole($invitation->getRole())
             ->setStatus(MembershipStatus::Active);
 
-        // Droits granulaires proposés (ignorés pour un parent : edit forcé).
-        if (!$invitation->getRole()->forcesEdit()) {
-            foreach ($invitation->getProposedRights() as $domain => $level) {
-                $rightDomain = RightDomain::tryFrom((string) $domain);
-                $rightLevel = RightLevel::tryFrom((string) $level);
-                if (null !== $rightDomain && null !== $rightLevel) {
-                    $membership->addRight(new Right($rightDomain, $rightLevel));
-                }
-            }
-        }
+        // Droits normalisés selon le rôle ; admin honoré seulement si role=parent (garanti à la création).
+        $this->writer->apply($membership, $invitation->getRole(), $invitation->isProposedAdmin(), $invitation->getProposedRights());
 
         $this->em->persist($membership);
         $invitation->setStatus(InvitationStatus::Accepted);
-        $this->audit->log(AuditAction::InvitationAccepted, $user, $family, ip: $ip); // flush
 
-        return FamilyResource::fromMembership($membership);
+        return $membership;
     }
 }

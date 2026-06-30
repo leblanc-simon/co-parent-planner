@@ -1,0 +1,22 @@
+{% extends 'base.html.twig' %}
+{% block title %}Accepter l'invitation · CoParentPlanner{% endblock %}
+{% block body %}
+<div class="auth">
+    <div class="auth__card">
+        <div class="auth__brand">🧡 CoParentPlanner</div>
+        <h1 class="auth__title">Rejoindre la famille</h1>
+        <p class="auth__sub">Nous vérifions votre invitation…</p>
+
+        {# Auto-soumission du token à l'API au nom de l'utilisateur connecté (cookie JWT, D2). #}
+        <form data-controller="auth-form" data-auth-form-auto-value="true"
+              data-auth-form-redirect-value="{{ path('app_settings') }}"
+              data-action="submit->auth-form#submit" action="/api/invitations/accept" novalidate>
+            <input type="hidden" name="token" value="{{ app.request.query.get('token') }}">
+            <p class="form-error" data-auth-form-target="error" role="alert"></p>
+            <p class="auth__notice" data-auth-form-target="notice" hidden>Invitation acceptée.</p>
+        </form>
+
+        <p class="auth__alt"><a href="{{ path('app_home') }}">Retour à l'accueil</a></p>
+    </div>
+</div>
+{% endblock %}

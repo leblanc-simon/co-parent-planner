@@ -122,5 +122,17 @@
   "inviteRightExchanges": "Echanges",
   "rightNone": "Aucun",
   "rightView": "Lecture",
-  "rightEdit": "Edition"
+  "rightEdit": "Edition",
+
+  "settingsChildren": "Enfants",
+  "childrenTitle": "Enfants",
+  "childrenEmpty": "Aucun enfant pour le moment.",
+  "childAge": "{count, plural, =0{Moins d'un an} one{{count} an} other{{count} ans}}",
+  "@childAge": { "placeholders": { "count": { "type": "num" } } },
+  "childNotesTitle": "Notes",
+  "childNotesEmpty": "Aucune note.",
+  "childAddNote": "Ajouter une note",
+  "childNotePlaceholder": "Saisir une note…",
+  "childNoteSend": "Publier",
+  "childHealthWarning": "Ne saisissez pas de données de santé (allergies, traitements, diagnostics). Informations pratiques générales uniquement."
 }

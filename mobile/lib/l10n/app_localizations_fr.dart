@@ -332,4 +332,44 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get rightEdit => 'Edition';
+
+  @override
+  String get settingsChildren => 'Enfants';
+
+  @override
+  String get childrenTitle => 'Enfants';
+
+  @override
+  String get childrenEmpty => 'Aucun enfant pour le moment.';
+
+  @override
+  String childAge(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ans',
+      one: '$count an',
+      zero: 'Moins d\'un an',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get childNotesTitle => 'Notes';
+
+  @override
+  String get childNotesEmpty => 'Aucune note.';
+
+  @override
+  String get childAddNote => 'Ajouter une note';
+
+  @override
+  String get childNotePlaceholder => 'Saisir une note…';
+
+  @override
+  String get childNoteSend => 'Publier';
+
+  @override
+  String get childHealthWarning =>
+      'Ne saisissez pas de données de santé (allergies, traitements, diagnostics). Informations pratiques générales uniquement.';
 }

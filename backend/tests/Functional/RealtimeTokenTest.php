@@ -53,7 +53,7 @@ final class RealtimeTokenTest extends ApiAuthTestCase
         self::assertSame([], $payload['mercure']['publish'] ?? null);
     }
 
-    public function testScopedByActiveFamilyStaysEmptyAtLot0(): void
+    public function testScopedByActiveFamilyIncludesNotesTopicFromLot2(): void
     {
         [$client, $token] = $this->authenticatedClient('rt2@example.com');
 
@@ -69,7 +69,9 @@ final class RealtimeTokenTest extends ApiAuthTestCase
         ]);
         self::assertSame(200, $response->getStatusCode());
 
+        // Lot 2 : un membre children_notes ≥ view (ici parent → edit) reçoit le topic des notes,
+        // scopé à sa famille active (US-CH-3). Aucun autre topic métier pour l'instant.
         $payload = $this->decodePayload($response->toArray()['token']);
-        self::assertSame([], $payload['mercure']['subscribe'] ?? null);
+        self::assertSame(['/families/'.$familyId.'/notes'], $payload['mercure']['subscribe'] ?? null);
     }
 }

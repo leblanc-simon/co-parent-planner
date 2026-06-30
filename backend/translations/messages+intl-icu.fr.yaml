@@ -78,3 +78,25 @@ familylink:
         self_link: 'Une famille ne peut pas être liée à elle-même.'
         already_exists: 'Un lien existe déjà entre ces deux familles.'
         not_found: 'Lien entre familles introuvable.'
+
+child:
+    error:
+        not_found: 'Enfant introuvable.'
+        first_name_required: 'Le prénom est requis.'
+        birth_date_invalid: 'La date de naissance est invalide.'
+        birth_future: 'La date de naissance ne peut pas être dans le futur.'
+        info_label_required: "Le libellé de l'information est requis."
+        info_too_long: "Une information pratique dépasse la longueur autorisée."
+        info_too_many: "Trop d'informations pratiques (50 maximum)."
+        deletion_blocked: "Impossible de supprimer ce profil : il est rattaché à un compte. Détachez-le d'abord."
+    health_warning: "Ne saisissez pas de données de santé (allergies, traitements, diagnostics…). Utilisez des informations pratiques générales uniquement."
+
+note:
+    error:
+        not_found: 'Note introuvable.'
+        text_required: 'Le texte de la note est requis.'
+        date_invalid: 'La date de la note est invalide.'
+        date_future: 'La date de la note ne peut pas être dans le futur.'
+        date_before_birth: "La date de la note est antérieure à la naissance de l'enfant."
+        not_author: "Seul l'auteur de la note (ou un parent) peut la modifier ou la supprimer."
+    unavailable: 'Contenu temporairement indisponible.'

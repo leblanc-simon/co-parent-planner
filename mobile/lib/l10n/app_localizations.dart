@@ -722,6 +722,66 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Edition'**
   String get rightEdit;
+
+  /// No description provided for @settingsChildren.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enfants'**
+  String get settingsChildren;
+
+  /// No description provided for @childrenTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enfants'**
+  String get childrenTitle;
+
+  /// No description provided for @childrenEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun enfant pour le moment.'**
+  String get childrenEmpty;
+
+  /// No description provided for @childAge.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Moins d\'un an} one{{count} an} other{{count} ans}}'**
+  String childAge(num count);
+
+  /// No description provided for @childNotesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notes'**
+  String get childNotesTitle;
+
+  /// No description provided for @childNotesEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune note.'**
+  String get childNotesEmpty;
+
+  /// No description provided for @childAddNote.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter une note'**
+  String get childAddNote;
+
+  /// No description provided for @childNotePlaceholder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisir une note…'**
+  String get childNotePlaceholder;
+
+  /// No description provided for @childNoteSend.
+  ///
+  /// In fr, this message translates to:
+  /// **'Publier'**
+  String get childNoteSend;
+
+  /// No description provided for @childHealthWarning.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ne saisissez pas de données de santé (allergies, traitements, diagnostics). Informations pratiques générales uniquement.'**
+  String get childHealthWarning;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

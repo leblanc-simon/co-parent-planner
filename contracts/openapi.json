@@ -99,6 +99,461 @@
                 }
             }
         },
+        "/api/children/{id}": {
+            "get": {
+                "operationId": "api_children_id_get",
+                "tags": [
+                    "Child"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Child resource",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Child"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Child.jsonld"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Retrieves a Child resource.",
+                "description": "Retrieves a Child resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Child identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            },
+            "delete": {
+                "operationId": "api_children_id_delete",
+                "tags": [
+                    "Child"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Child resource deleted"
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Removes the Child resource.",
+                "description": "Removes the Child resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Child identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            },
+            "patch": {
+                "operationId": "api_children_id_patch",
+                "tags": [
+                    "Child"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Child resource updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Child"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Child.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Updates the Child resource.",
+                "description": "Updates the Child resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Child identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The updated Child resource",
+                    "content": {
+                        "application/merge-patch+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Child.UpdateChildRequest.jsonMergePatch"
+                            }
+                        },
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Child.UpdateChildRequest.jsonMergePatch"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/families/{familyId}/children": {
+            "get": {
+                "operationId": "api_families_familyIdchildren_get_collection",
+                "tags": [
+                    "Child"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Child collection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Child"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "Child.jsonld collection.",
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/HydraCollectionBaseSchemaNoPagination"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "member"
+                                            ],
+                                            "properties": {
+                                                "member": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Child.jsonld"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Retrieves the collection of Child resources.",
+                "description": "Retrieves the collection of Child resources.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "api_families_familyIdchildren_post",
+                "tags": [
+                    "Child"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Child resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Child"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Child.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a Child resource.",
+                "description": "Creates a Child resource.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The new Child resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Child.CreateChildRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Child.CreateChildRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/children/{childId}/access": {
+            "get": {
+                "operationId": "api_children_childIdaccess_get_collection",
+                "tags": [
+                    "ChildAccess"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ChildAccess collection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ChildAccess"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "ChildAccess.jsonld collection.",
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/HydraCollectionBaseSchemaNoPagination"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "member"
+                                            ],
+                                            "properties": {
+                                                "member": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/ChildAccess.jsonld"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Retrieves the collection of ChildAccess resources.",
+                "description": "Retrieves the collection of ChildAccess resources.",
+                "parameters": [
+                    {
+                        "name": "childId",
+                        "in": "path",
+                        "description": "ChildResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            }
+        },
         "/api/families": {
             "get": {
                 "operationId": "api_families_get_collection",
@@ -1723,6 +2178,337 @@
                 }
             }
         },
+        "/api/children/{childId}/notes": {
+            "get": {
+                "operationId": "api_children_childIdnotes_get_collection",
+                "tags": [
+                    "Note"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Note collection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Note"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "Note.jsonld collection.",
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/HydraCollectionBaseSchemaNoPagination"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "member"
+                                            ],
+                                            "properties": {
+                                                "member": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Note.jsonld"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Retrieves the collection of Note resources.",
+                "description": "Retrieves the collection of Note resources.",
+                "parameters": [
+                    {
+                        "name": "childId",
+                        "in": "path",
+                        "description": "ChildResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "api_children_childIdnotes_post",
+                "tags": [
+                    "Note"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Note resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Note"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Note.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a Note resource.",
+                "description": "Creates a Note resource.",
+                "parameters": [
+                    {
+                        "name": "childId",
+                        "in": "path",
+                        "description": "ChildResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The new Note resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Note.CreateNoteRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Note.CreateNoteRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/notes/{id}": {
+            "delete": {
+                "operationId": "api_notes_id_delete",
+                "tags": [
+                    "Note"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Note resource deleted"
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Removes the Note resource.",
+                "description": "Removes the Note resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Note identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            },
+            "patch": {
+                "operationId": "api_notes_id_patch",
+                "tags": [
+                    "Note"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Note resource updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Note"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Note.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Updates the Note resource.",
+                "description": "Updates the Note resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Note identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The updated Note resource",
+                    "content": {
+                        "application/merge-patch+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Note.UpdateNoteRequest.jsonMergePatch"
+                            }
+                        },
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Note.UpdateNoteRequest.jsonMergePatch"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
         "/api/realtime/token": {
             "get": {
                 "operationId": "api_realtimetoken_get",
@@ -2366,6 +3152,282 @@
                     }
                 ],
                 "description": "US-ONB-1 sc.3-5 \u2014 accepter une invitation (squelette Lot 0). Authentification requise :\nl'e-mail du compte connect\u00e9 doit correspondre \u00e0 l'invit\u00e9. Renvoie la famille rejointe."
+            },
+            "Child": {
+                "type": "object",
+                "description": "Profil enfant expos\u00e9 (US-CH-1/4/5). `age` est **calcul\u00e9** (jamais stock\u00e9) au fuseau famille.",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "firstName": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "color": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "initial": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "birthDate": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "age": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "schoolLabel": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "info": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "Child.CreateChildRequest": {
+                "type": "object",
+                "description": "Profil enfant expos\u00e9 (US-CH-1/4/5). `age` est **calcul\u00e9** (jamais stock\u00e9) au fuseau famille.",
+                "required": [
+                    "firstName"
+                ],
+                "properties": {
+                    "firstName": {
+                        "maxLength": 120,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "color": {
+                        "pattern": "^(#[0-9A-Fa-f]{6})$",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "birthDate": {
+                        "description": "Date ISO (YYYY-MM-DD) ou null.",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "schoolLabel": {
+                        "maxLength": 120,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "info": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+            "Child.UpdateChildRequest.jsonMergePatch": {
+                "type": "object",
+                "description": "Profil enfant expos\u00e9 (US-CH-1/4/5). `age` est **calcul\u00e9** (jamais stock\u00e9) au fuseau famille.",
+                "properties": {
+                    "firstName": {
+                        "maxLength": 120,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "color": {
+                        "pattern": "^(#[0-9A-Fa-f]{6})$",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "birthDate": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "schoolLabel": {
+                        "maxLength": 120,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "info": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+            "Child.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "firstName": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "color": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "initial": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "birthDate": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "age": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "schoolLabel": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "info": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "description": "Profil enfant expos\u00e9 (US-CH-1/4/5). `age` est **calcul\u00e9** (jamais stock\u00e9) au fuseau famille."
+            },
+            "ChildAccess": {
+                "type": "object",
+                "description": "Une entr\u00e9e du bloc \u00ab Acc\u00e8s & droits \u00bb d'un enfant (US-CH-2) \u2014 sous-ressource d\u00e9di\u00e9e (\u00a75.4 #5).",
+                "properties": {
+                    "membershipId": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "name": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "role": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "level": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "isOwnProfile": {
+                        "default": false,
+                        "type": "boolean"
+                    },
+                    "displayColor": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "ChildAccess.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "membershipId": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "name": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "role": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "level": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "isOwnProfile": {
+                                "default": false,
+                                "type": "boolean"
+                            },
+                            "displayColor": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "description": "Une entr\u00e9e du bloc \u00ab Acc\u00e8s & droits \u00bb d'un enfant (US-CH-2) \u2014 sous-ressource d\u00e9di\u00e9e (\u00a75.4 #5)."
             },
             "ConstraintViolation": {
                 "type": "object",
@@ -3665,6 +4727,143 @@
                 ],
                 "description": "Vue d'un membre d'une famille (US-MBR-1) : r\u00f4le, admin, couleur, matrice de droits **effectifs**,\net identit\u00e9 \ud83d\udd12 d\u00e9chiffr\u00e9e \u00e0 la vol\u00e9e pour les membres habilit\u00e9s (jamais en clair dans un dump)."
             },
+            "Note": {
+                "type": "object",
+                "description": "Note partag\u00e9e expos\u00e9e (US-CH-6). `text` d\u00e9chiffr\u00e9 au rendu serveur ; auteur r\u00e9solu (nom + couleur).",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "childId": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "text": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "noteDate": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "authorMembershipId": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "authorName": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "authorColor": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "createdAt": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "Note.CreateNoteRequest": {
+                "type": "object",
+                "description": "Note partag\u00e9e expos\u00e9e (US-CH-6). `text` d\u00e9chiffr\u00e9 au rendu serveur ; auteur r\u00e9solu (nom + couleur).",
+                "required": [
+                    "text"
+                ],
+                "properties": {
+                    "text": {
+                        "maxLength": 5000,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "noteDate": {
+                        "description": "Date ISO (YYYY-MM-DD) ; null \u2192 aujourd'hui.",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "Note.UpdateNoteRequest.jsonMergePatch": {
+                "type": "object",
+                "description": "Note partag\u00e9e expos\u00e9e (US-CH-6). `text` d\u00e9chiffr\u00e9 au rendu serveur ; auteur r\u00e9solu (nom + couleur).",
+                "properties": {
+                    "text": {
+                        "maxLength": 5000,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "noteDate": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "Note.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "childId": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "text": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "noteDate": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "authorMembershipId": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "authorName": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "authorColor": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "createdAt": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "description": "Note partag\u00e9e expos\u00e9e (US-CH-6). `text` d\u00e9chiffr\u00e9 au rendu serveur ; auteur r\u00e9solu (nom + couleur)."
+            },
             "RealtimeToken": {
                 "type": "object",
                 "description": "Jeton Mercure scop\u00e9 par famille active (cdc \u00a74.5, \u00a73.12). Distinct du JWT d'acc\u00e8s API ; \u00e9mis\npar le serveur (seule autorit\u00e9 sur `subscribe`). Au Lot 0, `subscribe` est **vide** (aucun topic\nm\u00e9tier) ; recalcul\u00e9 \u00e0 chaque bascule de famille (nouveau X-Family-Id).",
@@ -3951,6 +5150,14 @@
             "description": "US-AUTH-1 sc.5 \u2014 v\u00e9rification d'e-mail. Endpoint API unique (d\u00e9cision D5) appel\u00e9 par la page\nweb GET /verify-email et par le deep link mobile."
         },
         {
+            "name": "ChildAccess",
+            "description": "Une entr\u00e9e du bloc \u00ab Acc\u00e8s & droits \u00bb d'un enfant (US-CH-2) \u2014 sous-ressource d\u00e9di\u00e9e (\u00a75.4 #5)."
+        },
+        {
+            "name": "Child",
+            "description": "Profil enfant expos\u00e9 (US-CH-1/4/5). `age` est **calcul\u00e9** (jamais stock\u00e9) au fuseau famille."
+        },
+        {
             "name": "Family",
             "description": "Repr\u00e9sentation d'une famille du point de vue du membre courant (US-ONB-1, US-HOME-1).\n`role`/`isAdmin` refl\u00e8tent la perspective de l'utilisateur connect\u00e9 dans cette famille."
         },
@@ -3973,6 +5180,10 @@
         {
             "name": "Member",
             "description": "Vue d'un membre d'une famille (US-MBR-1) : r\u00f4le, admin, couleur, matrice de droits **effectifs**,\net identit\u00e9 \ud83d\udd12 d\u00e9chiffr\u00e9e \u00e0 la vol\u00e9e pour les membres habilit\u00e9s (jamais en clair dans un dump)."
+        },
+        {
+            "name": "Note",
+            "description": "Note partag\u00e9e expos\u00e9e (US-CH-6). `text` d\u00e9chiffr\u00e9 au rendu serveur ; auteur r\u00e9solu (nom + couleur)."
         },
         {
             "name": "RealtimeToken",

@@ -9,6 +9,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/application/auth_state.dart';
 import '../../family/application/family_context.dart';
+import '../../children/presentation/children_screen.dart';
 import '../../family/data/family_repository.dart';
 import '../../members/data/members_repository.dart';
 import '../../members/presentation/members_screen.dart';
@@ -149,6 +150,17 @@ class _SettingsTabState extends ConsumerState<SettingsTab> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const MembersScreen()),
+              ),
+            ),
+          if (family != null)
+            ListTile(
+              key: const ValueKey('settings-children'),
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.child_care_outlined),
+              title: Text(l.settingsChildren),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const ChildrenScreen()),
               ),
             ),
           const SizedBox(height: 16),

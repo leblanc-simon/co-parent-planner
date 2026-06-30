@@ -31,6 +31,10 @@ echo "== Migrations (base dev) =="
 (cd "$BACKEND" && symfony console doctrine:database:create --if-not-exists >/dev/null 2>&1 || true)
 (cd "$BACKEND" && symfony console doctrine:migrations:migrate -n >/dev/null)
 
+# Réinitialise les compteurs de rate-limit (cache.app), sinon les inscriptions/connexions
+# cumulées entre runs successifs dans la même heure finissent par déclencher 429.
+(cd "$BACKEND" && symfony console cache:pool:clear cache.app >/dev/null 2>&1 || true)
+
 echo "== Démarrage de l'app (port $APP_PORT) =="
 cd "$BACKEND"
 export MESSENGER_TRANSPORT_DSN="sync://"

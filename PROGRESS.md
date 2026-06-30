@@ -5,16 +5,31 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-06-30** — **Lot 1 TERMINÉ** (familles/membres/droits/invitations/liens) : backend + web + mobile + E2E.
+Dernière mise à jour : **2026-06-30** — **Lot 2 TERMINÉ** (enfants & notes) : backend + web + mobile + E2E.
 
 ---
 
 ## 0. Où en est-on ?
 
 **Lot 0 — Fondations** : ✅ **TERMINÉ**.
+**Lot 1 — Familles/membres/droits/invitations/liens** : ✅ **TERMINÉ** (backend, OpenAPI, client Dart, web, mobile, E2E).
 
-**Lot 1 — Familles/membres/droits/invitations/liens** (`specs/lots/lot-1-*.md`) : ✅ **TERMINÉ** (backend, contrat OpenAPI, client Dart, UI web, UI mobile, E2E).
-Prochaine étape : **Lot 2 — Enfants & notes** (`specs/lots/lot-2-*.md`).
+**Lot 2 — Enfants & notes** (`specs/lots/lot-2-*.md`) : ✅ **TERMINÉ** (backend, contrat, web, mobile, E2E).
+Prochaine étape : **Lot 3 — Garde (moteur + vacances)** (`specs/lots/lot-3-*.md`).
+
+- **Backend** : **129 tests / 902 assertions**, couverture **85,8 %** (≥80 %), PHPStan niv.8, cs-fixer, schéma en sync.
+- **Mobile** : client régénéré (sans drift), **110 tests**, couverture **79,8 %** (≥70 %), analyze/format propres.
+- **E2E web (Playwright)** : **6 tests verts** (+ parcours Lot 2 : créer enfant → bandeau anti-santé → ajouter note → Accès & droits).
+
+### Surface Lot 2 livrée
+- Entités **Child** (first_name au registre non chiffré §5.4#4, info jsonb paires libres, verrou optimiste) et **Note** (`text` 🔒 chiffré) ; migration `Version20260630205954`.
+- Politique `ChildNotesPolicy` 4 actions (CHILD_VIEW/CHILD_MANAGE/NOTE_VIEW/NOTE_EDIT, garde-fou child≠structure §3.3) + `canMutateNote` (auteur/parent §3.7) ; services `AgeCalculator` (horloge injectable), `InfoNormalizer`, `NoteDateValidator`, `AccessRightsBuilder`, `ChildAccess` (résolution scopée 404), `ChildWriter`, `NoteWriter`, `NotePublisher` (Mercure best-effort).
+- Endpoints : `GET/POST /families/{id}/children`, `GET/PATCH/DELETE /children/{id}`, `GET /children/{id}/access`, `GET/POST /children/{id}/notes`, `PATCH/DELETE /notes/{id}` (auteur/parent).
+- Temps réel : push Turbo Stream sur `/families/{id}/notes` après commit ; topic ajouté aux claims Mercure si `children_notes ≥ view` (`RealtimeTokenProvider`).
+- Web : écran Enfants master-détail (`/children`) — fiche, infos pratiques, **bandeau anti-données-de-santé**, notes (+ `turbo-stream-source` Mercure + cookie d'abonnement), bloc Accès & droits. Stimulus `children`.
+- Mobile : écran Enfants + fiche (notes, bandeau anti-santé) via `ChildrenRepository`, branchés dans Réglages.
+- Registre RGPD : `Child.firstName`, `Child.info`, `Note.text` 🔒. OpenAPI exporté + client Dart régénéré.
+- E2E harness : `e2e-local.sh` vide désormais `cache.app` (compteurs rate-limit) avant les tests.
 
 - **Backend** : **101 tests / 748 assertions**, couverture **88,4 %** (≥80 %), PHPStan niv.8, cs-fixer verts, schéma en sync.
 - **Mobile** : client régénéré depuis l'OpenAPI Lot 1 (sans drift), **108 tests** verts, couverture **81 %** (≥70 %), `dart analyze`/`format` propres.
@@ -198,6 +213,22 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-06-30 — Lot 2 : enfants & notes (clos)
+- **Modèle** : `Child` (info jsonb paires libres, verrou optimiste, first_name au registre non chiffré),
+  `Note` (`text` chiffré AES-256-GCM) ; migration `Version20260630205954` (FK, index, cascade).
+- **Autorisation** : `ChildNotesPolicy` 4 actions (séparation contenu/structure ; child jamais CHILD_MANAGE,
+  §3.3) + `canMutateNote` (auteur ou parent/admin, §3.7). Services `AgeCalculator`/`InfoNormalizer`/
+  `NoteDateValidator`/`AccessRightsBuilder`/`ChildAccess` (résolution scopée → 404 non révélateur).
+- **API** : CRUD enfants, `/children/{id}/access`, CRUD notes (+ PATCH/DELETE auteur/parent), audit
+  (child.*/note.* dont note.accessed). Push Mercure `/families/{id}/notes` après commit (best-effort,
+  §3.6/§4.6) ; topic filtré par `children_notes ≥ view` dans les claims.
+- **Web** : `/children` master-détail (fiche, infos, bandeau anti-santé, notes temps réel via
+  `turbo-stream-source` + cookie Mercure, bloc Accès & droits) ; Stimulus `children`.
+- **Mobile** : écran Enfants + fiche (notes, bandeau) via `ChildrenRepository`.
+- **Tests** : backend **129 / 902** (couverture 85,8 %), mobile **110** (79,8 %), **E2E 6/6**
+  (parcours Lot 2 ajouté). Registre RGPD à jour ; OpenAPI + client Dart régénérés (sans drift).
+  `RealtimeTokenTest` mis à jour (topic notes désormais présent).
 
 ### 2026-06-30 — Lot 1 : familles, membres, droits, invitations, liens (clos)
 - **Modèle** : entité `FamilyLink` (+ `FamilyLinkStatus`, paire canonique unique, CHECK anti-auto-lien) ;

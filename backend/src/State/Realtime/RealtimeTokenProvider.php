@@ -9,6 +9,8 @@ use ApiPlatform\State\ProviderInterface;
 use App\Dto\RealtimeToken;
 use App\Entity\Membership;
 use App\Entity\User;
+use App\Enum\RightDomain;
+use App\Enum\RightLevel;
 use App\Repository\MembershipRepository;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -74,6 +76,16 @@ final class RealtimeTokenProvider implements ProviderInterface
      */
     private function subscribeTopicsFor(?Membership $membership): array
     {
-        return [];
+        if (null === $membership) {
+            return [];
+        }
+
+        $topics = [];
+        // Notes (Lot 2) : abonnement filtré sur le droit children_notes ≥ view (US-CH-3).
+        if ($membership->can(RightDomain::ChildrenNotes, RightLevel::View)) {
+            $topics[] = \sprintf('/families/%s/notes', $membership->getFamily()->getId());
+        }
+
+        return $topics;
     }
 }

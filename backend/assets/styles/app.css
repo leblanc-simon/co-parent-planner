@@ -189,3 +189,35 @@ a:hover { text-decoration: underline; }
     padding: .6rem .8rem; background: var(--surface); border-radius: 12px;
 }
 .links em { color: var(--accent); font-style: normal; font-weight: 600; }
+
+/* ---------- Lot 2 : Enfants (master-détail) ---------- */
+.children__layout { display: grid; grid-template-columns: 260px 1fr; gap: 1.25rem; }
+.children__list { display: flex; flex-direction: column; gap: .5rem; }
+.child-card { display: flex; align-items: center; gap: .6rem; padding: .6rem .7rem; border-radius: 14px; border: 1px solid var(--border); background: var(--card); text-decoration: none; color: var(--ink); }
+.child-card.is-active { border-color: var(--accent); background: var(--accent-soft); }
+.child-card__avatar { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 700; flex: 0 0 auto; }
+.child-card__avatar--lg { width: 56px; height: 56px; font-size: 1.4rem; }
+.child-card__name { font-weight: 600; }
+.child-create { margin-top: .5rem; }
+.child-create__form { margin-top: .6rem; }
+.children__detail { display: flex; flex-direction: column; gap: 1.25rem; }
+.child-head { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.child-head__meta { color: var(--muted); }
+.health-banner { background: #FBE9E2; border: 1px solid var(--accent); color: #7A3A22; padding: .75rem 1rem; border-radius: 12px; font-size: .9rem; }
+.info-row { display: flex; gap: .5rem; margin-bottom: .5rem; }
+.info-row input { flex: 1; padding: .4rem .6rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font: inherit; }
+.info-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: .35rem; }
+.child-edit__actions { display: flex; gap: .5rem; margin-top: 1rem; }
+.note-form { display: flex; gap: .5rem; margin-bottom: 1rem; }
+.note-form textarea { flex: 1; padding: .5rem .7rem; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); font: inherit; resize: vertical; }
+.notes { list-style: none; padding: 0; display: flex; flex-direction: column; gap: .6rem; }
+.note-item { display: flex; gap: .6rem; padding: .6rem .8rem; background: var(--surface); border-radius: 12px; }
+.note-item__dot { width: 12px; height: 12px; border-radius: 50%; margin-top: .25rem; flex: 0 0 auto; }
+.note-item__meta { display: flex; gap: .6rem; align-items: baseline; }
+.note-item__meta time { color: var(--muted); font-size: .8rem; }
+.note-item__text { margin: .2rem 0 0; white-space: pre-wrap; }
+.access-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: .4rem; }
+.access-list li { display: flex; align-items: center; gap: .6rem; }
+.access-list__role { color: var(--muted); font-size: .85rem; }
+.access-list__level { margin-left: auto; font-weight: 600; color: var(--accent); }
+@media (max-width: 900px) { .children__layout { grid-template-columns: 1fr; } }

@@ -30,6 +30,18 @@ Dernière mise à jour : 2026-06-30 (Lot 1).
 |---|---|---|---|---|---|---|
 | `Invitation.emailHash` | Contact | Pseudonyme (HMAC keyé, non réversible sans clé) | Intérêt légitime (intégrité des invitations) | Unicité « un pending par (famille, e-mail) » sans déchiffrer | Identique à l'invitation (acceptation/expiration ; purge Lot 8) | Interne (jamais exposé) |
 
+## Champs (Lot 2)
+
+| Champ | Catégorie | Sensibilité | Base légale | Finalité | Conservation | Destinataires |
+|---|---|---|---|---|---|---|
+| `Child.firstName` | Identité (mineur) | Standard (non chiffré — décision §5.4 #4) | Exécution du contrat | Identifier/afficher l'enfant | Durée de vie du profil ; purge RGPD (Lot 8) | Membres habilités de la famille |
+| `Child.info` | Contenu | Standard (paires libres, **aucune donnée de santé**) | Exécution du contrat | Informations pratiques libres | Durée de vie du profil ; purge RGPD (Lot 8) | Membres habilités de la famille |
+| `Note.text` | Contenu | 🔒 Chiffré | Exécution du contrat | Partage d'informations entre co-parents | Durée de vie de la note ; anonymisation auteur / purge (Lot 8) | Membres habilités (children_notes ≥ view) |
+
+> `Child.birthDate` (date de naissance) : donnée d'un mineur ; portée par l'entité `Child` au même
+> titre que `firstName`/`info` ci-dessus (non marquée `#[PersonalData]` séparément car simple date,
+> couverte par la finalité du profil). Aucun champ médical typé n'est créé (invariant permanent).
+
 ### Références à des personnes (sans champ personnel direct)
 
 Ces entités **référencent** des personnes via des clés étrangères mais ne stockent pas de champ

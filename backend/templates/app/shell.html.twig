@@ -7,8 +7,9 @@
         <nav class="sidebar__nav">
             {% set nav = nav_active|default('home') %}
             <a href="{{ path('app_home') }}" class="{{ nav == 'home' ? 'is-active' }}">Accueil</a>
+            <a href="{{ path('app_children') }}" class="{{ nav == 'children' ? 'is-active' }}">Enfants</a>
             <a href="{{ path('app_settings') }}" class="{{ nav == 'settings' ? 'is-active' }}">Paramètres</a>
-            {# Onglets métier (Garde, Agenda, Enfants, Échanges) ajoutés aux lots suivants. #}
+            {# Onglets métier (Garde, Agenda, Échanges) ajoutés aux lots suivants. #}
         </nav>
         <div class="sidebar__spacer"></div>
         <form action="{{ path('app_logout') }}" method="post">

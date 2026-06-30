@@ -134,4 +134,16 @@ final class WebPagesTest extends WebTestCase
         $client->request('GET', '/settings');
         self::assertResponseRedirects('/onboarding');
     }
+
+    public function testChildrenPageRenders(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser($client, withFamily: true);
+        $this->login($client);
+
+        $client->request('GET', '/children');
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('Enfants', (string) $client->getResponse()->getContent());
+    }
 }

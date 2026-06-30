@@ -40,4 +40,13 @@ enum AuditAction: string
     case FamilyLinkCreated = 'familylink.created';
     case FamilyLinkActivated = 'familylink.activated';
     case FamilyLinkRemoved = 'familylink.removed';
+
+    // Enfants & notes (Lot 2)
+    case ChildCreated = 'child.created';
+    case ChildUpdated = 'child.updated';
+    case ChildDeleted = 'child.deleted';
+    case NoteCreated = 'note.created';
+    case NoteUpdated = 'note.updated';
+    case NoteDeleted = 'note.deleted';
+    case NoteAccessed = 'note.accessed';
 }

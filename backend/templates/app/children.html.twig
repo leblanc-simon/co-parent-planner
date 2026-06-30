@@ -1,0 +1,148 @@
+{% extends 'app/shell.html.twig' %}
+{% block title %}Enfants · CoParentPlanner{% endblock %}
+{% set nav_active = 'children' %}
+
+{% block main %}
+<header class="main__header">
+    <div>
+        <div class="eyebrow">Famille</div>
+        <h1>Enfants</h1>
+    </div>
+    {{ include('app/_family_select.html.twig') }}
+</header>
+
+{% if forbidden %}
+    <section class="card"><p class="empty-state">Vous n'avez pas accès aux profils enfants de cette famille.</p></section>
+{% else %}
+<div class="children" data-controller="children" data-children-family-id-value="{{ family.id }}">
+    <p class="form-error" data-children-target="error" role="alert" hidden></p>
+
+    <div class="children__layout">
+        {# ---- Master : liste des enfants ---- #}
+        <aside class="children__list">
+            {% for c in children %}
+                <a href="{{ path('app_children', { child: c.id }) }}"
+                   class="child-card {{ selected and c.id == selected.id ? 'is-active' }}">
+                    <span class="child-card__avatar" style="background: {{ c.color }}">{{ c.initial }}</span>
+                    <span class="child-card__name">{{ c.firstName }}</span>
+                </a>
+            {% else %}
+                <p class="empty-state">Aucun enfant pour le moment.</p>
+            {% endfor %}
+
+            {% if canManage %}
+            <details class="child-create">
+                <summary class="btn btn--ghost btn--block">+ Ajouter un enfant</summary>
+                <form data-action="submit->children#createChild" class="child-create__form">
+                    <div class="field"><label for="nc-name">Prénom</label><input id="nc-name" name="firstName" required></div>
+                    <div class="field"><label for="nc-birth">Date de naissance</label><input id="nc-birth" name="birthDate" type="date"></div>
+                    <button class="btn btn--primary btn--block" type="submit">Créer</button>
+                </form>
+            </details>
+            {% endif %}
+        </aside>
+
+        {# ---- Détail : fiche enfant ---- #}
+        <section class="children__detail">
+        {% if selected is null %}
+            <div class="card"><p class="empty-state">Sélectionnez un enfant.</p></div>
+        {% else %}
+            {% set child = detail.child %}
+
+            {% if canManage %}
+            <div class="health-banner" role="note">⚠️ {{ 'child.health_warning'|trans }}</div>
+            {% endif %}
+
+            <section class="card">
+                <div class="child-head">
+                    <span class="child-card__avatar child-card__avatar--lg" style="background: {{ child.color }}">{{ child.initial }}</span>
+                    <div>
+                        <h2>{{ child.firstName }}</h2>
+                        <p class="child-head__meta">
+                            {% if detail.age is not null %}{{ detail.age }} an{{ detail.age > 1 ? 's' }}{% endif %}
+                            {% if child.schoolLabel %} · {{ child.schoolLabel }}{% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                {% if canManage %}
+                <form data-action="submit->children#updateChild" data-child-id="{{ child.id }}" class="child-edit">
+                    <div class="grid-2">
+                        <div class="field"><label>Prénom<input name="firstName" value="{{ child.firstName }}"></label></div>
+                        <div class="field"><label>Couleur<input name="color" type="color" value="{{ child.color }}"></label></div>
+                        <div class="field"><label>Date de naissance<input name="birthDate" type="date" value="{{ child.birthDate ? child.birthDate|date('Y-m-d') }}"></label></div>
+                        <div class="field"><label>Niveau / établissement<input name="schoolLabel" value="{{ child.schoolLabel }}"></label></div>
+                    </div>
+
+                    <div class="eyebrow">Informations pratiques</div>
+                    <div data-children-target="infoRows">
+                        {% for item in child.info %}
+                        <div class="info-row">
+                            <input name="info_label[]" value="{{ item.label }}" placeholder="Libellé">
+                            <input name="info_value[]" value="{{ item.value }}" placeholder="Valeur">
+                        </div>
+                        {% endfor %}
+                        <div class="info-row">
+                            <input name="info_label[]" placeholder="Libellé">
+                            <input name="info_value[]" placeholder="Valeur">
+                        </div>
+                    </div>
+                    <button class="btn btn--ghost" type="button" data-action="children#addInfoRow">+ Ligne</button>
+                    <div class="child-edit__actions">
+                        <button class="btn btn--primary" type="submit">Enregistrer</button>
+                        <button class="btn btn--ghost" type="button" data-action="children#deleteChild" data-child-id="{{ child.id }}">Supprimer le profil</button>
+                    </div>
+                </form>
+                {% else %}
+                    {% if child.info|length %}
+                    <ul class="info-list">
+                        {% for item in child.info %}<li><strong>{{ item.label }}</strong> {{ item.value }}</li>{% endfor %}
+                    </ul>
+                    {% endif %}
+                {% endif %}
+            </section>
+
+            {# ---- Notes (temps réel via Mercure) ---- #}
+            <section class="card">
+                <div class="eyebrow">Notes</div>
+                {% if canEditNotes %}
+                <form data-action="submit->children#addNote" data-child-id="{{ child.id }}" class="note-form">
+                    <textarea name="text" rows="2" placeholder="Ajouter une note…" required></textarea>
+                    <button class="btn btn--primary" type="submit">Publier</button>
+                </form>
+                {% endif %}
+
+                <turbo-stream-source src="{{ mercureHub }}?topic={{ notesTopic|url_encode }}"></turbo-stream-source>
+                <ul class="notes" id="notes-list-{{ child.id }}">
+                    {% for note in detail.notes %}
+                        {{ include('app/_note_item.html.twig', { note: {
+                            childId: child.id,
+                            authorColor: note.authorMembership.displayColor,
+                            authorName: note.authorMembership.user.fullName ?: note.authorMembership.user.email,
+                            noteDate: note.noteDate|date('Y-m-d'),
+                            text: note.text,
+                        } }) }}
+                    {% endfor %}
+                </ul>
+            </section>
+
+            {# ---- Accès & droits ---- #}
+            <section class="card">
+                <div class="eyebrow">Accès &amp; droits</div>
+                <ul class="access-list">
+                    {% for entry in detail.access %}
+                    <li>
+                        <span class="member-dot" style="background: {{ entry.displayColor ?: '#C2643D' }}"></span>
+                        <span class="access-list__name">{{ entry.name }}{{ entry.isOwnProfile ? ' · son profil' }}</span>
+                        <span class="access-list__role">{{ entry.role }}</span>
+                        <span class="access-list__level">{{ entry.level == 'edit' ? 'Édition' : 'Lecture' }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endif %}
+        </section>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

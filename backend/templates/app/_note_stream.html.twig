@@ -1,0 +1,6 @@
+{# Turbo Stream poussé via Mercure : injecte la nouvelle note en tête de la liste (US-CH-3). #}
+<turbo-stream action="prepend" target="notes-list-{{ note.childId }}">
+    <template>
+        {{ include('app/_note_item.html.twig', { note: note }) }}
+    </template>
+</turbo-stream>

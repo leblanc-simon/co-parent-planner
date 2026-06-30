@@ -1,0 +1,11 @@
+{# Fragment d'une note (réutilisé par la fiche enfant et le push Turbo Stream temps réel). #}
+<li class="note-item">
+    <span class="note-item__dot" style="background: {{ note.authorColor ?: '#C2643D' }}"></span>
+    <div class="note-item__body">
+        <div class="note-item__meta">
+            <strong>{{ note.authorName }}</strong>
+            <time datetime="{{ note.noteDate }}">{{ note.noteDate }}</time>
+        </div>
+        <p class="note-item__text">{{ note.text }}</p>
+    </div>
+</li>

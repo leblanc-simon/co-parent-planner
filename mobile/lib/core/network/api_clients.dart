@@ -20,6 +20,8 @@ class ApiClients {
       members = api.MemberClient(dio),
       invitations = api.InvitationClient(dio),
       familyLinks = api.FamilyLinkClient(dio),
+      children = api.ChildClient(dio),
+      notes = api.NoteClient(dio),
       acceptInvitation = api.AcceptInvitationRequestClient(dio),
       realtime = api.RealtimeTokenClient(dio);
 
@@ -34,6 +36,8 @@ class ApiClients {
   final api.MemberClient members;
   final api.InvitationClient invitations;
   final api.FamilyLinkClient familyLinks;
+  final api.ChildClient children;
+  final api.NoteClient notes;
   final api.AcceptInvitationRequestClient acceptInvitation;
   final api.RealtimeTokenClient realtime;
 }

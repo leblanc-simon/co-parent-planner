@@ -111,6 +111,17 @@ class MembershipRepository extends ServiceEntityRepository
         return \is_array($admins) ? \count($admins) : 0;
     }
 
+    /** Un membership (compte-enfant) est-il rattaché à ce profil enfant ? (garde-fou suppression §4.2) */
+    public function existsForChild(Uuid $childId): bool
+    {
+        return (int) $this->createQueryBuilder('m')
+            ->select('COUNT(m.id)')
+            ->andWhere('m.childId = :child')
+            ->setParameter('child', $childId, 'uuid')
+            ->getQuery()
+            ->getSingleScalarResult() > 0;
+    }
+
     /** Membership actif ciblant un e-mail dans une famille (via l'utilisateur du compte). */
     public function findActiveByEmail(Family $family, string $email): ?Membership
     {

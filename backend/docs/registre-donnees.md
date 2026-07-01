@@ -11,7 +11,7 @@
 > 🔒 = chiffré au repos (AES-256-GCM, clé hors base — cdc §5.3).
 > La clé `Entité.champ` doit apparaître telle quelle dans la colonne « Champ ».
 
-Dernière mise à jour : 2026-07-01 (Lot 4).
+Dernière mise à jour : 2026-07-01 (Lot 5).
 
 ## Champs (Lot 0)
 
@@ -68,6 +68,21 @@ les références (`SET NULL`) sans casser les liens/audits :
   l'événement survit à l'anonymisation d'un membre) ; `family` (`CASCADE`).
 - **`event_child`** (Lot 4) : table de liaison N-N `Event` ↔ `Child` (FK en `CASCADE` des deux côtés) ;
   aucune donnée personnelle propre (que des références).
+- **`OverlayPreference`** (Lot 5) : opt-in d'affichage overlay par (`Membership`, `FamilyLink`, `view`).
+  **Donnée technique de préférence**, non personnelle, non 🔒 ; FK en `CASCADE`. Aucun champ identité/contenu.
+
+## Champs (Lot 5 — Familles liées / overlay)
+
+> **Nouveau flux de destinataire** (cdc §7.1.1) : l'overlay expose, **en lecture seule et en projection
+> minimale**, une partie des événements d'agenda d'une famille à une **famille liée active**. Aucun
+> nouveau champ n'est créé ; c'est la **liste des destinataires** des champs d'événement surfacés qui
+> s'élargit. Projection stricte (Lot 5 §3.6) : **seuls** `starts_at`/`ends_at`/`all_day`, `category` et
+> `title` sont transmis ; `responsible`, `event_child`/enfants, `description`, `location`, `series_id`
+> ne le sont **jamais** (anti-fuite testée).
+
+| Champ | Catégorie | Sensibilité | Base légale | Finalité | Conservation | Destinataires |
+|---|---|---|---|---|---|---|
+| `Event.title` / `Event.category` / horaires (`starts_at`,`ends_at`,`all_day`) — **via overlay** | Contenu (coordination) | Standard (projection minimale RO) | Exécution du contrat (coordination inter-foyers) | Coordonner les activités des enfants entre les deux foyers | Durée de vie de l'événement ; purge RGPD (Lot 8) | Membres habilités (agenda ≥ view) **de la famille liée active** (RO) |
 
 ## Champs à venir (rappel, autres lots)
 

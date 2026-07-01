@@ -7,16 +7,19 @@ namespace App\State\Agenda;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProviderInterface;
 use App\Dto\Agenda\EventResource;
+use App\Dto\Agenda\OverlayEventResource;
 use App\Enum\EventCategory;
 use App\Exception\AgendaInputException;
 use App\Security\Agenda\AgendaAccess;
 use App\Service\Agenda\AgendaReader;
 use App\Service\Agenda\Occurrence;
+use App\Service\Agenda\OverlayReader;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
- * US-AG-3 — occurrences d'agenda sur [from, to] (agenda:view), filtrables par `category` (CSV).
- * Le paramètre `overlay=` est réservé au Lot 5 (ignoré ici).
+ * US-AG-3 / US-AG-4 — occurrences d'agenda sur [from, to] (agenda:view), filtrables par `category`.
+ * Le paramètre `overlay=<linkedFamilyId>` (répétable, CSV) fusionne en **lecture seule** la projection
+ * minimale des événements des familles liées **actives** (Lot 5 §3.3), marqués `source=linked`.
  *
  * @implements ProviderInterface<EventResource>
  */
@@ -25,13 +28,14 @@ final class EventsProvider implements ProviderInterface
     public function __construct(
         private readonly AgendaAccess $access,
         private readonly AgendaReader $reader,
+        private readonly OverlayReader $overlay,
         private readonly AgendaRange $range,
         private readonly RequestStack $requestStack,
     ) {
     }
 
     /**
-     * @return list<EventResource>
+     * @return list<EventResource|OverlayEventResource>
      */
     public function provide(Operation $operation, array $uriVariables = [], array $context = []): array
     {
@@ -40,10 +44,22 @@ final class EventsProvider implements ProviderInterface
         [$from, $to] = $this->range->resolve($tz);
         $categories = $this->parseCategories();
 
-        return array_map(
+        /** @var list<EventResource|OverlayEventResource> $result */
+        $result = array_map(
             static fn (Occurrence $o): EventResource => EventResource::fromOccurrence($o, $tz),
             $this->reader->occurrences($ctx->family, $from, $to, $categories),
         );
+
+        $overlayParam = $this->requestStack->getCurrentRequest()?->query->get('overlay');
+        if (\is_string($overlayParam) && '' !== $overlayParam) {
+            $result = array_merge(
+                $result,
+                $this->overlay->overlayEvents($ctx->family, $overlayParam, $from, $to, $categories),
+            );
+            usort($result, static fn ($a, $b): int => [$a->startsAt, $a->title] <=> [$b->startsAt, $b->title]);
+        }
+
+        return $result;
     }
 
     /**

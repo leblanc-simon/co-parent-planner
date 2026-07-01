@@ -29,6 +29,20 @@ class FamilyLinkRepository extends ServiceEntityRepository
     }
 
     /**
+     * Lien **actif** entre la famille active et une autre famille (overlay Lot 5 §3.2). Renvoie null
+     * si aucun lien, lien `pending`, ou `otherId` = la famille elle-même (overlay sur soi interdit).
+     */
+    public function findActiveBetween(Family $family, Uuid $otherId): ?FamilyLink
+    {
+        if ($family->getId()->equals($otherId)) {
+            return null;
+        }
+        $link = $this->findByPair($family->getId(), $otherId);
+
+        return (null !== $link && $link->getStatus()->isActive()) ? $link : null;
+    }
+
+    /**
      * Tous les liens (pending + active) impliquant la famille (dans un sens ou l'autre).
      *
      * @return list<FamilyLink>

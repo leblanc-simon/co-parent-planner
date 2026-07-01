@@ -62,4 +62,7 @@ enum AuditAction: string
     case EventCreated = 'event.created';
     case EventUpdated = 'event.updated';
     case EventDeleted = 'event.deleted';
+
+    // Familles liées / overlay (Lot 5)
+    case OverlayToggled = 'overlay.toggled';
 }

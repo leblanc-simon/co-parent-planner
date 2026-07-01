@@ -138,6 +138,15 @@ agenda:
         occurrence_invalid: "La date ne correspond à aucune occurrence de la série."
         occurrence_cancelled: 'Cette occurrence est déjà supprimée.'
 
+overlay:
+    error:
+        link_invalid: 'Aucune famille liée active pour ce paramètre.'
+        view_invalid: "Vue overlay invalide (attendu : agenda ou custody)."
+    linked_family: 'Famille liée'
+    toggle: 'Overlay famille liée'
+    empty: "Aucune activité de la famille liée sur cette période."
+    activities: '{count, plural, =0 {Aucune activité} one {# activité} other {# activités}} de la famille liée'
+
 note:
     error:
         not_found: 'Note introuvable.'

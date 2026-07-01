@@ -18,6 +18,14 @@ Dernière mise à jour : **2026-07-01** — **Lot 3 TERMINÉ** (garde). **Lot 4 
 **Lot 3 — Garde (moteur + vacances)** (`specs/lots/lot-3-*.md`) : ✅ **TERMINÉ** (backend + moteur + adaptateur vacances + async/scheduler + endpoints + contrat OpenAPI + client Dart + UI web + E2E + temps réel + UI mobile + **revue de code + corrections**).
 
 **Lot 4 — Agenda** (`specs/lots/lot-4-agenda.md`) : ✅ **TERMINÉ** — backend + moteur + endpoints + UI web + UI mobile + E2E + temps réel + revue de code adversariale.
+
+**Lot 5 — Familles liées & overlay** (`specs/lots/lot-5-familles-liees-overlay.md`) : 🟡 **EN COURS** — **Étape A (backend) + contrat TERMINÉS**.
+- **Modèle** : entité `OverlayPreference` (opt-in par membre/lien/vue, unicité `(membership,link,view)`) ; migration `Version20260701213830`.
+- **Habilitation & projection** : `FamilyLinkRepository::findActiveBetween` (bidirectionnel, refuse soi/pending) ; `OverlayReader` (résolution multi-liens, 422 uniforme si tous invalides, dédup par identité de lien) ; **projection anti-fuite `OverlayEventResource`** (uniquement horaires/catégorie/titre + source=linked/#9C6FB0/editable=false ; **aucun** enfant/responsable/description/lieu/série/id). Activation du `?overlay=` dans `EventsProvider` (fusion + tri), expansion en fuseau B → affichage fuseau A.
+- **Endpoints** : `GET/PUT /families/{id}/overlay-preferences` (scopé membre courant, upsert idempotent sérialisé par advisory lock = last-write-wins §4.2, valide lien actif). RO strict : aucune route d'écriture overlay ; mutation cross-famille refusée (scope). Garde jamais modifiée (pastilles dérivées des événements projetés).
+- **Revue adversariale sécurité** (5 dimensions : anti-fuite, habilitation/scope, RO, préférences, modèle/fuseau/RGPD) : **0 P0/P1/P2**, **2 P3 corrigés** (dédup lien par identité ; upsert préférence en last-write-wins). Registre RGPD à jour (destinataire « famille liée » + `OverlayPreference` technique), i18n `overlay.*`.
+- **Portes** : backend **217 tests / 1761 assertions, couverture 86,0 %**, PHPStan niv.8, cs-fixer ; OpenAPI exporté + client Dart régénéré (`overlay_preference_client`), mobile **120 tests** sans drift.
+- **Reste Lot 5** : UI web (toggle overlay agenda + pastilles garde `#9C6FB0`), UI mobile, E2E.
 - **UI mobile** : feature `lib/features/agenda` — `AgendaRepository` (+ providers scopés famille), `AgendaScreen` (occurrences du mois groupées par jour, pastilles catégorie §8, `CategoryPill`), formulaire de création (ponctuel : titre, catégorie, responsable, cible enfant(s)/famille, all-day, date/heure → ISO 8601 avec offset appareil, lieu), bloc « À venir » (4 prochains) sur `HomeTab`. Onglet Agenda déjà dans le shell. Client `events` ajouté à `ApiClients`. **Contrainte assumée** : création limitée aux ponctuels (le modèle généré `recurrence` = `Map<String,String?>` perd le typage int/bool ; séries et édition par portée = web ; offline riche = Lot 8, §0.3). **120 tests mobiles** verts, couverture **78,5 %** (≥70 %), `dart analyze`/`format` propres, client généré sans drift. i18n ARB `agenda*`/`cat*`.
 - **UI web** : écran `/agenda` (`AgendaController` + `app/agenda.html.twig`) — occurrences groupées par jour, filtres catégorie (pills §8), formulaire création (ponctuel/série, all-day, récurrence until|count, exclusion vacances), édition par portée (occurrence/série) et suppression via Stimulus `agenda` (datetime-local → ISO 8601 avec offset), `turbo-stream-source` + cookie Mercure agenda. Onglet « Agenda » dans la sidebar (tous types de famille). Bloc « À venir » (4 prochains) sur l'Accueil (`HomeController` + `UpcomingEventsFinder`, masqué si agenda=none). Backend **209 tests** (WebPagesTest : `/agenda` vide + avec événement + accueil « À venir »), couverture 85,7 %, PHPStan/cs-fixer/lint Twig verts.
 - **Modèle** : entité `Event` (ponctuel/série, overrides+EXDATE rattachés par `series_id`, `whole_family`, verrou optimiste, `idempotency_key`), table de liaison `event_child` (N-N, 1er ManyToMany du projet — cf. §5.2), enums `EventCategory`/`RecurrenceFreq` ; migration `Version20260701192550` (FK famille/enfant CASCADE, responsable/auteur SET NULL, index uniques partiels override/EXDATE/idempotency). Schéma en sync (dev+test).
@@ -235,6 +243,17 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-07-01 — Lot 5 (familles liées / overlay) : Étape A — backend + contrat
+- Entité `OverlayPreference` + migration ; `FamilyLinkRepository::findActiveBetween` (bidirectionnel).
+- `OverlayReader` (habilitation lien actif, 422 uniforme non-énumérant, multi-liens) + projection RO
+  **anti-fuite** `OverlayEventResource` (horaires/catégorie/titre only) ; `?overlay=` activé dans
+  `EventsProvider` (fusion, expansion fuseau B → affichage fuseau A). Endpoints `GET/PUT /overlay-preferences`
+  (scope membre, upsert LWW par advisory lock, lien actif validé). RO strict, garde jamais modifiée.
+- **Revue adversariale sécurité** (5 dimensions) : 0 P0/P1/P2, 2 P3 corrigés (dédup lien par identité ;
+  upsert préférence en last-write-wins). Registre RGPD (destinataire « famille liée ») + i18n `overlay.*`.
+- Portes : backend **217 tests / 1761 assertions, couverture 86,0 %**, PHPStan niv.8, cs-fixer ;
+  OpenAPI + client Dart régénérés (sans drift), mobile 120 tests. **Reste : UI web/mobile + E2E.**
 
 ### 2026-07-01 — Lot 4 (agenda) : Étape E — E2E Playwright + clôture du lot
 - `tests/lot4-agenda.spec.ts` : création événement, série hebdo, filtre catégorie, édition, suppression,

@@ -3371,6 +3371,189 @@
                 }
             }
         },
+        "/api/families/{familyId}/overlay-preferences": {
+            "get": {
+                "operationId": "api_families_familyIdoverlay-preferences_get_collection",
+                "tags": [
+                    "OverlayPreference"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OverlayPreference collection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/OverlayPreference"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "OverlayPreference.jsonld collection.",
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/HydraCollectionBaseSchemaNoPagination"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "member"
+                                            ],
+                                            "properties": {
+                                                "member": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/OverlayPreference.jsonld"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Retrieves the collection of OverlayPreference resources.",
+                "description": "Retrieves the collection of OverlayPreference resources.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            },
+            "put": {
+                "operationId": "api_families_familyIdoverlay-preferences_put",
+                "tags": [
+                    "OverlayPreference"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OverlayPreference resource updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OverlayPreference"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OverlayPreference.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Replaces the OverlayPreference resource.",
+                "description": "Replaces the OverlayPreference resource.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The updated OverlayPreference resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OverlayPreference.UpdateOverlayPreferenceRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OverlayPreference.UpdateOverlayPreferenceRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
         "/api/realtime/token": {
             "get": {
                 "operationId": "api_realtimetoken_get",
@@ -6986,6 +7169,75 @@
                 ],
                 "description": "Note partag\u00e9e expos\u00e9e (US-CH-6). `text` d\u00e9chiffr\u00e9 au rendu serveur ; auteur r\u00e9solu (nom + couleur)."
             },
+            "OverlayPreference": {
+                "type": "object",
+                "description": "Pr\u00e9f\u00e9rence d'overlay du **membre courant** (US-LINK-1, Lot 5 \u00a76.2), par lien et par vue.\n`GET` liste ses pr\u00e9f\u00e9rences ; `PUT` fait un upsert idempotent `{familyLinkId, view, enabled}`.",
+                "properties": {
+                    "familyLinkId": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "view": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "enabled": {
+                        "default": false,
+                        "type": "boolean"
+                    }
+                }
+            },
+            "OverlayPreference.UpdateOverlayPreferenceRequest": {
+                "type": "object",
+                "description": "Pr\u00e9f\u00e9rence d'overlay du **membre courant** (US-LINK-1, Lot 5 \u00a76.2), par lien et par vue.\n`GET` liste ses pr\u00e9f\u00e9rences ; `PUT` fait un upsert idempotent `{familyLinkId, view, enabled}`.",
+                "required": [
+                    "familyLinkId",
+                    "view"
+                ],
+                "properties": {
+                    "familyLinkId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "view": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "enabled": {
+                        "default": false,
+                        "type": "boolean"
+                    }
+                }
+            },
+            "OverlayPreference.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "familyLinkId": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "view": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "enabled": {
+                                "default": false,
+                                "type": "boolean"
+                            }
+                        }
+                    }
+                ],
+                "description": "Pr\u00e9f\u00e9rence d'overlay du **membre courant** (US-LINK-1, Lot 5 \u00a76.2), par lien et par vue.\n`GET` liste ses pr\u00e9f\u00e9rences ; `PUT` fait un upsert idempotent `{familyLinkId, view, enabled}`."
+            },
             "RealtimeToken": {
                 "type": "object",
                 "description": "Jeton Mercure scop\u00e9 par famille active (cdc \u00a74.5, \u00a73.12). Distinct du JWT d'acc\u00e8s API ; \u00e9mis\npar le serveur (seule autorit\u00e9 sur `subscribe`). Au Lot 0, `subscribe` est **vide** (aucun topic\nm\u00e9tier) ; recalcul\u00e9 \u00e0 chaque bascule de famille (nouveau X-Family-Id).",
@@ -7431,6 +7683,10 @@
         {
             "name": "Event",
             "description": "\u00c9v\u00e9nement / occurrence d'agenda expos\u00e9 (Lot 4 \u00a76.1). `GET /families/{id}/events` renvoie les\n**occurrences** sur [from, to] (une par occurrence de s\u00e9rie) ; `POST` cr\u00e9e un \u00e9v\u00e9nement ou une\ns\u00e9rie et renvoie l'\u00e9v\u00e9nement ma\u00eetre. `startsAt`/`endsAt` sont format\u00e9s en ISO 8601 avec offset du\nfuseau famille. Le param\u00e8tre `overlay=` est **r\u00e9serv\u00e9** (Lot 5, ignor\u00e9 ici)."
+        },
+        {
+            "name": "OverlayPreference",
+            "description": "Pr\u00e9f\u00e9rence d'overlay du **membre courant** (US-LINK-1, Lot 5 \u00a76.2), par lien et par vue.\n`GET` liste ses pr\u00e9f\u00e9rences ; `PUT` fait un upsert idempotent `{familyLinkId, view, enabled}`."
         },
         {
             "name": "ForgotPasswordRequest",

@@ -5,7 +5,7 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-07-01** — **Lot 3 TERMINÉ** (garde) : backend + moteur + contrat + UI web + E2E + temps réel + UI mobile + **revue de code (adversariale) + corrections**.
+Dernière mise à jour : **2026-07-01** — **Lot 3 TERMINÉ** (garde). **Lot 4 (agenda) — Étape A backend TERMINÉE** : entités + moteur d'expansion/scission + endpoints + validation + idempotence + temps réel + contrat OpenAPI + client Dart régénéré. Reste Lot 4 : UI web, UI mobile, E2E, revue finale.
 
 ---
 
@@ -16,6 +16,15 @@ Dernière mise à jour : **2026-07-01** — **Lot 3 TERMINÉ** (garde) : backend
 **Lot 2 — Enfants & notes** : ✅ **TERMINÉ** (+ revue de code).
 
 **Lot 3 — Garde (moteur + vacances)** (`specs/lots/lot-3-*.md`) : ✅ **TERMINÉ** (backend + moteur + adaptateur vacances + async/scheduler + endpoints + contrat OpenAPI + client Dart + UI web + E2E + temps réel + UI mobile + **revue de code + corrections**).
+
+**Lot 4 — Agenda** (`specs/lots/lot-4-agenda.md`) : 🟡 **EN COURS** — **Étape A (backend) TERMINÉE**.
+- **Modèle** : entité `Event` (ponctuel/série, overrides+EXDATE rattachés par `series_id`, `whole_family`, verrou optimiste, `idempotency_key`), table de liaison `event_child` (N-N, 1er ManyToMany du projet — cf. §5.2), enums `EventCategory`/`RecurrenceFreq` ; migration `Version20260701192550` (FK famille/enfant CASCADE, responsable/auteur SET NULL, index uniques partiels override/EXDATE/idempotency). Schéma en sync (dev+test).
+- **Moteur** (`Service/Agenda/`) : `OccurrenceExpander` **pur** (expansion depuis l'ancre, clamp mensuel, DST gap→forward/overlap→première, until inclusif, count, borne MAX), `RecurrenceRule`/`OccurrenceInstant`/`Occurrence` (VO), `HolidayExcluder` (exclusion vacances Lot 3, préserve les overrides explicites), `AgendaReader` (assemblage + tri §3.6), `EventWriter` (validation création), `OccurrenceEditor` (override/EXDATE §3.4), `SeriesSplitter` (this-and-future + scission idempotente §3.5), `UpcomingEventsFinder` (§3.7), `AgendaPublisher`.
+- **Endpoints** : `GET/POST /families/{id}/events`, `PATCH/DELETE /events/{id}?scope=occurrence|series` ; Voter `agenda` (existant) via `AgendaAccess`, scope `X-Family-Id`, RFC 7807 (`AgendaInputException`/`NotFound`/`Conflict`), `Idempotency-Key` (durable en base), verrou optimiste `expectedVersion`→409. Topic Mercure `/families/{id}/agenda` ajouté aux claims (`agenda ≥ view`).
+- **Tests** : unitaires expansion (13), intégration reader (3), matrice Voter agenda (RBAC), fonctionnels API (32 : CRUD, override/EXDATE, scission, validations 422, idempotence, autz, scope, régressions de revue). **Backend 207 tests / 1609 assertions, couverture 85,3 %**, PHPStan niv.8 (0), cs-fixer. OpenAPI exporté + client Dart régénéré (event_client), mobile 116 tests verts. Registre RGPD à jour (Event/event_child documentés, aucun champ `#[PersonalData]`/🔒 introduit — décision §5/§7). i18n `agenda.*` ICU.
+- **Revue de code adversariale (backend)** : workflow 7 dimensions → vérification adversariale. **6 constats confirmés, tous corrigés** : **P1** idempotence concurrente (Idempotency-Key : 500 → 201 rejoué, sérialisée par `pg_advisory_xact_lock`) ; **P2** overrides orphelins après changement de `freq` (ignorés au rendu §4.11), scission `freq=none` (le « tail » dégénère proprement en ponctuel), verrou optimiste TOCTOU (`em->lock(OPTIMISTIC)` + capture `OptimisticLockException` → 409), titre en espaces (422 après trim), dates non-ISO8601/sans offset (422). 2 P3 réfutés (timestamptz vs timestamp = précédent Lot 3 accepté ; `findBySeriesId` non scopé = tous les appelants passent déjà un maître scopé).
+- **Fixtures démo** : différées (cohérent avec Lots 2-3, `AppFixtures` stub ; seeding manuel dans les tests).
+- **Reste Lot 4** : UI web (`/agenda` + « À venir » Accueil), UI mobile, E2E Playwright.
 
 - **Backend** : **158 tests / 1137 assertions**, couverture **85,6 %** (≥80 %), PHPStan niv.8, cs-fixer, schéma en sync.
 - **Mobile** : feature `custody` (repo + providers scopés + écran calendrier + écran Paramètres › Garde). **116 tests** verts, couverture **78,3 %** (≥70 %), `dart analyze`/`format` propres, client sans drift.
@@ -223,6 +232,22 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-07-01 — Lot 4 (agenda) : Étape A — backend complet
+- **Cartographie préalable** des conventions Lot 3 (workflow 8 lecteurs parallèles) pour coller à l'idiome.
+- **Modèle** : `Event` + `event_child` (N-N) + enums ; migration `Version20260701192550` (index uniques
+  partiels via `#[ORM\UniqueConstraint(options:['where'])]` pour rester en sync — comme `uniq_invitation_pending`).
+- **Moteur d'expansion pur** (testé DST/clamp/until/count/non-cumulatif) séparé de l'orchestration BD
+  (`AgendaReader`) ; overrides/EXDATE rattachés au `series_id` (pas de matérialisation des occurrences virtuelles).
+- **Scission de série** this-and-future idempotente (`SeriesSplitter`) ; override/EXDATE (`OccurrenceEditor`).
+- **Idempotence** de création portée par une colonne `idempotency_key` + index unique partiel (durable ;
+  le cache `array` de test ne survit pas au `reset()` du conteneur → décision de la mettre en base).
+- **Endpoints** CRUD par portée, Voter `agenda` réutilisé, RFC 7807, Mercure post-commit + claims.
+- **Revue adversariale** (7 dimensions → vérification) : 6 constats corrigés (1 P1 idempotence concurrente
+  → `pg_advisory_xact_lock` ; 5 P2 : orphelins §4.11, scission freq=none, verrou optimiste TOCTOU→409,
+  titre espaces, dates ISO8601 strictes). Régressions ajoutées.
+- **Portes** : backend **207 tests / 1609 assertions, couverture 85,3 %**, PHPStan niv.8, cs-fixer ;
+  OpenAPI exporté, client Dart régénéré (sans drift), mobile **116 tests**. **Reste : UI web/mobile + E2E.**
 
 ### 2026-07-01 — Lot 3 : moteur de garde + vacances + endpoints (backend)
 - **Moteur idempotent** : 4 modèles (`alternating`/`pattern_2_2_3` motif figé/`midweek_weekends`/`custom`),

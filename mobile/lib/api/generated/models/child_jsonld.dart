@@ -16,6 +16,7 @@ class ChildJsonld {
     this.firstName = '',
     this.color = '',
     this.initial = '',
+    this.version = 1,
     this.object5,
     this.birthDate,
     this.age,
@@ -45,6 +46,9 @@ class ChildJsonld {
   final int? age;
   final String? schoolLabel;
   final List<Map<String, String>>? info;
+
+  /// Version (verrou optimiste) : à renvoyer en `expectedVersion` pour une édition concurrente sûre.
+  final int version;
 
   Map<String, Object?> toJson() => _$ChildJsonldToJson(this);
 }

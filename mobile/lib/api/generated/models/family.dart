@@ -13,6 +13,8 @@ class Family {
   const Family({
     this.schoolZone,
     this.academy,
+    this.handoverWeekday,
+    this.handoverTime,
     this.id = '',
     this.name = '',
     this.type = '',
@@ -33,6 +35,8 @@ class Family {
   final String? academy;
   final bool expensesEnabled;
   final bool hasCustody;
+  final int? handoverWeekday;
+  final String? handoverTime;
   final String role;
   final bool isAdmin;
 

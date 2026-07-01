@@ -23,6 +23,8 @@ _$AcceptInvitationRequestFamilyResourceJsonldFromJson(
   object5: json['@context'],
   schoolZone: json['schoolZone'] as String?,
   academy: json['academy'] as String?,
+  handoverWeekday: (json['handoverWeekday'] as num?)?.toInt(),
+  handoverTime: json['handoverTime'] as String?,
 );
 
 Map<String, dynamic> _$AcceptInvitationRequestFamilyResourceJsonldToJson(
@@ -39,6 +41,8 @@ Map<String, dynamic> _$AcceptInvitationRequestFamilyResourceJsonldToJson(
   'academy': instance.academy,
   'expensesEnabled': instance.expensesEnabled,
   'hasCustody': instance.hasCustody,
+  'handoverWeekday': instance.handoverWeekday,
+  'handoverTime': instance.handoverTime,
   'role': instance.role,
   'isAdmin': instance.isAdmin,
 };

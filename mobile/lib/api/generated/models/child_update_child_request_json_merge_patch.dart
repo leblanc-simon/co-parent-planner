@@ -15,6 +15,7 @@ class ChildUpdateChildRequestJsonMergePatch {
     this.birthDate,
     this.schoolLabel,
     this.info,
+    this.expectedVersion,
   });
   
   factory ChildUpdateChildRequestJsonMergePatch.fromJson(Map<String, Object?> json) => _$ChildUpdateChildRequestJsonMergePatchFromJson(json);
@@ -24,6 +25,10 @@ class ChildUpdateChildRequestJsonMergePatch {
   final String? birthDate;
   final String? schoolLabel;
   final List<Map<String, String?>>? info;
+
+  /// Version attendue (verrou optimiste, §4.2) : si fournie et différente de la version courante,.
+  /// l'édition est rejetée par un 409 (évite l'écrasement concurrent de `info`). Optionnel.
+  final int? expectedVersion;
 
   Map<String, Object?> toJson() => _$ChildUpdateChildRequestJsonMergePatchToJson(this);
 }

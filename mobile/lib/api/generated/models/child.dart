@@ -18,6 +18,7 @@ class Child {
     this.firstName = '',
     this.color = '',
     this.initial = '',
+    this.version = 1,
   });
   
   factory Child.fromJson(Map<String, Object?> json) => _$ChildFromJson(json);
@@ -30,6 +31,9 @@ class Child {
   final int? age;
   final String? schoolLabel;
   final List<Map<String, String>>? info;
+
+  /// Version (verrou optimiste) : à renvoyer en `expectedVersion` pour une édition concurrente sûre.
+  final int version;
 
   Map<String, Object?> toJson() => _$ChildToJson(this);
 }

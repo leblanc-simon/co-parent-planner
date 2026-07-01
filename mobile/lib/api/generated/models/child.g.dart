@@ -17,6 +17,7 @@ Child _$ChildFromJson(Map<String, dynamic> json) => Child(
   firstName: json['firstName'] as String? ?? '',
   color: json['color'] as String? ?? '',
   initial: json['initial'] as String? ?? '',
+  version: (json['version'] as num?)?.toInt() ?? 1,
 );
 
 Map<String, dynamic> _$ChildToJson(Child instance) => <String, dynamic>{
@@ -28,4 +29,5 @@ Map<String, dynamic> _$ChildToJson(Child instance) => <String, dynamic>{
   'age': instance.age,
   'schoolLabel': instance.schoolLabel,
   'info': instance.info,
+  'version': instance.version,
 };

@@ -11,7 +11,7 @@
 > 🔒 = chiffré au repos (AES-256-GCM, clé hors base — cdc §5.3).
 > La clé `Entité.champ` doit apparaître telle quelle dans la colonne « Champ ».
 
-Dernière mise à jour : 2026-06-30 (Lot 1).
+Dernière mise à jour : 2026-07-01 (Lot 4).
 
 ## Champs (Lot 0)
 
@@ -42,6 +42,17 @@ Dernière mise à jour : 2026-06-30 (Lot 1).
 > titre que `firstName`/`info` ci-dessus (non marquée `#[PersonalData]` séparément car simple date,
 > couverte par la finalité du profil). Aucun champ médical typé n'est créé (invariant permanent).
 
+## Champs (Lot 4 — Agenda)
+
+> **Décision verrouillée (§5, §7.7-7.8)** : l'agenda **n'introduit aucun champ marqué `#[PersonalData]`
+> ni chiffré 🔒**. `Event.title`, `Event.location` et `Event.description` sont du **texte libre de
+> coordination familiale**, non typé et non sensible ; la catégorie d'agenda `sante` est un simple
+> libellé (jamais une donnée de santé typée — invariant permanent). Documenté ici par exhaustivité.
+
+| Champ | Catégorie | Sensibilité | Base légale | Finalité | Conservation | Destinataires |
+|---|---|---|---|---|---|---|
+| `Event.title` / `Event.location` / `Event.description` | Contenu (coordination) | Standard (texte libre, **aucune donnée de santé typée**) | Exécution du contrat (coordination parentale) | Planifier et documenter les activités des enfants | Durée de vie de l'événement ; purge RGPD (Lot 8) | Membres habilités de la famille (agenda ≥ view) |
+
 ### Références à des personnes (sans champ personnel direct)
 
 Ces entités **référencent** des personnes via des clés étrangères mais ne stockent pas de champ
@@ -53,6 +64,10 @@ les références (`SET NULL`) sans casser les liens/audits :
 - **`Right`** : niveau par domaine, rattaché à un `Membership` (pas de donnée personnelle directe).
 - **`FamilyLink`** : `createdBy` → `User` (nullable, `SET NULL`) ; n'expose aucune donnée de l'autre famille.
 - **`Invitation.invitedBy`** : `User` (nullable, `SET NULL`).
+- **`Event`** (Lot 4) : `responsibleMembership` et `createdByMembership` → `Membership` (nullable, `SET NULL` :
+  l'événement survit à l'anonymisation d'un membre) ; `family` (`CASCADE`).
+- **`event_child`** (Lot 4) : table de liaison N-N `Event` ↔ `Child` (FK en `CASCADE` des deux côtés) ;
+  aucune donnée personnelle propre (que des références).
 
 ## Champs à venir (rappel, autres lots)
 

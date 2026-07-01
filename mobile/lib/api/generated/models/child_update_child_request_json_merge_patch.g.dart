@@ -16,6 +16,7 @@ _$ChildUpdateChildRequestJsonMergePatchFromJson(Map<String, dynamic> json) =>
       info: (json['info'] as List<dynamic>?)
           ?.map((e) => Map<String, String?>.from(e as Map))
           .toList(),
+      expectedVersion: (json['expectedVersion'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$ChildUpdateChildRequestJsonMergePatchToJson(
@@ -26,4 +27,5 @@ Map<String, dynamic> _$ChildUpdateChildRequestJsonMergePatchToJson(
   'birthDate': instance.birthDate,
   'schoolLabel': instance.schoolLabel,
   'info': instance.info,
+  'expectedVersion': instance.expectedVersion,
 };

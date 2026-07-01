@@ -59,6 +59,32 @@ class SchoolHolidayRepository extends ServiceEntityRepository
     }
 
     /**
+     * **Toutes** les périodes (avec ou sans règle) chevauchant [from, to], triées (start, end, id).
+     * Utilisé par l'agenda pour l'exclusion des occurrences tombant en vacances (Lot 4 §3.8) —
+     * indépendamment de toute règle de garde.
+     *
+     * @return list<SchoolHoliday>
+     */
+    public function findOverlapping(Family $family, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        /** @var list<SchoolHoliday> $result */
+        $result = $this->createQueryBuilder('h')
+            ->andWhere('h.family = :family')
+            ->andWhere('h.startDate <= :to')
+            ->andWhere('h.endDate >= :from')
+            ->setParameter('family', $family)
+            ->setParameter('from', $from->format('Y-m-d'))
+            ->setParameter('to', $to->format('Y-m-d'))
+            ->orderBy('h.startDate', 'ASC')
+            ->addOrderBy('h.endDate', 'ASC')
+            ->addOrderBy('h.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return $result;
+    }
+
+    /**
      * Périodes **avec règle** chevauchant [from, to], triées (start, end, id) pour un ordre
      * d'application déterministe (§3.3 : la dernière écrite gagne sur un jour partagé).
      *

@@ -9,6 +9,8 @@ part of 'family.dart';
 Family _$FamilyFromJson(Map<String, dynamic> json) => Family(
   schoolZone: json['schoolZone'] as String?,
   academy: json['academy'] as String?,
+  handoverWeekday: (json['handoverWeekday'] as num?)?.toInt(),
+  handoverTime: json['handoverTime'] as String?,
   id: json['id'] as String? ?? '',
   name: json['name'] as String? ?? '',
   type: json['type'] as String? ?? '',
@@ -28,6 +30,8 @@ Map<String, dynamic> _$FamilyToJson(Family instance) => <String, dynamic>{
   'academy': instance.academy,
   'expensesEnabled': instance.expensesEnabled,
   'hasCustody': instance.hasCustody,
+  'handoverWeekday': instance.handoverWeekday,
+  'handoverTime': instance.handoverTime,
   'role': instance.role,
   'isAdmin': instance.isAdmin,
 };

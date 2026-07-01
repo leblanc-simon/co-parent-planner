@@ -13,6 +13,7 @@ ChildJsonld _$ChildJsonldFromJson(Map<String, dynamic> json) => ChildJsonld(
   firstName: json['firstName'] as String? ?? '',
   color: json['color'] as String? ?? '',
   initial: json['initial'] as String? ?? '',
+  version: (json['version'] as num?)?.toInt() ?? 1,
   object5: json['@context'],
   birthDate: json['birthDate'] as String?,
   age: (json['age'] as num?)?.toInt(),
@@ -35,4 +36,5 @@ Map<String, dynamic> _$ChildJsonldToJson(ChildJsonld instance) =>
       'age': instance.age,
       'schoolLabel': instance.schoolLabel,
       'info': instance.info,
+      'version': instance.version,
     };

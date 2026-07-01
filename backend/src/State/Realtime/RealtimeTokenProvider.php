@@ -90,6 +90,10 @@ final class RealtimeTokenProvider implements ProviderInterface
         if ($membership->can(RightDomain::Custody, RightLevel::View)) {
             $topics[] = \sprintf('/families/%s/custody', $familyId);
         }
+        // Agenda (Lot 4) : abonnement filtré sur le droit agenda ≥ view (US-AG-8).
+        if ($membership->can(RightDomain::Agenda, RightLevel::View)) {
+            $topics[] = \sprintf('/families/%s/agenda', $familyId);
+        }
 
         return $topics;
     }

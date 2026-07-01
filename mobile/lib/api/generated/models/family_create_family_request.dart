@@ -19,8 +19,8 @@ class FamilyCreateFamilyRequest {
   
   factory FamilyCreateFamilyRequest.fromJson(Map<String, Object?> json) => _$FamilyCreateFamilyRequestFromJson(json);
   
-  final String name;
-  final FamilyCreateFamilyRequestType type;
+  final String? name;
+  final FamilyCreateFamilyRequestType? type;
 
   Map<String, Object?> toJson() => _$FamilyCreateFamilyRequestToJson(this);
 }

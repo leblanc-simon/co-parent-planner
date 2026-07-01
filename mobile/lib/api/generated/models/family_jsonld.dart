@@ -24,6 +24,8 @@ class FamilyJsonld {
     this.object5,
     this.schoolZone,
     this.academy,
+    this.handoverWeekday,
+    this.handoverTime,
   });
   
   factory FamilyJsonld.fromJson(Map<String, Object?> json) => _$FamilyJsonldFromJson(json);
@@ -48,6 +50,8 @@ class FamilyJsonld {
   final String? academy;
   final bool expensesEnabled;
   final bool hasCustody;
+  final int? handoverWeekday;
+  final String? handoverTime;
   final String role;
   final bool isAdmin;
 

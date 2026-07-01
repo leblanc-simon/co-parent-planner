@@ -10,6 +10,7 @@ use App\Enum\MembershipRole;
 use App\Enum\MembershipStatus;
 use App\Enum\RightDomain;
 use App\Enum\RightLevel;
+use App\Security\Voter\AbstractDomainVoter;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -88,6 +89,27 @@ final class RbacTruthTableTest extends TestCase
         foreach (RightDomain::cases() as $domain) {
             self::assertSame(RightLevel::None, $invited->effectiveLevel($domain), "non actif → none sur {$domain->value}");
         }
+    }
+
+    public function testAgendaVoterMatrix(): void
+    {
+        // Parent → edit forcé (US-AG-1, §4.4).
+        self::assertSame(RightLevel::Edit, $this->membership(MembershipRole::Parent)->effectiveLevel(RightDomain::Agenda));
+
+        // Beau-parent → suit son droit déclaré (none par défaut, view ou edit).
+        self::assertSame(RightLevel::None, $this->membership(MembershipRole::StepParent)->effectiveLevel(RightDomain::Agenda));
+        $stepView = $this->membership(MembershipRole::StepParent, false, new Right(RightDomain::Agenda, RightLevel::View));
+        self::assertTrue($stepView->can(RightDomain::Agenda, RightLevel::View));
+        self::assertFalse($stepView->can(RightDomain::Agenda, RightLevel::Edit), 'beau-parent view ≠ edit');
+
+        // Enfant : agenda ni interdit ni structurel → au mieux view (plafonné en amont par RightsNormalizer).
+        $childView = $this->membership(MembershipRole::Child, false, new Right(RightDomain::Agenda, RightLevel::View));
+        self::assertTrue($childView->can(RightDomain::Agenda, RightLevel::View));
+        self::assertFalse($childView->can(RightDomain::Agenda, RightLevel::Edit), 'enfant : jamais edit');
+
+        // Attributs du Voter agenda.
+        self::assertSame('AGENDA_VIEW', AbstractDomainVoter::attribute(RightDomain::Agenda, RightLevel::View));
+        self::assertSame('AGENDA_EDIT', AbstractDomainVoter::attribute(RightDomain::Agenda, RightLevel::Edit));
     }
 
     public function testLevelOrderingSatisfies(): void

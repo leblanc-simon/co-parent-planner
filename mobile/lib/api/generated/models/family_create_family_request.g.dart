@@ -9,8 +9,10 @@ part of 'family_create_family_request.dart';
 FamilyCreateFamilyRequest _$FamilyCreateFamilyRequestFromJson(
   Map<String, dynamic> json,
 ) => FamilyCreateFamilyRequest(
-  name: json['name'] as String,
-  type: FamilyCreateFamilyRequestType.fromJson(json['type'] as String),
+  name: json['name'] as String?,
+  type: json['type'] == null
+      ? null
+      : FamilyCreateFamilyRequestType.fromJson(json['type'] as String?),
 );
 
 Map<String, dynamic> _$FamilyCreateFamilyRequestToJson(

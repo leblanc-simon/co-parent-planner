@@ -113,6 +113,31 @@ custody:
         rule_kind_invalid: 'Genre de règle de vacances invalide.'
         rule_params_invalid: 'Les paramètres de la règle de vacances sont invalides.'
 
+agenda:
+    error:
+        not_found: 'Événement introuvable.'
+        conflict: "L'événement a été modifié entre-temps. Rechargez puis réessayez."
+        title_required: 'Le titre est requis.'
+        category_invalid: 'Catégorie invalide.'
+        date_invalid: 'Date ou heure invalide.'
+        interval_invalid: "L'heure de fin doit être postérieure ou égale à l'heure de début."
+        range_invalid: 'La date de fin doit être postérieure ou égale à la date de début.'
+        window_too_large: 'La période demandée est trop large.'
+        target_required: 'Un événement doit cibler au moins un enfant ou toute la famille.'
+        target_ambiguous: "Un événement ne peut pas cibler à la fois des enfants et « toute la famille »."
+        child_invalid: "L'un des enfants ciblés n'appartient pas à la famille."
+        responsible_invalid: "Le responsable doit être un parent ou beau-parent actif de la famille."
+        recurrence_freq_invalid: 'Fréquence de récurrence invalide.'
+        recurrence_bounds_exclusive: "Une série accepte une date de fin OU un nombre d'occurrences, pas les deux."
+        recurrence_unbounded: "Une série doit préciser une date de fin ou un nombre d'occurrences."
+        recurrence_count_invalid: "Le nombre d'occurrences est invalide."
+        recurrence_until_before_start: "La date de fin de récurrence est antérieure au début."
+        recurrence_too_long: 'La série produit trop d\'occurrences.'
+        scope_required: 'La portée (occurrence ou série) est requise pour un événement récurrent.'
+        scope_invalid: 'Portée invalide (attendu : occurrence ou series).'
+        occurrence_invalid: "La date ne correspond à aucune occurrence de la série."
+        occurrence_cancelled: 'Cette occurrence est déjà supprimée.'
+
 note:
     error:
         not_found: 'Note introuvable.'

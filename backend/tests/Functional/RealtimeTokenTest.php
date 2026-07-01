@@ -69,12 +69,13 @@ final class RealtimeTokenTest extends ApiAuthTestCase
         ]);
         self::assertSame(200, $response->getStatusCode());
 
-        // Lot 2/3 : un parent (children_notes + custody ≥ view) sur une famille séparée reçoit les
-        // topics notes ET garde, scopés à sa famille active (US-CH-3, US-CUST-5).
+        // Lot 2/3/4 : un parent (children_notes + custody + agenda ≥ view) sur une famille séparée
+        // reçoit les topics notes, garde ET agenda, scopés à sa famille active (US-CH-3, US-CUST-5, US-AG-8).
         $payload = $this->decodePayload($response->toArray()['token']);
         self::assertSame([
             '/families/'.$familyId.'/notes',
             '/families/'.$familyId.'/custody',
+            '/families/'.$familyId.'/agenda',
         ], $payload['mercure']['subscribe'] ?? null);
     }
 }

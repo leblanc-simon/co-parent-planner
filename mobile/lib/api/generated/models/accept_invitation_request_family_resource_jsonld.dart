@@ -24,6 +24,8 @@ class AcceptInvitationRequestFamilyResourceJsonld {
     this.object5,
     this.schoolZone,
     this.academy,
+    this.handoverWeekday,
+    this.handoverTime,
   });
   
   factory AcceptInvitationRequestFamilyResourceJsonld.fromJson(Map<String, Object?> json) => _$AcceptInvitationRequestFamilyResourceJsonldFromJson(json);
@@ -48,6 +50,8 @@ class AcceptInvitationRequestFamilyResourceJsonld {
   final String? academy;
   final bool expensesEnabled;
   final bool hasCustody;
+  final int? handoverWeekday;
+  final String? handoverTime;
   final String role;
   final bool isAdmin;
 

@@ -57,4 +57,9 @@ enum AuditAction: string
     case CustodyHolidayImported = 'custody.holiday.imported';
     case CustodyHolidayCreated = 'custody.holiday.created';
     case CustodyRuleUpdated = 'custody.rule.updated';
+
+    // Agenda (Lot 4)
+    case EventCreated = 'event.created';
+    case EventUpdated = 'event.updated';
+    case EventDeleted = 'event.deleted';
 }

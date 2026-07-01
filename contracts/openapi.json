@@ -1085,6 +1085,337 @@
                 ]
             }
         },
+        "/api/events/{id}": {
+            "delete": {
+                "operationId": "api_events_id_delete",
+                "tags": [
+                    "Event"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Event resource deleted"
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Removes the Event resource.",
+                "description": "Removes the Event resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Event identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            },
+            "patch": {
+                "operationId": "api_events_id_patch",
+                "tags": [
+                    "Event"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Event resource updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Event"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Event.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Updates the Event resource.",
+                "description": "Updates the Event resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Event identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The updated Event resource",
+                    "content": {
+                        "application/merge-patch+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Event.UpdateEventRequest.jsonMergePatch"
+                            }
+                        },
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Event.UpdateEventRequest.jsonMergePatch"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/families/{familyId}/events": {
+            "get": {
+                "operationId": "api_families_familyIdevents_get_collection",
+                "tags": [
+                    "Event"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Event collection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Event"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "Event.jsonld collection.",
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/HydraCollectionBaseSchemaNoPagination"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "member"
+                                            ],
+                                            "properties": {
+                                                "member": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Event.jsonld"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Retrieves the collection of Event resources.",
+                "description": "Retrieves the collection of Event resources.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "api_families_familyIdevents_post",
+                "tags": [
+                    "Event"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Event resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Event"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Event.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a Event resource.",
+                "description": "Creates a Event resource.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The new Event resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Event.CreateEventRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Event.CreateEventRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
         "/api/families": {
             "get": {
                 "operationId": "api_families_get_collection",
@@ -3972,6 +4303,18 @@
                         "default": false,
                         "type": "boolean"
                     },
+                    "handoverWeekday": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "handoverTime": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "role": {
                         "default": "",
                         "type": "string"
@@ -4025,6 +4368,18 @@
                             "hasCustody": {
                                 "default": false,
                                 "type": "boolean"
+                            },
+                            "handoverWeekday": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "handoverTime": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
                             },
                             "role": {
                                 "default": "",
@@ -4085,6 +4440,11 @@
                                 "type": "string"
                             }
                         }
+                    },
+                    "version": {
+                        "description": "Version (verrou optimiste) : \u00e0 renvoyer en `expectedVersion` pour une \u00e9dition concurrente s\u00fbre.",
+                        "default": 1,
+                        "type": "integer"
                     }
                 }
             },
@@ -4185,6 +4545,13 @@
                                 ]
                             }
                         }
+                    },
+                    "expectedVersion": {
+                        "description": "Version attendue (verrou optimiste, \u00a74.2) : si fournie et diff\u00e9rente de la version courante,\nl'\u00e9dition est rejet\u00e9e par un 409 (\u00e9vite l'\u00e9crasement concurrent de `info`). Optionnel.",
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
                     }
                 }
             },
@@ -4238,6 +4605,11 @@
                                         "type": "string"
                                     }
                                 }
+                            },
+                            "version": {
+                                "description": "Version (verrou optimiste) : \u00e0 renvoyer en `expectedVersion` pour une \u00e9dition concurrente s\u00fbre.",
+                                "default": 1,
+                                "type": "integer"
                             }
                         }
                     }
@@ -5001,6 +5373,399 @@
                 ],
                 "description": "A representation of common errors."
             },
+            "Event": {
+                "type": "object",
+                "description": "\u00c9v\u00e9nement / occurrence d'agenda expos\u00e9 (Lot 4 \u00a76.1). `GET /families/{id}/events` renvoie les\n**occurrences** sur [from, to] (une par occurrence de s\u00e9rie) ; `POST` cr\u00e9e un \u00e9v\u00e9nement ou une\ns\u00e9rie et renvoie l'\u00e9v\u00e9nement ma\u00eetre. `startsAt`/`endsAt` sont format\u00e9s en ISO 8601 avec offset du\nfuseau famille. Le param\u00e8tre `overlay=` est **r\u00e9serv\u00e9** (Lot 5, ignor\u00e9 ici).",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "seriesId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "title": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "category": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "responsibleMembershipId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "wholeFamily": {
+                        "default": false,
+                        "type": "boolean"
+                    },
+                    "childIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "location": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "description": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "startsAt": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "endsAt": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "allDay": {
+                        "default": false,
+                        "type": "boolean"
+                    },
+                    "recurrenceDate": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "isRecurring": {
+                        "default": false,
+                        "type": "boolean"
+                    },
+                    "isOverride": {
+                        "default": false,
+                        "type": "boolean"
+                    },
+                    "recurrence": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "additionalProperties": {
+                            "anyOf": [
+                                {
+                                    "type": "boolean"
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "Event.CreateEventRequest": {
+                "type": "object",
+                "description": "\u00c9v\u00e9nement / occurrence d'agenda expos\u00e9 (Lot 4 \u00a76.1). `GET /families/{id}/events` renvoie les\n**occurrences** sur [from, to] (une par occurrence de s\u00e9rie) ; `POST` cr\u00e9e un \u00e9v\u00e9nement ou une\ns\u00e9rie et renvoie l'\u00e9v\u00e9nement ma\u00eetre. `startsAt`/`endsAt` sont format\u00e9s en ISO 8601 avec offset du\nfuseau famille. Le param\u00e8tre `overlay=` est **r\u00e9serv\u00e9** (Lot 5, ignor\u00e9 ici).",
+                "required": [
+                    "title",
+                    "category",
+                    "responsibleMembershipId",
+                    "startsAt"
+                ],
+                "properties": {
+                    "title": {
+                        "maxLength": 200,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "category": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "responsibleMembershipId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "childIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "wholeFamily": {
+                        "default": false,
+                        "type": "boolean"
+                    },
+                    "location": {
+                        "maxLength": 255,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "description": {
+                        "maxLength": 2000,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "startsAt": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "endsAt": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "allDay": {
+                        "default": false,
+                        "type": "boolean"
+                    },
+                    "recurrence": {
+                        "description": "{freq, until?, count?, excludeHolidays?}",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "additionalProperties": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    }
+                }
+            },
+            "Event.UpdateEventRequest.jsonMergePatch": {
+                "type": "object",
+                "description": "\u00c9v\u00e9nement / occurrence d'agenda expos\u00e9 (Lot 4 \u00a76.1). `GET /families/{id}/events` renvoie les\n**occurrences** sur [from, to] (une par occurrence de s\u00e9rie) ; `POST` cr\u00e9e un \u00e9v\u00e9nement ou une\ns\u00e9rie et renvoie l'\u00e9v\u00e9nement ma\u00eetre. `startsAt`/`endsAt` sont format\u00e9s en ISO 8601 avec offset du\nfuseau famille. Le param\u00e8tre `overlay=` est **r\u00e9serv\u00e9** (Lot 5, ignor\u00e9 ici).",
+                "properties": {
+                    "title": {
+                        "maxLength": 200,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "category": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "responsibleMembershipId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "childIds": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "wholeFamily": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ]
+                    },
+                    "location": {
+                        "maxLength": 255,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "description": {
+                        "maxLength": 2000,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "startsAt": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "endsAt": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "allDay": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ]
+                    },
+                    "recurrence": {
+                        "description": "{freq, until?, count?, excludeHolidays?} \u2014 pour scope=series.",
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "additionalProperties": {
+                            "type": [
+                                "string",
+                                "null"
+                            ]
+                        }
+                    },
+                    "recurrenceDate": {
+                        "description": "Date d'origine de l'occurrence cibl\u00e9e (scope=occurrence) ou pivot (scope=series).",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "expectedVersion": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "Event.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "seriesId": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "title": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "category": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "responsibleMembershipId": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "wholeFamily": {
+                                "default": false,
+                                "type": "boolean"
+                            },
+                            "childIds": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "location": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "description": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "startsAt": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "endsAt": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "allDay": {
+                                "default": false,
+                                "type": "boolean"
+                            },
+                            "recurrenceDate": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "isRecurring": {
+                                "default": false,
+                                "type": "boolean"
+                            },
+                            "isOverride": {
+                                "default": false,
+                                "type": "boolean"
+                            },
+                            "recurrence": {
+                                "type": [
+                                    "object",
+                                    "null"
+                                ],
+                                "additionalProperties": {
+                                    "anyOf": [
+                                        {
+                                            "type": "boolean"
+                                        },
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                ],
+                "description": "\u00c9v\u00e9nement / occurrence d'agenda expos\u00e9 (Lot 4 \u00a76.1). `GET /families/{id}/events` renvoie les\n**occurrences** sur [from, to] (une par occurrence de s\u00e9rie) ; `POST` cr\u00e9e un \u00e9v\u00e9nement ou une\ns\u00e9rie et renvoie l'\u00e9v\u00e9nement ma\u00eetre. `startsAt`/`endsAt` sont format\u00e9s en ISO 8601 avec offset du\nfuseau famille. Le param\u00e8tre `overlay=` est **r\u00e9serv\u00e9** (Lot 5, ignor\u00e9 ici)."
+            },
             "Family": {
                 "type": "object",
                 "description": "Repr\u00e9sentation d'une famille du point de vue du membre courant (US-ONB-1, US-HOME-1).\n`role`/`isAdmin` refl\u00e8tent la perspective de l'utilisateur connect\u00e9 dans cette famille.",
@@ -5041,6 +5806,18 @@
                         "default": false,
                         "type": "boolean"
                     },
+                    "handoverWeekday": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "handoverTime": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "role": {
                         "default": "",
                         "type": "string"
@@ -5062,14 +5839,20 @@
                     "name": {
                         "minLength": 1,
                         "maxLength": 120,
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "type": {
                         "enum": [
                             "separated",
                             "intact"
                         ],
-                        "type": "string"
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     }
                 }
             },
@@ -5187,6 +5970,18 @@
                             "hasCustody": {
                                 "default": false,
                                 "type": "boolean"
+                            },
+                            "handoverWeekday": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "handoverTime": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
                             },
                             "role": {
                                 "default": "",
@@ -6633,6 +7428,10 @@
     },
     "security": [],
     "tags": [
+        {
+            "name": "Event",
+            "description": "\u00c9v\u00e9nement / occurrence d'agenda expos\u00e9 (Lot 4 \u00a76.1). `GET /families/{id}/events` renvoie les\n**occurrences** sur [from, to] (une par occurrence de s\u00e9rie) ; `POST` cr\u00e9e un \u00e9v\u00e9nement ou une\ns\u00e9rie et renvoie l'\u00e9v\u00e9nement ma\u00eetre. `startsAt`/`endsAt` sont format\u00e9s en ISO 8601 avec offset du\nfuseau famille. Le param\u00e8tre `overlay=` est **r\u00e9serv\u00e9** (Lot 5, ignor\u00e9 ici)."
+        },
         {
             "name": "ForgotPasswordRequest",
             "description": "US-AUTH-2 sc.8 \u2014 demande de reset (r\u00e9ponse toujours g\u00e9n\u00e9rique, anti-\u00e9num\u00e9ration, rate-limit\u00e9)."

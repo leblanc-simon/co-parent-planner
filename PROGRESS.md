@@ -17,7 +17,7 @@ Dernière mise à jour : **2026-07-01** — **Lot 3 TERMINÉ** (garde). **Lot 4 
 
 **Lot 3 — Garde (moteur + vacances)** (`specs/lots/lot-3-*.md`) : ✅ **TERMINÉ** (backend + moteur + adaptateur vacances + async/scheduler + endpoints + contrat OpenAPI + client Dart + UI web + E2E + temps réel + UI mobile + **revue de code + corrections**).
 
-**Lot 4 — Agenda** (`specs/lots/lot-4-agenda.md`) : 🟡 **EN COURS** — **Étapes A (backend) + C (UI web) + D (UI mobile) TERMINÉES**.
+**Lot 4 — Agenda** (`specs/lots/lot-4-agenda.md`) : ✅ **TERMINÉ** — backend + moteur + endpoints + UI web + UI mobile + E2E + temps réel + revue de code adversariale.
 - **UI mobile** : feature `lib/features/agenda` — `AgendaRepository` (+ providers scopés famille), `AgendaScreen` (occurrences du mois groupées par jour, pastilles catégorie §8, `CategoryPill`), formulaire de création (ponctuel : titre, catégorie, responsable, cible enfant(s)/famille, all-day, date/heure → ISO 8601 avec offset appareil, lieu), bloc « À venir » (4 prochains) sur `HomeTab`. Onglet Agenda déjà dans le shell. Client `events` ajouté à `ApiClients`. **Contrainte assumée** : création limitée aux ponctuels (le modèle généré `recurrence` = `Map<String,String?>` perd le typage int/bool ; séries et édition par portée = web ; offline riche = Lot 8, §0.3). **120 tests mobiles** verts, couverture **78,5 %** (≥70 %), `dart analyze`/`format` propres, client généré sans drift. i18n ARB `agenda*`/`cat*`.
 - **UI web** : écran `/agenda` (`AgendaController` + `app/agenda.html.twig`) — occurrences groupées par jour, filtres catégorie (pills §8), formulaire création (ponctuel/série, all-day, récurrence until|count, exclusion vacances), édition par portée (occurrence/série) et suppression via Stimulus `agenda` (datetime-local → ISO 8601 avec offset), `turbo-stream-source` + cookie Mercure agenda. Onglet « Agenda » dans la sidebar (tous types de famille). Bloc « À venir » (4 prochains) sur l'Accueil (`HomeController` + `UpcomingEventsFinder`, masqué si agenda=none). Backend **209 tests** (WebPagesTest : `/agenda` vide + avec événement + accueil « À venir »), couverture 85,7 %, PHPStan/cs-fixer/lint Twig verts.
 - **Modèle** : entité `Event` (ponctuel/série, overrides+EXDATE rattachés par `series_id`, `whole_family`, verrou optimiste, `idempotency_key`), table de liaison `event_child` (N-N, 1er ManyToMany du projet — cf. §5.2), enums `EventCategory`/`RecurrenceFreq` ; migration `Version20260701192550` (FK famille/enfant CASCADE, responsable/auteur SET NULL, index uniques partiels override/EXDATE/idempotency). Schéma en sync (dev+test).
@@ -25,8 +25,9 @@ Dernière mise à jour : **2026-07-01** — **Lot 3 TERMINÉ** (garde). **Lot 4 
 - **Endpoints** : `GET/POST /families/{id}/events`, `PATCH/DELETE /events/{id}?scope=occurrence|series` ; Voter `agenda` (existant) via `AgendaAccess`, scope `X-Family-Id`, RFC 7807 (`AgendaInputException`/`NotFound`/`Conflict`), `Idempotency-Key` (durable en base), verrou optimiste `expectedVersion`→409. Topic Mercure `/families/{id}/agenda` ajouté aux claims (`agenda ≥ view`).
 - **Tests** : unitaires expansion (13), intégration reader (3), matrice Voter agenda (RBAC), fonctionnels API (32 : CRUD, override/EXDATE, scission, validations 422, idempotence, autz, scope, régressions de revue). **Backend 207 tests / 1609 assertions, couverture 85,3 %**, PHPStan niv.8 (0), cs-fixer. OpenAPI exporté + client Dart régénéré (event_client), mobile 116 tests verts. Registre RGPD à jour (Event/event_child documentés, aucun champ `#[PersonalData]`/🔒 introduit — décision §5/§7). i18n `agenda.*` ICU.
 - **Revue de code adversariale (backend)** : workflow 7 dimensions → vérification adversariale. **6 constats confirmés, tous corrigés** : **P1** idempotence concurrente (Idempotency-Key : 500 → 201 rejoué, sérialisée par `pg_advisory_xact_lock`) ; **P2** overrides orphelins après changement de `freq` (ignorés au rendu §4.11), scission `freq=none` (le « tail » dégénère proprement en ponctuel), verrou optimiste TOCTOU (`em->lock(OPTIMISTIC)` + capture `OptimisticLockException` → 409), titre en espaces (422 après trim), dates non-ISO8601/sans offset (422). 2 P3 réfutés (timestamptz vs timestamp = précédent Lot 3 accepté ; `findBySeriesId` non scopé = tous les appelants passent déjà un maître scopé).
+- **E2E web** : `tests/lot4-agenda.spec.ts` (création événement, série hebdo, filtre catégorie, édition, suppression, « À venir » Accueil). **Playwright 13/13 verts.** Temps réel non testé en E2E (hub Mercure absent de la stack `e2e-local.sh`, comme au Lot 3) — couvert côté backend (`RealtimeTokenTest` topic agenda + `AgendaPublisher`).
+- **Correctif i18n** trouvé par l'E2E : une chaîne YAML mal échappée (`\'` en apostrophes simples au lieu de `''`/double-quotes) cassait le parsing du catalogue fr → échec de l'e-mail d'inscription (async→sync en E2E). Corrigé + garde-fou `TranslationCatalogTest` (les tests fonctionnels ne parsaient pas le catalogue).
 - **Fixtures démo** : différées (cohérent avec Lots 2-3, `AppFixtures` stub ; seeding manuel dans les tests).
-- **Reste Lot 4** : E2E Playwright (parcours web agenda + temps réel 2 contextes).
 
 - **Backend** : **158 tests / 1137 assertions**, couverture **85,6 %** (≥80 %), PHPStan niv.8, cs-fixer, schéma en sync.
 - **Mobile** : feature `custody` (repo + providers scopés + écran calendrier + écran Paramètres › Garde). **116 tests** verts, couverture **78,3 %** (≥70 %), `dart analyze`/`format` propres, client sans drift.
@@ -234,6 +235,17 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-07-01 — Lot 4 (agenda) : Étape E — E2E Playwright + clôture du lot
+- `tests/lot4-agenda.spec.ts` : création événement, série hebdo, filtre catégorie, édition, suppression,
+  « À venir » Accueil. **13/13 E2E verts.** Temps réel hors stack E2E (Mercure absent) — couvert backend.
+- **Bug attrapé par l'E2E** : chaîne YAML `recurrence_too_long` mal échappée (`\'` en single-quote)
+  cassait le catalogue fr → e-mail d'inscription en échec (async→sync en E2E) → tous les parcours KO.
+  Corrigé (double-quotes) + garde-fou `TranslationCatalogTest` (parse effectif du catalogue).
+- Fragilités E2E corrigées : filtre via `toHaveCount` sur `.agenda-event` (liste absente si vide),
+  édition/suppression via `dispatchEvent` (le clic natif se détache au `reload` Stimulus), locator CSS
+  pour un bouton dans un `<details>` replié (hors arbre d'accessibilité).
+- **Lot 4 clos.** Backend 210 tests / couverture 85,7 % ; mobile 120 tests / 78,5 % ; E2E 13/13.
 
 ### 2026-07-01 — Lot 4 (agenda) : Étape D — UI mobile
 - Feature Flutter `lib/features/agenda` : repository + providers scopés, `AgendaScreen` (liste groupée

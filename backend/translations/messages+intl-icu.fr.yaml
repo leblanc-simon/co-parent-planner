@@ -132,7 +132,7 @@ agenda:
         recurrence_unbounded: "Une série doit préciser une date de fin ou un nombre d'occurrences."
         recurrence_count_invalid: "Le nombre d'occurrences est invalide."
         recurrence_until_before_start: "La date de fin de récurrence est antérieure au début."
-        recurrence_too_long: 'La série produit trop d\'occurrences.'
+        recurrence_too_long: "La série produit trop d'occurrences."
         scope_required: 'La portée (occurrence ou série) est requise pour un événement récurrent.'
         scope_invalid: 'Portée invalide (attendu : occurrence ou series).'
         occurrence_invalid: "La date ne correspond à aucune occurrence de la série."

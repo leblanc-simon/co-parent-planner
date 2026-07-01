@@ -4,14 +4,20 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\Family;
+use App\Entity\Membership;
 use App\Entity\User;
+use App\Enum\OverlayView;
 use App\Enum\RightDomain;
 use App\Enum\RightLevel;
 use App\Repository\CustodyDayRepository;
 use App\Repository\CustodyExceptionRepository;
 use App\Repository\CustodyPatternRepository;
+use App\Repository\FamilyLinkRepository;
 use App\Repository\MembershipRepository;
+use App\Repository\OverlayPreferenceRepository;
 use App\Repository\SchoolHolidayRepository;
+use App\Service\Agenda\OverlayReader;
 use App\Service\Custody\CustodyStatsCalculator;
 use App\Web\ActiveFamilyResolver;
 use Psr\Clock\ClockInterface;
@@ -39,6 +45,9 @@ final class GardeController extends AbstractController
         private readonly SchoolHolidayRepository $holidays,
         private readonly MembershipRepository $memberships,
         private readonly CustodyStatsCalculator $stats,
+        private readonly OverlayReader $overlayReader,
+        private readonly FamilyLinkRepository $familyLinks,
+        private readonly OverlayPreferenceRepository $overlayPreferences,
         private readonly ClockInterface $clock,
         private readonly HubInterface $hub,
     ) {
@@ -89,7 +98,13 @@ final class GardeController extends AbstractController
             $daysByDate[$d->getDate()->format('Y-m-d')] = $d;
         }
 
+        // Pastilles d'activité de la famille liée (US-CUST-5, overlay garde §3.4).
+        [$overlayLinks, $enabledFamilyIds] = $this->overlayGardeLinks($family, $active);
+        $overlayBadges = [] === $enabledFamilyIds ? [] : $this->overlayBadges($family, $enabledFamilyIds, $monthStart, $monthEnd);
+
         $response = $this->render('app/garde.html.twig', [
+            'overlayLinks' => $overlayLinks,
+            'overlayBadges' => $overlayBadges,
             'memberships' => $memberships,
             'activeMembership' => $active,
             'family' => $family,
@@ -170,5 +185,71 @@ final class GardeController extends AbstractController
         $months = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 
         return $months[(int) $d->format('n')].' '.$d->format('Y');
+    }
+
+    /**
+     * Liens actifs + activation overlay **garde** du membre courant (US-CUST-5).
+     *
+     * @return array{0: list<array{linkId: string, name: string, enabled: bool}>, 1: list<string>}
+     */
+    private function overlayGardeLinks(Family $family, Membership $membership): array
+    {
+        /** @var array<string, bool> $prefs */
+        $prefs = [];
+        foreach ($this->overlayPreferences->findByMembership($membership) as $preference) {
+            if (OverlayView::Custody === $preference->getView()) {
+                $prefs[(string) $preference->getFamilyLink()->getId()] = $preference->isEnabled();
+            }
+        }
+
+        $links = [];
+        $enabledFamilyIds = [];
+        foreach ($this->familyLinks->findForFamily($family) as $link) {
+            if (!$link->getStatus()->isActive()) {
+                continue;
+            }
+            $linkId = (string) $link->getId();
+            $enabled = $prefs[$linkId] ?? false;
+            $other = $link->otherFamily($family);
+            $links[] = ['linkId' => $linkId, 'name' => $other->getName(), 'enabled' => $enabled];
+            if ($enabled) {
+                $enabledFamilyIds[] = (string) $other->getId();
+            }
+        }
+
+        return [$links, $enabledFamilyIds];
+    }
+
+    /**
+     * Pastilles d'activité par jour (§3.4) : nombre d'événements de la famille liée par jour couvert,
+     * dans le fuseau de la famille active. Ne touche jamais la garde (dérivé des événements projetés).
+     *
+     * @param list<string> $enabledFamilyIds
+     *
+     * @return array<string, int> date locale (Y-m-d) → nombre d'activités
+     */
+    private function overlayBadges(Family $family, array $enabledFamilyIds, \DateTimeImmutable $monthStart, \DateTimeImmutable $monthEnd): array
+    {
+        $utc = new \DateTimeZone('UTC');
+        $events = $this->overlayReader->overlayEvents(
+            $family,
+            implode(',', $enabledFamilyIds),
+            $monthStart->setTime(0, 0)->setTimezone($utc),
+            $monthEnd->setTime(23, 59, 59)->setTimezone($utc),
+            null,
+        );
+
+        $badges = [];
+        foreach ($events as $event) {
+            $cursor = new \DateTimeImmutable(substr($event->startsAt, 0, 10));
+            $last = new \DateTimeImmutable(substr($event->endsAt ?? $event->startsAt, 0, 10));
+            while ($cursor <= $last) {
+                $key = $cursor->format('Y-m-d');
+                $badges[$key] = ($badges[$key] ?? 0) + 1;
+                $cursor = $cursor->modify('+1 day');
+            }
+        }
+
+        return $badges;
     }
 }

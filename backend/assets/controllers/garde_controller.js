@@ -92,6 +92,16 @@ export default class extends Controller {
         this._send('PUT', `/api/holidays/${f.dataset.holidayId}/rule`, { kind, params });
     }
 
+    // Overlay famille liée (US-CUST-5) : persiste la préférence garde du membre puis recharge.
+    toggleOverlay(event) {
+        const el = event.currentTarget;
+        this._send('PUT', `/api/families/${this.familyIdValue}/overlay-preferences`, {
+            familyLinkId: el.dataset.linkId,
+            view: el.dataset.view || 'custody',
+            enabled: el.checked,
+        });
+    }
+
     async _send(method, url, body) {
         if (this.hasErrorTarget) this.errorTarget.hidden = true;
         try {

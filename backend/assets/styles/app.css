@@ -237,6 +237,8 @@ a:hover { text-decoration: underline; }
 .garde-day[role="button"]:hover { filter: brightness(0.97); }
 .garde-day__num { font-weight: 600; font-size: .85rem; }
 .garde-day__tag { position: absolute; bottom: .25rem; right: .35rem; font-size: .65rem; color: var(--muted); }
+/* Pastille d'activité de la famille liée (overlay §3.4), superposée sans masquer la couleur du parent. */
+.garde-day__overlay { position: absolute; top: .25rem; right: .3rem; width: 8px; height: 8px; border-radius: 50%; background: var(--linked); box-shadow: 0 0 0 1.5px var(--card); }
 .garde-legend { display: flex; gap: 1.2rem; margin-top: .8rem; font-size: .8rem; color: var(--ink-2); }
 .garde-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: middle; }
 .garde-dot--a { background: var(--accent); }
@@ -280,3 +282,10 @@ a:hover { text-decoration: underline; }
 .agenda-edit__actions { display: flex; gap: .5rem; }
 .agenda-upcoming { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .5rem; }
 .agenda-upcoming li { display: flex; align-items: center; gap: .6rem; }
+
+/* ---------- Lot 5 : overlay famille liée (#9C6FB0) ---------- */
+.agenda-overlay-toggles { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: .8rem; padding-top: .8rem; border-top: 1px dashed var(--border-3); }
+.agenda-overlay-toggle { display: inline-flex; align-items: center; gap: .45rem; font-size: .88rem; color: var(--ink-2); cursor: pointer; }
+.agenda-linked-dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: var(--linked); vertical-align: middle; }
+.agenda-event.agenda-event--linked { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; padding: .6rem .8rem; background: #F7F1FA; border: 1px solid var(--linked); border-left-width: 4px; border-radius: 12px; }
+.agenda-linked-badge { font-size: .72rem; font-weight: 600; color: #fff; background: var(--linked); border-radius: var(--radius-pill); padding: .1rem .55rem; }

@@ -6,12 +6,16 @@ namespace App\Tests\Functional\Web;
 
 use App\Entity\Event;
 use App\Entity\Family;
+use App\Entity\FamilyLink;
 use App\Entity\Membership;
+use App\Entity\OverlayPreference;
 use App\Entity\User;
 use App\Enum\EventCategory;
+use App\Enum\FamilyLinkStatus;
 use App\Enum\FamilyType;
 use App\Enum\MembershipRole;
 use App\Enum\MembershipStatus;
+use App\Enum\OverlayView;
 use App\Enum\UserStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -201,6 +205,45 @@ final class WebPagesTest extends WebTestCase
         $client->request('GET', '/');
         self::assertResponseIsSuccessful();
         self::assertStringContainsString('Cours de tennis', (string) $client->getResponse()->getContent());
+    }
+
+    public function testAgendaShowsLinkedFamilyOverlayWhenEnabled(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser($client, withFamily: true);
+        $this->login($client);
+
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $em);
+        self::assertInstanceOf(UserPasswordHasherInterface::class, $hasher);
+        $familyA = $em->getRepository(Family::class)->findOneBy(['name' => 'Famille Web']);
+        self::assertInstanceOf(Family::class, $familyA);
+        $membershipA = $em->getRepository(Membership::class)->findOneBy(['family' => $familyA]);
+        self::assertInstanceOf(Membership::class, $membershipA);
+
+        // Famille liée B + événement futur + lien actif + préférence overlay agenda activée.
+        $start = Clock::get()->now()->setTimezone(new \DateTimeZone('Europe/Paris'))->modify('+2 days')->setTime(15, 30);
+        $familyB = (new Family())->setName('Foyer lié')->setType(FamilyType::Separated);
+        $userB = (new User())->setEmail('web-b@example.com')->setStatus(UserStatus::Active)->setEmailVerifiedAt(Clock::get()->now());
+        $userB->setPasswordHash($hasher->hashPassword($userB, self::PASSWORD));
+        $membershipB = (new Membership())->setUser($userB)->setFamily($familyB)->setRole(MembershipRole::Parent)->setStatus(MembershipStatus::Active);
+        $eventB = (new Event())->setFamily($familyB)->setTitle('Judo du second foyer')->setCategory(EventCategory::Sport)
+            ->setResponsibleMembership($membershipB)->setWholeFamily(true)->setStartsAt($start->setTimezone(new \DateTimeZone('UTC')));
+        $link = (new FamilyLink($familyA, $familyB, null))->setStatus(FamilyLinkStatus::Active);
+        $pref = (new OverlayPreference())->setMembership($membershipA)->setFamilyLink($link)->setView(OverlayView::Agenda)->setEnabled(true);
+        foreach ([$familyB, $userB, $membershipB, $eventB, $link, $pref] as $entity) {
+            $em->persist($entity);
+        }
+        $em->flush();
+
+        $client->request('GET', '/agenda?month='.$start->format('Y-m'));
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('Judo du second foyer', $html); // événement lié fusionné
+        self::assertStringContainsString('Famille liée', $html); // badge overlay
+        self::assertStringContainsString('Overlay famille liée', $html); // toggle
     }
 
     public function testGardePageRendersForSeparatedFamily(): void

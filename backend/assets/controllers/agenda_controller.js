@@ -101,6 +101,16 @@ export default class extends Controller {
         this._send('DELETE', url, null);
     }
 
+    // Overlay famille liée (US-AG-4) : persiste la préférence du membre puis recharge.
+    toggleOverlay(event) {
+        const el = event.currentTarget;
+        this._send('PUT', `/api/families/${this.familyIdValue}/overlay-preferences`, {
+            familyLinkId: el.dataset.linkId,
+            view: el.dataset.view || 'agenda',
+            enabled: el.checked,
+        });
+    }
+
     _val(form, name) {
         const el = form.querySelector(`[name="${name}"]`);
         return el ? el.value : '';

@@ -25,6 +25,21 @@
     {# Abonnement temps réel : un changement de garde rafraîchit la page (Turbo Stream). #}
     <turbo-stream-source src="{{ mercureHub }}?topic={{ custodyTopic|url_encode }}"></turbo-stream-source>
 
+    {# ───────── Overlay familles liées : pastilles d'activité (US-CUST-5) ───────── #}
+    {% if overlayLinks is defined and overlayLinks is not empty %}
+    <section class="card" style="margin-bottom:1.25rem">
+        <div class="agenda-overlay-toggles" style="border-top:none;padding-top:0;margin-top:0">
+            {% for link in overlayLinks %}
+            <label class="agenda-overlay-toggle">
+                <input type="checkbox" {{ link.enabled ? 'checked' }}
+                       data-action="change->garde#toggleOverlay" data-link-id="{{ link.linkId }}" data-view="custody">
+                <span><i class="agenda-linked-dot"></i> Overlay famille liée · {{ link.name }}</span>
+            </label>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
     {% if pattern is null %}
         <section class="card">
             <p class="empty-state">Aucun rythme de garde configuré.</p>
@@ -51,6 +66,7 @@
                          {% endif %}>
                         <span class="garde-day__num">{{ cell.day }}</span>
                         {% if cell.source == 'holiday' %}<span class="garde-day__tag">vac.</span>{% endif %}
+                        {% if overlayBadges is defined and overlayBadges[cell.date] is defined %}<span class="garde-day__overlay" title="Famille liée"></span>{% endif %}
                     </div>
                 {% endfor %}
             {% endfor %}

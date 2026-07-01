@@ -19,7 +19,9 @@ Dernière mise à jour : **2026-07-01** — **Lot 3 TERMINÉ** (garde). **Lot 4 
 
 **Lot 4 — Agenda** (`specs/lots/lot-4-agenda.md`) : ✅ **TERMINÉ** — backend + moteur + endpoints + UI web + UI mobile + E2E + temps réel + revue de code adversariale.
 
-**Lot 5 — Familles liées & overlay** (`specs/lots/lot-5-familles-liees-overlay.md`) : 🟡 **EN COURS** — **Étape A (backend) + contrat TERMINÉS**.
+**Lot 5 — Familles liées & overlay** (`specs/lots/lot-5-familles-liees-overlay.md`) : 🟡 **EN COURS** — **Étapes A (backend) + contrat + C (UI web) TERMINÉES**.
+- **UI web** : `/agenda` — toggle « Overlay famille liée » par lien actif (Stimulus `toggleOverlay` → PUT préférence + reload), événements liés en **lecture seule** (badge « Famille liée », couleur `#9C6FB0`), fusion par jour, état vide localisé. `/garde` — pastilles d'activité `#9C6FB0` par jour (dérivées des événements projetés, garde jamais modifiée) + toggle custody. CSS `--linked`. **Note** : libellés overlay hardcodés en FR dans les Twig (cohérent avec l'UI web existante, 100 % hardcodée ; l'API et le mobile utilisent l'i18n). WebPagesTest : rendu overlay (événement lié + badge + toggle). Backend **218 tests**, couverture 85,6 %.
+- **Reste Lot 5** : UI mobile (overlay agenda + pastilles garde), E2E.
 - **Modèle** : entité `OverlayPreference` (opt-in par membre/lien/vue, unicité `(membership,link,view)`) ; migration `Version20260701213830`.
 - **Habilitation & projection** : `FamilyLinkRepository::findActiveBetween` (bidirectionnel, refuse soi/pending) ; `OverlayReader` (résolution multi-liens, 422 uniforme si tous invalides, dédup par identité de lien) ; **projection anti-fuite `OverlayEventResource`** (uniquement horaires/catégorie/titre + source=linked/#9C6FB0/editable=false ; **aucun** enfant/responsable/description/lieu/série/id). Activation du `?overlay=` dans `EventsProvider` (fusion + tri), expansion en fuseau B → affichage fuseau A.
 - **Endpoints** : `GET/PUT /families/{id}/overlay-preferences` (scopé membre courant, upsert idempotent sérialisé par advisory lock = last-write-wins §4.2, valide lien actif). RO strict : aucune route d'écriture overlay ; mutation cross-famille refusée (scope). Garde jamais modifiée (pastilles dérivées des événements projetés).
@@ -243,6 +245,15 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-07-02 — Lot 5 (overlay) : Étape C — UI web
+- `/agenda` : toggle overlay par lien actif (PUT préférence + reload via Stimulus), événements liés RO
+  (badge « Famille liée », `#9C6FB0`), fusion/tri par jour, état vide. `/garde` : pastilles d'activité
+  `#9C6FB0` par jour + toggle custody (garde jamais modifiée). CSS `--linked`.
+- Piège : les libellés overlay via `|trans` rendaient la clé brute en test (l'UI web du projet hardcode
+  le FR partout, `trans` peu fiable côté web) → libellés hardcodés dans les Twig (cohérent), i18n conservé
+  pour l'API/mobile. WebPagesTest overlay vert.
+- Portes : backend **218 tests / 1772 assertions, couverture 85,6 %**, PHPStan niv.8, cs-fixer, lint Twig.
 
 ### 2026-07-01 — Lot 5 (familles liées / overlay) : Étape A — backend + contrat
 - Entité `OverlayPreference` + migration ; `FamilyLinkRepository::findActiveBetween` (bidirectionnel).

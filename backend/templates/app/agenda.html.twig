@@ -39,6 +39,18 @@
                    href="{{ path('app_agenda', { month: monthValue, category: c.value }) }}">{{ catLabel[c.value] }}</a>
             {% endfor %}
         </div>
+        {# ───────── Overlay familles liées (US-AG-4) ───────── #}
+        {% if overlayLinks is not empty %}
+        <div class="agenda-overlay-toggles">
+            {% for link in overlayLinks %}
+            <label class="agenda-overlay-toggle">
+                <input type="checkbox" {{ link.enabled ? 'checked' }}
+                       data-action="change->agenda#toggleOverlay" data-link-id="{{ link.linkId }}" data-view="agenda">
+                <span><i class="agenda-linked-dot"></i> Overlay famille liée · {{ link.name }}</span>
+            </label>
+            {% endfor %}
+        </div>
+        {% endif %}
     </section>
 
     {# ───────── Création ───────── #}
@@ -142,9 +154,21 @@
                         </details>
                     </li>
                     {% endfor %}
+                    {# ── Événements de la famille liée (overlay, lecture seule §3.3) ── #}
+                    {% for ov in day.overlay %}
+                    <li class="agenda-event agenda-event--linked">
+                        <span class="agenda-linked-badge">Famille liée</span>
+                        <span class="agenda-event__time">{% if ov.allDay %}Journée{% else %}{{ ov.startsAt|date('H:i', timezone) }}{% endif %}</span>
+                        <strong class="agenda-event__title">{{ ov.title }}</strong>
+                        <span class="pill" style="color: var(--linked); background: #EFE6F4">{{ catLabel[ov.category]|default(catLabel['autre']) }}</span>
+                    </li>
+                    {% endfor %}
                 </ul>
             </div>
             {% endfor %}
+        {% endif %}
+        {% if overlayActive and overlayCount == 0 %}
+            <p class="empty-state">Aucune activité de la famille liée sur cette période.</p>
         {% endif %}
     </section>
 </div>

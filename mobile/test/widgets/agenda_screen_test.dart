@@ -1,5 +1,6 @@
 import 'package:coparentplanner/api/generated/export.dart' as api;
 import 'package:coparentplanner/features/agenda/data/agenda_repository.dart';
+import 'package:coparentplanner/features/agenda/data/overlay_repository.dart';
 import 'package:coparentplanner/features/agenda/presentation/agenda_screen.dart';
 import 'package:coparentplanner/features/children/data/children_repository.dart';
 import 'package:coparentplanner/features/family/application/family_context.dart';
@@ -34,6 +35,7 @@ void main() {
 
   List<Override> overrides() => [
     agendaRepositoryProvider.overrideWithValue(repo),
+    overlayRepositoryProvider.overrideWithValue(emptyOverlayRepository()),
     membersRepositoryProvider.overrideWithValue(membersRepo),
     childrenRepositoryProvider.overrideWithValue(childrenRepo),
     familyContextProvider.overrideWith(_FixedFamilyContext.new),

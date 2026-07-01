@@ -611,4 +611,19 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get catOther => 'Autre';
+
+  @override
+  String get overlaySectionTitle => 'Overlay familles liées';
+
+  @override
+  String get overlayLinkedFamily => 'Famille liée';
+
+  @override
+  String overlayToggle(String name) {
+    return 'Overlay famille liée · $name';
+  }
+
+  @override
+  String get overlayEmpty =>
+      'Aucune activité de la famille liée sur cette période.';
 }

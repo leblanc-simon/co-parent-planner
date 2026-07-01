@@ -1,4 +1,5 @@
 import 'package:coparentplanner/api/generated/export.dart' as api;
+import 'package:coparentplanner/features/agenda/data/overlay_repository.dart';
 import 'package:coparentplanner/features/custody/data/custody_repository.dart';
 import 'package:coparentplanner/features/custody/presentation/custody_screen.dart';
 import 'package:coparentplanner/features/custody/presentation/custody_settings_screen.dart';
@@ -69,6 +70,7 @@ void main() {
 
   List<Override> overrides({bool intact = false}) => [
     custodyRepositoryProvider.overrideWithValue(repo),
+    overlayRepositoryProvider.overrideWithValue(emptyOverlayRepository()),
     membersRepositoryProvider.overrideWithValue(membersRepo),
     familyContextProvider.overrideWith(
       intact ? _IntactFamilyContext.new : _FixedFamilyContext.new,

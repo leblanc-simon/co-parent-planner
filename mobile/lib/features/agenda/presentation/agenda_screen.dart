@@ -12,11 +12,16 @@ import '../../children/data/children_repository.dart';
 import '../../family/application/family_context.dart';
 import '../../members/data/members_repository.dart';
 import '../data/agenda_repository.dart';
+import '../data/overlay_repository.dart';
 
 /// US-AG-3/9 — écran Agenda mobile : occurrences du mois courant groupées par jour,
 /// avec pastilles de catégorie (§8). Création d'événements **ponctuels** via un
 /// formulaire ; les séries s'affichent mais leur création/édition par portée reste
 /// web au Lot 4 (offline riche consolidé au Lot 8).
+///
+/// Overlay familles liées (Lot 5, US-AG-4) : un toggle par lien actif superpose, en
+/// **lecture seule**, les événements projetés de la famille liée (badge « Famille liée »,
+/// couleur #9C6FB0). Aucune donnée enfant/responsable/lieu n'est exposée (§3.6).
 class AgendaScreen extends ConsumerWidget {
   const AgendaScreen({super.key});
 
@@ -25,6 +30,10 @@ class AgendaScreen extends ConsumerWidget {
     final l = AppL10n.of(context);
     final family = ref.watch(familyContextProvider);
     final eventsAsync = ref.watch(familyEventsProvider);
+    // Best-effort : un échec de lecture overlay ne doit pas casser l'agenda propre.
+    final overlay = ref
+        .watch(overlayEventsProvider)
+        .maybeWhen(data: (o) => o, orElse: () => const <OverlayEvent>[]);
 
     return Scaffold(
       appBar: AppBar(title: Text(l.agendaTitle)),
@@ -44,21 +53,58 @@ class AgendaScreen extends ConsumerWidget {
         ),
         data: (events) => RefreshIndicator(
           onRefresh: () async {
-            ref.invalidate(familyEventsProvider);
+            ref
+              ..invalidate(familyEventsProvider)
+              ..invalidate(activeLinksProvider)
+              ..invalidate(overlayPreferencesProvider)
+              ..invalidate(overlayEventsProvider);
             await ref.read(familyEventsProvider.future);
           },
-          child: events.isEmpty
-              ? ListView(
-                  padding: const EdgeInsets.all(24),
-                  children: [
-                    const SizedBox(height: 40),
-                    Center(child: Text(l.agendaEmpty)),
-                  ],
-                )
-              : _EventList(events: events),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+            children: [
+              const _OverlayToggles(),
+              if (events.isEmpty && overlay.isEmpty) ...[
+                const SizedBox(height: 40),
+                Center(child: Text(l.agendaEmpty)),
+              ] else
+                ..._buildDays(context, events, overlay),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  /// Fusionne, par jour local (fuseau famille = substring(0, 10)), les occurrences propres
+  /// et les événements overlay (union des jours). Les événements overlay sont en lecture seule.
+  static List<Widget> _buildDays(
+    BuildContext context,
+    List<api.Event> events,
+    List<OverlayEvent> overlay,
+  ) {
+    final ownByDay = <String, List<api.Event>>{};
+    for (final e in events) {
+      (ownByDay[e.startsAt.substring(0, 10)] ??= []).add(e);
+    }
+    final overlayByDay = <String, List<OverlayEvent>>{};
+    for (final o in overlay) {
+      if (o.startsAt.length >= 10) {
+        (overlayByDay[o.startsAt.substring(0, 10)] ??= []).add(o);
+      }
+    }
+    final keys = <String>{...ownByDay.keys, ...overlayByDay.keys}.toList()..sort();
+
+    return [
+      for (final key in keys) ...[
+        Padding(
+          padding: const EdgeInsets.only(top: 12, bottom: 6),
+          child: Text(_frenchDay(key), style: AppTypography.textTheme.titleMedium),
+        ),
+        for (final e in ownByDay[key] ?? const <api.Event>[]) _EventTile(event: e),
+        for (final o in overlayByDay[key] ?? const <OverlayEvent>[]) _LinkedEventTile(event: o),
+      ],
+    ];
   }
 
   static void _openForm(BuildContext context) {
@@ -66,37 +112,6 @@ class AgendaScreen extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       builder: (_) => const _EventForm(),
-    );
-  }
-}
-
-class _EventList extends StatelessWidget {
-  const _EventList({required this.events});
-
-  final List<api.Event> events;
-
-  @override
-  Widget build(BuildContext context) {
-    // Le serveur renvoie startsAt dans le fuseau famille : la date locale = substring(0, 10).
-    final byDay = <String, List<api.Event>>{};
-    for (final e in events) {
-      (byDay[e.startsAt.substring(0, 10)] ??= []).add(e);
-    }
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-      children: [
-        for (final entry in byDay.entries) ...[
-          Padding(
-            padding: const EdgeInsets.only(top: 12, bottom: 6),
-            child: Text(
-              _frenchDay(entry.key),
-              style: AppTypography.textTheme.titleMedium,
-            ),
-          ),
-          for (final e in entry.value) _EventTile(event: e),
-        ],
-      ],
     );
   }
 
@@ -127,6 +142,120 @@ class _EventList extends StatelessWidget {
       'décembre',
     ];
     return '${days[d.weekday - 1]} ${d.day} ${months[d.month]}';
+  }
+}
+
+/// Section « Overlay familles liées » : un toggle par lien actif, reflétant/écrivant la préférence
+/// (vue agenda) du membre. Masquée s'il n'existe aucun lien actif.
+class _OverlayToggles extends ConsumerWidget {
+  const _OverlayToggles();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppL10n.of(context);
+    final family = ref.watch(familyContextProvider);
+    final links = ref
+        .watch(activeLinksProvider)
+        .maybeWhen(data: (x) => x, orElse: () => const <api.FamilyLink>[]);
+    if (family == null || links.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final prefs = ref
+        .watch(overlayPreferencesProvider)
+        .maybeWhen(data: (p) => p, orElse: () => const <api.OverlayPreference>[]);
+    final enabled = <String, bool>{
+      for (final p in prefs)
+        if ('agenda' == p.view) p.familyLinkId: p.enabled,
+    };
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l.overlaySectionTitle, style: AppTypography.textTheme.titleMedium),
+          for (final link in links)
+            SwitchListTile(
+              key: ValueKey('overlay-toggle-${link.id}'),
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.circle, size: 12, color: AppColors.linked),
+              title: Text(l.overlayToggle(link.otherFamilyName)),
+              value: enabled[link.id] ?? false,
+              onChanged: (v) async {
+                final messenger = ScaffoldMessenger.of(context);
+                try {
+                  await ref
+                      .read(overlayRepositoryProvider)
+                      .setPreference(
+                        family.familyId,
+                        familyLinkId: link.id,
+                        view: 'agenda',
+                        enabled: v,
+                      );
+                  ref
+                    ..invalidate(overlayPreferencesProvider)
+                    ..invalidate(overlayEventsProvider);
+                } on ApiException catch (e) {
+                  messenger.showSnackBar(SnackBar(content: Text(e.message)));
+                }
+              },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Tuile d'un événement overlay (famille liée) : **lecture seule**, teinte #9C6FB0, badge
+/// « Famille liée ». Ne montre que l'heure, le titre et la catégorie (projection §3.6).
+class _LinkedEventTile extends StatelessWidget {
+  const _LinkedEventTile({required this.event});
+
+  final OverlayEvent event;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppL10n.of(context);
+    final time = event.allDay
+        ? l.agendaAllDayLabel
+        : (event.startsAt.length >= 16 ? event.startsAt.substring(11, 16) : '');
+
+    return AppCard(
+      child: Row(
+        children: [
+          Container(width: 3, height: 34, color: AppColors.linked),
+          const SizedBox(width: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: AppColors.linkedSoft,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              l.overlayLinkedFamily,
+              style: const TextStyle(
+                color: AppColors.linked,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 44,
+            child: Text(
+              time,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              event.title,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

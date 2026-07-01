@@ -8,6 +8,7 @@ import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../agenda/data/overlay_repository.dart';
 import '../../family/application/family_context.dart';
 import '../data/custody_repository.dart';
 import 'custody_settings_screen.dart';
@@ -109,15 +110,21 @@ class _CustodyBody extends ConsumerWidget {
     final statsAsync = ref.watch(familyCustodyStatsProvider);
     final exceptionsAsync = ref.watch(familyCustodyExceptionsProvider);
     final holidaysAsync = ref.watch(familyHolidaysProvider);
+    // Overlay familles liées (Lot 5) : pastilles d'activité, best-effort (n'impacte pas la garde).
+    final overlayDates = ref
+        .watch(overlayGardeDatesProvider)
+        .maybeWhen(data: (d) => d, orElse: () => const <String>{});
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
+        const _OverlayGardeToggles(),
         daysAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) =>
               ErrorBanner(e is ApiException ? e.message : e.toString()),
-          data: (days) => _Calendar(pattern: pattern, days: days),
+          data: (days) =>
+              _Calendar(pattern: pattern, days: days, overlayDates: overlayDates),
         ),
         const SizedBox(height: 12),
         const _Legend(),
@@ -226,10 +233,15 @@ class _ImportHolidaysButtonState extends ConsumerState<_ImportHolidaysButton> {
 /// Calendrier mensuel : grille lundi→dimanche bâtie à partir des jours renvoyés
 /// (déterministe, sans dépendre de l'horloge).
 class _Calendar extends ConsumerWidget {
-  const _Calendar({required this.pattern, required this.days});
+  const _Calendar({
+    required this.pattern,
+    required this.days,
+    this.overlayDates = const {},
+  });
 
   final api.CustodyPattern pattern;
   final List<api.CustodyDay> days;
+  final Set<String> overlayDates;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -270,6 +282,7 @@ class _Calendar extends ConsumerWidget {
           dayNumber: cursor.day,
           day: day,
           slot: _slotFor(day),
+          hasOverlay: day != null && overlayDates.contains(key),
         ),
       );
       cursor = DateTime(cursor.year, cursor.month, cursor.day + 1);
@@ -350,12 +363,14 @@ class _DayCell extends ConsumerWidget {
     required this.dayNumber,
     required this.day,
     required this.slot,
+    this.hasOverlay = false,
   });
 
   final String dateKey;
   final int dayNumber;
   final api.CustodyDay? day;
   final String? slot;
+  final bool hasOverlay;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -406,6 +421,13 @@ class _DayCell extends ConsumerWidget {
                 color: AppColors.catSchool,
               ),
             ),
+          // Pastille d'activité de la famille liée (overlay §3.3) — superposée, ne masque
+          // jamais la couleur de garde du parent.
+          if (hasOverlay)
+            Align(
+              alignment: Alignment.bottomLeft,
+              child: _OverlayDot(key: ValueKey('overlay-dot-$dateKey')),
+            ),
         ],
       ),
     );
@@ -452,7 +474,86 @@ class _Legend extends StatelessWidget {
           label: l.custodyHoliday,
           icon: Icons.beach_access,
         ),
+        _LegendItem(color: AppColors.linked, label: l.overlayLinkedFamily),
       ],
+    );
+  }
+}
+
+/// Petite pastille ronde signalant une activité de famille liée sur un jour de garde.
+class _OverlayDot extends StatelessWidget {
+  const _OverlayDot({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 6,
+      height: 6,
+      decoration: const BoxDecoration(
+        color: AppColors.linked,
+        shape: BoxShape.circle,
+      ),
+    );
+  }
+}
+
+/// Section « Overlay familles liées » (vue garde) : un toggle par lien actif, reflétant/écrivant
+/// la préférence (vue garde) du membre. Masquée s'il n'existe aucun lien actif.
+class _OverlayGardeToggles extends ConsumerWidget {
+  const _OverlayGardeToggles();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppL10n.of(context);
+    final family = ref.watch(familyContextProvider);
+    final links = ref
+        .watch(activeLinksProvider)
+        .maybeWhen(data: (x) => x, orElse: () => const <api.FamilyLink>[]);
+    if (family == null || links.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final prefs = ref
+        .watch(overlayPreferencesProvider)
+        .maybeWhen(data: (p) => p, orElse: () => const <api.OverlayPreference>[]);
+    final enabled = <String, bool>{
+      for (final p in prefs)
+        if ('garde' == p.view) p.familyLinkId: p.enabled,
+    };
+
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l.overlaySectionTitle, style: AppTypography.textTheme.titleMedium),
+          for (final link in links)
+            SwitchListTile(
+              key: ValueKey('overlay-garde-toggle-${link.id}'),
+              contentPadding: EdgeInsets.zero,
+              secondary: const Icon(Icons.circle, size: 12, color: AppColors.linked),
+              title: Text(l.overlayToggle(link.otherFamilyName)),
+              value: enabled[link.id] ?? false,
+              onChanged: (v) async {
+                final messenger = ScaffoldMessenger.of(context);
+                try {
+                  await ref
+                      .read(overlayRepositoryProvider)
+                      .setPreference(
+                        family.familyId,
+                        familyLinkId: link.id,
+                        view: 'garde',
+                        enabled: v,
+                      );
+                  ref
+                    ..invalidate(overlayPreferencesProvider)
+                    ..invalidate(overlayGardeEventsProvider)
+                    ..invalidate(overlayGardeDatesProvider);
+                } on ApiException catch (e) {
+                  messenger.showSnackBar(SnackBar(content: Text(e.message)));
+                }
+              },
+            ),
+        ],
+      ),
     );
   }
 }

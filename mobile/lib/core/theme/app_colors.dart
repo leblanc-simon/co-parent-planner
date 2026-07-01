@@ -28,6 +28,7 @@ abstract final class AppColors {
   static const Color positiveStrong = Color(0xFF226B60);
   static const Color positiveSoft = Color(0xFFDCECE8);
   static const Color linked = Color(0xFF9C6FB0); // famille liee (overlay)
+  static const Color linkedSoft = Color(0xFFEFE6F4); // fond doux overlay
 
   // Bordures & separateurs
   static const Color border = Color(0xFFEFEAE0); // carte

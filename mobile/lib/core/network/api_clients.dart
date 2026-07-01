@@ -29,7 +29,8 @@ class ApiClients {
       custodyExceptions = api.CustodyExceptionClient(dio),
       custodyStats = api.CustodyStatsClient(dio),
       holidays = api.SchoolHolidayClient(dio),
-      events = api.EventClient(dio);
+      events = api.EventClient(dio),
+      overlayPreferences = api.OverlayPreferenceClient(dio);
 
   final api.RegisterRequestClient register;
   final api.LoginRequestClient login;
@@ -52,6 +53,7 @@ class ApiClients {
   final api.CustodyStatsClient custodyStats;
   final api.SchoolHolidayClient holidays;
   final api.EventClient events;
+  final api.OverlayPreferenceClient overlayPreferences;
 }
 
 final apiClientsProvider = Provider<ApiClients>(

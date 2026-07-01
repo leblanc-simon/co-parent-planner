@@ -19,15 +19,15 @@ Dernière mise à jour : **2026-07-01** — **Lot 3 TERMINÉ** (garde). **Lot 4 
 
 **Lot 4 — Agenda** (`specs/lots/lot-4-agenda.md`) : ✅ **TERMINÉ** — backend + moteur + endpoints + UI web + UI mobile + E2E + temps réel + revue de code adversariale.
 
-**Lot 5 — Familles liées & overlay** (`specs/lots/lot-5-familles-liees-overlay.md`) : 🟡 **EN COURS** — **Étapes A (backend) + contrat + C (UI web) TERMINÉES**.
+**Lot 5 — Familles liées & overlay** (`specs/lots/lot-5-familles-liees-overlay.md`) : 🟡 **EN COURS** — **Étapes A (backend) + contrat + C (UI web) + D (UI mobile) TERMINÉES**.
 - **UI web** : `/agenda` — toggle « Overlay famille liée » par lien actif (Stimulus `toggleOverlay` → PUT préférence + reload), événements liés en **lecture seule** (badge « Famille liée », couleur `#9C6FB0`), fusion par jour, état vide localisé. `/garde` — pastilles d'activité `#9C6FB0` par jour (dérivées des événements projetés, garde jamais modifiée) + toggle custody. CSS `--linked`. **Note** : libellés overlay hardcodés en FR dans les Twig (cohérent avec l'UI web existante, 100 % hardcodée ; l'API et le mobile utilisent l'i18n). WebPagesTest : rendu overlay (événement lié + badge + toggle). Backend **218 tests**, couverture 85,6 %.
-- **Reste Lot 5** : UI mobile (overlay agenda + pastilles garde), E2E.
+- **UI mobile** : `OverlayRepository` (liens actifs + préférences via clients générés ; événements projetés via appel dio brut car `?overlay=` non exposé par le client généré) + providers (`overlayEventsProvider` agenda, `overlayGardeDatesProvider` garde). Écran agenda : section toggles par lien + événements liés **RO** (badge « Famille liée », `#9C6FB0`). Écran garde : toggles vue garde + **pastilles `#9C6FB0`** par jour (multi-jours spannés, garde jamais modifiée) + légende. i18n ARB `overlay*`. Lecture overlay **best-effort** (un échec n'impacte pas l'agenda/garde propres). Mobile **124 tests**, couverture 77,9 %, `dart analyze` propre ; contrat inchangé (pas de régénération).
+- **Reste Lot 5** : E2E Playwright (activation overlay, événement lié RO, état vide) + clôture du lot.
 - **Modèle** : entité `OverlayPreference` (opt-in par membre/lien/vue, unicité `(membership,link,view)`) ; migration `Version20260701213830`.
 - **Habilitation & projection** : `FamilyLinkRepository::findActiveBetween` (bidirectionnel, refuse soi/pending) ; `OverlayReader` (résolution multi-liens, 422 uniforme si tous invalides, dédup par identité de lien) ; **projection anti-fuite `OverlayEventResource`** (uniquement horaires/catégorie/titre + source=linked/#9C6FB0/editable=false ; **aucun** enfant/responsable/description/lieu/série/id). Activation du `?overlay=` dans `EventsProvider` (fusion + tri), expansion en fuseau B → affichage fuseau A.
 - **Endpoints** : `GET/PUT /families/{id}/overlay-preferences` (scopé membre courant, upsert idempotent sérialisé par advisory lock = last-write-wins §4.2, valide lien actif). RO strict : aucune route d'écriture overlay ; mutation cross-famille refusée (scope). Garde jamais modifiée (pastilles dérivées des événements projetés).
 - **Revue adversariale sécurité** (5 dimensions : anti-fuite, habilitation/scope, RO, préférences, modèle/fuseau/RGPD) : **0 P0/P1/P2**, **2 P3 corrigés** (dédup lien par identité ; upsert préférence en last-write-wins). Registre RGPD à jour (destinataire « famille liée » + `OverlayPreference` technique), i18n `overlay.*`.
-- **Portes** : backend **217 tests / 1761 assertions, couverture 86,0 %**, PHPStan niv.8, cs-fixer ; OpenAPI exporté + client Dart régénéré (`overlay_preference_client`), mobile **120 tests** sans drift.
-- **Reste Lot 5** : UI web (toggle overlay agenda + pastilles garde `#9C6FB0`), UI mobile, E2E.
+- **Portes (backend, étape A)** : backend **217 tests / 1761 assertions, couverture 86,0 %**, PHPStan niv.8, cs-fixer ; OpenAPI exporté + client Dart régénéré (`overlay_preference_client`), mobile **120 tests** sans drift.
 - **UI mobile** : feature `lib/features/agenda` — `AgendaRepository` (+ providers scopés famille), `AgendaScreen` (occurrences du mois groupées par jour, pastilles catégorie §8, `CategoryPill`), formulaire de création (ponctuel : titre, catégorie, responsable, cible enfant(s)/famille, all-day, date/heure → ISO 8601 avec offset appareil, lieu), bloc « À venir » (4 prochains) sur `HomeTab`. Onglet Agenda déjà dans le shell. Client `events` ajouté à `ApiClients`. **Contrainte assumée** : création limitée aux ponctuels (le modèle généré `recurrence` = `Map<String,String?>` perd le typage int/bool ; séries et édition par portée = web ; offline riche = Lot 8, §0.3). **120 tests mobiles** verts, couverture **78,5 %** (≥70 %), `dart analyze`/`format` propres, client généré sans drift. i18n ARB `agenda*`/`cat*`.
 - **UI web** : écran `/agenda` (`AgendaController` + `app/agenda.html.twig`) — occurrences groupées par jour, filtres catégorie (pills §8), formulaire création (ponctuel/série, all-day, récurrence until|count, exclusion vacances), édition par portée (occurrence/série) et suppression via Stimulus `agenda` (datetime-local → ISO 8601 avec offset), `turbo-stream-source` + cookie Mercure agenda. Onglet « Agenda » dans la sidebar (tous types de famille). Bloc « À venir » (4 prochains) sur l'Accueil (`HomeController` + `UpcomingEventsFinder`, masqué si agenda=none). Backend **209 tests** (WebPagesTest : `/agenda` vide + avec événement + accueil « À venir »), couverture 85,7 %, PHPStan/cs-fixer/lint Twig verts.
 - **Modèle** : entité `Event` (ponctuel/série, overrides+EXDATE rattachés par `series_id`, `whole_family`, verrou optimiste, `idempotency_key`), table de liaison `event_child` (N-N, 1er ManyToMany du projet — cf. §5.2), enums `EventCategory`/`RecurrenceFreq` ; migration `Version20260701192550` (FK famille/enfant CASCADE, responsable/auteur SET NULL, index uniques partiels override/EXDATE/idempotency). Schéma en sync (dev+test).
@@ -245,6 +245,21 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-07-02 — Lot 5 (overlay) : Étape D — UI mobile
+- `OverlayRepository` : liens actifs + préférences (clients générés) ; événements projetés via appel dio
+  **brut** (`?overlay=` non exposé par le client retrofit généré) → modèle local `OverlayEvent` (projection
+  RO, ne parse que titre/horaires/catégorie). Providers `overlayEventsProvider` (agenda),
+  `overlayGardeEventsProvider`/`overlayGardeDatesProvider` (garde, spanne les multi-jours, garde-fou 90 j).
+- Agenda : section toggles par lien (PUT préférence vue `agenda`) + événements liés **RO** fusionnés par
+  jour (badge « Famille liée », `#9C6FB0`). Garde : toggles vue `garde` + **pastilles `#9C6FB0`** par jour
+  + entrée de légende ; garde jamais modifiée. Lecture overlay **best-effort** (échec → n'impacte pas
+  l'agenda/garde propres). i18n ARB `overlay*` (mobile fiable, pas de `default_locale` conflictuel).
+- Nouveau client `OverlayPreferenceClient` câblé dans `ApiClients`. Tests existants agenda/garde : ajout
+  d'un `emptyOverlayRepository()` en override (empêche tout appel réseau réel). Nouveau `overlay_test.dart`
+  (agenda RO + bascule OFF→ON + section masquée sans lien ; garde pastille présente/absente + toggle).
+- Portes : mobile **124 tests**, couverture **77,9 %**, `dart analyze` propre ; contrat inchangé (pas de
+  régénération de client).
 
 ### 2026-07-02 — Lot 5 (overlay) : Étape C — UI web
 - `/agenda` : toggle overlay par lien actif (PUT préférence + reload via Stimulus), événements liés RO

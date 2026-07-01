@@ -1238,6 +1238,30 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Autre'**
   String get catOther;
+
+  /// No description provided for @overlaySectionTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Overlay familles liées'**
+  String get overlaySectionTitle;
+
+  /// No description provided for @overlayLinkedFamily.
+  ///
+  /// In fr, this message translates to:
+  /// **'Famille liée'**
+  String get overlayLinkedFamily;
+
+  /// No description provided for @overlayToggle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Overlay famille liée · {name}'**
+  String overlayToggle(String name);
+
+  /// No description provided for @overlayEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune activité de la famille liée sur cette période.'**
+  String get overlayEmpty;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

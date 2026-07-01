@@ -212,5 +212,14 @@
   "catMusic": "Musique",
   "catSchool": "École",
   "catHealth": "Santé",
-  "catOther": "Autre"
+  "catOther": "Autre",
+  "overlaySectionTitle": "Overlay familles liées",
+  "overlayLinkedFamily": "Famille liée",
+  "overlayToggle": "Overlay famille liée · {name}",
+  "@overlayToggle": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "overlayEmpty": "Aucune activité de la famille liée sur cette période."
 }

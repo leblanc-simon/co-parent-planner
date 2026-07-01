@@ -1,23 +1,24 @@
 framework:
     rate_limiter:
         # Connexion : par (IP, e-mail). Verrouillage temporel (§3.2 sc.4).
+        # Limites surchargeables par env (défaut = prod) ; relâchées uniquement en E2E.
         login:
             policy: sliding_window
-            limit: 5
+            limit: '%env(int:RL_LOGIN_LIMIT)%'
             interval: '15 minutes'
             cache_pool: cache.app
             lock_factory: null
         # Inscription : par IP (anti-abus, §3.1).
         register:
             policy: sliding_window
-            limit: 10
+            limit: '%env(int:RL_REGISTER_LIMIT)%'
             interval: '1 hour'
             cache_pool: cache.app
             lock_factory: null
         # Mot de passe oublié : par (IP, e-mail) (§3.4, anti-abus).
         forgot:
             policy: sliding_window
-            limit: 5
+            limit: '%env(int:RL_FORGOT_LIMIT)%'
             interval: '1 hour'
             cache_pool: cache.app
             lock_factory: null

@@ -38,6 +38,10 @@ echo "== Migrations (base dev) =="
 echo "== Démarrage de l'app (port $APP_PORT) =="
 cd "$BACKEND"
 export MESSENGER_TRANSPORT_DSN="sync://"
+# Rate-limiting relâché : la suite E2E crée de nombreux comptes/connexions par run (une seule IP).
+export RL_LOGIN_LIMIT=10000
+export RL_REGISTER_LIMIT=10000
+export RL_FORGOT_LIMIT=10000
 export MAILER_DSN="smtp://127.0.0.1:11025"
 export MAILER_FROM="no-reply@coparentplanner.test"
 export APP_WEB_BASE_URL="http://127.0.0.1:$APP_PORT"

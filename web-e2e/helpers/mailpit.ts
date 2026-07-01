@@ -43,6 +43,24 @@ export async function waitForInvitationToken(
   return decodeURIComponent(match![1]);
 }
 
+/**
+ * Attend l'e-mail de réinitialisation adressé à `email` et en extrait le token du lien
+ * `/reset-password?token=...`.
+ */
+export async function waitForResetToken(
+  request: APIRequestContext,
+  email: string,
+): Promise<string> {
+  const messageId = await pollForMessage(request, email);
+  const res = await request.get(`${MAILPIT_API}/api/v1/message/${messageId}`);
+  expect(res.ok()).toBeTruthy();
+  const body = await res.json();
+  const html: string = body.HTML || body.Text || '';
+  const match = html.match(/\/reset-password\?token=([^"'\s<>&]+)/);
+  expect(match, `lien de réinitialisation introuvable dans l'e-mail`).not.toBeNull();
+  return decodeURIComponent(match![1]);
+}
+
 async function pollForMessage(
   request: APIRequestContext,
   email: string,

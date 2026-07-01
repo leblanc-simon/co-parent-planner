@@ -92,6 +92,10 @@ jobs:
       DATABASE_URL: 'postgresql://app:app@127.0.0.1:5432/app?serverVersion=16&charset=utf8'
       # L'e-mail d'auth part en synchrone (transport async -> sync://) : pas de worker.
       MESSENGER_TRANSPORT_DSN: 'sync://'
+      # Rate-limiting relâché : la suite E2E crée de nombreux comptes/connexions par run (une seule IP).
+      RL_LOGIN_LIMIT: '10000'
+      RL_REGISTER_LIMIT: '10000'
+      RL_FORGOT_LIMIT: '10000'
       MAILER_DSN: 'smtp://127.0.0.1:1025'
       MAILER_FROM: 'no-reply@coparentplanner.test'
       APP_WEB_BASE_URL: 'http://127.0.0.1:8000'

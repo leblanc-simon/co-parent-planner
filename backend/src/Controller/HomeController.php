@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Enum\RightDomain;
+use App\Enum\RightLevel;
+use App\Service\Agenda\UpcomingEventsFinder;
 use App\Web\ActiveFamilyResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -21,6 +24,7 @@ final class HomeController extends AbstractController
     public function __construct(
         private readonly Security $security,
         private readonly ActiveFamilyResolver $activeFamily,
+        private readonly UpcomingEventsFinder $upcomingEvents,
     ) {
     }
 
@@ -37,10 +41,19 @@ final class HomeController extends AbstractController
             return $this->redirectToRoute('app_onboarding');
         }
 
+        $active = $this->activeFamily->active($memberships);
+
+        // Bloc « À venir » (US-AG-7) : masqué si le membre n'a pas agenda ≥ view.
+        $upcoming = (null !== $active && $active->can(RightDomain::Agenda, RightLevel::View))
+            ? $this->upcomingEvents->upcoming($active->getFamily(), 4)
+            : [];
+
         return $this->render('app/home.html.twig', [
             'user' => $user,
             'memberships' => $memberships,
-            'activeMembership' => $this->activeFamily->active($memberships),
+            'activeMembership' => $active,
+            'upcoming' => $upcoming,
+            'timezone' => $active?->getFamily()->getTimezone() ?? 'Europe/Paris',
         ]);
     }
 

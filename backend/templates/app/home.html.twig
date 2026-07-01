@@ -1,6 +1,9 @@
 {% extends 'app/shell.html.twig' %}
 {% block title %}Accueil · CoParentPlanner{% endblock %}
 
+{% set catClass = {'sport':'sport','musique':'music','ecole':'school','sante':'health','autre':'other'} %}
+{% set catLabel = {'sport':'Sport','musique':'Musique','ecole':'École','sante':'Santé','autre':'Autre'} %}
+
 {% block main %}
 <header class="main__header">
     <div>
@@ -11,23 +14,33 @@
     {{ include('app/_family_select.html.twig') }}
 </header>
 
-{% if activeMembership.family.hasCustody %}
-    <div class="grid-2">
-        <section class="card card--accent">
-            <div class="eyebrow">Cette semaine</div>
-            <p class="empty-state">Le planning de garde s'affichera ici (Lot 3).</p>
-        </section>
-        <section class="card">
-            <div class="eyebrow">À venir</div>
-            <p class="empty-state">Aucun événement à venir.</p>
-        </section>
-    </div>
-{% else %}
+<div class="grid-2">
     <section class="card card--accent">
         <div class="eyebrow">Cette semaine</div>
-        <p>Toute la famille est réunie.</p>
+        {% if activeMembership.family.hasCustody %}
+            <p class="empty-state">Le planning de garde s'affichera ici (Lot 3).</p>
+        {% else %}
+            <p>Toute la famille est réunie.</p>
+        {% endif %}
     </section>
-{% endif %}
+    <section class="card">
+        <div class="eyebrow">À venir</div>
+        {% if upcoming|length %}
+            <ul class="agenda-upcoming">
+                {% for occ in upcoming %}
+                <li>
+                    <span class="pill pill--{{ catClass[occ.category.value] }}">{{ catLabel[occ.category.value] }}</span>
+                    <span class="agenda-event__time">{% if occ.allDay %}{{ occ.startsAt|date('d/m', timezone) }}{% else %}{{ occ.startsAt|date('d/m H:i', timezone) }}{% endif %}</span>
+                    <strong>{{ occ.title }}</strong>
+                </li>
+                {% endfor %}
+            </ul>
+            <p style="margin-top:.6rem"><a href="{{ path('app_agenda') }}">Voir l'agenda →</a></p>
+        {% else %}
+            <p class="empty-state">Aucun événement à venir.</p>
+        {% endif %}
+    </section>
+</div>
 
 <div class="grid-2" style="margin-top: 1.25rem">
     <section class="card">

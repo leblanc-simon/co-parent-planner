@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Web;
 
+use App\Entity\Event;
 use App\Entity\Family;
 use App\Entity\Membership;
 use App\Entity\User;
+use App\Enum\EventCategory;
 use App\Enum\FamilyType;
 use App\Enum\MembershipRole;
 use App\Enum\MembershipStatus;
@@ -145,6 +147,60 @@ final class WebPagesTest extends WebTestCase
         $client->request('GET', '/children');
         self::assertResponseIsSuccessful();
         self::assertStringContainsString('Enfants', (string) $client->getResponse()->getContent());
+    }
+
+    public function testAgendaPageRendersEmpty(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser($client, withFamily: true);
+        $this->login($client);
+
+        $client->request('GET', '/agenda');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('Agenda', $html);
+        self::assertStringContainsString('Nouvel événement', $html); // parent admin → agenda:edit
+        self::assertStringContainsString('Aucun événement ce mois-ci', $html);
+        self::assertStringContainsString('turbo-stream-source', $html);
+        self::assertStringContainsString('href="/agenda"', $html); // onglet dans la barre latérale
+    }
+
+    public function testAgendaListsEventAndHomeShowsUpcoming(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser($client, withFamily: true);
+        $this->login($client);
+
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $em);
+        $family = $em->getRepository(Family::class)->findOneBy(['name' => 'Famille Web']);
+        self::assertInstanceOf(Family::class, $family);
+        $membership = $em->getRepository(Membership::class)->findOneBy(['family' => $family]);
+        self::assertInstanceOf(Membership::class, $membership);
+
+        // À venir (relatif à « maintenant » réel — pas de mockTime pour ne pas périmer le cookie JWT).
+        $start = Clock::get()->now()->setTimezone(new \DateTimeZone('Europe/Paris'))->modify('+2 days')->setTime(15, 30);
+        $event = (new Event())
+            ->setFamily($family)
+            ->setTitle('Cours de tennis')
+            ->setCategory(EventCategory::Sport)
+            ->setResponsibleMembership($membership)
+            ->setWholeFamily(true)
+            ->setStartsAt($start->setTimezone(new \DateTimeZone('UTC')));
+        $em->persist($event);
+        $em->flush();
+
+        // Écran Agenda : l'événement figure sous son jour.
+        $client->request('GET', '/agenda?month='.$start->format('Y-m'));
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('Cours de tennis', (string) $client->getResponse()->getContent());
+
+        // Accueil : bloc « À venir » (US-AG-7).
+        $client->request('GET', '/');
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('Cours de tennis', (string) $client->getResponse()->getContent());
     }
 
     public function testGardePageRendersForSeparatedFamily(): void

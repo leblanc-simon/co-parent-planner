@@ -11,9 +11,10 @@
             {% if activeMembership is defined and activeMembership.family.hasCustody %}
                 <a href="{{ path('app_garde') }}" class="{{ nav == 'garde' ? 'is-active' }}">Garde</a>
             {% endif %}
+            <a href="{{ path('app_agenda') }}" class="{{ nav == 'agenda' ? 'is-active' }}">Agenda</a>
             <a href="{{ path('app_children') }}" class="{{ nav == 'children' ? 'is-active' }}">Enfants</a>
             <a href="{{ path('app_settings') }}" class="{{ nav == 'settings' ? 'is-active' }}">Paramètres</a>
-            {# Onglets métier (Agenda, Échanges) ajoutés aux lots suivants. #}
+            {# Onglet Échanges ajouté au Lot 6. #}
         </nav>
         <div class="sidebar__spacer"></div>
         <form action="{{ path('app_logout') }}" method="post">

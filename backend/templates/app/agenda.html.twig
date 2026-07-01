@@ -1,0 +1,152 @@
+{% extends 'app/shell.html.twig' %}
+{% block title %}Agenda · CoParentPlanner{% endblock %}
+{% set nav_active = 'agenda' %}
+
+{% set catClass = {'sport':'sport','musique':'music','ecole':'school','sante':'health','autre':'other'} %}
+{% set catLabel = {'sport':'Sport','musique':'Musique','ecole':'École','sante':'Santé','autre':'Autre'} %}
+
+{% block main %}
+<header class="main__header">
+    <div>
+        <div class="eyebrow">Planning</div>
+        <h1>Agenda</h1>
+    </div>
+    {{ include('app/_family_select.html.twig') }}
+</header>
+
+{% if not canView %}
+    <section class="card"><p class="empty-state">Vous n'avez pas accès à l'agenda de cette famille.</p></section>
+{% else %}
+<div data-controller="agenda"
+     data-agenda-family-id-value="{{ family.id }}"
+     data-agenda-timezone-value="{{ timezone }}">
+    <p class="form-error" data-agenda-target="error" role="alert" hidden></p>
+
+    {# Abonnement temps réel : une mutation d'agenda rafraîchit la page (Turbo Stream). #}
+    <turbo-stream-source src="{{ mercureHub }}?topic={{ agendaTopic|url_encode }}"></turbo-stream-source>
+
+    {# ───────── Navigation mois + filtres catégorie ───────── #}
+    <section class="card">
+        <div class="garde-cal__nav">
+            <a class="btn btn--ghost" href="{{ path('app_agenda', { month: prevMonth }) }}">←</a>
+            <strong class="garde-cal__title">{{ monthLabel }}</strong>
+            <a class="btn btn--ghost" href="{{ path('app_agenda', { month: nextMonth }) }}">→</a>
+        </div>
+        <div class="agenda-filters">
+            <a class="agenda-chip {{ activeCategories is empty ? 'is-active' }}" href="{{ path('app_agenda', { month: monthValue }) }}">Toutes</a>
+            {% for c in categories %}
+                <a class="agenda-chip pill--{{ catClass[c.value] }} {{ c.value in activeCategories ? 'is-active' }}"
+                   href="{{ path('app_agenda', { month: monthValue, category: c.value }) }}">{{ catLabel[c.value] }}</a>
+            {% endfor %}
+        </div>
+    </section>
+
+    {# ───────── Création ───────── #}
+    {% if canEdit %}
+    <section class="card" style="margin-top:1.25rem">
+        <div class="eyebrow">Nouvel événement</div>
+        <form data-action="submit->agenda#createEvent" class="agenda-form">
+            <div class="grid-2">
+                <div class="field"><label for="a-title">Titre</label><input id="a-title" name="title" required maxlength="200"></div>
+                <div class="field"><label for="a-cat">Catégorie</label>
+                    <select id="a-cat" name="category">{% for c in categories %}<option value="{{ c.value }}">{{ catLabel[c.value] }}</option>{% endfor %}</select>
+                </div>
+                <div class="field"><label for="a-resp">Responsable</label>
+                    <select id="a-resp" name="responsibleMembershipId">{% for m in parents %}<option value="{{ m.id }}">{{ m.user.fullName ?: m.user.email }}</option>{% endfor %}</select>
+                </div>
+                <div class="field"><label for="a-loc">Lieu</label><input id="a-loc" name="location" maxlength="255"></div>
+            </div>
+            <fieldset class="agenda-target">
+                <legend>Concerne</legend>
+                <label><input type="checkbox" name="wholeFamily" data-action="change->agenda#toggleWholeFamily" data-agenda-target="wholeFamily"> Toute la famille</label>
+                <span class="agenda-target__children" data-agenda-target="children">
+                    {% for c in children %}<label><input type="checkbox" name="childIds[]" value="{{ c.id }}"> {{ c.firstName }}</label>{% endfor %}
+                </span>
+            </fieldset>
+            <div class="grid-2">
+                <div class="field agenda-allday"><label><input type="checkbox" name="allDay" data-action="change->agenda#toggleAllDay" data-agenda-target="allDay"> Journée entière</label></div>
+                <div></div>
+                <div class="field" data-agenda-target="startTimed"><label for="a-start">Début</label><input id="a-start" name="startsAt" type="datetime-local"></div>
+                <div class="field" data-agenda-target="endTimed"><label for="a-end">Fin</label><input id="a-end" name="endsAt" type="datetime-local"></div>
+                <div class="field" data-agenda-target="startAllDay" hidden><label for="a-start-day">Date</label><input id="a-start-day" name="startsAtDay" type="date"></div>
+            </div>
+            <div class="grid-2">
+                <div class="field"><label for="a-freq">Récurrence</label>
+                    <select id="a-freq" name="freq" data-action="change->agenda#toggleRecurrence" data-agenda-target="freq">
+                        <option value="none">Aucune (ponctuel)</option>
+                        <option value="weekly">Chaque semaine</option>
+                        <option value="biweekly">Une semaine sur deux</option>
+                        <option value="monthly">Chaque mois</option>
+                    </select>
+                </div>
+                <div class="agenda-recurrence" data-agenda-target="recurrence" hidden>
+                    <div class="field"><label for="a-until">Jusqu'au</label><input id="a-until" name="until" type="date"></div>
+                    <div class="field"><label for="a-count">ou nombre d'occurrences</label><input id="a-count" name="count" type="number" min="1"></div>
+                    <label class="agenda-check"><input type="checkbox" name="excludeHolidays"> Exclure les vacances scolaires</label>
+                </div>
+            </div>
+            <button class="btn btn--primary" type="submit">Créer</button>
+        </form>
+    </section>
+    {% endif %}
+
+    {# ───────── Occurrences groupées par jour ───────── #}
+    <section class="card" style="margin-top:1.25rem">
+        <div class="eyebrow">{{ monthLabel }}</div>
+        {% if days is empty %}
+            <p class="empty-state">Aucun événement ce mois-ci.</p>
+        {% else %}
+            {% for day in days %}
+            <div class="agenda-day">
+                <h2 class="agenda-day__label">{{ day.label }}</h2>
+                <ul class="agenda-events">
+                    {% for occ in day.items %}
+                    <li class="agenda-event">
+                        <details>
+                            <summary>
+                                <span class="pill pill--{{ catClass[occ.category.value] }}">{{ catLabel[occ.category.value] }}</span>
+                                <span class="agenda-event__time">{% if occ.allDay %}Journée{% else %}{{ occ.startsAt|date('H:i', timezone) }}{% if occ.endsAt %}–{{ occ.endsAt|date('H:i', timezone) }}{% endif %}{% endif %}</span>
+                                <strong class="agenda-event__title">{{ occ.title }}</strong>
+                                <span class="agenda-event__who">
+                                    {% if occ.wholeFamily %}Toute la famille{% else %}{% for c in occ.children %}{{ c.firstName }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
+                                    {% if occ.responsibleMembership %} · {{ occ.responsibleMembership.user.fullName ?: occ.responsibleMembership.user.email }}{% endif %}
+                                </span>
+                                {% if occ.isOverride %}<span class="agenda-event__badge">modifié</span>{% endif %}
+                            </summary>
+                            {% if occ.location %}<p class="agenda-event__loc">📍 {{ occ.location }}</p>{% endif %}
+                            {% if occ.description %}<p class="agenda-event__desc">{{ occ.description }}</p>{% endif %}
+                            {% if canEdit %}
+                            <form class="agenda-edit" data-action="submit->agenda#saveEvent"
+                                  data-event-id="{{ occ.eventId }}" data-recurring="{{ occ.isRecurring ? '1' : '0' }}"
+                                  data-recurrence-date="{{ occ.recurrenceDate|date('Y-m-d') }}">
+                                <div class="grid-2">
+                                    <div class="field"><label>Titre</label><input name="title" value="{{ occ.title }}" maxlength="200"></div>
+                                    <div class="field"><label>Catégorie</label><select name="category">{% for c in categories %}<option value="{{ c.value }}" {{ c.value == occ.category.value ? 'selected' }}>{{ catLabel[c.value] }}</option>{% endfor %}</select></div>
+                                    {% if not occ.allDay %}
+                                    <div class="field"><label>Début</label><input name="startsAt" type="datetime-local" value="{{ occ.startsAt|date('Y-m-d\\TH:i', timezone) }}"></div>
+                                    <div class="field"><label>Fin</label><input name="endsAt" type="datetime-local" value="{{ occ.endsAt ? occ.endsAt|date('Y-m-d\\TH:i', timezone) }}"></div>
+                                    {% endif %}
+                                    <div class="field"><label>Lieu</label><input name="location" value="{{ occ.location }}" maxlength="255"></div>
+                                </div>
+                                {% if occ.isRecurring %}
+                                <div class="field"><label>Portée</label>
+                                    <select name="scope"><option value="occurrence">Cette occurrence</option><option value="series">Toute la série (à partir d'ici)</option></select>
+                                </div>
+                                {% endif %}
+                                <div class="agenda-edit__actions">
+                                    <button class="btn btn--ghost" type="submit">Enregistrer</button>
+                                    <button class="btn btn--ghost" type="button" data-action="agenda#deleteEvent">Supprimer</button>
+                                </div>
+                            </form>
+                            {% endif %}
+                        </details>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+{% endblock %}

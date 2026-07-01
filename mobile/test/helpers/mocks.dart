@@ -1,3 +1,4 @@
+import 'package:coparentplanner/features/agenda/data/agenda_repository.dart';
 import 'package:coparentplanner/features/auth/data/auth_repository.dart';
 import 'package:coparentplanner/features/children/data/children_repository.dart';
 import 'package:coparentplanner/features/custody/data/custody_repository.dart';
@@ -14,3 +15,5 @@ class MockMembersRepository extends Mock implements MembersRepository {}
 class MockChildrenRepository extends Mock implements ChildrenRepository {}
 
 class MockCustodyRepository extends Mock implements CustodyRepository {}
+
+class MockAgendaRepository extends Mock implements AgendaRepository {}

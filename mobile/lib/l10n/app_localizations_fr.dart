@@ -548,4 +548,67 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get weekdaySaturday => 'Samedi';
+
+  @override
+  String get agendaTitle => 'Agenda';
+
+  @override
+  String get agendaEmpty => 'Aucun événement ce mois-ci.';
+
+  @override
+  String get agendaNew => 'Nouvel événement';
+
+  @override
+  String get agendaCreate => 'Créer';
+
+  @override
+  String get agendaCreated => 'Événement créé.';
+
+  @override
+  String get agendaFieldTitle => 'Titre';
+
+  @override
+  String get agendaCategory => 'Catégorie';
+
+  @override
+  String get agendaResponsible => 'Responsable';
+
+  @override
+  String get agendaWholeFamily => 'Toute la famille';
+
+  @override
+  String get agendaChildren => 'Enfant(s)';
+
+  @override
+  String get agendaAllDay => 'Journée entière';
+
+  @override
+  String get agendaStart => 'Début';
+
+  @override
+  String get agendaEnd => 'Fin (optionnelle)';
+
+  @override
+  String get agendaLocation => 'Lieu';
+
+  @override
+  String get agendaAllDayLabel => 'Journée';
+
+  @override
+  String get agendaUpcomingSee => 'Voir l\'agenda';
+
+  @override
+  String get catSport => 'Sport';
+
+  @override
+  String get catMusic => 'Musique';
+
+  @override
+  String get catSchool => 'École';
+
+  @override
+  String get catHealth => 'Santé';
+
+  @override
+  String get catOther => 'Autre';
 }

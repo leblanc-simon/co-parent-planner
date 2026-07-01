@@ -1,3 +1,5 @@
+import 'package:coparentplanner/api/generated/export.dart' as api;
+import 'package:coparentplanner/features/agenda/data/agenda_repository.dart';
 import 'package:coparentplanner/features/auth/application/auth_controller.dart';
 import 'package:coparentplanner/features/auth/application/auth_state.dart';
 import 'package:coparentplanner/features/family/application/family_context.dart';
@@ -31,9 +33,15 @@ class _FamilyStub extends FamilyContextController {
   FamilyContext? build() => _family;
 }
 
-List<Override> _overrides(AuthState auth, FamilyContext? family) => [
+List<Override> _overrides(
+  AuthState auth,
+  FamilyContext? family, {
+  List<api.Event> events = const [],
+}) => [
   authControllerProvider.overrideWith(() => _AuthStub(auth)),
   familyContextProvider.overrideWith(() => _FamilyStub(family)),
+  // Neutralise l'appel réseau du bloc « À venir » (familyEventsProvider).
+  familyEventsProvider.overrideWith((ref) => events),
 ];
 
 void main() {
@@ -56,6 +64,38 @@ void main() {
     // La carte Garde est une entrée de navigation vers le planning.
     expect(find.byKey(const ValueKey('home-custody-card')), findsOneWidget);
     expect(find.text('Ouvrir le planning'), findsOneWidget);
+  });
+
+  testWidgets('HomeTab : bloc « À venir » liste les prochains événements', (
+    tester,
+  ) async {
+    final soon = DateTime.now()
+        .add(const Duration(days: 2))
+        .toIso8601String()
+        .substring(0, 19);
+    await pumpScreen(
+      tester,
+      const HomeTab(),
+      overrides: _overrides(
+        const AuthAuthenticated(_user),
+        const FamilyContext(
+          familyId: 'f1',
+          familyName: 'Maison',
+          type: 'separated',
+        ),
+        events: [
+          api.Event(
+            id: 'e1',
+            title: 'Cours de tennis',
+            category: 'sport',
+            startsAt: '$soon+02:00',
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+    expect(find.byKey(const ValueKey('home-upcoming-card')), findsOneWidget);
+    expect(find.text('Cours de tennis'), findsOneWidget);
   });
 
   testWidgets('HomeTab : famille unie -> « toute la famille reunie »', (

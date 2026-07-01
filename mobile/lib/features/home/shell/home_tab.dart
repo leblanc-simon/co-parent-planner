@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../api/generated/export.dart' as api;
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../agenda/data/agenda_repository.dart';
+import '../../agenda/presentation/agenda_screen.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/application/auth_state.dart';
 import '../../custody/presentation/custody_screen.dart';
@@ -59,10 +62,7 @@ class HomeTab extends ConsumerWidget {
                 positive: true,
               ),
             const SizedBox(height: 16),
-            _EmptyCard(
-              title: l.homeUpcomingTitle,
-              message: l.homeUpcomingEmpty,
-            ),
+            const _UpcomingCard(),
             const SizedBox(height: 16),
             _EmptyCard(
               title: l.homeDecisionsTitle,
@@ -126,4 +126,94 @@ class _EmptyCard extends StatelessWidget {
       child: AppCard(child: content),
     );
   }
+}
+
+/// Bloc « À venir » (US-AG-7) : les 4 prochaines occurrences de la famille active.
+/// Masqué (fallback état vide) si l'agenda n'est pas accessible ou vide.
+class _UpcomingCard extends ConsumerWidget {
+  const _UpcomingCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppL10n.of(context);
+    final upcoming = ref
+        .watch(familyEventsProvider)
+        .maybeWhen(
+          data: (events) {
+            final now = DateTime.now();
+            return events
+                .where((e) => DateTime.parse(e.startsAt).isAfter(now))
+                .take(4)
+                .toList();
+          },
+          orElse: () => const <api.Event>[],
+        );
+
+    if (upcoming.isEmpty) {
+      return _EmptyCard(
+        title: l.homeUpcomingTitle,
+        message: l.homeUpcomingEmpty,
+        onTap: () => _open(context),
+      );
+    }
+
+    return InkWell(
+      key: const ValueKey('home-upcoming-card'),
+      onTap: () => _open(context),
+      borderRadius: BorderRadius.circular(AppRadii.card),
+      child: AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l.homeUpcomingTitle.toUpperCase(),
+                    style: AppTypography.eyebrow,
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right,
+                  color: AppColors.muted,
+                  size: 20,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            for (final e in upcoming)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    CategoryPill(category: e.category),
+                    const SizedBox(width: 8),
+                    Text(
+                      _when(e),
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(e.title)),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// « jj/MM » (all-day) ou « jj/MM HH:mm » — startsAt est déjà dans le fuseau famille.
+  static String _when(api.Event e) {
+    final day = '${e.startsAt.substring(8, 10)}/${e.startsAt.substring(5, 7)}';
+    return e.allDay ? day : '$day ${e.startsAt.substring(11, 16)}';
+  }
+
+  void _open(BuildContext context) => Navigator.of(
+    context,
+  ).push(MaterialPageRoute<void>(builder: (_) => const AgendaScreen()));
 }

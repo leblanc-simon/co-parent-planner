@@ -1112,6 +1112,132 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Samedi'**
   String get weekdaySaturday;
+
+  /// No description provided for @agendaTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Agenda'**
+  String get agendaTitle;
+
+  /// No description provided for @agendaEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun événement ce mois-ci.'**
+  String get agendaEmpty;
+
+  /// No description provided for @agendaNew.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvel événement'**
+  String get agendaNew;
+
+  /// No description provided for @agendaCreate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer'**
+  String get agendaCreate;
+
+  /// No description provided for @agendaCreated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événement créé.'**
+  String get agendaCreated;
+
+  /// No description provided for @agendaFieldTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Titre'**
+  String get agendaFieldTitle;
+
+  /// No description provided for @agendaCategory.
+  ///
+  /// In fr, this message translates to:
+  /// **'Catégorie'**
+  String get agendaCategory;
+
+  /// No description provided for @agendaResponsible.
+  ///
+  /// In fr, this message translates to:
+  /// **'Responsable'**
+  String get agendaResponsible;
+
+  /// No description provided for @agendaWholeFamily.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toute la famille'**
+  String get agendaWholeFamily;
+
+  /// No description provided for @agendaChildren.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enfant(s)'**
+  String get agendaChildren;
+
+  /// No description provided for @agendaAllDay.
+  ///
+  /// In fr, this message translates to:
+  /// **'Journée entière'**
+  String get agendaAllDay;
+
+  /// No description provided for @agendaStart.
+  ///
+  /// In fr, this message translates to:
+  /// **'Début'**
+  String get agendaStart;
+
+  /// No description provided for @agendaEnd.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fin (optionnelle)'**
+  String get agendaEnd;
+
+  /// No description provided for @agendaLocation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Lieu'**
+  String get agendaLocation;
+
+  /// No description provided for @agendaAllDayLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Journée'**
+  String get agendaAllDayLabel;
+
+  /// No description provided for @agendaUpcomingSee.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir l\'agenda'**
+  String get agendaUpcomingSee;
+
+  /// No description provided for @catSport.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sport'**
+  String get catSport;
+
+  /// No description provided for @catMusic.
+  ///
+  /// In fr, this message translates to:
+  /// **'Musique'**
+  String get catMusic;
+
+  /// No description provided for @catSchool.
+  ///
+  /// In fr, this message translates to:
+  /// **'École'**
+  String get catSchool;
+
+  /// No description provided for @catHealth.
+  ///
+  /// In fr, this message translates to:
+  /// **'Santé'**
+  String get catHealth;
+
+  /// No description provided for @catOther.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autre'**
+  String get catOther;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

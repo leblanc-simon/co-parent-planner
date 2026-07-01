@@ -61,6 +61,9 @@ final class OpendatasoftSchoolHolidaysProviderTest extends TestCase
         self::assertCount(1, $result, 'population Enseignants et académie différente filtrées');
         self::assertSame('Vacances de la Toussaint', $result[0]->label);
         self::assertSame('2025-10-18', $result[0]->startDate->format('Y-m-d'), 'UTC 22:00 → date Europe/Paris J+1');
+        // end_date = minuit Paris du 2025-11-03 = jour de RENTRÉE (borne exclusive) → dernier jour de
+        // vacances = la veille, 2025-11-02 (sinon +1 jour d'école attribué en garde à chaque période).
+        self::assertSame('2025-11-02', $result[0]->endDate->format('Y-m-d'), 'end_date rentrée exclusif → veille');
         self::assertSame('A', $result[0]->zone);
         self::assertSame('Bordeaux', $result[0]->academy);
         self::assertSame('2025-2026', $result[0]->schoolYear);

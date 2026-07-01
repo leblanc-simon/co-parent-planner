@@ -5,7 +5,7 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-07-01** — **Lot 3 : backend + moteur + contrat + UI web + E2E + temps réel + UI mobile TERMINÉS** (garde) ; reste **revue de code**.
+Dernière mise à jour : **2026-07-01** — **Lot 3 TERMINÉ** (garde) : backend + moteur + contrat + UI web + E2E + temps réel + UI mobile + **revue de code (adversariale) + corrections**.
 
 ---
 
@@ -15,10 +15,11 @@ Dernière mise à jour : **2026-07-01** — **Lot 3 : backend + moteur + contrat
 **Lot 1 — Familles/membres/droits/invitations/liens** : ✅ **TERMINÉ** (+ revue de code).
 **Lot 2 — Enfants & notes** : ✅ **TERMINÉ** (+ revue de code).
 
-**Lot 3 — Garde (moteur + vacances)** (`specs/lots/lot-3-*.md`) : 🟡 **backend + moteur + adaptateur vacances + async/scheduler + endpoints + contrat OpenAPI + client Dart + UI web + E2E + temps réel + UI mobile TERMINÉS et testés** ; reste **revue de code**.
+**Lot 3 — Garde (moteur + vacances)** (`specs/lots/lot-3-*.md`) : ✅ **TERMINÉ** (backend + moteur + adaptateur vacances + async/scheduler + endpoints + contrat OpenAPI + client Dart + UI web + E2E + temps réel + UI mobile + **revue de code + corrections**).
 
-- **Backend** : **155 tests / 1104 assertions**, couverture **85,1 %** (≥80 %), PHPStan niv.8, cs-fixer, schéma en sync.
-- **Mobile** : feature `custody` (repo + providers scopés + écran calendrier + écran Paramètres › Garde). **122 tests** verts, couverture **78,3 %** (≥70 %), `dart analyze`/`format` propres, client sans drift.
+- **Backend** : **158 tests / 1137 assertions**, couverture **85,6 %** (≥80 %), PHPStan niv.8, cs-fixer, schéma en sync.
+- **Mobile** : feature `custody` (repo + providers scopés + écran calendrier + écran Paramètres › Garde). **116 tests** verts, couverture **78,3 %** (≥70 %), `dart analyze`/`format` propres, client sans drift.
+- **Revue de code (workflow adversarial, 7 dimensions)** : 15 constats confirmés (0 P0). **Corrigés** : 2 P1 (règles vacances calculées sur période complète et non la fenêtre clampée → idempotence ; `end_date` Opendatasoft = jour de rentrée exclusif, −1 jour), 5 P2 (ancre future refusée ; balayage idempotent de l'import ; normalisation fuseau calendaire Europe/Paris dans le moteur ; itération calendrier mobile insensible au DST ; exception refusant un titulaire non-parent), 5 P3 (accessibilité clavier du calendrier web ; `?month` invalide rejeté ; retours d'erreur mobile sur échange/enregistrement impossibles ; ancre mobile par défaut = aujourd'hui). **Reportés (justifiés)** : nichage de la route `PUT /holidays/{id}/rule` (maintenabilité, accès déjà re-vérifié), noms de mois en dur mobile (cohérent avec `frenchMonth` web, unique locale fr-FR livrée).
 - **UI web Garde** : écran `GET /garde` (calendrier mensuel coloré A/B, jours exceptionnels en bordure pointillée, marqueur vacances, stats du mois, « échanger ce jour » au clic, builder de rythme dont `custom` 14 jours, exceptions par plage, import + règles vacances), onglet masqué si famille unie, Voter `custody`. **Temps réel** câblé : `CustodyPublisher` (Turbo Stream `refresh` sur `/families/{id}/custody`) sur les 3 chemins de mutation + `<turbo-stream-source>` + cookie Mercure scopé. **E2E Playwright : 7/7** (dont parcours Garde complet).
 - **UI mobile Garde** : feature `lib/features/custody` — `CustodyScreen` (calendrier mensuel coloré A/B déterministe à partir des jours du mois courant, jours exceptionnels/vacances distingués, légende, stats, liste d'exceptions + suppression, section vacances + import, détail du jour + « Échanger ce jour ») et `CustodySettingsScreen` (builder de rythme `alternating`/`2-2-3`/`custom` 14 nuits, ancrage, jour/heure d'échange, parents A/B). Entrée via la carte « Garde » de l'accueil (masquée pour famille unie). Pull-to-refresh (SSE mobile reportée). 4 nouveaux clients dans `ApiClients`.
 - **Reste Lot 3** : revue de code (comme Lots 1 & 2).

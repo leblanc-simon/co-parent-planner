@@ -20,8 +20,10 @@ use Symfony\Component\Uid\Uuid;
  */
 final class PatternWriter
 {
-    public function __construct(private readonly MembershipRepository $memberships)
-    {
+    public function __construct(
+        private readonly MembershipRepository $memberships,
+        private readonly \Psr\Clock\ClockInterface $clock,
+    ) {
     }
 
     public function apply(CustodyPattern $pattern, Family $family, UpdatePatternRequest $data): void
@@ -33,6 +35,12 @@ final class PatternWriter
         $anchor = \DateTimeImmutable::createFromFormat('!Y-m-d', (string) $data->anchorDate);
         if (false === $anchor || $anchor->format('Y-m-d') !== $data->anchorDate) {
             throw new CustodyInputException('custody.error.anchor_invalid');
+        }
+        // L'ancre référence un cycle déjà en cours : une ancre future laisserait des jours obsolètes
+        // dans [aujourd'hui, ancre[ non régénérés (le passé/présent est figé à partir d'aujourd'hui).
+        $today = $this->clock->now()->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d');
+        if ($anchor->format('Y-m-d') > $today) {
+            throw new CustodyInputException('custody.error.anchor_future');
         }
         $weekday = $data->handoverWeekday ?? -1;
         if ($weekday < 0 || $weekday > 6) {

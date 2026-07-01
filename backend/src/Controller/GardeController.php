@@ -68,11 +68,14 @@ final class GardeController extends AbstractController
         $canView = $active->can(RightDomain::Custody, RightLevel::View);
         $canEdit = $active->can(RightDomain::Custody, RightLevel::Edit);
 
-        // Mois affiché (?month=YYYY-MM, défaut mois courant Europe/Paris).
+        // Mois affiché (?month=YYYY-MM, défaut mois courant Europe/Paris). createFromFormat étant
+        // permissif (2026-13 → 2027-01), on rejette tout mois qui ne se re-formate pas à l'identique.
         $tz = new \DateTimeZone('Europe/Paris');
         $monthRaw = (string) $request->query->get('month', '');
-        $monthStart = \DateTimeImmutable::createFromFormat('!Y-m-d', $monthRaw.'-01', $tz)
-            ?: $this->clock->now()->setTimezone($tz)->modify('first day of this month')->setTime(0, 0);
+        $parsed = '' !== $monthRaw ? \DateTimeImmutable::createFromFormat('!Y-m-d', $monthRaw.'-01', $tz) : false;
+        $monthStart = ($parsed instanceof \DateTimeImmutable && $parsed->format('Y-m') === $monthRaw)
+            ? $parsed
+            : $this->clock->now()->setTimezone($tz)->modify('first day of this month')->setTime(0, 0);
         $monthEnd = $monthStart->modify('last day of this month');
 
         $pattern = $this->patterns->findOneByFamily($family);

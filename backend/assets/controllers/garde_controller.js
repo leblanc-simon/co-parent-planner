@@ -36,6 +36,7 @@ export default class extends Controller {
 
     // « Échanger ce jour » : crée une exception d'un jour vers l'autre parent.
     swapDay(event) {
+        event.preventDefault(); // évite le défilement sur la touche Espace
         const date = event.currentTarget.dataset.date;
         const target = event.currentTarget.dataset.slot === 'A' ? this.parentBValue : this.parentAValue;
         if (!date || !target) return;

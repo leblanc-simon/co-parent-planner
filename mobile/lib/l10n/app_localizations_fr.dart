@@ -444,6 +444,13 @@ class AppL10nFr extends AppL10n {
   String get custodySwapped => 'Jour échangé.';
 
   @override
+  String get custodySwapUnavailable =>
+      'Échange impossible : l\'autre parent n\'est pas défini.';
+
+  @override
+  String get custodyParentsRequired => 'Choisissez deux parents distincts.';
+
+  @override
   String get custodyExceptionsTitle => 'Exceptions';
 
   @override

@@ -64,6 +64,46 @@ final class CustodyApiLot3Test extends ApiAuthTestCase
         return (string) $m->getId();
     }
 
+    private function addChild(string $familyId, string $email): string
+    {
+        $hasher = self::getContainer()->get(UserPasswordHasherInterface::class);
+        $families = self::getContainer()->get(FamilyRepository::class);
+        self::assertInstanceOf(UserPasswordHasherInterface::class, $hasher);
+        self::assertInstanceOf(FamilyRepository::class, $families);
+        $family = $families->find(Uuid::fromString($familyId));
+        self::assertInstanceOf(Family::class, $family);
+
+        $u = (new User())->setEmail($email);
+        $u->setPasswordHash($hasher->hashPassword($u, self::PASSWORD));
+        $m = (new Membership())->setUser($u)->setFamily($family)->setRole(MembershipRole::Child)->setStatus(MembershipStatus::Active);
+        $this->em()->persist($u);
+        $this->em()->persist($m);
+        $this->em()->flush();
+
+        return (string) $m->getId();
+    }
+
+    public function testRejectsFutureAnchorAndNonParentExceptionTarget(): void
+    {
+        static::mockTime(new \DateTimeImmutable('2026-06-23 10:00', new \DateTimeZone('Europe/Paris')));
+        [$client, $h, $familyId, $parentA, $parentB] = $this->separatedFamilyWithTwoParents('cust-guard@example.com');
+
+        // P2-A : une date d'ancrage future est refusée (422) — sinon jours obsolètes non régénérés.
+        $future = $client->request('PUT', '/api/families/'.$familyId.'/custody/pattern', [
+            'json' => ['kind' => 'alternating', 'anchorDate' => '2026-12-01', 'handoverWeekday' => 0, 'handoverTime' => '19:00', 'parentAMembershipId' => $parentA, 'parentBMembershipId' => $parentB],
+            'headers' => $h + ['Content-Type' => 'application/json'],
+        ]);
+        self::assertSame(422, $future->getStatusCode(), 'ancre future refusée');
+
+        // P2-E : un membership enfant ne peut pas être titulaire d'une exception (422).
+        $childId = $this->addChild($familyId, 'child-'.uniqid().'@example.com');
+        $exc = $client->request('POST', '/api/families/'.$familyId.'/custody/exceptions', [
+            'json' => ['startDate' => '2026-07-15', 'endDate' => '2026-07-15', 'parentMembershipId' => $childId],
+            'headers' => $h + ['Content-Type' => 'application/json'],
+        ]);
+        self::assertSame(422, $exc->getStatusCode(), 'titulaire d\'exception non-parent refusé');
+    }
+
     /** Simule le worker asynchrone (le PUT pattern dispatche RegenerateCustody en in-memory en test). */
     private function runGeneration(string $familyId): void
     {

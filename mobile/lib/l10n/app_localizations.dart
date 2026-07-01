@@ -903,6 +903,18 @@ abstract class AppL10n {
   /// **'Jour échangé.'**
   String get custodySwapped;
 
+  /// No description provided for @custodySwapUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échange impossible : l\'autre parent n\'est pas défini.'**
+  String get custodySwapUnavailable;
+
+  /// No description provided for @custodyParentsRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez deux parents distincts.'**
+  String get custodyParentsRequired;
+
   /// No description provided for @custodyExceptionsTitle.
   ///
   /// In fr, this message translates to:

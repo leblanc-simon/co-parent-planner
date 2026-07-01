@@ -35,6 +35,14 @@ final class SchoolHolidayImporter
         }
         $year = $schoolYear ?? $this->currentSchoolYear();
 
+        // Balayage idempotent : on part des périodes officielles déjà en base pour l'année, et on
+        // supprime en fin celles que la source ne renvoie plus (disparues ou dont le start_date —
+        // partie de la clé naturelle — a été rectifié, ce qui créerait sinon un doublon orphelin).
+        $stale = [];
+        foreach ($this->holidays->findOfficialBySchoolYear($family, $year) as $h) {
+            $stale[$h->getId()->toRfc4122()] = $h;
+        }
+
         $count = 0;
         foreach ($this->provider->fetch($zone, $academy, $year) as $imported) {
             $existing = $this->holidays->findOneByNaturalKey(
@@ -58,8 +66,15 @@ final class SchoolHolidayImporter
             $holiday->setEndDate($imported->endDate);
             if (null === $existing) {
                 $this->em->persist($holiday);
+            } else {
+                unset($stale[$existing->getId()->toRfc4122()]); // revue → conservée
             }
             ++$count;
+        }
+
+        // Périodes officielles non revues → obsolètes : suppression (leur règle suit via cascade).
+        foreach ($stale as $obsolete) {
+            $this->em->remove($obsolete);
         }
         $this->em->flush();
 

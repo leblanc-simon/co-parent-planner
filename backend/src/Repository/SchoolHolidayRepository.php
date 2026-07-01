@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Family;
 use App\Entity\SchoolHoliday;
+use App\Enum\HolidaySource;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -17,6 +18,30 @@ class SchoolHolidayRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, SchoolHoliday::class);
+    }
+
+    /**
+     * Périodes **officielles** existantes d'une année scolaire, pour le balayage idempotent de
+     * l'import (suppression des périodes disparues / rectifiées côté source). Une famille n'importe
+     * qu'une zone/académie par an : scoper sur (famille, année) suffit et évite les mismatches de
+     * casse sur l'académie stockée (location).
+     *
+     * @return list<SchoolHoliday>
+     */
+    public function findOfficialBySchoolYear(Family $family, ?string $schoolYear): array
+    {
+        /** @var list<SchoolHoliday> $result */
+        $result = $this->createQueryBuilder('h')
+            ->andWhere('h.family = :family')
+            ->andWhere('h.source = :source')
+            ->andWhere('h.schoolYear = :schoolYear')
+            ->setParameter('family', $family)
+            ->setParameter('source', HolidaySource::Official->value)
+            ->setParameter('schoolYear', $schoolYear)
+            ->getQuery()
+            ->getResult();
+
+        return $result;
     }
 
     /** @return list<SchoolHoliday> */

@@ -103,7 +103,9 @@ final class OpendatasoftSchoolHolidaysProvider implements SchoolHolidaysProvider
             return null;
         }
         $start = $this->toLocalDate($rec['start_date'] ?? null, $tz);
-        $end = $this->toLocalDate($rec['end_date'] ?? null, $tz);
+        // Dans le dataset, `end_date` encode minuit (Europe/Paris) du JOUR DE RENTRÉE — une borne de
+        // fin EXCLUSIVE. Le dernier jour de vacances effectif est donc la veille.
+        $end = $this->toLocalDate($rec['end_date'] ?? null, $tz)?->modify('-1 day');
         if (null === $start || null === $end || $end < $start) {
             $this->logger->warning('Import vacances : enregistrement aux bornes invalides ignoré.', ['record' => $rec]);
 

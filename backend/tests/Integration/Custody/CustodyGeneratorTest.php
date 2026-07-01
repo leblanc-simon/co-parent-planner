@@ -164,4 +164,40 @@ final class CustodyGeneratorTest extends KernelTestCase
         $this->generator->recomputeWindow($family, new \DateTimeImmutable('2026-07-05'), new \DateTimeImmutable('2026-07-05'));
         self::assertSame((string) $b->getId(), $this->parentOf($family, '2026-07-05'), 'retour aux vacances après suppression de l\'exception');
     }
+
+    public function testHolidayRuleAssignmentIsIndependentOfRegenerationWindow(): void
+    {
+        static::mockTime(new \DateTimeImmutable('2026-06-23 10:00', new \DateTimeZone('Europe/Paris')));
+        [$family, $a, $b] = $this->seedFamily();
+        $this->pattern($family, $a, $b);
+
+        // Vacances 1–14 juillet, règle split 50/50 : 1re moitié (1–7) A, 2de moitié (8–14) B.
+        $holiday = (new SchoolHoliday())->setFamily($family)->setLabel('Été')
+            ->setStartDate(new \DateTimeImmutable('2026-07-01'))->setEndDate(new \DateTimeImmutable('2026-07-14'))
+            ->setSource(HolidaySource::Manual);
+        $rule = (new HolidayRule())->setKind(HolidayRuleKind::Split5050)->setParams(['firstHalf' => 'A', 'secondHalf' => 'B']);
+        $holiday->setRule($rule);
+        $this->em->persist($holiday);
+        $this->em->persist($rule);
+        $this->em->flush();
+
+        // Génération plein horizon : le 3 juillet tombe dans la 1re moitié → A.
+        $this->generator->generate($family);
+        self::assertSame((string) $a->getId(), $this->parentOf($family, '2026-07-03'), '3 juillet = 1re moitié (A) sur période complète');
+
+        // Exception sur le 3, puis suppression → recalcul sur la fenêtre étroite [3,3] uniquement.
+        $exc = (new CustodyException())->setFamily($family)
+            ->setStartDate(new \DateTimeImmutable('2026-07-03'))->setEndDate(new \DateTimeImmutable('2026-07-03'))
+            ->setParentMembership($b);
+        $this->em->persist($exc);
+        $this->em->flush();
+        $this->generator->applyException($exc);
+        $this->em->remove($exc);
+        $this->em->flush();
+        $this->generator->recomputeWindow($family, new \DateTimeImmutable('2026-07-03'), new \DateTimeImmutable('2026-07-03'));
+
+        // Le découpage 50/50 est ancré sur la période COMPLÈTE, pas sur la fenêtre clampée :
+        // le 3 juillet doit rester A (et non basculer à B comme si la vacance ne durait qu'un jour).
+        self::assertSame((string) $a->getId(), $this->parentOf($family, '2026-07-03'), 'attribution vacances indépendante de la fenêtre régénérée');
+    }
 }

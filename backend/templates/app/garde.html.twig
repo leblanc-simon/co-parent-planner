@@ -46,7 +46,8 @@
                                 {{ cell.source == 'exception' ? 'garde-day--exception' }}
                                 {{ not cell.inMonth ? 'garde-day--out' }}"
                          {% if canEdit and cell.inMonth and cell.slot %}
-                            data-action="click->garde#swapDay" data-date="{{ cell.date }}" data-slot="{{ cell.slot }}" role="button" title="Échanger ce jour"
+                            data-action="click->garde#swapDay keydown.enter->garde#swapDay keydown.space->garde#swapDay"
+                            data-date="{{ cell.date }}" data-slot="{{ cell.slot }}" role="button" tabindex="0" title="Échanger ce jour"
                          {% endif %}>
                         <span class="garde-day__num">{{ cell.day }}</span>
                         {% if cell.source == 'holiday' %}<span class="garde-day__tag">vac.</span>{% endif %}

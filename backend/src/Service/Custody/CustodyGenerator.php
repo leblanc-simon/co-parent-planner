@@ -44,7 +44,7 @@ final class CustodyGenerator
         }
 
         $today = $this->today();
-        $from = max($pattern->getAnchorDate()->setTime(0, 0), $today);
+        $from = max($this->cal($pattern->getAnchorDate()), $today);
         $to = $today->modify('+'.self::HORIZON_MONTHS.' months');
         if ($from > $to) {
             return;
@@ -57,8 +57,8 @@ final class CustodyGenerator
     public function applyException(CustodyException $exception): void
     {
         $family = $exception->getFamily();
-        $from = max($exception->getStartDate()->setTime(0, 0), $this->today());
-        $to = $exception->getEndDate()->setTime(0, 0);
+        $from = max($this->cal($exception->getStartDate()), $this->today());
+        $to = $this->cal($exception->getEndDate());
         if ($from > $to) {
             return; // exception entièrement passée → rien à matérialiser
         }
@@ -76,8 +76,8 @@ final class CustodyGenerator
     public function recomputeWindow(Family $family, \DateTimeImmutable $start, \DateTimeImmutable $end): void
     {
         $pattern = $this->patterns->findOneByFamily($family);
-        $from = max($start->setTime(0, 0), $this->today());
-        $to = $end->setTime(0, 0);
+        $from = max($this->cal($start), $this->today());
+        $to = $this->cal($end);
         if (null === $pattern || $from > $to) {
             return;
         }
@@ -110,23 +110,34 @@ final class CustodyGenerator
             }
 
             // 3. Vacances : écrase base/holiday (dernière période écrite gagne), jamais une exception.
+            //    Le découpage de la règle (moitiés, semaines, réveillons) est calculé sur la période
+            //    COMPLÈTE de la vacance — jamais clampée à la fenêtre — pour rester identique quelle
+            //    que soit la fenêtre régénérée (idempotence) ; on ne matérialise que [from, to].
+            $fromStr = $from->format('Y-m-d');
+            $toStr = $to->format('Y-m-d');
             foreach ($this->holidays->findWithRuleOverlapping($family, $from, $to) as $holiday) {
                 $rule = $holiday->getRule();
                 if (null === $rule) {
                     continue;
                 }
-                $hStart = max($holiday->getStartDate()->setTime(0, 0), $from);
-                $hEnd = min($holiday->getEndDate()->setTime(0, 0), $to);
-                $assignments = $this->rules->assignments($rule->getKind(), $rule->getParams(), $hStart, $hEnd);
+                $assignments = $this->rules->assignments(
+                    $rule->getKind(),
+                    $rule->getParams(),
+                    $this->cal($holiday->getStartDate()),
+                    $this->cal($holiday->getEndDate()),
+                );
                 foreach ($assignments as $dateStr => $slot) {
-                    $this->upsertHoliday($family, new \DateTimeImmutable($dateStr), 'A' === $slot ? $aId : $bId);
+                    if ($dateStr < $fromStr || $dateStr > $toStr) {
+                        continue;
+                    }
+                    $this->upsertHoliday($family, $this->cal(new \DateTimeImmutable($dateStr)), 'A' === $slot ? $aId : $bId);
                 }
             }
 
             // 4. Ré-application des exceptions restantes chevauchant la fenêtre (priorité max).
             foreach ($this->exceptions->findOverlapping($family, $from, $to) as $exception) {
-                $eFrom = max($exception->getStartDate()->setTime(0, 0), $from);
-                $eTo = min($exception->getEndDate()->setTime(0, 0), $to);
+                $eFrom = max($this->cal($exception->getStartDate()), $from);
+                $eTo = min($this->cal($exception->getEndDate()), $to);
                 $parentId = $exception->getParentMembership()?->getId();
                 foreach ($this->eachDay($eFrom, $eTo) as $date) {
                     $this->upsertException($family, $date, $parentId);
@@ -193,6 +204,19 @@ final class CustodyGenerator
     private function today(): \DateTimeImmutable
     {
         return $this->clock->now()->setTimezone(new \DateTimeZone('Europe/Paris'))->setTime(0, 0);
+    }
+
+    /**
+     * Renormalise une date d'entité (hydratée à minuit UTC par Doctrine, faute de `date.timezone`)
+     * en minuit Europe/Paris du même jour calendaire — pour la comparer sans off-by-one à `today()`
+     * et itérer en jours calendaires (cf. invariant « comparer des dates Y-m-d, jamais des instants »).
+     */
+    private function cal(\DateTimeImmutable $d): \DateTimeImmutable
+    {
+        $r = \DateTimeImmutable::createFromFormat('!Y-m-d', $d->format('Y-m-d'), new \DateTimeZone('Europe/Paris'));
+        \assert(false !== $r);
+
+        return $r;
     }
 
     /**

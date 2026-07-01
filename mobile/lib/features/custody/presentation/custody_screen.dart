@@ -241,8 +241,10 @@ class _Calendar extends ConsumerWidget {
     final first = parsed.first;
     final last = parsed.last;
     // Lundi de la semaine du premier jour → dimanche de la semaine du dernier.
-    final gridStart = first.subtract(Duration(days: first.weekday - 1));
-    final gridEnd = last.add(Duration(days: 7 - last.weekday));
+    // Arithmétique via le constructeur DateTime (jours calendaires) : insensible au changement
+    // d'heure (le 25/10, +Duration(days:1) = 24 h dupliquerait/sauterait un jour).
+    final gridStart = DateTime(first.year, first.month, first.day - (first.weekday - 1));
+    final gridEnd = DateTime(last.year, last.month, last.day + (7 - last.weekday));
 
     final cells = <Widget>[];
     for (final dow in [
@@ -270,7 +272,7 @@ class _Calendar extends ConsumerWidget {
           slot: _slotFor(day),
         ),
       );
-      cursor = cursor.add(const Duration(days: 1));
+      cursor = DateTime(cursor.year, cursor.month, cursor.day + 1);
     }
 
     return Column(
@@ -589,7 +591,10 @@ class _CustodyDayDetailState extends ConsumerState<CustodyDayDetail> {
     final target = widget.slot == 'A'
         ? pattern.parentBMembershipId
         : pattern.parentAMembershipId;
-    if (target == null) return;
+    if (target == null) {
+      setState(() => _error = AppL10n.of(context).custodySwapUnavailable);
+      return;
+    }
 
     setState(() {
       _busy = true;

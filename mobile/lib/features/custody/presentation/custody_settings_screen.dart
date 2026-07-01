@@ -37,6 +37,9 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
 
   void _prefill(api.CustodyPattern? pattern, List<api.Member> parents) {
     if (_initialized) return;
+    // Défaut d'un premier rythme : aujourd'hui (jamais une date d'application codée en dur).
+    final now = DateTime.now();
+    _anchor = DateTime(now.year, now.month, now.day);
     if (pattern != null) {
       _kind = pattern.kind;
       if (pattern.anchorDate != null) {
@@ -71,7 +74,12 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
 
   Future<void> _save() async {
     final family = ref.read(familyContextProvider);
-    if (family == null || _parentA == null || _parentB == null) return;
+    if (family == null) return;
+    // Deux parents distincts requis (famille avec un seul parent, ou même choix des deux côtés).
+    if (_parentA == null || _parentB == null || _parentA == _parentB) {
+      setState(() => _error = AppL10n.of(context).custodyParentsRequired);
+      return;
+    }
     setState(() {
       _saving = true;
       _error = null;

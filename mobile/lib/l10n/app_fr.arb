@@ -157,6 +157,8 @@
   "custodyAssignedTo": "Confié à",
   "custodyNoParent": "Non attribué",
   "custodySwapped": "Jour échangé.",
+  "custodySwapUnavailable": "Échange impossible : l'autre parent n'est pas défini.",
+  "custodyParentsRequired": "Choisissez deux parents distincts.",
   "custodyExceptionsTitle": "Exceptions",
   "custodyExceptionsEmpty": "Aucune exception.",
   "custodyAddException": "Ajouter une exception",

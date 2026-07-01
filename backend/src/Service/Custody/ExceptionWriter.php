@@ -8,6 +8,7 @@ use App\Dto\Custody\CreateExceptionRequest;
 use App\Entity\CustodyException;
 use App\Entity\Family;
 use App\Entity\Membership;
+use App\Enum\MembershipRole;
 use App\Exception\CustodyInputException;
 use App\Repository\MembershipRepository;
 use Psr\Clock\ClockInterface;
@@ -64,7 +65,10 @@ final class ExceptionWriter
             throw new CustodyInputException('custody.error.exception_parent_invalid');
         }
         $m = $this->memberships->find(Uuid::fromString($id));
-        if (!$m instanceof Membership || !$m->getFamily()->getId()->equals($family->getId()) || !$m->isActive()) {
+        if (!$m instanceof Membership
+            || !$m->getFamily()->getId()->equals($family->getId())
+            || MembershipRole::Parent !== $m->getRole()
+            || !$m->isActive()) {
             throw new CustodyInputException('custody.error.exception_parent_invalid');
         }
 

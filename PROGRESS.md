@@ -5,7 +5,7 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-07-01** — **Lot 3 TERMINÉ** (garde). **Lot 4 (agenda) — Étape A backend TERMINÉE** : entités + moteur d'expansion/scission + endpoints + validation + idempotence + temps réel + contrat OpenAPI + client Dart régénéré. Reste Lot 4 : UI web, UI mobile, E2E, revue finale.
+Dernière mise à jour : **2026-07-02** — **Lot 4 (agenda) TERMINÉ** (backend + web + mobile + E2E). **Lot 5 (familles liées & overlay) TERMINÉ** : backend (projection anti-fuite RO, `?overlay=`, préférences opt-in, revue adversariale 0 P0/P1/P2) + web (toggle agenda + pastilles garde) + mobile (overlay agenda RO + pastilles garde) + E2E (activation/désactivation overlay, événement lié RO). **Prochain lot : Lot 6 — Échanges temps réel.**
 
 ---
 
@@ -19,10 +19,11 @@ Dernière mise à jour : **2026-07-01** — **Lot 3 TERMINÉ** (garde). **Lot 4 
 
 **Lot 4 — Agenda** (`specs/lots/lot-4-agenda.md`) : ✅ **TERMINÉ** — backend + moteur + endpoints + UI web + UI mobile + E2E + temps réel + revue de code adversariale.
 
-**Lot 5 — Familles liées & overlay** (`specs/lots/lot-5-familles-liees-overlay.md`) : 🟡 **EN COURS** — **Étapes A (backend) + contrat + C (UI web) + D (UI mobile) TERMINÉES**.
+**Lot 5 — Familles liées & overlay** (`specs/lots/lot-5-familles-liees-overlay.md`) : ✅ **TERMINÉ** (backend + contrat + UI web + UI mobile + E2E).
 - **UI web** : `/agenda` — toggle « Overlay famille liée » par lien actif (Stimulus `toggleOverlay` → PUT préférence + reload), événements liés en **lecture seule** (badge « Famille liée », couleur `#9C6FB0`), fusion par jour, état vide localisé. `/garde` — pastilles d'activité `#9C6FB0` par jour (dérivées des événements projetés, garde jamais modifiée) + toggle custody. CSS `--linked`. **Note** : libellés overlay hardcodés en FR dans les Twig (cohérent avec l'UI web existante, 100 % hardcodée ; l'API et le mobile utilisent l'i18n). WebPagesTest : rendu overlay (événement lié + badge + toggle). Backend **218 tests**, couverture 85,6 %.
 - **UI mobile** : `OverlayRepository` (liens actifs + préférences via clients générés ; événements projetés via appel dio brut car `?overlay=` non exposé par le client généré) + providers (`overlayEventsProvider` agenda, `overlayGardeDatesProvider` garde). Écran agenda : section toggles par lien + événements liés **RO** (badge « Famille liée », `#9C6FB0`). Écran garde : toggles vue garde + **pastilles `#9C6FB0`** par jour (multi-jours spannés, garde jamais modifiée) + légende. i18n ARB `overlay*`. Lecture overlay **best-effort** (un échec n'impacte pas l'agenda/garde propres). Mobile **124 tests**, couverture 77,9 %, `dart analyze` propre ; contrat inchangé (pas de régénération).
-- **Reste Lot 5** : E2E Playwright (activation overlay, événement lié RO, état vide) + clôture du lot.
+- **E2E web** (`web-e2e/tests/lot5-overlay.spec.ts`) : deux familles A/B, événement chez B, B propose le lien / A l'active (setup via API `page.request` — cookie JWT partagé + `X-Family-Id`), puis toggle overlay via l'UI : activation → « Judo du second foyer » visible en **lecture seule** (badge « Famille liée », ni formulaire ni bouton d'édition) ; désactivation → masqué. **1 test vert.**
+- **DoD Lot 5 satisfaite** : tests unit/fonctionnels + E2E web + tests Flutter verts, migration `OverlayPreference` fournie, OpenAPI à jour + client Dart régénéré, i18n câblée (API/mobile) , registre RGPD à jour (destinataire « famille liée » + `OverlayPreference`), analyse statique propre (PHPStan 8 / `dart analyze` / cs-fixer). Aucune nouvelle dépendance → INSTALL.md inchangé.
 - **Modèle** : entité `OverlayPreference` (opt-in par membre/lien/vue, unicité `(membership,link,view)`) ; migration `Version20260701213830`.
 - **Habilitation & projection** : `FamilyLinkRepository::findActiveBetween` (bidirectionnel, refuse soi/pending) ; `OverlayReader` (résolution multi-liens, 422 uniforme si tous invalides, dédup par identité de lien) ; **projection anti-fuite `OverlayEventResource`** (uniquement horaires/catégorie/titre + source=linked/#9C6FB0/editable=false ; **aucun** enfant/responsable/description/lieu/série/id). Activation du `?overlay=` dans `EventsProvider` (fusion + tri), expansion en fuseau B → affichage fuseau A.
 - **Endpoints** : `GET/PUT /families/{id}/overlay-preferences` (scopé membre courant, upsert idempotent sérialisé par advisory lock = last-write-wins §4.2, valide lien actif). RO strict : aucune route d'écriture overlay ; mutation cross-famille refusée (scope). Garde jamais modifiée (pastilles dérivées des événements projetés).
@@ -245,6 +246,15 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-07-02 — Lot 5 (overlay) : Étape E — E2E Playwright + clôture du lot
+- `lot5-overlay.spec.ts` : deux familles (A, B) via UI, événement chez B, liaison A↔B pilotée par API
+  (`page.request` partage le cookie JWT ; header `X-Family-Id`) — B propose, A (destinataire) active —
+  puis toggle overlay via l'UI. Assertions : activation → événement lié **RO** (badge « Famille liée »,
+  0 formulaire/bouton d'édition dans la tuile) ; désactivation → tuile liée disparue. **1 test vert (6,4 s).**
+- Piège évité (leçon Lot 4) : la case overlay déclenche un reload Stimulus → on force `checked` + dispatch
+  `change` via `evaluate` (un clic natif serait détaché par le reload).
+- **Lot 5 clôturé.** DoD complète (voir §0). Prochain : Lot 6 — Échanges temps réel.
 
 ### 2026-07-02 — Lot 5 (overlay) : Étape D — UI mobile
 - `OverlayRepository` : liens actifs + préférences (clients générés) ; événements projetés via appel dio

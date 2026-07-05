@@ -5,7 +5,7 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-07-05** — **Revue graphique (conformité maquettes §8) APPLIQUÉE** (web + mobile) : 113 écarts traités sur les lots A→I de `docs/revue-graphique-maquettes.md`, sauf 3 P2 différés justifiés (WP-07/08 selects→cartes radio = risque JS/E2E ; U1-06 nom responsable accueil = appel réseau en test). Portes vertes : backend 218 tests / PHPStan 0 / cs-fixer 0 / Twig 21 ; **E2E Playwright 14/14** ; mobile `dart analyze` 0 / **flutter test 124** / couverture 78 %. **Lots 0→5 TERMINÉS. Prochain lot : Lot 6 — Échanges temps réel.**
+Dernière mise à jour : **2026-07-05** — **Lot 6 (Échanges temps réel) TERMINÉ** : backend (entités Exchange/ExchangeOption/Message🔒/OptionVote, 6 endpoints, moteur de décision par consensus + verrou pessimiste, Mercure post-commit, RGPD, i18n) + contrat OpenAPI + client Dart + UI web (écran /echanges maître-détail + badge nav + temps réel) + UI mobile (écran Échanges + badge accueil) + E2E + revue ciblée. Portes : backend **241 tests** / PHPStan 0 / cs-fixer 0 / Twig 22 ; **E2E Playwright 14/14** ; mobile **140 tests** / `dart analyze` 0 / couverture 75,2 % ; client généré intact. Avant : **Revue graphique (conformité maquettes §8) APPLIQUÉE** (113 écarts, 3 P2 différés justifiés). **Lots 0→6 TERMINÉS. Prochain lot : Lot 7 — Notifications e-mail.**
 
 ---
 
@@ -18,6 +18,8 @@ Dernière mise à jour : **2026-07-05** — **Revue graphique (conformité maque
 **Lot 3 — Garde (moteur + vacances)** (`specs/lots/lot-3-*.md`) : ✅ **TERMINÉ** (backend + moteur + adaptateur vacances + async/scheduler + endpoints + contrat OpenAPI + client Dart + UI web + E2E + temps réel + UI mobile + **revue de code + corrections**).
 
 **Lot 4 — Agenda** (`specs/lots/lot-4-agenda.md`) : ✅ **TERMINÉ** — backend + moteur + endpoints + UI web + UI mobile + E2E + temps réel + revue de code adversariale.
+
+**Lot 6 — Échanges (temps réel)** (`specs/lots/lot-6-echanges-temps-reel.md`) : ✅ **TERMINÉ** (backend + contrat + UI web + UI mobile + E2E + revue ciblée) — détail dans le journal §6 (2026-07-05).
 
 **Lot 5 — Familles liées & overlay** (`specs/lots/lot-5-familles-liees-overlay.md`) : ✅ **TERMINÉ** (backend + contrat + UI web + UI mobile + E2E).
 - **UI web** : `/agenda` — toggle « Overlay famille liée » par lien actif (Stimulus `toggleOverlay` → PUT préférence + reload), événements liés en **lecture seule** (badge « Famille liée », couleur `#9C6FB0`), fusion par jour, état vide localisé. `/garde` — pastilles d'activité `#9C6FB0` par jour (dérivées des événements projetés, garde jamais modifiée) + toggle custody. CSS `--linked`. **Note** : libellés overlay hardcodés en FR dans les Twig (cohérent avec l'UI web existante, 100 % hardcodée ; l'API et le mobile utilisent l'i18n). WebPagesTest : rendu overlay (événement lié + badge + toggle). Backend **218 tests**, couverture 85,6 %.
@@ -246,6 +248,38 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-07-05 — Lot 6 : Échanges (temps réel) — backend + contrat + web + mobile + E2E
+- **Modèle** : `Exchange` (discussion/décision, statut open/decided, échéance date, auteur/enfant
+  `SET NULL`, `decidedOption`, idempotence, verrou optimiste), `ExchangeOption` (≥2, position unique),
+  `Message` (`text` chiffré 🔒 AES-256-GCM, `SET NULL`), `OptionVote` (unicité `(exchange,membership)`).
+  Migration `Version20260705145717` ; schéma en sync.
+- **Endpoints** (API Platform) : `GET/POST /families/{id}/exchanges?status=`, `GET/PATCH /exchanges/{id}`,
+  `POST /exchanges/{id}/decide`, `POST /exchanges/{exchangeId}/messages`. Voter `exchanges`, scope
+  `X-Family-Id`, RFC 7807, `Idempotency-Key` (advisory lock).
+- **Moteur décision** (`DecisionEngine`) : électorat = actifs `exchanges=edit` ; bascule par consensus +
+  **majorité stricte** (égalité → reste ouvert) ; forçage/clôture explicite (PATCH `decidedOptionId`) ;
+  `decide` sous **verrou pessimiste FOR UPDATE + refresh** (2ᵉ concurrent → 409). `OverdueChecker` dérivé
+  (fin de journée fuseau famille, DST). Badge = `COUNT(status=open)`.
+- **Temps réel** : `ExchangePublisher` Mercure **post-commit best-effort** (topics liste + détail).
+  Choix : Turbo Stream `refresh` (morphing) — **aucun clair de message dans le payload Mercure** ; les
+  clients autorisés re-fetchent via l'API (plus conservateur que la projection HTML de la spec §3.7).
+  Claims Mercure `exchanges` (liste + template détail) filtrés `exchanges≥view`.
+- **UI web** : `/echanges` maître-détail (`ExchangeController` + `echanges.html.twig` + Stimulus
+  `exchanges`), badge nav via `ExchangeBadgeExtension`, `turbo-stream-source` + cookie Mercure.
+- **UI mobile** (sous-agent) : `lib/features/exchanges` (repo + providers + écran liste/détail/création),
+  carte « Échanges » + **badge** sur l'accueil. Contraintes assumées : filtrage/tri **client** (`?status`
+  non exposé par le client généré), **SSE différé** (pull-to-refresh, cohérent Lots 3/4), gating `edit`
+  délégué au serveur. i18n ARB `exchange*` (pluriels ICU).
+- **RGPD** : `Message.text` 🔒 au registre + `#[PersonalData]` (test de cohérence vert). Audit
+  `ExchangeOpened/Decided/Closed`. Aucun champ santé.
+- **Revue ciblée** (concurrence decide, idempotence, anti-fuite Mercure, overdue/décidé, scope 404,
+  auteur anonymisé) : aucun correctif requis.
+- **Portes** : backend **241 tests / 2009 assertions**, PHPStan niv.8 (0), cs-fixer (0), lint Twig (22) ;
+  **E2E Playwright 14/14** (discussion+message, décision bascule électorat=1, marqueur « en retard ») —
+  temps réel hors stack E2E (Mercure absent, cf. Lots 4/5), couvert backend ; mobile **140 tests**,
+  couverture **75,2 %**, `dart analyze`/`format` propres, client généré intact. OpenAPI exporté.
+  Aucune dépendance ajoutée (INSTALL.md inchangé).
 
 ### 2026-07-05 — Revue graphique : application des corrections de conformité (web + mobile)
 - Source : `docs/revue-graphique-maquettes.md` (113 écarts confirmés, 0 P0). Appliqués par lots A→I.

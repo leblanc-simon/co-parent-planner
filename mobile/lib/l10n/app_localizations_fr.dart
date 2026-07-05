@@ -199,6 +199,9 @@ class AppL10nFr extends AppL10n {
   String get tabHome => 'Accueil';
 
   @override
+  String get tabCustody => 'Garde';
+
+  @override
   String get tabAgenda => 'Agenda';
 
   @override
@@ -209,6 +212,9 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get homeGreeting => 'Bonjour';
+
+  @override
+  String get homeAllAgenda => 'Tout l\'agenda';
 
   @override
   String get homeUpcomingTitle => 'A venir';
@@ -355,6 +361,12 @@ class AppL10nFr extends AppL10n {
   }
 
   @override
+  String get childInfoTitle => 'Informations';
+
+  @override
+  String get childSchool => 'Scolarité';
+
+  @override
   String get childNotesTitle => 'Notes';
 
   @override
@@ -375,6 +387,17 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get custodyTitle => 'Garde';
+
+  @override
+  String get custodyScreenTitle => 'Planning de garde';
+
+  @override
+  String custodyRuleHandover(String weekday, String time) {
+    return 'Échange le $weekday à $time';
+  }
+
+  @override
+  String get custodyActivity => 'Activité';
 
   @override
   String get custodyOpen => 'Ouvrir le planning';
@@ -554,6 +577,21 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get agendaEmpty => 'Aucun événement ce mois-ci.';
+
+  @override
+  String get agendaFilterAll => 'Tout';
+
+  @override
+  String agendaDayEvents(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count événements',
+      one: '$count événement',
+      zero: 'Aucun événement',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agendaNew => 'Nouvel événement';

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../family/application/family_context.dart';
@@ -91,28 +93,28 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
             decoration: InputDecoration(labelText: l.inviteEmail),
           ),
           const SizedBox(height: 16),
-          DropdownButtonFormField<api.InvitationCreateInvitationRequestRole>(
-            key: const ValueKey('invite-role'),
-            initialValue: _role,
-            decoration: InputDecoration(labelText: l.inviteRole),
-            items: [
-              DropdownMenuItem(
-                value: api.InvitationCreateInvitationRequestRole.stepParent,
-                child: Text(l.membersRoleStepParent),
+          // mob-param U-07 : sélecteur de rôle en cartes radio.
+          Text(l.inviteRole, style: AppTypography.eyebrow),
+          const SizedBox(height: 8),
+          for (final role in const [
+            api.InvitationCreateInvitationRequestRole.stepParent,
+            api.InvitationCreateInvitationRequestRole.parent,
+            api.InvitationCreateInvitationRequestRole.child,
+          ])
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _RoleCard(
+                label: switch (role) {
+                  api.InvitationCreateInvitationRequestRole.parent =>
+                    l.membersRoleParent,
+                  api.InvitationCreateInvitationRequestRole.child =>
+                    l.membersRoleChild,
+                  _ => l.membersRoleStepParent,
+                },
+                selected: _role == role,
+                onTap: _sending ? null : () => setState(() => _role = role),
               ),
-              DropdownMenuItem(
-                value: api.InvitationCreateInvitationRequestRole.parent,
-                child: Text(l.membersRoleParent),
-              ),
-              DropdownMenuItem(
-                value: api.InvitationCreateInvitationRequestRole.child,
-                child: Text(l.membersRoleChild),
-              ),
-            ],
-            onChanged: _sending
-                ? null
-                : (v) => setState(() => _role = v ?? _role),
-          ),
+            ),
           if (showRights) ...[
             const SizedBox(height: 16),
             _RightRow(
@@ -161,6 +163,73 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
       setState(() => _rights[domain] = level);
 }
 
+/// mob-param U-07 : carte radio de rôle (bordure 2px si actif + pastille radio).
+class _RoleCard extends StatelessWidget {
+  const _RoleCard({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected ? AppColors.accent : AppColors.borderField,
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 18,
+              height: 18,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: selected ? AppColors.accent : AppColors.muted2,
+                  width: 2,
+                ),
+              ),
+              child: selected
+                  ? Container(
+                      width: 9,
+                      height: 9,
+                      decoration: const BoxDecoration(
+                        color: AppColors.accent,
+                        shape: BoxShape.circle,
+                      ),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w600,
+                color: AppColors.ink,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _RightRow extends StatelessWidget {
   const _RightRow({
     required this.label,
@@ -177,21 +246,31 @@ class _RightRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppL10n.of(context);
+    // mob-param U-08 : ligne de droit habillée en carte (Dropdown 3 niveaux conservé).
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Expanded(child: Text(label)),
-          DropdownButton<String>(
-            value: rights[domain],
-            items: [
-              DropdownMenuItem(value: 'none', child: Text(l.rightNone)),
-              DropdownMenuItem(value: 'view', child: Text(l.rightView)),
-              DropdownMenuItem(value: 'edit', child: Text(l.rightEdit)),
-            ],
-            onChanged: (v) => onChanged(domain, v ?? 'none'),
-          ),
-        ],
+      padding: const EdgeInsets.only(bottom: 7),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(11),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Expanded(child: Text(label)),
+            DropdownButton<String>(
+              value: rights[domain],
+              underline: const SizedBox.shrink(),
+              items: [
+                DropdownMenuItem(value: 'none', child: Text(l.rightNone)),
+                DropdownMenuItem(value: 'view', child: Text(l.rightView)),
+                DropdownMenuItem(value: 'edit', child: Text(l.rightEdit)),
+              ],
+              onChanged: (v) => onChanged(domain, v ?? 'none'),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -7,7 +7,9 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/error_banner.dart';
+import '../../../core/widgets/large_title_header.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../agenda/data/agenda_repository.dart';
 import '../../agenda/data/overlay_repository.dart';
 import '../../family/application/family_context.dart';
 import '../data/custody_repository.dart';
@@ -26,46 +28,61 @@ class CustodyScreen extends ConsumerWidget {
 
     if (family == null || family.isIntact) {
       return Scaffold(
-        appBar: AppBar(title: Text(l.custodyTitle)),
-        body: Center(child: Text(l.custodyIntact)),
+        body: SafeArea(
+          child: Column(
+            children: [
+              LargeTitleHeader(title: l.custodyScreenTitle),
+              Expanded(child: Center(child: Text(l.custodyIntact))),
+            ],
+          ),
+        ),
       );
     }
 
     final patternAsync = ref.watch(familyCustodyPatternProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l.custodyTitle),
-        actions: [
-          IconButton(
-            key: const ValueKey('custody-settings-action'),
-            icon: const Icon(Icons.tune),
-            tooltip: l.custodySettingsTitle,
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const CustodySettingsScreen(),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // U-08 : grand titre inline « Planning de garde » + accès au rythme.
+            LargeTitleHeader(
+              title: l.custodyScreenTitle,
+              trailing: IconButton(
+                key: const ValueKey('custody-settings-action'),
+                icon: const Icon(Icons.tune),
+                tooltip: l.custodySettingsTitle,
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const CustodySettingsScreen(),
+                  ),
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-      body: patternAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Padding(
-          padding: const EdgeInsets.all(20),
-          child: ErrorBanner(e is ApiException ? e.message : e.toString()),
-        ),
-        data: (pattern) => RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(familyCustodyPatternProvider);
-            ref.invalidate(familyCustodyDaysProvider);
-            ref.invalidate(familyCustodyStatsProvider);
-            ref.invalidate(familyCustodyExceptionsProvider);
-            await ref.read(familyCustodyDaysProvider.future);
-          },
-          child: pattern == null
-              ? _NoPattern()
-              : _CustodyBody(pattern: pattern),
+            Expanded(
+              child: patternAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: ErrorBanner(
+                    e is ApiException ? e.message : e.toString(),
+                  ),
+                ),
+                data: (pattern) => RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(familyCustodyPatternProvider);
+                    ref.invalidate(familyCustodyDaysProvider);
+                    ref.invalidate(familyCustodyStatsProvider);
+                    ref.invalidate(familyCustodyExceptionsProvider);
+                    await ref.read(familyCustodyDaysProvider.future);
+                  },
+                  child: pattern == null
+                      ? _NoPattern()
+                      : _CustodyBody(pattern: pattern),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -114,17 +131,34 @@ class _CustodyBody extends ConsumerWidget {
     final overlayDates = ref
         .watch(overlayGardeDatesProvider)
         .maybeWhen(data: (d) => d, orElse: () => const <String>{});
+    // U-09 : jours porteurs d'un événement de la famille active (pastille d'activité).
+    final activityDates = ref
+        .watch(familyEventsProvider)
+        .maybeWhen(
+          data: (events) => {
+            for (final e in events)
+              if (e.startsAt.length >= 10) e.startsAt.substring(0, 10),
+          },
+          orElse: () => const <String>{},
+        );
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
         const _OverlayGardeToggles(),
+        // U-02 : bandeau résumant le rythme de garde.
+        _RuleBanner(pattern: pattern),
+        const SizedBox(height: 12),
         daysAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) =>
               ErrorBanner(e is ApiException ? e.message : e.toString()),
-          data: (days) =>
-              _Calendar(pattern: pattern, days: days, overlayDates: overlayDates),
+          data: (days) => _Calendar(
+            pattern: pattern,
+            days: days,
+            overlayDates: overlayDates,
+            activityDates: activityDates,
+          ),
         ),
         const SizedBox(height: 12),
         const _Legend(),
@@ -172,15 +206,9 @@ class _CustodyBody extends ConsumerWidget {
               : Column(
                   children: [
                     for (final h in holidays)
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
-                        leading: const Icon(
-                          Icons.beach_access,
-                          color: AppColors.catSchool,
-                        ),
-                        title: Text(h.label),
-                        subtitle: Text('${h.startDate} → ${h.endDate}'),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _HolidayCard(holiday: h),
                       ),
                   ],
                 ),
@@ -237,11 +265,13 @@ class _Calendar extends ConsumerWidget {
     required this.pattern,
     required this.days,
     this.overlayDates = const {},
+    this.activityDates = const {},
   });
 
   final api.CustodyPattern pattern;
   final List<api.CustodyDay> days;
   final Set<String> overlayDates;
+  final Set<String> activityDates;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -255,8 +285,16 @@ class _Calendar extends ConsumerWidget {
     // Lundi de la semaine du premier jour → dimanche de la semaine du dernier.
     // Arithmétique via le constructeur DateTime (jours calendaires) : insensible au changement
     // d'heure (le 25/10, +Duration(days:1) = 24 h dupliquerait/sauterait un jour).
-    final gridStart = DateTime(first.year, first.month, first.day - (first.weekday - 1));
-    final gridEnd = DateTime(last.year, last.month, last.day + (7 - last.weekday));
+    final gridStart = DateTime(
+      first.year,
+      first.month,
+      first.day - (first.weekday - 1),
+    );
+    final gridEnd = DateTime(
+      last.year,
+      last.month,
+      last.day + (7 - last.weekday),
+    );
 
     final cells = <Widget>[];
     for (final dow in [
@@ -271,6 +309,10 @@ class _Calendar extends ConsumerWidget {
       cells.add(_DowHeader(dow.substring(0, 3)));
     }
 
+    final today = DateTime.now();
+    final todayKey =
+        '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+
     var cursor = gridStart;
     while (!cursor.isAfter(gridEnd)) {
       final key =
@@ -282,7 +324,9 @@ class _Calendar extends ConsumerWidget {
           dayNumber: cursor.day,
           day: day,
           slot: _slotFor(day),
+          isToday: key == todayKey,
           hasOverlay: day != null && overlayDates.contains(key),
+          hasActivity: day != null && activityDates.contains(key),
         ),
       );
       cursor = DateTime(cursor.year, cursor.month, cursor.day + 1);
@@ -291,9 +335,23 @@ class _Calendar extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          _monthLabel(context, first),
-          style: AppTypography.textTheme.titleMedium,
+        // U-01 : navigation de mois (chevrons présentation — la fenêtre est le
+        // mois courant côté serveur ; le fenêtrage par mois relève du backend).
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              _monthLabel(context, first),
+              style: AppTypography.textTheme.titleMedium,
+            ),
+            const Row(
+              children: [
+                _MonthNavButton(icon: Icons.chevron_left),
+                SizedBox(width: 8),
+                _MonthNavButton(icon: Icons.chevron_right),
+              ],
+            ),
+          ],
         ),
         const SizedBox(height: 8),
         GridView.count(
@@ -346,13 +404,34 @@ class _DowHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Text(
-        label,
+        label.toUpperCase(),
         style: const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w600,
-          color: AppColors.muted,
+          color: AppColors.muted2,
         ),
       ),
+    );
+  }
+}
+
+/// Bouton de navigation de mois (U-01) : carré 34×34, rayon 10, chevron atténué.
+class _MonthNavButton extends StatelessWidget {
+  const _MonthNavButton({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 34,
+      height: 34,
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border2),
+      ),
+      child: Icon(icon, size: 20, color: AppColors.muted),
     );
   }
 }
@@ -363,14 +442,18 @@ class _DayCell extends ConsumerWidget {
     required this.dayNumber,
     required this.day,
     required this.slot,
+    this.isToday = false,
     this.hasOverlay = false,
+    this.hasActivity = false,
   });
 
   final String dateKey;
   final int dayNumber;
   final api.CustodyDay? day;
   final String? slot;
+  final bool isToday;
   final bool hasOverlay;
+  final bool hasActivity;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -384,35 +467,52 @@ class _DayCell extends ConsumerWidget {
       _ => (AppColors.surface, AppColors.border),
     };
 
+    // U-04 : numéro centré dans une pastille 25×25 r13 (fond accentué aujourd'hui).
+    final numberPill = Container(
+      width: 25,
+      height: 25,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: isToday && inMonth ? AppColors.ink : Colors.transparent,
+        borderRadius: BorderRadius.circular(13),
+      ),
+      child: Text(
+        '$dayNumber',
+        style: TextStyle(
+          fontSize: 13.5,
+          fontWeight: FontWeight.w600,
+          color: isToday && inMonth
+              ? Colors.white
+              : (inMonth ? AppColors.ink : AppColors.muted2),
+        ),
+      ),
+    );
+
     final cell = Container(
       decoration: BoxDecoration(
         color: inMonth ? bg : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
+        // U-06 : l'exception n'a pas de bordure pleine — un liseré pointillé
+        // (#857E71) est peint par-dessus ; sinon bordure pleine.
         border: Border.all(
-          color: inMonth ? borderColor : Colors.transparent,
-          width: isException ? 2 : 1,
+          color: inMonth && !isException ? borderColor : Colors.transparent,
         ),
       ),
       padding: const EdgeInsets.all(4),
       child: Stack(
         children: [
-          Align(
-            alignment: Alignment.topLeft,
-            child: Text(
-              '$dayNumber',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: inMonth ? AppColors.ink : AppColors.muted2,
+          // U-06 : liseré pointillé pour un jour d'échange exceptionnel (sans icône).
+          if (isException)
+            Positioned.fill(
+              child: CustomPaint(
+                painter: _DashedRRectPainter(
+                  color: AppColors.muted,
+                  radius: 12,
+                ),
               ),
             ),
-          ),
-          if (isException)
-            const Align(
-              alignment: Alignment.bottomRight,
-              child: Icon(Icons.swap_horiz, size: 11, color: AppColors.ink3),
-            )
-          else if (isHoliday)
+          Center(child: numberPill),
+          if (isHoliday)
             const Align(
               alignment: Alignment.bottomRight,
               child: Icon(
@@ -421,11 +521,19 @@ class _DayCell extends ConsumerWidget {
                 color: AppColors.catSchool,
               ),
             ),
-          // Pastille d'activité de la famille liée (overlay §3.3) — superposée, ne masque
-          // jamais la couleur de garde du parent.
+          // U-09 : pastille d'activité (événement de la famille active), bas-centre.
+          if (hasActivity)
+            const Align(
+              alignment: Alignment.bottomCenter,
+              child: Padding(
+                padding: EdgeInsets.only(bottom: 1),
+                child: _ActivityDot(),
+              ),
+            ),
+          // U-11 : marqueur famille liée (overlay §3.3) = anneau bas-droite.
           if (hasOverlay)
             Align(
-              alignment: Alignment.bottomLeft,
+              alignment: Alignment.bottomRight,
               child: _OverlayDot(key: ValueKey('overlay-dot-$dateKey')),
             ),
         ],
@@ -438,7 +546,7 @@ class _DayCell extends ConsumerWidget {
 
     return InkWell(
       key: ValueKey('garde-day-$dateKey'),
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
       onTap: () => _openDetail(context, ref),
       child: cell,
     );
@@ -464,23 +572,31 @@ class _Legend extends StatelessWidget {
       children: [
         _LegendItem(color: AppColors.accent, label: l.custodyParentA),
         _LegendItem(color: AppColors.positive, label: l.custodyParentB),
+        // U-06 : exception = liseré pointillé (pas d'icône).
         _LegendItem(
-          color: AppColors.ink3,
+          color: AppColors.muted,
           label: l.custodyExceptional,
-          icon: Icons.swap_horiz,
+          dashed: true,
         ),
         _LegendItem(
           color: AppColors.catSchool,
           label: l.custodyHoliday,
           icon: Icons.beach_access,
         ),
-        _LegendItem(color: AppColors.linked, label: l.overlayLinkedFamily),
+        // U-09 : pastille d'activité.
+        _LegendItem(color: AppColors.ink3, label: l.custodyActivity),
+        // U-11 : famille liée = anneau.
+        _LegendItem(
+          color: AppColors.linked,
+          label: l.overlayLinkedFamily,
+          ring: true,
+        ),
       ],
     );
   }
 }
 
-/// Petite pastille ronde signalant une activité de famille liée sur un jour de garde.
+/// U-11 : marqueur famille liée = anneau (bordure 1.5px #9C6FB0, centre transparent).
 class _OverlayDot extends StatelessWidget {
   const _OverlayDot({super.key});
 
@@ -489,12 +605,63 @@ class _OverlayDot extends StatelessWidget {
     return Container(
       width: 6,
       height: 6,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: AppColors.linked, width: 1.5),
+      ),
+    );
+  }
+}
+
+/// U-09 : pastille pleine d'activité (événement de la famille active).
+class _ActivityDot extends StatelessWidget {
+  const _ActivityDot();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 5,
+      height: 5,
       decoration: const BoxDecoration(
-        color: AppColors.linked,
+        color: AppColors.ink3,
         shape: BoxShape.circle,
       ),
     );
   }
+}
+
+/// Peint un liseré arrondi en pointillés (marqueur d'échange exceptionnel, U-06).
+class _DashedRRectPainter extends CustomPainter {
+  _DashedRRectPainter({required this.color, this.radius = 12});
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      Radius.circular(radius),
+    );
+    final path = Path()..addRRect(rrect);
+    const dash = 3.0;
+    const gap = 2.5;
+    for (final metric in path.computeMetrics()) {
+      var distance = 0.0;
+      while (distance < metric.length) {
+        canvas.drawPath(metric.extractPath(distance, distance + dash), paint);
+        distance += dash + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedRRectPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.radius != radius;
 }
 
 /// Section « Overlay familles liées » (vue garde) : un toggle par lien actif, reflétant/écrivant
@@ -514,7 +681,10 @@ class _OverlayGardeToggles extends ConsumerWidget {
     }
     final prefs = ref
         .watch(overlayPreferencesProvider)
-        .maybeWhen(data: (p) => p, orElse: () => const <api.OverlayPreference>[]);
+        .maybeWhen(
+          data: (p) => p,
+          orElse: () => const <api.OverlayPreference>[],
+        );
     final enabled = <String, bool>{
       for (final p in prefs)
         if ('garde' == p.view) p.familyLinkId: p.enabled,
@@ -524,12 +694,19 @@ class _OverlayGardeToggles extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(l.overlaySectionTitle, style: AppTypography.textTheme.titleMedium),
+          Text(
+            l.overlaySectionTitle,
+            style: AppTypography.textTheme.titleMedium,
+          ),
           for (final link in links)
             SwitchListTile(
               key: ValueKey('overlay-garde-toggle-${link.id}'),
               contentPadding: EdgeInsets.zero,
-              secondary: const Icon(Icons.circle, size: 12, color: AppColors.linked),
+              secondary: const Icon(
+                Icons.circle,
+                size: 12,
+                color: AppColors.linked,
+              ),
               title: Text(l.overlayToggle(link.otherFamilyName)),
               value: enabled[link.id] ?? false,
               onChanged: (v) async {
@@ -559,30 +736,184 @@ class _OverlayGardeToggles extends ConsumerWidget {
 }
 
 class _LegendItem extends StatelessWidget {
-  const _LegendItem({required this.color, required this.label, this.icon});
+  const _LegendItem({
+    required this.color,
+    required this.label,
+    this.icon,
+    this.dashed = false,
+    this.ring = false,
+  });
 
   final Color color;
   final String label;
   final IconData? icon;
+  final bool dashed;
+  final bool ring;
 
   @override
   Widget build(BuildContext context) {
+    // U-10 : puces rayon 4, texte 13, couleur label (#6F685C).
+    Widget swatch;
+    if (icon != null) {
+      swatch = Icon(icon, size: 13, color: color);
+    } else if (dashed) {
+      swatch = SizedBox(
+        width: 12,
+        height: 12,
+        child: CustomPaint(
+          painter: _DashedRRectPainter(color: color, radius: 4),
+        ),
+      );
+    } else if (ring) {
+      swatch = Container(
+        width: 12,
+        height: 12,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: color, width: 1.5),
+        ),
+      );
+    } else {
+      swatch = Container(
+        width: 12,
+        height: 12,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(4),
+        ),
+      );
+    }
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        icon != null
-            ? Icon(icon, size: 13, color: color)
-            : Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(3),
+        swatch,
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 13, color: AppColors.label),
+        ),
+      ],
+    );
+  }
+}
+
+/// U-02 : bandeau crème résumant le rythme de garde (modèle + jour/heure d'échange).
+class _RuleBanner extends StatelessWidget {
+  const _RuleBanner({required this.pattern});
+
+  final api.CustodyPattern pattern;
+
+  static const _weekdayKeys = <int>[0, 1, 2, 3, 4, 5, 6];
+
+  String _kindLabel(AppL10n l) => switch (pattern.kind) {
+    'alternating' => l.custodyKindAlternating,
+    '223' => l.custodyKind223,
+    'custom' => l.custodyKindCustom,
+    _ => pattern.kind,
+  };
+
+  String _weekday(AppL10n l) {
+    final labels = <String>[
+      l.weekdaySunday,
+      l.weekdayMonday,
+      l.weekdayTuesday,
+      l.weekdayWednesday,
+      l.weekdayThursday,
+      l.weekdayFriday,
+      l.weekdaySaturday,
+    ];
+    final idx = _weekdayKeys.contains(pattern.handoverWeekday)
+        ? pattern.handoverWeekday
+        : 0;
+    return labels[idx].toLowerCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppL10n.of(context);
+    final text =
+        '${_kindLabel(l)} · ${l.custodyRuleHandover(_weekday(l), pattern.handoverTime)}';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFBF4E8),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFEFE2C9)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline, size: 18, color: Color(0xFFC99A3F)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 13, color: Color(0xFF6F685C)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// U-03 : période spéciale (vacances) en carte autonome + barre de répartition A/B.
+class _HolidayCard extends StatelessWidget {
+  const _HolidayCard({required this.holiday});
+
+  final api.SchoolHoliday holiday;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      radius: 16,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  holiday.label,
+                  style: AppTypography.textTheme.bodyLarge,
                 ),
               ),
-        const SizedBox(width: 6),
-        Text(label, style: const TextStyle(fontSize: 12.5)),
-      ],
+              Text(
+                '${holiday.startDate} → ${holiday.endDate}',
+                style: const TextStyle(fontSize: 12.5, color: AppColors.muted),
+              ),
+            ],
+          ),
+          if (holiday.ruleKind != null && holiday.ruleKind!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              holiday.ruleKind!,
+              style: const TextStyle(fontSize: 12.5, color: AppColors.muted2),
+            ),
+          ],
+          const SizedBox(height: 10),
+          // Barre de répartition A/B (illustration du partage de la période).
+          ClipRRect(
+            borderRadius: BorderRadius.circular(5),
+            child: const Row(
+              children: [
+                Expanded(
+                  child: ColoredBox(
+                    color: AppColors.accent,
+                    child: SizedBox(height: 8),
+                  ),
+                ),
+                Expanded(
+                  child: ColoredBox(
+                    color: AppColors.positive,
+                    child: SizedBox(height: 8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -453,6 +453,12 @@ abstract class AppL10n {
   /// **'Accueil'**
   String get tabHome;
 
+  /// No description provided for @tabCustody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Garde'**
+  String get tabCustody;
+
   /// No description provided for @tabAgenda.
   ///
   /// In fr, this message translates to:
@@ -476,6 +482,12 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Bonjour'**
   String get homeGreeting;
+
+  /// No description provided for @homeAllAgenda.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout l\'agenda'**
+  String get homeAllAgenda;
 
   /// No description provided for @homeUpcomingTitle.
   ///
@@ -747,6 +759,18 @@ abstract class AppL10n {
   /// **'{count, plural, =0{Moins d\'un an} one{{count} an} other{{count} ans}}'**
   String childAge(num count);
 
+  /// No description provided for @childInfoTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Informations'**
+  String get childInfoTitle;
+
+  /// No description provided for @childSchool.
+  ///
+  /// In fr, this message translates to:
+  /// **'Scolarité'**
+  String get childSchool;
+
   /// No description provided for @childNotesTitle.
   ///
   /// In fr, this message translates to:
@@ -788,6 +812,24 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Garde'**
   String get custodyTitle;
+
+  /// No description provided for @custodyScreenTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Planning de garde'**
+  String get custodyScreenTitle;
+
+  /// No description provided for @custodyRuleHandover.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échange le {weekday} à {time}'**
+  String custodyRuleHandover(String weekday, String time);
+
+  /// No description provided for @custodyActivity.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activité'**
+  String get custodyActivity;
 
   /// No description provided for @custodyOpen.
   ///
@@ -1124,6 +1166,18 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Aucun événement ce mois-ci.'**
   String get agendaEmpty;
+
+  /// No description provided for @agendaFilterAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tout'**
+  String get agendaFilterAll;
+
+  /// No description provided for @agendaDayEvents.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucun événement} one{{count} événement} other{{count} événements}}'**
+  String agendaDayEvents(num count);
 
   /// No description provided for @agendaNew.
   ///

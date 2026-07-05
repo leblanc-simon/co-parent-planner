@@ -35,7 +35,7 @@ class _FamilyStub extends FamilyContextController {
 
 void main() {
   testWidgets(
-    'app shell : demarre sur /home, onglets visibles, bascule vers Reglages',
+    'app shell : demarre sur /home, onglets visibles, acces Reglages via engrenage',
     (tester) async {
       tester.view.physicalSize = const Size(1080, 2400);
       tester.view.devicePixelRatio = 1.0;
@@ -74,14 +74,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Demarre sur /home : les labels des 4 onglets sont presents.
+      // Demarre sur /home : les labels des 4 onglets de la maquette sont presents
+      // (Accueil, Garde, Agenda, Enfants) ; plus d'onglet Reglages.
       expect(find.text('Accueil'), findsOneWidget);
+      expect(find.text('Garde'), findsOneWidget);
       expect(find.text('Agenda'), findsOneWidget);
       expect(find.text('Enfants'), findsOneWidget);
-      expect(find.text('Reglages'), findsOneWidget);
 
-      // Bascule vers l'onglet Reglages -> le titre d'AppBar « Reglages » apparait.
-      await tester.tap(find.byKey(const ValueKey('tab-3')));
+      // Acces aux Parametres via l'engrenage d'en-tete de l'accueil (U1-03).
+      await tester.tap(find.byKey(const ValueKey('home-settings-button')));
       await tester.pumpAndSettle();
 
       expect(find.widgetWithText(AppBar, 'Reglages'), findsOneWidget);

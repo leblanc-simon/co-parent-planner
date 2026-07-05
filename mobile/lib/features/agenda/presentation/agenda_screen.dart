@@ -11,8 +11,22 @@ import '../../../l10n/app_localizations.dart';
 import '../../children/data/children_repository.dart';
 import '../../family/application/family_context.dart';
 import '../../members/data/members_repository.dart';
+import '../../../core/widgets/large_title_header.dart';
 import '../data/agenda_repository.dart';
 import '../data/overlay_repository.dart';
+
+/// Filtre de catégorie actif de l'agenda (`''` = toutes). `autoDispose` : réinitialisé
+/// à la fermeture de l'écran.
+final _agendaFilterProvider = StateProvider.autoDispose<String>((ref) => '');
+
+/// Couleur (texte/barre) d'une catégorie d'agenda (§8).
+Color agendaCategoryColor(String category) => switch (category) {
+  'sport' => AppColors.catSport,
+  'musique' => AppColors.catMusic,
+  'ecole' => AppColors.catSchool,
+  'sante' => AppColors.catHealth,
+  _ => AppColors.catOther,
+};
 
 /// US-AG-3/9 — écran Agenda mobile : occurrences du mois courant groupées par jour,
 /// avec pastilles de catégorie (§8). Création d'événements **ponctuels** via un
@@ -30,47 +44,81 @@ class AgendaScreen extends ConsumerWidget {
     final l = AppL10n.of(context);
     final family = ref.watch(familyContextProvider);
     final eventsAsync = ref.watch(familyEventsProvider);
+    final filter = ref.watch(_agendaFilterProvider);
     // Best-effort : un échec de lecture overlay ne doit pas casser l'agenda propre.
     final overlay = ref
         .watch(overlayEventsProvider)
         .maybeWhen(data: (o) => o, orElse: () => const <OverlayEvent>[]);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l.agendaTitle)),
+      // U-07 : bouton d'ajout encre à coins arrondis (r:11).
       floatingActionButton: family == null
           ? null
           : FloatingActionButton.extended(
               key: const ValueKey('agenda-new'),
+              backgroundColor: AppColors.ink,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(11),
+              ),
               onPressed: () => _openForm(context),
               icon: const Icon(Icons.add),
               label: Text(l.agendaNew),
             ),
-      body: eventsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Padding(
-          padding: const EdgeInsets.all(20),
-          child: ErrorBanner(e is ApiException ? e.message : e.toString()),
-        ),
-        data: (events) => RefreshIndicator(
-          onRefresh: () async {
-            ref
-              ..invalidate(familyEventsProvider)
-              ..invalidate(activeLinksProvider)
-              ..invalidate(overlayPreferencesProvider)
-              ..invalidate(overlayEventsProvider);
-            await ref.read(familyEventsProvider.future);
-          },
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-            children: [
-              const _OverlayToggles(),
-              if (events.isEmpty && overlay.isEmpty) ...[
-                const SizedBox(height: 40),
-                Center(child: Text(l.agendaEmpty)),
-              ] else
-                ..._buildDays(context, events, overlay),
-            ],
-          ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // U-08 : grand titre iOS inline.
+            LargeTitleHeader(title: l.agendaTitle),
+            Expanded(
+              child: eventsAsync.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: ErrorBanner(
+                    e is ApiException ? e.message : e.toString(),
+                  ),
+                ),
+                data: (events) {
+                  final filteredEvents = filter.isEmpty
+                      ? events
+                      : events.where((e) => e.category == filter).toList();
+                  final filteredOverlay = filter.isEmpty
+                      ? overlay
+                      : overlay.where((o) => o.category == filter).toList();
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      ref
+                        ..invalidate(familyEventsProvider)
+                        ..invalidate(activeLinksProvider)
+                        ..invalidate(overlayPreferencesProvider)
+                        ..invalidate(overlayEventsProvider);
+                      await ref.read(familyEventsProvider.future);
+                    },
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+                      children: [
+                        const _OverlayToggles(),
+                        // U-01 : rangée de filtres par catégorie.
+                        const _CategoryFilters(),
+                        const SizedBox(height: 8),
+                        if (filteredEvents.isEmpty &&
+                            filteredOverlay.isEmpty) ...[
+                          const SizedBox(height: 40),
+                          Center(child: Text(l.agendaEmpty)),
+                        ] else
+                          ..._buildDays(
+                            context,
+                            filteredEvents,
+                            filteredOverlay,
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -93,16 +141,42 @@ class AgendaScreen extends ConsumerWidget {
         (overlayByDay[o.startsAt.substring(0, 10)] ??= []).add(o);
       }
     }
-    final keys = <String>{...ownByDay.keys, ...overlayByDay.keys}.toList()..sort();
+    final keys = <String>{...ownByDay.keys, ...overlayByDay.keys}.toList()
+      ..sort();
+    final l = AppL10n.of(context);
 
     return [
       for (final key in keys) ...[
         Padding(
           padding: const EdgeInsets.only(top: 12, bottom: 6),
-          child: Text(_frenchDay(key), style: AppTypography.textTheme.titleMedium),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(_frenchDay(key), style: AppTypography.textTheme.titleMedium),
+              const SizedBox(width: 8),
+              // U-10 : sous-libellé (nombre d'événements du jour).
+              Text(
+                l.agendaDayEvents(
+                  (ownByDay[key]?.length ?? 0) +
+                      (overlayByDay[key]?.length ?? 0),
+                ),
+                style: const TextStyle(fontSize: 13, color: AppColors.muted2),
+              ),
+            ],
+          ),
         ),
-        for (final e in ownByDay[key] ?? const <api.Event>[]) _EventTile(event: e),
-        for (final o in overlayByDay[key] ?? const <OverlayEvent>[]) _LinkedEventTile(event: o),
+        // U-05 : espacement 8px entre tuiles d'un même jour.
+        for (final e in ownByDay[key] ?? const <api.Event>[])
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _EventTile(event: e),
+          ),
+        for (final o in overlayByDay[key] ?? const <OverlayEvent>[])
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _LinkedEventTile(event: o),
+          ),
       ],
     ];
   }
@@ -162,7 +236,10 @@ class _OverlayToggles extends ConsumerWidget {
     }
     final prefs = ref
         .watch(overlayPreferencesProvider)
-        .maybeWhen(data: (p) => p, orElse: () => const <api.OverlayPreference>[]);
+        .maybeWhen(
+          data: (p) => p,
+          orElse: () => const <api.OverlayPreference>[],
+        );
     final enabled = <String, bool>{
       for (final p in prefs)
         if ('agenda' == p.view) p.familyLinkId: p.enabled,
@@ -172,12 +249,19 @@ class _OverlayToggles extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(l.overlaySectionTitle, style: AppTypography.textTheme.titleMedium),
           for (final link in links)
             SwitchListTile(
               key: ValueKey('overlay-toggle-${link.id}'),
               contentPadding: EdgeInsets.zero,
-              secondary: const Icon(Icons.circle, size: 12, color: AppColors.linked),
+              // U-09 : puce carrée 10×10 r:3 (couleur famille liée).
+              secondary: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: AppColors.linked,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
               title: Text(l.overlayToggle(link.otherFamilyName)),
               value: enabled[link.id] ?? false,
               onChanged: (v) async {
@@ -220,40 +304,69 @@ class _LinkedEventTile extends StatelessWidget {
         : (event.startsAt.length >= 16 ? event.startsAt.substring(11, 16) : '');
 
     return AppCard(
-      child: Row(
-        children: [
-          Container(width: 3, height: 34, color: AppColors.linked),
-          const SizedBox(width: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: AppColors.linkedSoft,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              l.overlayLinkedFamily,
-              style: const TextStyle(
+      radius: 16,
+      padding: const EdgeInsets.all(14),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // U-11 : barre latérale famille liée, 4px, rayon 3, étirée.
+            Container(
+              width: 4,
+              decoration: BoxDecoration(
                 color: AppColors.linked,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
+                borderRadius: BorderRadius.circular(3),
               ),
             ),
-          ),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 44,
-            child: Text(
-              time,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          event.title,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      // U-04 : heure en trailing.
+                      Text(
+                        time,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF6F685C),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.linkedSoft,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      l.overlayLinkedFamily,
+                      style: const TextStyle(
+                        color: AppColors.linked,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Expanded(
-            child: Text(
-              event.title,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -270,41 +383,211 @@ class _EventTile extends ConsumerWidget {
     final time = event.allDay
         ? l.agendaAllDayLabel
         : event.startsAt.substring(11, 16);
+    final catColor = agendaCategoryColor(event.category);
+
+    // U-03 : métadonnées (enfant / responsable) résolues au mieux via les providers.
+    final members = ref
+        .watch(familyMembersProvider)
+        .maybeWhen(data: (m) => m, orElse: () => const <api.Member>[]);
+    final children = ref
+        .watch(familyChildrenProvider)
+        .maybeWhen(data: (c) => c, orElse: () => const <api.Child>[]);
+
+    String? responsibleName;
+    for (final m in members) {
+      if (m.id == event.responsibleMembershipId) {
+        responsibleName = (m.fullName?.isNotEmpty ?? false)
+            ? m.fullName
+            : m.email;
+        break;
+      }
+    }
+    final String childLabel;
+    if (event.wholeFamily) {
+      childLabel = l.agendaWholeFamily;
+    } else {
+      final ids = event.childIds ?? const <String>[];
+      childLabel = [
+        for (final c in children)
+          if (ids.contains(c.id)) c.firstName,
+      ].join(', ');
+    }
+    final hasLocation = event.location != null && event.location!.isNotEmpty;
 
     return AppCard(
-      child: Row(
-        children: [
-          CategoryPill(category: event.category),
-          const SizedBox(width: 10),
-          SizedBox(
-            width: 44,
-            child: Text(
-              time,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+      radius: 16,
+      padding: const EdgeInsets.all(14),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // U-02 : barre latérale de catégorie, 4px, rayon 3, étirée.
+            Container(
+              width: 4,
+              decoration: BoxDecoration(
+                color: catColor,
+                borderRadius: BorderRadius.circular(3),
+              ),
             ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  event.title,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                if (event.location != null && event.location!.isNotEmpty)
-                  Text(
-                    event.location!,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.muted,
-                    ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          event.title,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      if (event.isRecurring) ...[
+                        const Icon(
+                          Icons.repeat,
+                          size: 15,
+                          color: AppColors.muted2,
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      // U-04 : heure en trailing.
+                      Text(
+                        time,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF6F685C),
+                        ),
+                      ),
+                    ],
                   ),
-              ],
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      CategoryPill(category: event.category),
+                      if (childLabel.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            childLabel,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (hasLocation ||
+                      (responsibleName != null &&
+                          responsibleName.isNotEmpty)) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          hasLocation
+                              ? Icons.place_outlined
+                              : Icons.person_outline,
+                          size: 13,
+                          color: const Color(0xFFB7AF9F),
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            [
+                              if (hasLocation) event.location!,
+                              if (responsibleName != null &&
+                                  responsibleName.isNotEmpty)
+                                responsibleName,
+                            ].join(' · '),
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// U-01 : rangée de filtres par catégorie (pastilles). « Tout » réinitialise le filtre.
+class _CategoryFilters extends ConsumerWidget {
+  const _CategoryFilters();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppL10n.of(context);
+    final selected = ref.watch(_agendaFilterProvider);
+    final entries = <(String, String, Color)>[
+      ('', l.agendaFilterAll, AppColors.ink),
+      ('sport', l.catSport, AppColors.catSport),
+      ('musique', l.catMusic, AppColors.catMusic),
+      ('ecole', l.catSchool, AppColors.catSchool),
+      ('sante', l.catHealth, AppColors.catHealth),
+      ('autre', l.catOther, AppColors.catOther),
+    ];
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final (value, label, color) in entries)
+          _FilterChip(
+            label: label,
+            color: color,
+            selected: selected == value,
+            onTap: () => ref.read(_agendaFilterProvider.notifier).state = value,
           ),
-          if (event.isRecurring)
-            const Icon(Icons.repeat, size: 16, color: AppColors.muted),
-        ],
+      ],
+    );
+  }
+}
+
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          color: selected ? color.withValues(alpha: 0.14) : AppColors.card,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: selected ? color : AppColors.border2),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: selected ? color : AppColors.muted,
+          ),
+        ),
       ),
     );
   }

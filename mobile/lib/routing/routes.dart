@@ -12,8 +12,11 @@ abstract final class Routes {
   static const String onboardingJoin = '/onboarding/join';
 
   static const String home = '/home';
+  static const String custody = '/custody';
   static const String agenda = '/agenda';
-  static const String notes = '/notes';
+  static const String children = '/children';
+
+  /// Écran Paramètres : atteint par push (engrenage d'en-tête), plus un onglet.
   static const String settings = '/settings';
 
   /// Routes publiques (accessibles non connecte).

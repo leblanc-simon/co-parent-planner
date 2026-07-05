@@ -54,6 +54,13 @@ void main() {
   testWidgets('occurrences groupées par jour avec pastille de catégorie', (
     tester,
   ) async {
+    // Les tuiles résolvent au mieux enfant/responsable via ces providers.
+    when(
+      () => membersRepo.listMembers('fam-1'),
+    ).thenAnswer((_) async => const []);
+    when(
+      () => childrenRepo.listChildren('fam-1'),
+    ).thenAnswer((_) async => const []);
     when(() => repo.listEvents('fam-1')).thenAnswer(
       (_) async => const [
         api.Event(
@@ -78,7 +85,8 @@ void main() {
 
     expect(find.text('Cours de tennis'), findsOneWidget);
     expect(find.text('Piano'), findsOneWidget);
-    expect(find.text('Sport'), findsOneWidget); // libellé de pastille
+    // « Sport » apparaît en pastille de tuile ET en filtre de catégorie (U-01).
+    expect(find.text('Sport'), findsWidgets);
     expect(find.text('17:30'), findsOneWidget);
     expect(find.textContaining('juillet'), findsOneWidget); // en-tête du jour
   });

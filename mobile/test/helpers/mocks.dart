@@ -27,6 +27,8 @@ MockOverlayRepository emptyOverlayRepository() {
   final mock = MockOverlayRepository();
   when(() => mock.activeLinks(any())).thenAnswer((_) async => const []);
   when(() => mock.preferences(any())).thenAnswer((_) async => const []);
-  when(() => mock.overlayEvents(any(), any())).thenAnswer((_) async => const []);
+  when(
+    () => mock.overlayEvents(any(), any()),
+  ).thenAnswer((_) async => const []);
   return mock;
 }

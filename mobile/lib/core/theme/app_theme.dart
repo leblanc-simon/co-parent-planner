@@ -113,7 +113,9 @@ abstract final class AppTheme {
           disabledBackgroundColor: AppColors.accent.withValues(alpha: 0.55),
           minimumSize: const Size.fromHeight(50),
           textStyle: AppTypography.textTheme.labelLarge,
-          shape: const StadiumBorder(),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(13),
+          ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -124,7 +126,9 @@ abstract final class AppTheme {
           foregroundColor: AppColors.ink2,
           minimumSize: const Size.fromHeight(50),
           side: const BorderSide(color: AppColors.borderField),
-          shape: const StadiumBorder(),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(13),
+          ),
         ),
       ),
       bottomSheetTheme: const BottomSheetThemeData(

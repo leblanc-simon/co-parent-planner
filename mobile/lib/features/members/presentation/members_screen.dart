@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/error_banner.dart';
+import '../../../core/widgets/initial_avatar.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../family/application/family_context.dart';
 import '../data/members_repository.dart';
@@ -48,7 +51,10 @@ class MembersScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
               children: [
                 for (final m in members)
-                  _MemberTile(member: m, label: _roleLabel(l, m.role)),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _MemberTile(member: m, label: _roleLabel(l, m.role)),
+                  ),
                 if (isAdmin) ...[
                   const SizedBox(height: 8),
                   FilledButton.icon(
@@ -86,26 +92,78 @@ class _MemberTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppL10n.of(context);
     final color = member.displayColor != null && member.displayColor!.isNotEmpty
-        ? _parseHex(member.displayColor!)
+        ? InitialAvatar.parseHex(member.displayColor!)
         : Theme.of(context).colorScheme.primary;
+    final name = member.fullName?.isNotEmpty == true
+        ? member.fullName!
+        : (member.email ?? '');
 
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(backgroundColor: color, radius: 10),
-      title: Text(
-        member.fullName?.isNotEmpty == true
-            ? member.fullName!
-            : (member.email ?? ''),
-      ),
-      subtitle: Text(
-        '$label${member.isAdmin ? ' · ${l.membersAdminBadge}' : ''}',
+    // mob-param U-01 : ligne membre en carte autonome.
+    return AppCard(
+      radius: 16,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      child: Row(
+        children: [
+          // mob-param U-02 : avatar 40 + initiale.
+          InitialAvatar(
+            initial: InitialAvatar.initialOf(name),
+            color: color,
+            size: 40,
+            fontSize: 16,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: const TextStyle(fontSize: 13, color: AppColors.muted),
+                ),
+              ],
+            ),
+          ),
+          // mob-param U-03 : badge de droit en pilule.
+          if (member.isAdmin) _RightBadge(label: l.membersAdminBadge),
+        ],
       ),
     );
   }
+}
 
-  Color _parseHex(String hex) {
-    final value = int.tryParse(hex.replaceFirst('#', ''), radix: 16);
-    return value == null ? Colors.grey : Color(0xFF000000 | value);
+/// Badge de droit/rôle en pilule (mob-param U-03).
+class _RightBadge extends StatelessWidget {
+  const _RightBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.accentSoft,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: AppColors.accentStrong,
+        ),
+      ),
+    );
   }
 }
 

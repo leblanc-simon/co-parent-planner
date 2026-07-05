@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/api_exception.dart';
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/error_banner.dart';
+import '../../../core/widgets/initial_avatar.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/application/auth_state.dart';
 import '../../family/application/family_context.dart';
-import '../../children/presentation/children_screen.dart';
 import '../../family/data/family_repository.dart';
 import '../../members/data/members_repository.dart';
 import '../../members/presentation/members_screen.dart';
@@ -116,6 +117,11 @@ class _SettingsTabState extends ConsumerState<SettingsTab> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         children: [
+          // mob-param U-04 : carte de profil (en-tête Compte).
+          if (auth is AuthAuthenticated) ...[
+            _ProfileCard(user: auth.user),
+            const SizedBox(height: 12),
+          ],
           if (family != null)
             AppCard(
               child: Column(
@@ -150,17 +156,6 @@ class _SettingsTabState extends ConsumerState<SettingsTab> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const MembersScreen()),
-              ),
-            ),
-          if (family != null)
-            ListTile(
-              key: const ValueKey('settings-children'),
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.child_care_outlined),
-              title: Text(l.settingsChildren),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const ChildrenScreen()),
               ),
             ),
           const SizedBox(height: 16),
@@ -204,11 +199,61 @@ class _SettingsTabState extends ConsumerState<SettingsTab> {
           ),
           const Divider(),
           const SizedBox(height: 8),
-          OutlinedButton.icon(
+          // mob-param U-06 : « Se déconnecter » terracotta sans icône.
+          OutlinedButton(
             key: const ValueKey('settings-logout'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFFB85C36),
+              backgroundColor: AppColors.card,
+              side: const BorderSide(color: Color(0xFFEAD3C7)),
+              minimumSize: const Size.fromHeight(50),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(13),
+              ),
+            ),
             onPressed: () => ref.read(authControllerProvider.notifier).logout(),
-            icon: const Icon(Icons.logout),
-            label: Text(l.settingsLogout),
+            child: Text(l.settingsLogout),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// mob-param U-04 : carte de profil (avatar + nom + e-mail).
+class _ProfileCard extends StatelessWidget {
+  const _ProfileCard({required this.user});
+
+  final UserProfile user;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = (user.fullName?.isNotEmpty ?? false)
+        ? user.fullName!
+        : user.email;
+    return AppCard(
+      child: Row(
+        children: [
+          InitialAvatar(
+            initial: InitialAvatar.initialOf(name),
+            color: AppColors.accent,
+            size: 56,
+            fontSize: 24,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(name, style: AppTypography.textTheme.titleLarge),
+                const SizedBox(height: 2),
+                Text(
+                  user.email,
+                  style: const TextStyle(fontSize: 13, color: AppColors.muted),
+                ),
+              ],
+            ),
           ),
         ],
       ),

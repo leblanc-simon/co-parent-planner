@@ -17,19 +17,16 @@ class HomeShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppL10n.of(context);
     final isIos = Theme.of(context).platform == TargetPlatform.iOS;
+    // Composition maquette (SHELL-03) : Accueil · Garde · Agenda · Enfants.
+    // L'accès aux Paramètres passe par l'engrenage d'en-tête de l'accueil (U1-03),
+    // plus d'onglet Réglages. L'onglet Garde reste présent même pour une famille
+    // unie (l'écran affiche alors l'état « famille réunie ») : le nombre de branches
+    // de l'indexedStack doit rester stable.
     final items = [
-      (icon: Icons.home_outlined, active: Icons.home, label: l.tabHome),
-      (
-        icon: Icons.calendar_today_outlined,
-        active: Icons.calendar_today,
-        label: l.tabAgenda,
-      ),
-      (icon: Icons.people_outline, active: Icons.people, label: l.tabNotes),
-      (
-        icon: Icons.settings_outlined,
-        active: Icons.settings,
-        label: l.tabSettings,
-      ),
+      (icon: Icons.home_outlined, label: l.tabHome),
+      (icon: Icons.calendar_today_outlined, label: l.tabCustody),
+      (icon: Icons.view_agenda_outlined, label: l.tabAgenda),
+      (icon: Icons.people_outline, label: l.tabNotes),
     ];
 
     return Scaffold(
@@ -40,7 +37,7 @@ class HomeShell extends StatelessWidget {
         child: SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+            padding: const EdgeInsets.fromLTRB(6, 5, 6, 0),
             child: Row(
               children: [
                 for (var i = 0; i < items.length; i++)
@@ -48,7 +45,6 @@ class HomeShell extends StatelessWidget {
                     child: _TabItem(
                       key: ValueKey('tab-$i'),
                       icon: items[i].icon,
-                      activeIcon: items[i].active,
                       label: items[i].label,
                       selected: navigationShell.currentIndex == i,
                       onTap: () => navigationShell.goBranch(
@@ -69,7 +65,6 @@ class HomeShell extends StatelessWidget {
 class _TabItem extends StatelessWidget {
   const _TabItem({
     required this.icon,
-    required this.activeIcon,
     required this.label,
     required this.selected,
     required this.onTap,
@@ -77,23 +72,24 @@ class _TabItem extends StatelessWidget {
   });
 
   final IconData icon;
-  final IconData activeIcon;
   final String label;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.accent : AppColors.muted;
+    final color = selected ? AppColors.ink : AppColors.muted2;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        // SHELL-04 : on garde l'icône filaire (contour) même à l'actif ; seule la
+        // couleur change (encre/gris).
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(selected ? activeIcon : icon, color: color, size: 24),
+            Icon(icon, color: color, size: 24),
             const SizedBox(height: 4),
             Text(
               label,

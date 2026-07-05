@@ -48,7 +48,8 @@ class OverlayRepository {
 
   Future<List<api.FamilyLink>> activeLinks(String familyId) async {
     try {
-      final links = await _clients.familyLinks.apiFamiliesFamilyIdlinksGetCollection(familyId: familyId);
+      final links = await _clients.familyLinks
+          .apiFamiliesFamilyIdlinksGetCollection(familyId: familyId);
       return links.where((l) => l.status == 'active').toList();
     } on DioException catch (e) {
       throw ApiException.fromDio(e);
@@ -57,7 +58,10 @@ class OverlayRepository {
 
   Future<List<api.OverlayPreference>> preferences(String familyId) async {
     try {
-      return await _clients.overlayPreferences.apiFamiliesFamilyIdoverlayPreferencesGetCollection(familyId: familyId);
+      return await _clients.overlayPreferences
+          .apiFamiliesFamilyIdoverlayPreferencesGetCollection(
+            familyId: familyId,
+          );
     } on DioException catch (e) {
       throw ApiException.fromDio(e);
     }
@@ -70,21 +74,25 @@ class OverlayRepository {
     required bool enabled,
   }) async {
     try {
-      await _clients.overlayPreferences.apiFamiliesFamilyIdoverlayPreferencesPut(
-        familyId: familyId,
-        body: api.OverlayPreferenceUpdateOverlayPreferenceRequest(
-          familyLinkId: familyLinkId,
-          view: view,
-          enabled: enabled,
-        ),
-      );
+      await _clients.overlayPreferences
+          .apiFamiliesFamilyIdoverlayPreferencesPut(
+            familyId: familyId,
+            body: api.OverlayPreferenceUpdateOverlayPreferenceRequest(
+              familyLinkId: familyLinkId,
+              view: view,
+              enabled: enabled,
+            ),
+          );
     } on DioException catch (e) {
       throw ApiException.fromDio(e);
     }
   }
 
   /// Événements projetés (RO) des familles liées désignées, sur le mois courant (défaut serveur).
-  Future<List<OverlayEvent>> overlayEvents(String familyId, List<String> linkedFamilyIds) async {
+  Future<List<OverlayEvent>> overlayEvents(
+    String familyId,
+    List<String> linkedFamilyIds,
+  ) async {
     if (linkedFamilyIds.isEmpty) {
       return const [];
     }
@@ -105,7 +113,8 @@ class OverlayRepository {
 }
 
 final overlayRepositoryProvider = Provider<OverlayRepository>(
-  (ref) => OverlayRepository(ref.watch(apiClientsProvider), ref.watch(dioProvider)),
+  (ref) =>
+      OverlayRepository(ref.watch(apiClientsProvider), ref.watch(dioProvider)),
 );
 
 /// Liens de famille **actifs** de la famille active.
@@ -118,7 +127,9 @@ final activeLinksProvider = FutureProvider<List<api.FamilyLink>>((ref) async {
 });
 
 /// Préférences overlay du membre courant.
-final overlayPreferencesProvider = FutureProvider<List<api.OverlayPreference>>((ref) async {
+final overlayPreferencesProvider = FutureProvider<List<api.OverlayPreference>>((
+  ref,
+) async {
   final family = ref.watch(familyContextProvider);
   if (family == null) {
     return const [];
@@ -136,7 +147,10 @@ List<String> _enabledFamilyIds(
     for (final p in prefs)
       if (view == p.view && p.enabled) p.familyLinkId,
   };
-  return links.where((l) => enabledLinkIds.contains(l.id)).map((l) => l.otherFamilyId).toList();
+  return links
+      .where((l) => enabledLinkIds.contains(l.id))
+      .map((l) => l.otherFamilyId)
+      .toList();
 }
 
 /// Événements overlay (vue agenda) des liens actifs dont la préférence est activée.
@@ -148,11 +162,15 @@ final overlayEventsProvider = FutureProvider<List<OverlayEvent>>((ref) async {
   final links = await ref.watch(activeLinksProvider.future);
   final prefs = await ref.watch(overlayPreferencesProvider.future);
   final familyIds = _enabledFamilyIds(links, prefs, 'agenda');
-  return ref.watch(overlayRepositoryProvider).overlayEvents(family.familyId, familyIds);
+  return ref
+      .watch(overlayRepositoryProvider)
+      .overlayEvents(family.familyId, familyIds);
 });
 
 /// Événements overlay (vue garde) des liens actifs dont la préférence est activée.
-final overlayGardeEventsProvider = FutureProvider<List<OverlayEvent>>((ref) async {
+final overlayGardeEventsProvider = FutureProvider<List<OverlayEvent>>((
+  ref,
+) async {
   final family = ref.watch(familyContextProvider);
   if (family == null) {
     return const [];
@@ -160,7 +178,9 @@ final overlayGardeEventsProvider = FutureProvider<List<OverlayEvent>>((ref) asyn
   final links = await ref.watch(activeLinksProvider.future);
   final prefs = await ref.watch(overlayPreferencesProvider.future);
   final familyIds = _enabledFamilyIds(links, prefs, 'garde');
-  return ref.watch(overlayRepositoryProvider).overlayEvents(family.familyId, familyIds);
+  return ref
+      .watch(overlayRepositoryProvider)
+      .overlayEvents(family.familyId, familyIds);
 });
 
 /// Jours (YYYY-MM-DD, fuseau famille) portant une activité de famille liée — pour les pastilles
@@ -173,7 +193,9 @@ final overlayGardeDatesProvider = FutureProvider<Set<String>>((ref) async {
       continue;
     }
     final start = DateTime.parse(e.startsAt.substring(0, 10));
-    final end = e.endsAt.length >= 10 ? DateTime.parse(e.endsAt.substring(0, 10)) : start;
+    final end = e.endsAt.length >= 10
+        ? DateTime.parse(e.endsAt.substring(0, 10))
+        : start;
     var cursor = start;
     // Garde-fou : plage bornée (≤ 90 jours) pour ne jamais boucler sur une donnée aberrante.
     for (var i = 0; i <= 90 && !cursor.isAfter(end); i++) {

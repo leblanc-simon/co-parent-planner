@@ -75,11 +75,13 @@
   "joinFamilyAction": "Rejoindre",
 
   "tabHome": "Accueil",
+  "tabCustody": "Garde",
   "tabAgenda": "Agenda",
   "tabNotes": "Enfants",
   "tabSettings": "Reglages",
 
   "homeGreeting": "Bonjour",
+  "homeAllAgenda": "Tout l'agenda",
   "homeUpcomingTitle": "A venir",
   "homeUpcomingEmpty": "Aucun evenement a venir.",
   "homeDecisionsTitle": "A decider",
@@ -129,6 +131,8 @@
   "childrenEmpty": "Aucun enfant pour le moment.",
   "childAge": "{count, plural, =0{Moins d'un an} one{{count} an} other{{count} ans}}",
   "@childAge": { "placeholders": { "count": { "type": "num" } } },
+  "childInfoTitle": "Informations",
+  "childSchool": "Scolarité",
   "childNotesTitle": "Notes",
   "childNotesEmpty": "Aucune note.",
   "childAddNote": "Ajouter une note",
@@ -137,6 +141,15 @@
   "childHealthWarning": "Ne saisissez pas de données de santé (allergies, traitements, diagnostics). Informations pratiques générales uniquement.",
 
   "custodyTitle": "Garde",
+  "custodyScreenTitle": "Planning de garde",
+  "custodyRuleHandover": "Échange le {weekday} à {time}",
+  "@custodyRuleHandover": {
+    "placeholders": {
+      "weekday": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "custodyActivity": "Activité",
   "custodyOpen": "Ouvrir le planning",
   "custodyIntact": "La garde ne s'applique qu'aux familles séparées.",
   "custodyNoPattern": "Aucun rythme de garde configuré.",
@@ -194,6 +207,9 @@
   "weekdaySaturday": "Samedi",
   "agendaTitle": "Agenda",
   "agendaEmpty": "Aucun événement ce mois-ci.",
+  "agendaFilterAll": "Tout",
+  "agendaDayEvents": "{count, plural, =0{Aucun événement} one{{count} événement} other{{count} événements}}",
+  "@agendaDayEvents": { "placeholders": { "count": { "type": "num" } } },
   "agendaNew": "Nouvel événement",
   "agendaCreate": "Créer",
   "agendaCreated": "Événement créé.",

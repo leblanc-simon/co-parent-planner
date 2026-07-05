@@ -84,7 +84,7 @@ abstract final class AppTypography {
   static const TextStyle eyebrow = TextStyle(
     fontFamily: AppFonts.body,
     fontSize: 12,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w600,
     letterSpacing: 0.84,
     color: AppColors.muted2,
   );

@@ -10,12 +10,12 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/presentation/verify_email_screen.dart';
+import '../features/children/presentation/children_screen.dart';
+import '../features/custody/presentation/custody_screen.dart';
 import '../features/family/application/family_context.dart';
 import '../features/home/shell/agenda_tab.dart';
 import '../features/home/shell/home_shell.dart';
 import '../features/home/shell/home_tab.dart';
-import '../features/home/shell/notes_tab.dart';
-import '../features/home/shell/settings_tab.dart';
 import '../features/onboarding/presentation/create_family_screen.dart';
 import '../features/onboarding/presentation/join_family_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
@@ -117,6 +117,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
+                path: Routes.custody,
+                builder: (_, _) => const CustodyScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
                 path: Routes.agenda,
                 builder: (_, _) => const AgendaTab(),
               ),
@@ -124,14 +132,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           ),
           StatefulShellBranch(
             routes: [
-              GoRoute(path: Routes.notes, builder: (_, _) => const NotesTab()),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
               GoRoute(
-                path: Routes.settings,
-                builder: (_, _) => const SettingsTab(),
+                path: Routes.children,
+                builder: (_, _) => const ChildrenScreen(),
               ),
             ],
           ),

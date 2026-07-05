@@ -66,8 +66,12 @@ void main() {
       overlayRepo = MockOverlayRepository();
       membersRepo = MockMembersRepository();
       childrenRepo = MockChildrenRepository();
-      when(() => agendaRepo.listEvents('fam-1')).thenAnswer((_) async => const []);
-      when(() => overlayRepo.activeLinks('fam-1')).thenAnswer((_) async => const [_activeLink]);
+      when(
+        () => agendaRepo.listEvents('fam-1'),
+      ).thenAnswer((_) async => const []);
+      when(
+        () => overlayRepo.activeLinks('fam-1'),
+      ).thenAnswer((_) async => const [_activeLink]);
     });
 
     List<Override> overrides() => [
@@ -78,45 +82,57 @@ void main() {
       familyContextProvider.overrideWith(_FixedFamilyContext.new),
     ];
 
-    testWidgets('lien activé : événement de la famille liée affiché en lecture seule', (tester) async {
-      when(() => overlayRepo.preferences('fam-1')).thenAnswer(
-        (_) async => const [
-          api.OverlayPreference(familyLinkId: 'link-1', view: 'agenda', enabled: true),
-        ],
-      );
-      when(() => overlayRepo.overlayEvents('fam-1', any())).thenAnswer(
-        (_) async => const [
-          OverlayEvent(
-            title: 'Judo du second foyer',
-            startsAt: '2026-07-01T18:00:00+02:00',
-            endsAt: '2026-07-01T19:00:00+02:00',
-            category: 'sport',
-            linkedFamilyId: 'fam-B',
-          ),
-        ],
-      );
+    testWidgets(
+      'lien activé : événement de la famille liée affiché en lecture seule',
+      (tester) async {
+        when(() => overlayRepo.preferences('fam-1')).thenAnswer(
+          (_) async => const [
+            api.OverlayPreference(
+              familyLinkId: 'link-1',
+              view: 'agenda',
+              enabled: true,
+            ),
+          ],
+        );
+        when(() => overlayRepo.overlayEvents('fam-1', any())).thenAnswer(
+          (_) async => const [
+            OverlayEvent(
+              title: 'Judo du second foyer',
+              startsAt: '2026-07-01T18:00:00+02:00',
+              endsAt: '2026-07-01T19:00:00+02:00',
+              category: 'sport',
+              linkedFamilyId: 'fam-B',
+            ),
+          ],
+        );
 
-      await pumpScreen(tester, const AgendaScreen(), overrides: overrides());
-      await tester.pumpAndSettle();
+        await pumpScreen(tester, const AgendaScreen(), overrides: overrides());
+        await tester.pumpAndSettle();
 
-      expect(find.text('Overlay familles liées'), findsOneWidget);
-      expect(find.text('Overlay famille liée · Foyer B'), findsOneWidget);
-      expect(find.text('Judo du second foyer'), findsOneWidget);
-      // Badge de lecture seule + toggle activé.
-      expect(find.text('Famille liée'), findsOneWidget);
-      final toggle = tester.widget<SwitchListTile>(
-        find.byKey(const ValueKey('overlay-toggle-link-1')),
-      );
-      expect(toggle.value, isTrue);
-    });
+        expect(find.text('Overlay famille liée · Foyer B'), findsOneWidget);
+        expect(find.text('Judo du second foyer'), findsOneWidget);
+        // Badge de lecture seule + toggle activé.
+        expect(find.text('Famille liée'), findsOneWidget);
+        final toggle = tester.widget<SwitchListTile>(
+          find.byKey(const ValueKey('overlay-toggle-link-1')),
+        );
+        expect(toggle.value, isTrue);
+      },
+    );
 
     testWidgets('bascule OFF→ON : écrit la préférence agenda', (tester) async {
       when(() => overlayRepo.preferences('fam-1')).thenAnswer(
         (_) async => const [
-          api.OverlayPreference(familyLinkId: 'link-1', view: 'agenda', enabled: false),
+          api.OverlayPreference(
+            familyLinkId: 'link-1',
+            view: 'agenda',
+            enabled: false,
+          ),
         ],
       );
-      when(() => overlayRepo.overlayEvents('fam-1', any())).thenAnswer((_) async => const []);
+      when(
+        () => overlayRepo.overlayEvents('fam-1', any()),
+      ).thenAnswer((_) async => const []);
       when(
         () => overlayRepo.setPreference(
           any(),
@@ -143,9 +159,15 @@ void main() {
     });
 
     testWidgets('aucun lien actif : section overlay masquée', (tester) async {
-      when(() => overlayRepo.activeLinks('fam-1')).thenAnswer((_) async => const []);
-      when(() => overlayRepo.preferences('fam-1')).thenAnswer((_) async => const []);
-      when(() => overlayRepo.overlayEvents('fam-1', any())).thenAnswer((_) async => const []);
+      when(
+        () => overlayRepo.activeLinks('fam-1'),
+      ).thenAnswer((_) async => const []);
+      when(
+        () => overlayRepo.preferences('fam-1'),
+      ).thenAnswer((_) async => const []);
+      when(
+        () => overlayRepo.overlayEvents('fam-1', any()),
+      ).thenAnswer((_) async => const []);
 
       await pumpScreen(tester, const AgendaScreen(), overrides: overrides());
       await tester.pumpAndSettle();
@@ -164,12 +186,20 @@ void main() {
       custodyRepo = MockCustodyRepository();
       overlayRepo = MockOverlayRepository();
       membersRepo = MockMembersRepository();
-      when(() => custodyRepo.getPattern('fam-1')).thenAnswer((_) async => _pattern);
+      when(
+        () => custodyRepo.getPattern('fam-1'),
+      ).thenAnswer((_) async => _pattern);
       when(() => custodyRepo.listDays('fam-1')).thenAnswer((_) async => _days);
       when(() => custodyRepo.getStats('fam-1')).thenAnswer((_) async => _stats);
-      when(() => custodyRepo.listExceptions('fam-1')).thenAnswer((_) async => const []);
-      when(() => custodyRepo.listHolidays('fam-1')).thenAnswer((_) async => const []);
-      when(() => overlayRepo.activeLinks('fam-1')).thenAnswer((_) async => const [_activeLink]);
+      when(
+        () => custodyRepo.listExceptions('fam-1'),
+      ).thenAnswer((_) async => const []);
+      when(
+        () => custodyRepo.listHolidays('fam-1'),
+      ).thenAnswer((_) async => const []);
+      when(
+        () => overlayRepo.activeLinks('fam-1'),
+      ).thenAnswer((_) async => const [_activeLink]);
     });
 
     List<Override> overrides() => [
@@ -179,33 +209,49 @@ void main() {
       familyContextProvider.overrideWith(_FixedFamilyContext.new),
     ];
 
-    testWidgets('lien garde activé : pastille sur les jours avec activité liée', (tester) async {
-      when(() => overlayRepo.preferences('fam-1')).thenAnswer(
-        (_) async => const [
-          api.OverlayPreference(familyLinkId: 'link-1', view: 'garde', enabled: true),
-        ],
-      );
-      when(() => overlayRepo.overlayEvents('fam-1', any())).thenAnswer(
-        (_) async => const [
-          OverlayEvent(
-            title: 'Stage',
-            startsAt: '2026-07-02T09:00:00+02:00',
-            endsAt: '2026-07-02T12:00:00+02:00',
-            category: 'autre',
-            linkedFamilyId: 'fam-B',
-          ),
-        ],
-      );
+    testWidgets(
+      'lien garde activé : pastille sur les jours avec activité liée',
+      (tester) async {
+        when(() => overlayRepo.preferences('fam-1')).thenAnswer(
+          (_) async => const [
+            api.OverlayPreference(
+              familyLinkId: 'link-1',
+              view: 'garde',
+              enabled: true,
+            ),
+          ],
+        );
+        when(() => overlayRepo.overlayEvents('fam-1', any())).thenAnswer(
+          (_) async => const [
+            OverlayEvent(
+              title: 'Stage',
+              startsAt: '2026-07-02T09:00:00+02:00',
+              endsAt: '2026-07-02T12:00:00+02:00',
+              category: 'autre',
+              linkedFamilyId: 'fam-B',
+            ),
+          ],
+        );
 
-      await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
-      await tester.pumpAndSettle();
+        await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+        await tester.pumpAndSettle();
 
-      // Pastille présente le 02/07 (activité liée), absente le 01/07.
-      expect(find.byKey(const ValueKey('overlay-dot-2026-07-02')), findsOneWidget);
-      expect(find.byKey(const ValueKey('overlay-dot-2026-07-01')), findsNothing);
-      // Toggle garde + entrée de légende.
-      expect(find.byKey(const ValueKey('overlay-garde-toggle-link-1')), findsOneWidget);
-      expect(find.text('Famille liée'), findsWidgets);
-    });
+        // Pastille présente le 02/07 (activité liée), absente le 01/07.
+        expect(
+          find.byKey(const ValueKey('overlay-dot-2026-07-02')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('overlay-dot-2026-07-01')),
+          findsNothing,
+        );
+        // Toggle garde + entrée de légende.
+        expect(
+          find.byKey(const ValueKey('overlay-garde-toggle-link-1')),
+          findsOneWidget,
+        );
+        expect(find.text('Famille liée'), findsWidgets);
+      },
+    );
   });
 }

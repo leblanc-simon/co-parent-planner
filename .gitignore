@@ -9,6 +9,9 @@ Thumbs.db
 .vscode/
 *.code-workspace
 
+# Outillage local Claude Code (config machine, non partagée)
+.claude/
+
 # Secrets / environnement local (ne jamais committer)
 .env.local
 .env.*.local

@@ -5,7 +5,7 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-07-02** — **Lot 4 (agenda) TERMINÉ** (backend + web + mobile + E2E). **Lot 5 (familles liées & overlay) TERMINÉ** : backend (projection anti-fuite RO, `?overlay=`, préférences opt-in, revue adversariale 0 P0/P1/P2) + web (toggle agenda + pastilles garde) + mobile (overlay agenda RO + pastilles garde) + E2E (activation/désactivation overlay, événement lié RO). **Prochain lot : Lot 6 — Échanges temps réel.**
+Dernière mise à jour : **2026-07-05** — **Revue graphique (conformité maquettes §8) APPLIQUÉE** (web + mobile) : 113 écarts traités sur les lots A→I de `docs/revue-graphique-maquettes.md`, sauf 3 P2 différés justifiés (WP-07/08 selects→cartes radio = risque JS/E2E ; U1-06 nom responsable accueil = appel réseau en test). Portes vertes : backend 218 tests / PHPStan 0 / cs-fixer 0 / Twig 21 ; **E2E Playwright 14/14** ; mobile `dart analyze` 0 / **flutter test 124** / couverture 78 %. **Lots 0→5 TERMINÉS. Prochain lot : Lot 6 — Échanges temps réel.**
 
 ---
 
@@ -246,6 +246,36 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-07-05 — Revue graphique : application des corrections de conformité (web + mobile)
+- Source : `docs/revue-graphique-maquettes.md` (113 écarts confirmés, 0 P0). Appliqués par lots A→I.
+- **Composants partagés créés** : web `.avatar` (7 tailles, initiale) dans `app.css` ; mobile
+  `lib/core/widgets/initial_avatar.dart` (`InitialAvatar`) + `large_title_header.dart`
+  (`LargeTitleHeader`, grand titre iOS displaySmall 30px remplaçant les AppBar 22px).
+- **Web** (`backend/assets/styles/app.css` + templates Twig) : tokens (eyebrow, `.main` surface,
+  `.auth__card`, h1) ; Accueil (grille 1.4fr/1fr, cartes « À venir » + bloc date) ; Garde (layout
+  2 col, stats tiles A/B colorées, cellules carrées, nav mois carrée, périodes spéciales, légende
+  noms réels, sous-titre) ; Agenda (barre latérale catégorie, chips teintés, overlay carte +
+  interrupteur iOS `.switch`, CTA compact `<details>`, colonne heure Bricolage) ; Enfants (détail
+  2 col, héros, cartes notes, section Informations, avatars) ; Paramètres (sous-nav 248px, « Mon
+  compte », membres cartes + badges + édition repliée, panneau invitation teinté, CTA `.btn--ink`) ;
+  Shell sidebar (switcher sombre déplacé depuis les 5 en-têtes, icônes nav SVG, vignette marque,
+  eyebrow « Navigation », bloc profil + déconnexion).
+- **Mobile** (sous-agent) : Accueil/Garde/Agenda/Enfants/Paramètres/onglets — tous IDs mob-* traités
+  (grand titre, cartes, avatars, filtres, nav mois présentationnelle, exception pointillée, overlay
+  anneau, FAB encre, cartes radio rôle). Onglets = Accueil·Garde·Agenda·Enfants (Réglages via
+  engrenage d'accueil) ; branche Garde toujours présente (indexedStack stable). ARB étendu
+  (`tabCustody`, `homeAllAgenda`, `custodyScreenTitle`, `agendaFilterAll`, `agendaDayEvents`…).
+- **Différés justifiés (3 P2)** : WP-07/WP-08 (selects droits/type famille → cartes radio : le
+  contrôleur Stimulus `settings` lit ces `<select>` et l'E2E « ajuster droits » en dépend) ;
+  U1-06 mobile (nom du responsable sur l'accueil : imposerait un appel réseau dans les tests
+  d'accueil aux providers non surchargés — l'heure est affichée).
+- **Portes** : backend **218 tests / 1772 assertions**, PHPStan niv.8 (0), cs-fixer (0), lint Twig
+  (21) ; **E2E Playwright 14/14** (5 specs + 2 assertions WebPagesTest adaptées aux changements
+  intentionnels : CTA repliés, overlay carte, stats noms réels, titre « Planning de garde ») ;
+  mobile `dart analyze` (0), `dart format` (0), **flutter test 124**, couverture **78,0 %**, client
+  généré intact. Aucune dépendance ajoutée (INSTALL.md inchangé). Divergences assumées préservées
+  (dates dynamiques, pas de champs santé, dépenses v2 masquées, i18n).
 
 ### 2026-07-02 — Lot 5 (overlay) : Étape E — E2E Playwright + clôture du lot
 - `lot5-overlay.spec.ts` : deux familles (A, B) via UI, événement chez B, liaison A↔B pilotée par API

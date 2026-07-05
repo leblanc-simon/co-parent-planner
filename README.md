@@ -34,3 +34,12 @@ cd infra && docker compose up
 ## Licence
 
 Propriétaire.
+
+## Évolutions future
+
+* Joindre des fichiers aux discussions et aux enfants
+* Page d'accueil : séparer discussion et décision + bool pour afficher ou non les notes
+* modif de garde directement sur le calendrier -> création de décision 
+* notification si échéance
+* couleur de fond de notes (priorité)
+* voir toutes les notes d'un coup

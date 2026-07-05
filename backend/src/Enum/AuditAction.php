@@ -65,4 +65,9 @@ enum AuditAction: string
 
     // Familles liées / overlay (Lot 5)
     case OverlayToggled = 'overlay.toggled';
+
+    // Échanges (Lot 6)
+    case ExchangeOpened = 'exchange.opened';
+    case ExchangeDecided = 'exchange.decided';
+    case ExchangeClosed = 'exchange.closed';
 }

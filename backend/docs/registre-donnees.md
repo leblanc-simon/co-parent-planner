@@ -84,6 +84,18 @@ les références (`SET NULL`) sans casser les liens/audits :
 |---|---|---|---|---|---|---|
 | `Event.title` / `Event.category` / horaires (`starts_at`,`ends_at`,`all_day`) — **via overlay** | Contenu (coordination) | Standard (projection minimale RO) | Exécution du contrat (coordination inter-foyers) | Coordonner les activités des enfants entre les deux foyers | Durée de vie de l'événement ; purge RGPD (Lot 8) | Membres habilités (agenda ≥ view) **de la famille liée active** (RO) |
 
+## Champs (Lot 6 — Échanges)
+
+> Les échanges (`Exchange`, `ExchangeOption`, `OptionVote`) portent du **texte métier libre** non
+> marqué 🔒 dans le cdc §5.2 (`title`, `body`, `label`, `sub`) — **aucune donnée de santé typée**.
+> Seul `Message.text` (contenu du fil) est **chiffré au repos** 🔒 : un dump SQL brut ne révèle aucun
+> message. Le clair n'est exposé qu'à un membre habilité (API) ou poussé au topic Mercure protégé
+> (§3.7). L'auteur (`Membership`) est en `ON DELETE SET NULL` : anonymisation « membre supprimé » (Lot 8).
+
+| Champ | Catégorie | Sensibilité | Base légale | Finalité | Conservation | Destinataires |
+|---|---|---|---|---|---|---|
+| `Message.text` | Contenu | 🔒 Chiffré (AES-256-GCM) | Exécution du contrat (coordination parentale) | Échanger des messages sur un sujet enfant/famille | Durée de vie de l'échange ; anonymisation auteur / purge RGPD (Lot 8) | Membres habilités de la famille (exchanges ≥ view) |
+
 ## Champs à venir (rappel, autres lots)
 
 - `Note.text` 🔒 (Lot 2 — contenu), `Message.text` 🔒 (Lot 6 — contenu).

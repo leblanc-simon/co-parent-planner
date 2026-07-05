@@ -1,0 +1,103 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\State\Exchange;
+
+use ApiPlatform\Metadata\Operation;
+use ApiPlatform\State\ProcessorInterface;
+use App\Dto\Exchange\CreateExchangeRequest;
+use App\Dto\Exchange\ExchangeResource;
+use App\Entity\Exchange;
+use App\Enum\AuditAction;
+use App\Repository\ExchangeRepository;
+use App\Security\Auth\AuditLogger;
+use App\Security\Exchanges\ExchangeAccess;
+use App\Security\FamilyContext;
+use App\Service\Exchange\ExchangeAssembler;
+use App\Service\Exchange\ExchangePublisher;
+use App\Service\Exchange\ExchangeWriter;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
+
+/**
+ * US-EX-1 — crée une discussion ou une décision (exchanges:edit). Idempotent sur `Idempotency-Key`
+ * (outbox mobile §4.2), sérialisé par `pg_advisory_xact_lock` sur (famille, clé) : un rejeu renvoie
+ * l'échange déjà créé. Fan-out temps réel **liste** après commit (badge). Émet `ExchangeOpened`.
+ *
+ * @implements ProcessorInterface<CreateExchangeRequest, ExchangeResource>
+ */
+final class CreateExchangeProcessor implements ProcessorInterface
+{
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly ExchangeAccess $access,
+        private readonly ExchangeWriter $writer,
+        private readonly ExchangeRepository $exchanges,
+        private readonly ExchangeAssembler $assembler,
+        private readonly ExchangePublisher $publisher,
+        private readonly AuditLogger $audit,
+        private readonly RequestStack $requestStack,
+    ) {
+    }
+
+    public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): ExchangeResource
+    {
+        \assert($data instanceof CreateExchangeRequest);
+
+        $ctx = $this->access->write();
+        $tz = new \DateTimeZone($ctx->family->getTimezone());
+
+        $rawKey = $this->requestStack->getCurrentRequest()?->headers->get('Idempotency-Key');
+        $key = \is_string($rawKey) && '' !== $rawKey ? $rawKey : null;
+
+        $exchange = null !== $key ? $this->createIdempotent($ctx, $data, $key) : $this->createSimple($ctx, $data);
+
+        $this->publisher->publishList($ctx->family);
+
+        return $this->assembler->detail($exchange, $tz);
+    }
+
+    private function createSimple(FamilyContext $ctx, CreateExchangeRequest $data): Exchange
+    {
+        $exchange = $this->writer->build($ctx->family, $ctx->membership, $data);
+        $this->audit->log(
+            AuditAction::ExchangeOpened,
+            $ctx->user(),
+            $ctx->family,
+            ip: $this->requestStack->getCurrentRequest()?->getClientIp(),
+            entityType: 'Exchange',
+            entityId: (string) $exchange->getId(),
+        ); // flush (commit)
+
+        return $exchange;
+    }
+
+    private function createIdempotent(FamilyContext $ctx, CreateExchangeRequest $data, string $key): Exchange
+    {
+        return $this->em->wrapInTransaction(function () use ($ctx, $data, $key): Exchange {
+            $this->em->getConnection()->executeStatement(
+                'SELECT pg_advisory_xact_lock(hashtext(:k))',
+                ['k' => 'exchange_idem:'.$ctx->family->getId().':'.$key],
+            );
+
+            $existing = $this->exchanges->findOneByIdempotencyKey($ctx->family, $key);
+            if ($existing instanceof Exchange) {
+                return $existing; // rejeu : aucun doublon
+            }
+
+            $exchange = $this->writer->build($ctx->family, $ctx->membership, $data);
+            $exchange->setIdempotencyKey($key);
+            $this->audit->persist(
+                AuditAction::ExchangeOpened,
+                $ctx->user(),
+                $ctx->family,
+                ip: $this->requestStack->getCurrentRequest()?->getClientIp(),
+                entityType: 'Exchange',
+                entityId: (string) $exchange->getId(),
+            );
+
+            return $exchange;
+        });
+    }
+}

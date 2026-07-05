@@ -156,3 +156,35 @@ note:
         date_before_birth: "La date de la note est antérieure à la naissance de l'enfant."
         not_author: "Seul l'auteur de la note (ou un parent) peut la modifier ou la supprimer."
     unavailable: 'Contenu temporairement indisponible.'
+
+exchange:
+    error:
+        not_found: 'Échange introuvable.'
+        conflict: "L'échange a été modifié entre-temps. Rechargez puis réessayez."
+        already_decided: 'Cette décision est déjà tranchée.'
+        reopen_forbidden: 'Un échange tranché ne peut être rouvert.'
+        title_required: 'Le titre est obligatoire.'
+        type_invalid: "Type d'échange invalide (attendu : discussion ou decision)."
+        status_invalid: 'Statut invalide (attendu : open ou decided).'
+        options_min: 'Une décision requiert au moins deux options.'
+        option_label_required: "Chaque option doit avoir un libellé."
+        option_invalid: "Cette option n'appartient pas à la décision."
+        not_a_decision: "Cet échange n'est pas une décision."
+        decided_option_required: "Précisez l'option retenue pour clore la décision."
+        child_invalid: "L'enfant ciblé n'appartient pas à la famille."
+        deadline_invalid: "La date d'échéance est invalide."
+        message_required: 'Le message ne peut pas être vide.'
+        message_too_long: 'Le message est trop long.'
+    type:
+        discussion: 'Discussion'
+        decision: 'Décision'
+    status:
+        open: 'Ouvert'
+        decided: 'Décidé'
+    overdue: 'En retard'
+    whole_family: 'Toute la famille'
+    empty: 'Aucun échange pour le moment.'
+    thread_empty: 'Aucun message pour le moment.'
+    decided_banner: 'Décision tranchée'
+    open_count: '{count, plural, =0 {Aucun échange ouvert} one {# échange ouvert} other {# échanges ouverts}}'
+    votes: '{count, plural, =0 {Aucune validation} one {# validation} other {# validations}}'

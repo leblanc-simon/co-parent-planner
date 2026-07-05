@@ -94,6 +94,12 @@ final class RealtimeTokenProvider implements ProviderInterface
         if ($membership->can(RightDomain::Agenda, RightLevel::View)) {
             $topics[] = \sprintf('/families/%s/agenda', $familyId);
         }
+        // Échanges (Lot 6) : liste (badge) + détail par échange (template RFC 6570), filtré sur
+        // exchanges ≥ view (US-EX-2/7). Le clair des messages n'est poussé qu'ici, aux abonnés autorisés.
+        if ($membership->can(RightDomain::Exchanges, RightLevel::View)) {
+            $topics[] = \sprintf('/families/%s/exchanges', $familyId);
+            $topics[] = \sprintf('/families/%s/exchanges/{exchangeId}', $familyId);
+        }
 
         return $topics;
     }

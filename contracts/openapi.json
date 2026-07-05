@@ -1416,6 +1416,449 @@
                 }
             }
         },
+        "/api/exchanges/{id}": {
+            "get": {
+                "operationId": "api_exchanges_id_get",
+                "tags": [
+                    "Exchange"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Exchange resource",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Exchange"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Exchange.jsonld"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Retrieves a Exchange resource.",
+                "description": "Retrieves a Exchange resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Exchange identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            },
+            "patch": {
+                "operationId": "api_exchanges_id_patch",
+                "tags": [
+                    "Exchange"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Exchange resource updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Exchange"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Exchange.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Updates the Exchange resource.",
+                "description": "Updates the Exchange resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Exchange identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The updated Exchange resource",
+                    "content": {
+                        "application/merge-patch+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Exchange.UpdateExchangeRequest.jsonMergePatch"
+                            }
+                        },
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Exchange.UpdateExchangeRequest.jsonMergePatch"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/exchanges/{id}/decide": {
+            "post": {
+                "operationId": "api_exchanges_iddecide_post",
+                "tags": [
+                    "Exchange"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Exchange resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Exchange"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Exchange.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a Exchange resource.",
+                "description": "Creates a Exchange resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Exchange identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The new Exchange resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Exchange.DecideRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Exchange.DecideRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/families/{familyId}/exchanges": {
+            "get": {
+                "operationId": "api_families_familyIdexchanges_get_collection",
+                "tags": [
+                    "Exchange"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Exchange collection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Exchange"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "Exchange.jsonld collection.",
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/HydraCollectionBaseSchemaNoPagination"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "member"
+                                            ],
+                                            "properties": {
+                                                "member": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Exchange.jsonld"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Retrieves the collection of Exchange resources.",
+                "description": "Retrieves the collection of Exchange resources.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "api_families_familyIdexchanges_post",
+                "tags": [
+                    "Exchange"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Exchange resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Exchange"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Exchange.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a Exchange resource.",
+                "description": "Creates a Exchange resource.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The new Exchange resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Exchange.CreateExchangeRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Exchange.CreateExchangeRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
         "/api/families": {
             "get": {
                 "operationId": "api_families_get_collection",
@@ -3033,6 +3476,106 @@
                         "application/json": {
                             "schema": {
                                 "$ref": "#/components/schemas/Member.UpdateMembershipRequest.jsonMergePatch"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/exchanges/{exchangeId}/messages": {
+            "post": {
+                "operationId": "api_exchanges_exchangeIdmessages_post",
+                "tags": [
+                    "Message"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Message resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Message"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Message.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a Message resource.",
+                "description": "Creates a Message resource.",
+                "parameters": [
+                    {
+                        "name": "exchangeId",
+                        "in": "path",
+                        "description": "ExchangeResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The new Message resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Message.CreateMessageRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Message.CreateMessageRequest"
                             }
                         }
                     },
@@ -5949,6 +6492,301 @@
                 ],
                 "description": "\u00c9v\u00e9nement / occurrence d'agenda expos\u00e9 (Lot 4 \u00a76.1). `GET /families/{id}/events` renvoie les\n**occurrences** sur [from, to] (une par occurrence de s\u00e9rie) ; `POST` cr\u00e9e un \u00e9v\u00e9nement ou une\ns\u00e9rie et renvoie l'\u00e9v\u00e9nement ma\u00eetre. `startsAt`/`endsAt` sont format\u00e9s en ISO 8601 avec offset du\nfuseau famille. Le param\u00e8tre `overlay=` est **r\u00e9serv\u00e9** (Lot 5, ignor\u00e9 ici)."
             },
+            "Exchange": {
+                "type": "object",
+                "description": "\u00c9change expos\u00e9 (Lot 6 \u00a76.1). La collection `/families/{id}/exchanges?status=` renvoie les r\u00e9sum\u00e9s\n(sans le fil) tri\u00e9s (\u00a73.6) ; `GET /exchanges/{id}` renvoie le d\u00e9tail (options + d\u00e9comptes + fil en\nclair). `POST .../decide` valide une option et renvoie l'\u00e9change (statut + options \u00e0 jour). Le\nmarqueur `overdue` est d\u00e9riv\u00e9 (fuseau famille, \u00a73.4).",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "type": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "title": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "body": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "childId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "authorMembershipId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "authorName": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "authorColor": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "deadline": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "status": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "decidedOptionId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "overdue": {
+                        "default": false,
+                        "type": "boolean"
+                    },
+                    "createdAt": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "messageCount": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "lastMessageAt": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "options": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OptionView"
+                        }
+                    },
+                    "messages": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MessageView"
+                        }
+                    }
+                }
+            },
+            "Exchange.CreateExchangeRequest": {
+                "type": "object",
+                "description": "\u00c9change expos\u00e9 (Lot 6 \u00a76.1). La collection `/families/{id}/exchanges?status=` renvoie les r\u00e9sum\u00e9s\n(sans le fil) tri\u00e9s (\u00a73.6) ; `GET /exchanges/{id}` renvoie le d\u00e9tail (options + d\u00e9comptes + fil en\nclair). `POST .../decide` valide une option et renvoie l'\u00e9change (statut + options \u00e0 jour). Le\nmarqueur `overdue` est d\u00e9riv\u00e9 (fuseau famille, \u00a73.4).",
+                "properties": {
+                    "type": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "title": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "body": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "childId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "deadline": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "options": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "anyOf": [
+                                    {
+                                        "type": "integer"
+                                    },
+                                    {
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+            "Exchange.DecideRequest": {
+                "type": "object",
+                "description": "\u00c9change expos\u00e9 (Lot 6 \u00a76.1). La collection `/families/{id}/exchanges?status=` renvoie les r\u00e9sum\u00e9s\n(sans le fil) tri\u00e9s (\u00a73.6) ; `GET /exchanges/{id}` renvoie le d\u00e9tail (options + d\u00e9comptes + fil en\nclair). `POST .../decide` valide une option et renvoie l'\u00e9change (statut + options \u00e0 jour). Le\nmarqueur `overdue` est d\u00e9riv\u00e9 (fuseau famille, \u00a73.4).",
+                "properties": {
+                    "optionId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "Exchange.UpdateExchangeRequest.jsonMergePatch": {
+                "type": "object",
+                "description": "\u00c9change expos\u00e9 (Lot 6 \u00a76.1). La collection `/families/{id}/exchanges?status=` renvoie les r\u00e9sum\u00e9s\n(sans le fil) tri\u00e9s (\u00a73.6) ; `GET /exchanges/{id}` renvoie le d\u00e9tail (options + d\u00e9comptes + fil en\nclair). `POST .../decide` valide une option et renvoie l'\u00e9change (statut + options \u00e0 jour). Le\nmarqueur `overdue` est d\u00e9riv\u00e9 (fuseau famille, \u00a73.4).",
+                "properties": {
+                    "status": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "decidedOptionId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "deadline": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "expectedVersion": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "Exchange.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "type": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "title": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "body": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "childId": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "authorMembershipId": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "authorName": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "authorColor": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "deadline": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "status": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "decidedOptionId": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "overdue": {
+                                "default": false,
+                                "type": "boolean"
+                            },
+                            "createdAt": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "messageCount": {
+                                "default": 0,
+                                "type": "integer"
+                            },
+                            "lastMessageAt": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "options": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/OptionView.jsonld"
+                                }
+                            },
+                            "messages": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/MessageView.jsonld"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "description": "\u00c9change expos\u00e9 (Lot 6 \u00a76.1). La collection `/families/{id}/exchanges?status=` renvoie les r\u00e9sum\u00e9s\n(sans le fil) tri\u00e9s (\u00a73.6) ; `GET /exchanges/{id}` renvoie le d\u00e9tail (options + d\u00e9comptes + fil en\nclair). `POST .../decide` valide une option et renvoie l'\u00e9change (statut + options \u00e0 jour). Le\nmarqueur `overdue` est d\u00e9riv\u00e9 (fuseau famille, \u00a73.4)."
+            },
             "Family": {
                 "type": "object",
                 "description": "Repr\u00e9sentation d'une famille du point de vue du membre courant (US-ONB-1, US-HOME-1).\n`role`/`isAdmin` refl\u00e8tent la perspective de l'utilisateur connect\u00e9 dans cette famille.",
@@ -7032,6 +7870,175 @@
                 ],
                 "description": "Vue d'un membre d'une famille (US-MBR-1) : r\u00f4le, admin, couleur, matrice de droits **effectifs**,\net identit\u00e9 \ud83d\udd12 d\u00e9chiffr\u00e9e \u00e0 la vol\u00e9e pour les membres habilit\u00e9s (jamais en clair dans un dump)."
             },
+            "Message": {
+                "type": "object",
+                "description": "Message du fil (Lot 6 \u00a76.1). `POST /exchanges/{exchangeId}/messages` cr\u00e9e un message (texte\nchiffr\u00e9 au repos, renvoy\u00e9 **en clair** \u00e0 l'appelant autoris\u00e9). Sert aussi de vue imbriqu\u00e9e dans le\nd\u00e9tail d'un \u00e9change. `authorName`/`authorColor` sont `null` pour un auteur anonymis\u00e9 (\u00a74.8).",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "exchangeId": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "authorMembershipId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "authorName": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "authorColor": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "text": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "sentAt": {
+                        "default": "",
+                        "type": "string"
+                    }
+                }
+            },
+            "Message.CreateMessageRequest": {
+                "type": "object",
+                "description": "Message du fil (Lot 6 \u00a76.1). `POST /exchanges/{exchangeId}/messages` cr\u00e9e un message (texte\nchiffr\u00e9 au repos, renvoy\u00e9 **en clair** \u00e0 l'appelant autoris\u00e9). Sert aussi de vue imbriqu\u00e9e dans le\nd\u00e9tail d'un \u00e9change. `authorName`/`authorColor` sont `null` pour un auteur anonymis\u00e9 (\u00a74.8).",
+                "properties": {
+                    "text": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "Message.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "exchangeId": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "authorMembershipId": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "authorName": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "authorColor": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "text": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "sentAt": {
+                                "default": "",
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "description": "Message du fil (Lot 6 \u00a76.1). `POST /exchanges/{exchangeId}/messages` cr\u00e9e un message (texte\nchiffr\u00e9 au repos, renvoy\u00e9 **en clair** \u00e0 l'appelant autoris\u00e9). Sert aussi de vue imbriqu\u00e9e dans le\nd\u00e9tail d'un \u00e9change. `authorName`/`authorColor` sont `null` pour un auteur anonymis\u00e9 (\u00a74.8)."
+            },
+            "MessageView": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "authorMembershipId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "authorName": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "authorColor": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "text": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "sentAt": {
+                        "default": "",
+                        "type": "string"
+                    }
+                }
+            },
+            "MessageView.jsonld": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "authorMembershipId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "authorName": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "authorColor": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "text": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "sentAt": {
+                        "default": "",
+                        "type": "string"
+                    }
+                }
+            },
             "Note": {
                 "type": "object",
                 "description": "Note partag\u00e9e expos\u00e9e (US-CH-6). `text` d\u00e9chiffr\u00e9 au rendu serveur ; auteur r\u00e9solu (nom + couleur).",
@@ -7168,6 +8175,68 @@
                     }
                 ],
                 "description": "Note partag\u00e9e expos\u00e9e (US-CH-6). `text` d\u00e9chiffr\u00e9 au rendu serveur ; auteur r\u00e9solu (nom + couleur)."
+            },
+            "OptionView": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "label": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "sub": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "position": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "voteCount": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "decided": {
+                        "default": false,
+                        "type": "boolean"
+                    }
+                }
+            },
+            "OptionView.jsonld": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "label": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "sub": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "position": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "voteCount": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "decided": {
+                        "default": false,
+                        "type": "boolean"
+                    }
+                }
             },
             "OverlayPreference": {
                 "type": "object",
@@ -7743,6 +8812,14 @@
         {
             "name": "SchoolHoliday",
             "description": "P\u00e9riode de vacances expos\u00e9e (US-CUST-3) avec sa r\u00e8gle \u00e9ventuelle."
+        },
+        {
+            "name": "Exchange",
+            "description": "\u00c9change expos\u00e9 (Lot 6 \u00a76.1). La collection `/families/{id}/exchanges?status=` renvoie les r\u00e9sum\u00e9s\n(sans le fil) tri\u00e9s (\u00a73.6) ; `GET /exchanges/{id}` renvoie le d\u00e9tail (options + d\u00e9comptes + fil en\nclair). `POST .../decide` valide une option et renvoie l'\u00e9change (statut + options \u00e0 jour). Le\nmarqueur `overdue` est d\u00e9riv\u00e9 (fuseau famille, \u00a73.4)."
+        },
+        {
+            "name": "Message",
+            "description": "Message du fil (Lot 6 \u00a76.1). `POST /exchanges/{exchangeId}/messages` cr\u00e9e un message (texte\nchiffr\u00e9 au repos, renvoy\u00e9 **en clair** \u00e0 l'appelant autoris\u00e9). Sert aussi de vue imbriqu\u00e9e dans le\nd\u00e9tail d'un \u00e9change. `authorName`/`authorColor` sont `null` pour un auteur anonymis\u00e9 (\u00a74.8)."
         },
         {
             "name": "Family",

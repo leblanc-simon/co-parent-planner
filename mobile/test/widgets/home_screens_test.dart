@@ -1,5 +1,6 @@
 import 'package:coparentplanner/api/generated/export.dart' as api;
 import 'package:coparentplanner/features/agenda/data/agenda_repository.dart';
+import 'package:coparentplanner/features/exchanges/data/exchanges_repository.dart';
 import 'package:coparentplanner/features/auth/application/auth_controller.dart';
 import 'package:coparentplanner/features/auth/application/auth_state.dart';
 import 'package:coparentplanner/features/family/application/family_context.dart';
@@ -37,11 +38,14 @@ List<Override> _overrides(
   AuthState auth,
   FamilyContext? family, {
   List<api.Event> events = const [],
+  List<api.Exchange> exchanges = const [],
 }) => [
   authControllerProvider.overrideWith(() => _AuthStub(auth)),
   familyContextProvider.overrideWith(() => _FamilyStub(family)),
   // Neutralise l'appel réseau du bloc « À venir » (familyEventsProvider).
   familyEventsProvider.overrideWith((ref) => events),
+  // Neutralise l'appel réseau de la carte Échanges (badge).
+  familyExchangesProvider.overrideWith((ref) => exchanges),
 ];
 
 void main() {
@@ -96,6 +100,33 @@ void main() {
     await tester.pump();
     expect(find.byKey(const ValueKey('home-upcoming-card')), findsOneWidget);
     expect(find.text('Cours de tennis'), findsOneWidget);
+  });
+
+  testWidgets('HomeTab : carte Échanges affiche le badge des ouverts', (
+    tester,
+  ) async {
+    await pumpScreen(
+      tester,
+      const HomeTab(),
+      overrides: _overrides(
+        const AuthAuthenticated(_user),
+        const FamilyContext(
+          familyId: 'f1',
+          familyName: 'Maison',
+          type: 'separated',
+        ),
+        exchanges: const [
+          api.Exchange(id: 'a', status: 'open'),
+          api.Exchange(id: 'b', status: 'open'),
+          api.Exchange(id: 'c', status: 'decided'),
+        ],
+      ),
+    );
+    await tester.pump();
+    expect(find.byKey(const ValueKey('home-exchanges-card')), findsOneWidget);
+    expect(find.byKey(const ValueKey('home-exchanges-badge')), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+    expect(find.text('2 échanges ouverts'), findsOneWidget);
   });
 
   testWidgets('HomeTab : famille unie -> « toute la famille reunie »', (

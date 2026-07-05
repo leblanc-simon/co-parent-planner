@@ -664,4 +664,124 @@ class AppL10nFr extends AppL10n {
   @override
   String get overlayEmpty =>
       'Aucune activité de la famille liée sur cette période.';
+
+  @override
+  String get exchangesTitle => 'Échanges';
+
+  @override
+  String get exchangesEmpty => 'Aucun échange pour le moment.';
+
+  @override
+  String get exchangesNew => 'Nouvel échange';
+
+  @override
+  String get exchangesFilterOpen => 'Ouverts';
+
+  @override
+  String get exchangesFilterDecided => 'Décidés';
+
+  @override
+  String exchangesOpenCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count échanges ouverts',
+      one: '$count échange ouvert',
+      zero: 'Aucun échange ouvert',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get exchangeTypeDiscussion => 'Discussion';
+
+  @override
+  String get exchangeTypeDecision => 'Décision';
+
+  @override
+  String get exchangeWholeFamily => 'Toute la famille';
+
+  @override
+  String get exchangeOverdue => 'En retard';
+
+  @override
+  String get exchangeDecided => 'Décidé';
+
+  @override
+  String get exchangeAnonymous => 'Membre supprimé';
+
+  @override
+  String exchangeDeadlineLabel(String date) {
+    return 'Échéance : $date';
+  }
+
+  @override
+  String get exchangeThread => 'Fil de discussion';
+
+  @override
+  String get exchangeThreadEmpty => 'Aucun message pour l\'instant.';
+
+  @override
+  String get exchangeMessagePlaceholder => 'Écrire un message…';
+
+  @override
+  String get exchangeDecidedBanner => 'Décision tranchée';
+
+  @override
+  String get exchangeValidateOption => 'Valider cette option';
+
+  @override
+  String exchangeVotesCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count validations',
+      one: '$count validation',
+      zero: 'Aucune validation',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get exchangeConflict => 'Cette décision est déjà tranchée.';
+
+  @override
+  String get exchangeClose => 'Clôturer';
+
+  @override
+  String get exchangeClosed => 'Échange clôturé.';
+
+  @override
+  String get exchangeCreate => 'Créer';
+
+  @override
+  String get exchangeCreated => 'Échange créé.';
+
+  @override
+  String get exchangeFieldTitle => 'Titre';
+
+  @override
+  String get exchangeFieldBody => 'Message ou contexte (optionnel)';
+
+  @override
+  String get exchangeChooseChild => 'Enfant concerné';
+
+  @override
+  String get exchangeFieldDeadline => 'Échéance (optionnelle)';
+
+  @override
+  String get exchangeNoDeadline => 'Aucune échéance';
+
+  @override
+  String get exchangeFieldOptions => 'Options';
+
+  @override
+  String get exchangeOptionLabel => 'Option';
+
+  @override
+  String get exchangeAddOption => 'Ajouter une option';
+
+  @override
+  String get exchangeOptionsHint =>
+      'Une décision requiert au moins deux options.';
 }

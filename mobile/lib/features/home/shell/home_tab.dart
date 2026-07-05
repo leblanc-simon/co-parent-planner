@@ -13,6 +13,8 @@ import '../../agenda/data/agenda_repository.dart';
 import '../../agenda/presentation/agenda_screen.dart' show CategoryPill;
 import '../../auth/application/auth_controller.dart';
 import '../../auth/application/auth_state.dart';
+import '../../exchanges/data/exchanges_repository.dart';
+import '../../exchanges/presentation/exchanges_screen.dart';
 import '../../family/application/family_context.dart';
 import '../../family/data/family_repository.dart';
 import 'settings_tab.dart';
@@ -81,10 +83,7 @@ class HomeTab extends ConsumerWidget {
             const SizedBox(height: 16),
             const _UpcomingSection(),
             const SizedBox(height: 16),
-            _EmptyCard(
-              title: l.homeDecisionsTitle,
-              message: l.homeDecisionsEmpty,
-            ),
+            const _ExchangesCard(),
             const SizedBox(height: 16),
             _EmptyCard(title: l.homeNotesTitle, message: l.homeNotesEmpty),
           ],
@@ -332,6 +331,83 @@ class _EmptyCard extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadii.card),
       child: AppCard(child: content),
+    );
+  }
+}
+
+/// Carte d'accès aux Échanges (US-EX-7) : intégration la moins invasive — une carte
+/// sur l'accueil plutôt qu'un onglet supplémentaire (le shell garde 4 branches
+/// stables). Porte un **badge du nombre d'échanges ouverts** (pastille 999px)
+/// reflétant la famille active ; masqué à zéro. Ouvre l'écran Échanges par push.
+class _ExchangesCard extends ConsumerWidget {
+  const _ExchangesCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppL10n.of(context);
+    final open = ref
+        .watch(familyExchangesProvider)
+        .maybeWhen(data: openCount, orElse: () => 0);
+
+    return InkWell(
+      key: const ValueKey('home-exchanges-card'),
+      onTap: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const ExchangesScreen())),
+      borderRadius: BorderRadius.circular(AppRadii.card),
+      child: AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l.exchangesTitle.toUpperCase(),
+                    style: AppTypography.eyebrow,
+                  ),
+                ),
+                if (open > 0) ...[
+                  Container(
+                    key: const ValueKey('home-exchanges-badge'),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.accent,
+                      borderRadius: BorderRadius.circular(AppRadii.pill),
+                    ),
+                    child: Text(
+                      open > 9 ? '9+' : '$open',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                const Icon(
+                  Icons.chevron_right,
+                  color: AppColors.muted,
+                  size: 20,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              l.exchangesOpenCount(open),
+              style: const TextStyle(
+                fontFamily: AppFonts.body,
+                fontSize: 14,
+                color: AppColors.muted,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

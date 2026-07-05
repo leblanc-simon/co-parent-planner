@@ -30,7 +30,9 @@ class ApiClients {
       custodyStats = api.CustodyStatsClient(dio),
       holidays = api.SchoolHolidayClient(dio),
       events = api.EventClient(dio),
-      overlayPreferences = api.OverlayPreferenceClient(dio);
+      overlayPreferences = api.OverlayPreferenceClient(dio),
+      exchanges = api.ExchangeClient(dio),
+      messages = api.MessageClient(dio);
 
   final api.RegisterRequestClient register;
   final api.LoginRequestClient login;
@@ -54,6 +56,8 @@ class ApiClients {
   final api.SchoolHolidayClient holidays;
   final api.EventClient events;
   final api.OverlayPreferenceClient overlayPreferences;
+  final api.ExchangeClient exchanges;
+  final api.MessageClient messages;
 }
 
 final apiClientsProvider = Provider<ApiClients>(

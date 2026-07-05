@@ -1316,6 +1316,204 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Aucune activité de la famille liée sur cette période.'**
   String get overlayEmpty;
+
+  /// No description provided for @exchangesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échanges'**
+  String get exchangesTitle;
+
+  /// No description provided for @exchangesEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun échange pour le moment.'**
+  String get exchangesEmpty;
+
+  /// No description provided for @exchangesNew.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvel échange'**
+  String get exchangesNew;
+
+  /// No description provided for @exchangesFilterOpen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouverts'**
+  String get exchangesFilterOpen;
+
+  /// No description provided for @exchangesFilterDecided.
+  ///
+  /// In fr, this message translates to:
+  /// **'Décidés'**
+  String get exchangesFilterDecided;
+
+  /// No description provided for @exchangesOpenCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucun échange ouvert} one{{count} échange ouvert} other{{count} échanges ouverts}}'**
+  String exchangesOpenCount(num count);
+
+  /// No description provided for @exchangeTypeDiscussion.
+  ///
+  /// In fr, this message translates to:
+  /// **'Discussion'**
+  String get exchangeTypeDiscussion;
+
+  /// No description provided for @exchangeTypeDecision.
+  ///
+  /// In fr, this message translates to:
+  /// **'Décision'**
+  String get exchangeTypeDecision;
+
+  /// No description provided for @exchangeWholeFamily.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toute la famille'**
+  String get exchangeWholeFamily;
+
+  /// No description provided for @exchangeOverdue.
+  ///
+  /// In fr, this message translates to:
+  /// **'En retard'**
+  String get exchangeOverdue;
+
+  /// No description provided for @exchangeDecided.
+  ///
+  /// In fr, this message translates to:
+  /// **'Décidé'**
+  String get exchangeDecided;
+
+  /// No description provided for @exchangeAnonymous.
+  ///
+  /// In fr, this message translates to:
+  /// **'Membre supprimé'**
+  String get exchangeAnonymous;
+
+  /// No description provided for @exchangeDeadlineLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échéance : {date}'**
+  String exchangeDeadlineLabel(String date);
+
+  /// No description provided for @exchangeThread.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fil de discussion'**
+  String get exchangeThread;
+
+  /// No description provided for @exchangeThreadEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun message pour l\'instant.'**
+  String get exchangeThreadEmpty;
+
+  /// No description provided for @exchangeMessagePlaceholder.
+  ///
+  /// In fr, this message translates to:
+  /// **'Écrire un message…'**
+  String get exchangeMessagePlaceholder;
+
+  /// No description provided for @exchangeDecidedBanner.
+  ///
+  /// In fr, this message translates to:
+  /// **'Décision tranchée'**
+  String get exchangeDecidedBanner;
+
+  /// No description provided for @exchangeValidateOption.
+  ///
+  /// In fr, this message translates to:
+  /// **'Valider cette option'**
+  String get exchangeValidateOption;
+
+  /// No description provided for @exchangeVotesCount.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Aucune validation} one{{count} validation} other{{count} validations}}'**
+  String exchangeVotesCount(num count);
+
+  /// No description provided for @exchangeConflict.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette décision est déjà tranchée.'**
+  String get exchangeConflict;
+
+  /// No description provided for @exchangeClose.
+  ///
+  /// In fr, this message translates to:
+  /// **'Clôturer'**
+  String get exchangeClose;
+
+  /// No description provided for @exchangeClosed.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échange clôturé.'**
+  String get exchangeClosed;
+
+  /// No description provided for @exchangeCreate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créer'**
+  String get exchangeCreate;
+
+  /// No description provided for @exchangeCreated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échange créé.'**
+  String get exchangeCreated;
+
+  /// No description provided for @exchangeFieldTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Titre'**
+  String get exchangeFieldTitle;
+
+  /// No description provided for @exchangeFieldBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Message ou contexte (optionnel)'**
+  String get exchangeFieldBody;
+
+  /// No description provided for @exchangeChooseChild.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enfant concerné'**
+  String get exchangeChooseChild;
+
+  /// No description provided for @exchangeFieldDeadline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échéance (optionnelle)'**
+  String get exchangeFieldDeadline;
+
+  /// No description provided for @exchangeNoDeadline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune échéance'**
+  String get exchangeNoDeadline;
+
+  /// No description provided for @exchangeFieldOptions.
+  ///
+  /// In fr, this message translates to:
+  /// **'Options'**
+  String get exchangeFieldOptions;
+
+  /// No description provided for @exchangeOptionLabel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Option'**
+  String get exchangeOptionLabel;
+
+  /// No description provided for @exchangeAddOption.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajouter une option'**
+  String get exchangeAddOption;
+
+  /// No description provided for @exchangeOptionsHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une décision requiert au moins deux options.'**
+  String get exchangeOptionsHint;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

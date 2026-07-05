@@ -264,4 +264,58 @@ final class WebPagesTest extends WebTestCase
         // Abonnement temps réel câblé.
         self::assertStringContainsString('turbo-stream-source', $html);
     }
+
+    public function testExchangesPageRendersEmpty(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser($client, withFamily: true);
+        $this->login($client);
+
+        $client->request('GET', '/echanges');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('Échanges', $html);
+        self::assertStringContainsString('Aucun échange pour le moment', $html);
+        self::assertStringContainsString('Nouvel échange', $html); // parent admin → exchanges:edit
+        self::assertStringContainsString('turbo-stream-source', $html);
+        self::assertStringContainsString('href="/echanges"', $html); // onglet dans la barre latérale
+    }
+
+    public function testExchangesListAndDetailWithBadge(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser($client, withFamily: true);
+        $this->login($client);
+
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $em);
+        $family = $em->getRepository(Family::class)->findOneBy(['name' => 'Famille Web']);
+        self::assertInstanceOf(Family::class, $family);
+        $membership = $em->getRepository(Membership::class)->findOneBy(['family' => $family]);
+        self::assertInstanceOf(Membership::class, $membership);
+
+        $exchange = (new \App\Entity\Exchange())
+            ->setFamily($family)
+            ->setType(\App\Enum\ExchangeType::Discussion)
+            ->setTitle('Organisation des vacances')
+            ->setAuthorMembership($membership);
+        $em->persist($exchange);
+        $em->flush();
+
+        // Liste : l'échange figure ; le badge de navigation affiche le nombre d'ouverts.
+        $client->request('GET', '/echanges');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('Organisation des vacances', $html);
+        self::assertStringContainsString('id="exchanges-badge"', $html);
+
+        // Détail : sélection via ?exchange= → fil (état vide localisé) + formulaire de message.
+        $client->request('GET', '/echanges?exchange='.$exchange->getId());
+        self::assertResponseIsSuccessful();
+        $detail = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('Aucun message pour le moment', $detail);
+        self::assertStringContainsString('Écrire un message', $detail);
+    }
 }

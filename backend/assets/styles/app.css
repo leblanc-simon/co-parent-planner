@@ -148,6 +148,8 @@ a:hover { text-decoration: underline; }
 .sidebar__nav a:hover { background: rgba(255,255,255,.06); color: #fff; }
 .sidebar__nav a.is-active { background: var(--accent); color: #fff; }
 .sidebar__nav svg { flex: 0 0 auto; }
+.nav-badge { margin-left: auto; background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; min-width: 20px; height: 20px; border-radius: var(--radius-pill); display: inline-flex; align-items: center; justify-content: center; padding: 0 6px; }
+.sidebar__nav a.is-active .nav-badge { background: #fff; color: var(--accent); }
 .sidebar__spacer { flex: 1; }
 
 /* Sélecteur de famille — pilule sombre en tête de sidebar (WST-01) */
@@ -222,6 +224,7 @@ a:hover { text-decoration: underline; }
     .garde-layout { grid-template-columns: 1fr; }
     .settings-layout { grid-template-columns: 1fr; }
     .settings-nav { flex-direction: row; flex-wrap: wrap; border-right: none; border-bottom: 1px solid var(--border-2); position: static; padding: 0 0 .5rem; }
+    .exchanges__layout { grid-template-columns: 1fr; }
 }
 
 /* ---------- Lot 1 : Paramètres › Compte & Famille ---------- */
@@ -451,3 +454,41 @@ a:hover { text-decoration: underline; }
 .agenda-linked-dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: var(--linked); vertical-align: middle; }
 .agenda-event.agenda-event--linked { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; padding: .6rem .8rem; background: #F7F1FA; border: 1px solid var(--linked); border-left-width: 4px; border-radius: 12px; }
 .agenda-linked-badge { font-size: .72rem; font-weight: 600; color: #6F5B7A; background: #EFE6F4; border-radius: var(--radius-pill); padding: .1rem .55rem; }
+
+/* ---------- Lot 6 : Échanges (maître-détail) ---------- */
+.exchanges__layout { display: grid; grid-template-columns: 340px 1fr; gap: 1.25rem; align-items: start; }
+.exchanges__list { display: flex; flex-direction: column; gap: .6rem; }
+.exchanges__detail { display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; }
+.exchange-card { display: flex; flex-direction: column; gap: .3rem; padding: 14px 16px; border: 1px solid var(--border); border-radius: 16px; background: var(--card); text-decoration: none; color: var(--ink); }
+.exchange-card:hover { text-decoration: none; border-color: var(--border-3); }
+.exchange-card.is-active { border-color: var(--accent); background: var(--accent-soft); }
+.exchange-card__head { display: flex; flex-wrap: wrap; gap: .35rem; }
+.exchange-card__title { font-weight: 600; }
+.exchange-card__meta { font-size: .8rem; color: var(--muted); }
+.exchange-tag { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: var(--radius-pill); }
+.exchange-tag--discussion { color: var(--cat-sport); background: var(--cat-sport-bg); }
+.exchange-tag--decision { color: var(--accent-strong); background: var(--accent-soft-2); }
+.exchange-tag--overdue { color: #B85C36; background: #F6E3E3; }
+.exchange-tag--decided { color: var(--positive-strong); background: var(--positive-soft); }
+.exchange-detail__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.exchange-detail__title { font-family: var(--font-title); font-size: 24px; font-weight: 700; margin: .4rem 0 .2rem; }
+.exchange-detail__meta { color: var(--muted); font-size: .85rem; margin: 0; }
+.exchange-detail__body { margin: 1rem 0 0; white-space: pre-wrap; }
+.exchange-options-list { display: flex; flex-direction: column; gap: .6rem; margin-top: 1.1rem; }
+.exchange-option { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 14px 16px; border: 1px solid var(--border); border-radius: 15px; }
+.exchange-option--decided { border-color: var(--positive); background: var(--positive-soft); }
+.exchange-option__info { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+.exchange-option__sub { font-size: .82rem; color: var(--muted); }
+.exchange-option__count { font-size: .78rem; color: var(--muted-2); font-weight: 600; }
+.exchange-decided-banner { font-size: 12px; font-weight: 600; color: var(--positive-strong); }
+.exchange-thread { list-style: none; padding: 0; margin: 0 0 1rem; display: flex; flex-direction: column; gap: .8rem; }
+.exchange-message { display: flex; gap: .6rem; }
+.exchange-message__body { min-width: 0; }
+.exchange-message__meta { display: flex; gap: .5rem; align-items: baseline; }
+.exchange-message__meta time { color: var(--muted); font-size: .78rem; }
+.exchange-message__text { margin: .2rem 0 0; white-space: pre-wrap; }
+.exchange-options { margin: 0 0 1rem; padding: .8rem; border: 1px solid var(--border-3); border-radius: 12px; background: var(--surface); }
+.exchange-option-row { display: flex; gap: .5rem; margin-bottom: .5rem; }
+.exchange-option-row input { flex: 1; padding: .5rem .7rem; border: 1px solid var(--border); border-radius: 10px; background: var(--card); font: inherit; }
+.exchange-form textarea, .exchange-form input, .exchange-form select { font: inherit; }
+.exchange-form textarea { width: 100%; padding: .6rem .7rem; border: 1px solid var(--border-3); border-radius: 12px; background: var(--card); resize: vertical; }

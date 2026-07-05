@@ -1,0 +1,164 @@
+{% extends 'app/shell.html.twig' %}
+{% block title %}Échanges · CoParentPlanner{% endblock %}
+{% set nav_active = 'echanges' %}
+
+{% block main %}
+<header class="main__header">
+    <div>
+        <div class="eyebrow">Coordination</div>
+        <h1>Échanges</h1>
+    </div>
+</header>
+
+{% if not canView %}
+    <section class="card"><p class="empty-state">Vous n'avez pas accès aux échanges de cette famille.</p></section>
+{% else %}
+<div data-controller="exchanges" data-exchanges-family-id-value="{{ family.id }}">
+    <p class="form-error" data-exchanges-target="error" role="alert" hidden></p>
+
+    {# Abonnement temps réel : liste (badge) + détail ouvert (fil, options, statut) → refresh Turbo. #}
+    <turbo-stream-source src="{{ mercureHub }}?topic={{ listTopic|url_encode }}{% if detailTopic %}&topic={{ detailTopic|url_encode }}{% endif %}"></turbo-stream-source>
+
+    <div class="exchanges__layout">
+        {# ---- Master : liste ---- #}
+        <aside class="exchanges__list">
+            <div class="agenda-filters">
+                <a class="agenda-chip {{ statusFilter == '' ? 'is-active' }}" href="{{ path('app_echanges') }}">Tous</a>
+                <a class="agenda-chip {{ statusFilter == 'open' ? 'is-active' }}" href="{{ path('app_echanges', { status: 'open' }) }}">Ouverts</a>
+                <a class="agenda-chip {{ statusFilter == 'decided' ? 'is-active' }}" href="{{ path('app_echanges', { status: 'decided' }) }}">Décidés</a>
+            </div>
+
+            {% if canEdit %}
+            <details class="agenda-create card">
+                <summary class="agenda-create__cta">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    Nouvel échange
+                </summary>
+                <form data-action="submit->exchanges#createExchange" class="exchange-form">
+                    <div class="field">
+                        <label for="e-type">Type</label>
+                        <select id="e-type" name="type" data-exchanges-target="type" data-action="change->exchanges#toggleType">
+                            <option value="discussion">Discussion</option>
+                            <option value="decision">Décision</option>
+                        </select>
+                    </div>
+                    <div class="field"><label for="e-title">Titre</label><input id="e-title" name="title" required maxlength="200"></div>
+                    <div class="field"><label for="e-body">Message d'introduction</label><textarea id="e-body" name="body" rows="2"></textarea></div>
+                    <div class="grid-2">
+                        <div class="field">
+                            <label for="e-child">Concerne</label>
+                            <select id="e-child" name="childId">
+                                <option value="">Toute la famille</option>
+                                {% for c in children %}<option value="{{ c.id }}">{{ c.firstName }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="field"><label for="e-deadline">Échéance (optionnelle)</label><input id="e-deadline" name="deadline" type="date"></div>
+                    </div>
+                    <div class="exchange-options" data-exchanges-target="options" hidden>
+                        <div class="eyebrow">Options (au moins deux)</div>
+                        <div data-exchanges-target="optionsRows">
+                            <div class="exchange-option-row"><input name="optionLabel[]" placeholder="Libellé de l'option" maxlength="200"><input name="optionSub[]" placeholder="Précision (optionnel)" maxlength="255"></div>
+                            <div class="exchange-option-row"><input name="optionLabel[]" placeholder="Libellé de l'option" maxlength="200"><input name="optionSub[]" placeholder="Précision (optionnel)" maxlength="255"></div>
+                        </div>
+                        <button class="btn btn--ghost" type="button" data-action="exchanges#addOption">+ Option</button>
+                    </div>
+                    <button class="btn btn--ink" type="submit">Ouvrir l'échange</button>
+                </form>
+            </details>
+            {% endif %}
+
+            {% for ex in exchanges %}
+                <a class="exchange-card {{ selected and selected.id == ex.id ? 'is-active' }}"
+                   href="{{ path('app_echanges', { exchange: ex.id, status: statusFilter }) }}">
+                    <div class="exchange-card__head">
+                        <span class="exchange-tag exchange-tag--{{ ex.type }}">{{ ex.type == 'decision' ? 'Décision' : 'Discussion' }}</span>
+                        {% if ex.overdue %}<span class="exchange-tag exchange-tag--overdue">En retard</span>{% endif %}
+                        {% if ex.status == 'decided' %}<span class="exchange-tag exchange-tag--decided">Décidé</span>{% endif %}
+                    </div>
+                    <strong class="exchange-card__title">{{ ex.title }}</strong>
+                    <div class="exchange-card__meta">
+                        {{ ex.childId ? 'Un enfant' : 'Toute la famille' }} · {{ ex.messageCount }} message{{ ex.messageCount > 1 ? 's' }}{% if ex.deadline %} · échéance {{ ex.deadline|date('d/m/Y') }}{% endif %}
+                    </div>
+                </a>
+            {% else %}
+                <p class="empty-state">Aucun échange pour le moment.</p>
+            {% endfor %}
+        </aside>
+
+        {# ---- Détail ---- #}
+        <section class="exchanges__detail">
+        {% if selected is null %}
+            <div class="card"><p class="empty-state">Sélectionnez un échange.</p></div>
+        {% else %}
+            {% set sel = selected %}
+            <section class="card">
+                <div class="exchange-detail__head">
+                    <div>
+                        <span class="exchange-tag exchange-tag--{{ sel.type }}">{{ sel.type == 'decision' ? 'Décision' : 'Discussion' }}</span>
+                        {% if sel.overdue %}<span class="exchange-tag exchange-tag--overdue">En retard</span>{% endif %}
+                        <h2 class="exchange-detail__title">{{ sel.title }}</h2>
+                        <p class="exchange-detail__meta">
+                            {{ sel.childId ? 'Un enfant concerné' : 'Toute la famille' }}{% if sel.authorName %} · ouvert par {{ sel.authorName }}{% endif %}{% if sel.deadline %} · échéance {{ sel.deadline|date('d/m/Y') }}{% endif %}
+                        </p>
+                    </div>
+                    {% if canEdit and sel.status == 'open' and sel.type == 'discussion' %}
+                        <button class="btn btn--ghost" type="button" data-action="exchanges#closeExchange" data-exchange-id="{{ sel.id }}">Clore</button>
+                    {% endif %}
+                </div>
+                {% if sel.body %}<p class="exchange-detail__body">{{ sel.body }}</p>{% endif %}
+
+                {% if sel.type == 'decision' %}
+                <div class="exchange-options-list">
+                    {% for o in sel.options %}
+                    <div class="exchange-option {{ o.decided ? 'exchange-option--decided' }}">
+                        <div class="exchange-option__info">
+                            <strong>{{ o.label }}</strong>
+                            {% if o.sub %}<span class="exchange-option__sub">{{ o.sub }}</span>{% endif %}
+                            <span class="exchange-option__count">{{ o.voteCount }} validation{{ o.voteCount > 1 ? 's' }}</span>
+                        </div>
+                        {% if o.decided %}
+                            <span class="exchange-decided-banner">Décision tranchée</span>
+                        {% elseif canEdit and sel.status == 'open' %}
+                            <button class="btn btn--ink" type="button" data-action="exchanges#decide" data-exchange-id="{{ sel.id }}" data-option-id="{{ o.id }}">Valider</button>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </section>
+
+            {# ---- Fil de messages ---- #}
+            <section class="card">
+                <div class="eyebrow">Fil</div>
+                {% if sel.messages is empty %}
+                    <p class="empty-state">Aucun message pour le moment.</p>
+                {% else %}
+                    <ul class="exchange-thread">
+                        {% for m in sel.messages %}
+                        <li class="exchange-message">
+                            <span class="avatar avatar--34" style="background: {{ m.authorColor ?: '#857E71' }}">{{ m.authorName ? m.authorName|first|upper : '?' }}</span>
+                            <div class="exchange-message__body">
+                                <div class="exchange-message__meta">
+                                    <strong>{{ m.authorName ?: 'Membre supprimé' }}</strong>
+                                    <time datetime="{{ m.sentAt }}">{{ m.sentAt|date('d/m H:i') }}</time>
+                                </div>
+                                <p class="exchange-message__text">{{ m.text }}</p>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+
+                {% if canEdit %}
+                <form data-action="submit->exchanges#postMessage" data-exchange-id="{{ sel.id }}" class="note-form">
+                    <textarea name="text" rows="2" placeholder="Écrire un message…" required></textarea>
+                    <button class="btn btn--primary" type="submit">Envoyer</button>
+                </form>
+                {% endif %}
+            </section>
+        {% endif %}
+        </section>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

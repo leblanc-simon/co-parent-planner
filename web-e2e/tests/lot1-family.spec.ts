@@ -88,7 +88,11 @@ test('créer une famille → inviter → accepter → vérifier accès → ajust
   await expect(page.locator('.members')).toContainText(inviteeEmail);
 
   // ---- A ajuste les droits du beau-parent : agenda -> edit ----
+  // L'édition des droits est repliée dans un <details> (ligne compacte par défaut, WP-04).
   const memberForm = page.locator('.member-row', { hasText: inviteeEmail });
+  await memberForm.locator('details.member-row__edit').evaluate((d) => {
+    (d as HTMLDetailsElement).open = true;
+  });
   await memberForm.locator('select[name="rights[agenda]"]').selectOption('edit');
   await memberForm.locator('button[type="submit"]').click();
   await page.waitForLoadState('networkidle');

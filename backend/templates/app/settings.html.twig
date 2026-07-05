@@ -12,14 +12,37 @@
         <div class="eyebrow">Paramètres</div>
         <h1>Compte &amp; Famille</h1>
     </div>
-    {{ include('app/_family_select.html.twig') }}
 </header>
 
 <p class="form-error" data-settings-target="error" role="alert" hidden></p>
 
+<div class="settings-layout">
+<nav class="settings-nav">
+    <a href="#sec-account">Mon compte</a>
+    <a href="#sec-family">Famille</a>
+    <a href="#sec-members">Membres</a>
+    {% if isAdmin %}<a href="#sec-invite">Inviter</a>{% endif %}
+    <a href="#sec-links">Familles liées</a>
+</nav>
+<div class="settings-pane">
+
+{# ───────────── Mon compte ───────────── #}
+<section class="card" id="sec-account" style="margin-bottom:1.25rem">
+    <h2 class="settings-section__title">Mon compte</h2>
+    <p class="settings-section__sub">Vos informations personnelles.</p>
+    <div class="settings-profile">
+        <span class="avatar avatar--64" style="background: {{ activeMembership.displayColor ?: '#C2643D' }}">{{ (activeMembership.user.fullName ?: activeMembership.user.email)|first|upper }}</span>
+        <div>
+            <div class="settings-profile__name">{{ activeMembership.user.fullName ?: activeMembership.user.email }}</div>
+            <div class="settings-profile__mail">{{ activeMembership.user.email }}</div>
+        </div>
+    </div>
+</section>
+
 {# ───────────── Réglages de la famille (US-SET-2a) ───────────── #}
-<section class="card" style="margin-bottom:1.25rem">
-    <div class="eyebrow">Réglages de la famille</div>
+<section class="card" id="sec-family" style="margin-bottom:1.25rem">
+    <h2 class="settings-section__title">Famille</h2>
+    <p class="settings-section__sub">Réglages de la famille active.</p>
     {% if not isAdmin %}<p class="empty-state">Seul·e un·e administrateur·rice peut modifier ces réglages.</p>{% endif %}
     <form data-settings-target="familyForm" data-action="submit->settings#saveFamily">
         <div class="grid-2">
@@ -68,19 +91,23 @@
 </section>
 
 {# ───────────── Membres (US-MBR-1/2/3/5) ───────────── #}
-<section class="card" style="margin-bottom:1.25rem">
-    <div class="eyebrow">Membres ({{ members|length }})</div>
+<section class="card" id="sec-members" style="margin-bottom:1.25rem">
+    <h2 class="settings-section__title">Membres</h2>
+    <p class="settings-section__sub">{{ members|length }} personne(s) dans la famille.</p>
     <div class="members">
         {% for m in members %}
         <form class="member-row" data-action="submit->settings#saveMember" data-membership-id="{{ m.id }}">
             <div class="member-row__head">
-                <span class="member-dot" style="background: {{ m.displayColor ?: '#C2643D' }}"></span>
+                <span class="avatar avatar--44" style="background: {{ m.displayColor ?: '#C2643D' }}">{{ (m.user.fullName ?: m.user.email)|first|upper }}</span>
                 <div>
                     <strong>{{ m.user.fullName ?: m.user.email }}</strong>
                     <small>{{ m.user.email }}{{ m.user.id == activeMembership.user.id ? ' · vous' }}</small>
                 </div>
+                <span class="member-row__badge member-row__badge--{{ m.role.value }}">{{ m.role.value }}{{ m.isAdmin ? ' · admin' }}</span>
             </div>
 
+            <details class="member-row__edit">
+            <summary>Modifier les droits</summary>
             <div class="member-row__grid">
                 <label>Rôle
                     <select name="role" {{ isAdmin ? '' : 'disabled' }}>
@@ -116,6 +143,7 @@
                     <button class="btn btn--ghost" type="button" data-action="settings#removeMember" data-membership-id="{{ m.id }}">Quitter</button>
                 {% endif %}
             </div>
+            </details>
         </form>
         {% endfor %}
     </div>
@@ -123,8 +151,10 @@
 
 {# ───────────── Invitations (US-INV-1/2) ───────────── #}
 {% if isAdmin %}
-<section class="card" style="margin-bottom:1.25rem">
-    <div class="eyebrow">Inviter une personne</div>
+<section class="card" id="sec-invite" style="margin-bottom:1.25rem">
+    <div class="invite-panel">
+    <h3 class="invite-panel__title">Inviter une personne</h3>
+    <p class="invite-panel__sub">Un e-mail d'invitation sera envoyé avec les droits choisis.</p>
     <form data-action="submit->settings#invite" data-settings-target="inviteForm">
         <div class="grid-2">
             <div class="field">
@@ -150,8 +180,9 @@
             {% endfor %}
         </div>
         <p class="invite-summary" data-settings-target="summary"></p>
-        <button class="btn btn--primary" type="submit">Envoyer l'invitation</button>
+        <button class="btn btn--ink" type="submit">Envoyer l'invitation</button>
     </form>
+    </div>
 
     {% if invitations|length %}
     <div class="eyebrow" style="margin-top:1.25rem">Invitations en attente</div>
@@ -168,8 +199,9 @@
 {% endif %}
 
 {# ───────────── Familles liées (US-LINK-1/2/3) ───────────── #}
-<section class="card">
-    <div class="eyebrow">Familles liées</div>
+<section class="card" id="sec-links">
+    <h2 class="settings-section__title">Familles liées</h2>
+    <p class="settings-section__sub">Partagez l'agenda et la garde avec une autre famille.</p>
     {% if links|length %}
     <ul class="links">
         {% for link in links %}
@@ -196,9 +228,11 @@
             <label for="l-id">Identifiant de la famille à lier</label>
             <input id="l-id" name="linkedFamilyId" placeholder="UUID de la famille" required>
         </div>
-        <button class="btn btn--ghost" type="submit">Proposer un lien</button>
+        <button class="btn btn--ink" type="submit">Proposer un lien</button>
     </form>
     {% endif %}
 </section>
+</div>{# /settings-pane #}
+</div>{# /settings-layout #}
 </div>
 {% endblock %}

@@ -73,7 +73,7 @@ test('Garde : configurer un rythme → calendrier coloré → échanger un jour'
 
   // ---- Parent A : écran Garde, sans rythme encore configuré ----
   await page.goto('/garde');
-  await expect(page.locator('h1')).toContainText('Garde');
+  await expect(page.locator('h1')).toContainText('Planning de garde');
   await expect(page.locator('.empty-state')).toContainText('Aucun rythme de garde configuré');
 
   // ---- Configurer un rythme « une semaine sur deux » avec deux parents distincts ----
@@ -89,7 +89,9 @@ test('Garde : configurer un rythme → calendrier coloré → échanger un jour'
   await expect(page.locator('.garde-day--a').first()).toBeVisible();
   await expect(page.locator('.garde-day--b').first()).toBeVisible();
   // Les statistiques du mois sont calculées sur les jours effectifs.
-  await expect(page.locator('.garde-stats')).toContainText('Parent A');
+  // Tuiles de stats colorées A/B (WG-02) — libellées avec les noms réels des parents + %.
+  await expect(page.locator('.garde-stat--a')).toBeVisible();
+  await expect(page.locator('.garde-stat--b')).toBeVisible();
 
   // ---- Échanger un jour : clic sur une case → exception d'un jour ----
   await page.locator('.garde-day[role="button"]').first().click();

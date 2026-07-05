@@ -86,6 +86,9 @@ test('Overlay familles liées : activation → événement lié en lecture seule
   const famB = await createSeparatedFamily(page, 'Foyer B E2E');
 
   await page.goto('/agenda');
+  await page.locator('.agenda-create').evaluate((d) => {
+    (d as HTMLDetailsElement).open = true;
+  });
   await page.check('input[name="wholeFamily"]');
   await page.fill('#a-title', 'Judo du second foyer');
   await page.selectOption('#a-cat', 'sport');
@@ -115,9 +118,9 @@ test('Overlay familles liées : activation → événement lié en lecture seule
 
   // ---- A : le toggle overlay du lien actif est présent ----
   await page.goto(`/agenda?month=${soon.month}`);
-  const toggle = page.locator('.agenda-overlay-toggle input[type="checkbox"]').first();
+  const toggle = page.locator('.overlay-card input[type="checkbox"]').first();
   await expect(toggle).toHaveCount(1);
-  await expect(page.locator('.agenda-overlay-toggles')).toContainText('Overlay famille liée');
+  await expect(page.locator('.agenda-overlay-toggles')).toContainText('Événements de la famille liée');
 
   // ---- Activer l'overlay : l'événement de B apparaît en lecture seule ----
   // On force checked + change : le reload Stimulus détacherait un clic natif (leçon Lot 4).
@@ -136,7 +139,7 @@ test('Overlay familles liées : activation → événement lié en lecture seule
   await expect(linked.locator('button')).toHaveCount(0);
 
   // ---- Désactiver l'overlay : l'événement lié disparaît ----
-  const toggleOff = page.locator('.agenda-overlay-toggle input[type="checkbox"]').first();
+  const toggleOff = page.locator('.overlay-card input[type="checkbox"]').first();
   await toggleOff.evaluate((el) => {
     (el as HTMLInputElement).checked = false;
     el.dispatchEvent(new Event('change', { bubbles: true }));

@@ -3,6 +3,7 @@
 
 {% set catClass = {'sport':'sport','musique':'music','ecole':'school','sante':'health','autre':'other'} %}
 {% set catLabel = {'sport':'Sport','musique':'Musique','ecole':'École','sante':'Santé','autre':'Autre'} %}
+{% set dowFr = {'0':'DIM','1':'LUN','2':'MAR','3':'MER','4':'JEU','5':'VEN','6':'SAM'} %}
 
 {% block main %}
 <header class="main__header">
@@ -10,46 +11,62 @@
         <div class="eyebrow">{{ "now"|date("d/m/Y") }}</div>
         <h1>Bonjour {{ user.fullName ?: user.email }}</h1>
     </div>
-
-    {{ include('app/_family_select.html.twig') }}
+    <div class="main__header-actions">
+        <a class="btn btn--ink" href="{{ path('app_agenda') }}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Nouvel événement
+        </a>
+    </div>
 </header>
 
-<div class="grid-2">
-    <section class="card card--accent">
-        <div class="eyebrow">Cette semaine</div>
-        {% if activeMembership.family.hasCustody %}
-            <p class="empty-state">Le planning de garde s'affichera ici (Lot 3).</p>
-        {% else %}
-            <p>Toute la famille est réunie.</p>
-        {% endif %}
-    </section>
-    <section class="card">
-        <div class="eyebrow">À venir</div>
-        {% if upcoming|length %}
-            <ul class="agenda-upcoming">
-                {% for occ in upcoming %}
-                <li>
-                    <span class="pill pill--{{ catClass[occ.category.value] }}">{{ catLabel[occ.category.value] }}</span>
-                    <span class="agenda-event__time">{% if occ.allDay %}{{ occ.startsAt|date('d/m', timezone) }}{% else %}{{ occ.startsAt|date('d/m H:i', timezone) }}{% endif %}</span>
-                    <strong>{{ occ.title }}</strong>
-                </li>
-                {% endfor %}
-            </ul>
-            <p style="margin-top:.6rem"><a href="{{ path('app_agenda') }}">Voir l'agenda →</a></p>
-        {% else %}
-            <p class="empty-state">Aucun événement à venir.</p>
-        {% endif %}
-    </section>
-</div>
+<div class="home-grid">
+    <div class="home-col">
+        <section class="card card--accent">
+            <div class="eyebrow">Cette semaine</div>
+            {% if activeMembership.family.hasCustody %}
+                <p class="empty-state">Le planning de garde s'affichera ici.</p>
+            {% else %}
+                <p>Toute la famille est réunie.</p>
+            {% endif %}
+        </section>
 
-<div class="grid-2" style="margin-top: 1.25rem">
-    <section class="card">
-        <div class="eyebrow">À décider ensemble</div>
-        <p class="empty-state">Aucun échange ouvert.</p>
-    </section>
-    <section class="card">
-        <div class="eyebrow">Dernières notes</div>
-        <p class="empty-state">Aucune note pour le moment.</p>
-    </section>
+        <section>
+            <div class="section-head">
+                <div class="eyebrow">À venir</div>
+                <a class="section-head__link" href="{{ path('app_agenda') }}">Tout l'agenda →</a>
+            </div>
+            {% if upcoming|length %}
+                <ul class="agenda-upcoming">
+                    {% for occ in upcoming %}
+                    <li>
+                        <span class="up-date">
+                            <span class="up-date__dow">{{ dowFr[occ.startsAt|date('w', timezone)] }}</span>
+                            <span class="up-date__num">{{ occ.startsAt|date('j', timezone) }}</span>
+                        </span>
+                        <span class="up-sep"></span>
+                        <span class="up-body">
+                            <strong class="up-title">{{ occ.title }}</strong>
+                            <span class="up-meta">{% if occ.allDay %}Journée{% else %}{{ occ.startsAt|date('H:i', timezone) }}{% endif %}</span>
+                        </span>
+                        <span class="pill pill--{{ catClass[occ.category.value] }} up-pill">{{ catLabel[occ.category.value] }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="empty-state">Aucun événement à venir.</p>
+            {% endif %}
+        </section>
+    </div>
+
+    <div class="home-col">
+        <section class="card">
+            <div class="eyebrow">À décider ensemble</div>
+            <p class="empty-state">Aucun échange ouvert.</p>
+        </section>
+        <section class="card">
+            <div class="eyebrow">Dernières notes</div>
+            <p class="empty-state">Aucune note pour le moment.</p>
+        </section>
+    </div>
 </div>
 {% endblock %}

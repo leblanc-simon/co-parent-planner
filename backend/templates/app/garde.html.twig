@@ -2,13 +2,21 @@
 {% block title %}Garde · CoParentPlanner{% endblock %}
 {% set nav_active = 'garde' %}
 
+{% set pAName = 'Parent A' %}
+{% set pBName = 'Parent B' %}
+{% for m in parents %}
+    {% if m.id == parentAId %}{% set pAName = m.user.fullName ?: m.user.email %}{% endif %}
+    {% if m.id == parentBId %}{% set pBName = m.user.fullName ?: m.user.email %}{% endif %}
+{% endfor %}
+{% set rhythmLabel = {'alternating':'Une semaine sur deux','pattern_2_2_3':'Rythme 2-2-3','custom':'Rythme personnalisé (14 jours)'} %}
+
 {% block main %}
 <header class="main__header">
     <div>
         <div class="eyebrow">Planning</div>
-        <h1>Garde</h1>
+        <h1>Planning de garde</h1>
+        {% if pattern %}<p class="main__subtitle">{{ rhythmLabel[pattern.kind.value] ?? '' }}{% if pattern.handoverTime %} · échange à {{ pattern.handoverTime }}{% endif %}</p>{% endif %}
     </div>
-    {{ include('app/_family_select.html.twig') }}
 </header>
 
 {% if intact %}
@@ -46,15 +54,26 @@
             {% if canEdit %}<p>Configurez un modèle ci-dessous pour générer le planning.</p>{% endif %}
         </section>
     {% else %}
+    <div class="garde-layout">
     {# ───────── Calendrier mensuel ───────── #}
-    <section class="card">
+    <section class="card garde-cal-card">
         <div class="garde-cal__nav">
-            <a class="btn btn--ghost" href="{{ path('app_garde', { month: prevMonth }) }}">←</a>
             <strong class="garde-cal__title">{{ monthLabel }}</strong>
-            <a class="btn btn--ghost" href="{{ path('app_garde', { month: nextMonth }) }}">→</a>
+            <div class="garde-cal__nav-actions">
+                <div class="garde-legend">
+                    <span><i class="garde-dot garde-dot--a"></i> {{ pAName }}</span>
+                    <span><i class="garde-dot garde-dot--b"></i> {{ pBName }}</span>
+                </div>
+                <a class="garde-cal__nav-btn" href="{{ path('app_garde', { month: prevMonth }) }}" aria-label="Mois précédent">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                </a>
+                <a class="garde-cal__nav-btn" href="{{ path('app_garde', { month: nextMonth }) }}" aria-label="Mois suivant">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                </a>
+            </div>
         </div>
         <div class="garde-cal">
-            {% for d in ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'] %}<div class="garde-cal__dow">{{ d }}</div>{% endfor %}
+            {% for d in ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'] %}<div class="garde-cal__dow">{{ d }}</div>{% endfor %}
             {% for week in weeks %}
                 {% for cell in week %}
                     <div class="garde-day garde-day--{{ cell.slot == 'A' ? 'a' : (cell.slot == 'B' ? 'b' : 'none') }}
@@ -71,22 +90,53 @@
                 {% endfor %}
             {% endfor %}
         </div>
-        <div class="garde-legend">
-            <span><i class="garde-dot garde-dot--a"></i> Parent A</span>
-            <span><i class="garde-dot garde-dot--b"></i> Parent B</span>
-            <span><i class="garde-dot garde-dot--exc"></i> Exceptionnel</span>
-        </div>
     </section>
 
-    {# ───────── Statistiques ───────── #}
-    <section class="card" style="margin-top:1.25rem">
-        <div class="eyebrow">Statistiques du mois</div>
-        <div class="garde-stats">
-            <div><strong>{{ stats.parentACount }}</strong> jour(s) Parent A ({{ stats.pctA }} %)</div>
-            <div><strong>{{ stats.parentBCount }}</strong> jour(s) Parent B ({{ stats.pctB }} %)</div>
-            <div>Total : {{ stats.total }}</div>
-        </div>
-    </section>
+    <aside class="garde-aside">
+        {# ───────── Statistiques ───────── #}
+        <section class="card">
+            <div class="eyebrow">Statistiques du mois</div>
+            <div class="garde-stats">
+                <div class="garde-stat garde-stat--a">
+                    <strong>{{ stats.parentACount }}</strong>
+                    <span>{{ pAName }} · {{ stats.pctA }} %</span>
+                </div>
+                <div class="garde-stat garde-stat--b">
+                    <strong>{{ stats.parentBCount }}</strong>
+                    <span>{{ pBName }} · {{ stats.pctB }} %</span>
+                </div>
+            </div>
+        </section>
+
+        {# ───────── Périodes spéciales (résumé lecture seule) ───────── #}
+        {% if exceptions|length or holidays|length %}
+        <section class="card">
+            <div class="eyebrow">Périodes spéciales</div>
+            <div class="garde-special">
+                {% for e in exceptions %}
+                <div class="garde-special__item">
+                    <div class="garde-special__head">
+                        <span class="garde-special__title">Exception{% if e.reason %} · {{ e.reason }}{% endif %}</span>
+                        <span class="garde-special__dates">{{ e.startDate|date('d/m') }}→{{ e.endDate|date('d/m') }}</span>
+                    </div>
+                    <div class="garde-ab-bar"><span class="garde-ab-bar__a"></span><span class="garde-ab-bar__b"></span></div>
+                </div>
+                {% endfor %}
+                {% for h in holidays %}
+                <div class="garde-special__item">
+                    <div class="garde-special__head">
+                        <span class="garde-special__title">{{ h.label }}</span>
+                        <span class="garde-special__dates">{{ h.startDate|date('d/m') }}→{{ h.endDate|date('d/m') }}</span>
+                    </div>
+                    {% if h.rule %}<div class="garde-special__rule">Règle : {{ h.rule.kind.value }}</div>{% endif %}
+                    <div class="garde-ab-bar"><span class="garde-ab-bar__a"></span><span class="garde-ab-bar__b"></span></div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+    </aside>
+    </div>
     {% endif %}
 
     {# ───────── Configuration (Paramètres › Garde) ───────── #}

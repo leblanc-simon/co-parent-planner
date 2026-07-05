@@ -62,6 +62,10 @@ test('Agenda : créer un événement, une série, filtrer, éditer, supprimer, �
   await expect(page.locator('.empty-state')).toContainText('Aucun événement ce mois-ci');
 
   // ---- Créer un événement ponctuel (toute la famille) ----
+  // Le formulaire de création est replié dans un <details> (CTA compact « Ajouter », WAG-06).
+  await page.locator('.agenda-create').evaluate((d) => {
+    (d as HTMLDetailsElement).open = true;
+  });
   await page.check('input[name="wholeFamily"]');
   await page.fill('#a-title', 'Cours de tennis');
   await page.selectOption('#a-cat', 'sport');
@@ -93,6 +97,9 @@ test('Agenda : créer un événement, une série, filtrer, éditer, supprimer, �
   await expect(page.locator('.agenda-events')).toContainText('Tennis modifié');
 
   // ---- Créer une série hebdomadaire (4 occurrences) ----
+  await page.locator('.agenda-create').evaluate((d) => {
+    (d as HTMLDetailsElement).open = true;
+  });
   await page.check('input[name="wholeFamily"]');
   await page.fill('#a-title', 'Piano');
   await page.selectOption('#a-cat', 'musique');

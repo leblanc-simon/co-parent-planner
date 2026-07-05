@@ -8,7 +8,6 @@
         <div class="eyebrow">Famille</div>
         <h1>Enfants</h1>
     </div>
-    {{ include('app/_family_select.html.twig') }}
 </header>
 
 {% if forbidden %}
@@ -53,18 +52,20 @@
             <div class="health-banner" role="note">⚠️ {{ 'child.health_warning'|trans }}</div>
             {% endif %}
 
-            <section class="card">
-                <div class="child-head">
-                    <span class="child-card__avatar child-card__avatar--lg" style="background: {{ child.color }}">{{ child.initial }}</span>
-                    <div>
-                        <h2>{{ child.firstName }}</h2>
-                        <p class="child-head__meta">
-                            {% if detail.age is not null %}{{ detail.age }} an{{ detail.age > 1 ? 's' }}{% endif %}
-                            {% if child.schoolLabel %} · {{ child.schoolLabel }}{% endif %}
-                        </p>
-                    </div>
+            <div class="child-head">
+                <span class="avatar avatar--70" style="background: {{ child.color }}">{{ child.initial }}</span>
+                <div>
+                    <h2 class="child-head__name">{{ child.firstName }}</h2>
+                    <p class="child-head__meta">
+                        {% if detail.age is not null %}{{ detail.age }} an{{ detail.age > 1 ? 's' }}{% endif %}
+                        {% if child.schoolLabel %} · {{ child.schoolLabel }}{% endif %}
+                    </p>
                 </div>
+            </div>
 
+            <div class="child-detail-grid">
+            <div class="child-detail-col">
+            <section class="card">
                 {% if canManage %}
                 <form data-action="submit->children#updateChild" data-child-id="{{ child.id }}" class="child-edit">
                     <div class="grid-2">
@@ -102,8 +103,24 @@
                 {% endif %}
             </section>
 
-            {# ---- Notes (temps réel via Mercure) ---- #}
+            {# ---- Accès & droits ---- #}
             <section class="card">
+                <div class="eyebrow">Accès &amp; droits</div>
+                <ul class="access-list">
+                    {% for entry in detail.access %}
+                    <li>
+                        <span class="avatar avatar--34" style="background: {{ entry.displayColor ?: '#C2643D' }}">{{ entry.name|first|upper }}</span>
+                        <span class="access-list__name">{{ entry.name }}{{ entry.isOwnProfile ? ' · son profil' }}</span>
+                        <span class="access-list__role">{{ entry.role }}</span>
+                        <span class="access-list__level access-list__level--{{ entry.level == 'edit' ? 'edit' : 'view' }}">{{ entry.level == 'edit' ? 'Édition' : 'Lecture' }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </section>
+            </div>{# /child-detail-col #}
+
+            {# ---- Notes (temps réel via Mercure) ---- #}
+            <section class="card child-detail-notes">
                 <div class="eyebrow">Notes</div>
                 {% if canEditNotes %}
                 <form data-action="submit->children#addNote" data-child-id="{{ child.id }}" class="note-form">
@@ -125,21 +142,7 @@
                     {% endfor %}
                 </ul>
             </section>
-
-            {# ---- Accès & droits ---- #}
-            <section class="card">
-                <div class="eyebrow">Accès &amp; droits</div>
-                <ul class="access-list">
-                    {% for entry in detail.access %}
-                    <li>
-                        <span class="member-dot" style="background: {{ entry.displayColor ?: '#C2643D' }}"></span>
-                        <span class="access-list__name">{{ entry.name }}{{ entry.isOwnProfile ? ' · son profil' }}</span>
-                        <span class="access-list__role">{{ entry.role }}</span>
-                        <span class="access-list__level">{{ entry.level == 'edit' ? 'Édition' : 'Lecture' }}</span>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </section>
+            </div>{# /child-detail-grid #}
         {% endif %}
         </section>
     </div>

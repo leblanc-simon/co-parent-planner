@@ -164,7 +164,7 @@ final class WebPagesTest extends WebTestCase
         self::assertResponseIsSuccessful();
         $html = (string) $client->getResponse()->getContent();
         self::assertStringContainsString('Agenda', $html);
-        self::assertStringContainsString('Nouvel événement', $html); // parent admin → agenda:edit
+        self::assertStringContainsString('agenda-create__cta', $html); // parent admin → agenda:edit (CTA compact « Ajouter »)
         self::assertStringContainsString('Aucun événement ce mois-ci', $html);
         self::assertStringContainsString('turbo-stream-source', $html);
         self::assertStringContainsString('href="/agenda"', $html); // onglet dans la barre latérale
@@ -243,7 +243,7 @@ final class WebPagesTest extends WebTestCase
         $html = (string) $client->getResponse()->getContent();
         self::assertStringContainsString('Judo du second foyer', $html); // événement lié fusionné
         self::assertStringContainsString('Famille liée', $html); // badge overlay
-        self::assertStringContainsString('Overlay famille liée', $html); // toggle
+        self::assertStringContainsString('Événements de la famille liée', $html); // carte toggle overlay (WAG-05)
     }
 
     public function testGardePageRendersForSeparatedFamily(): void

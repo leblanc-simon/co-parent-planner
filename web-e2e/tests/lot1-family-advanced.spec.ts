@@ -72,10 +72,12 @@ test('membre : inviter → accepter → retirer de la famille', async ({
   await page.goto('/settings');
   await expect(page.locator('.members')).toContainText(inviteeEmail);
   page.on('dialog', (d) => d.accept());
-  await page
-    .locator('.member-row', { hasText: inviteeEmail })
-    .locator('button', { hasText: 'Retirer' })
-    .click();
+  const removableRow = page.locator('.member-row', { hasText: inviteeEmail });
+  // Actions membre repliées dans un <details> (WP-04).
+  await removableRow.locator('details.member-row__edit').evaluate((d) => {
+    (d as HTMLDetailsElement).open = true;
+  });
+  await removableRow.locator('button', { hasText: 'Retirer' }).click();
   await page.waitForLoadState('networkidle');
 
   await page.goto('/settings');
@@ -91,6 +93,10 @@ test('dernier admin protégé : la démotion du seul admin est refusée', async 
 
   await page.goto('/settings');
   const selfRow = page.locator('.member-row').first();
+  // L'édition (rôle/admin/droits) est repliée dans un <details> (WP-04).
+  await selfRow.locator('details.member-row__edit').evaluate((d) => {
+    (d as HTMLDetailsElement).open = true;
+  });
   const adminCheckbox = selfRow.locator('input[name="isAdmin"]');
   await expect(adminCheckbox).toBeChecked();
 

@@ -11,7 +11,6 @@
         <div class="eyebrow">Planning</div>
         <h1>Agenda</h1>
     </div>
-    {{ include('app/_family_select.html.twig') }}
 </header>
 
 {% if not canView %}
@@ -28,9 +27,15 @@
     {# ───────── Navigation mois + filtres catégorie ───────── #}
     <section class="card">
         <div class="garde-cal__nav">
-            <a class="btn btn--ghost" href="{{ path('app_agenda', { month: prevMonth }) }}">←</a>
             <strong class="garde-cal__title">{{ monthLabel }}</strong>
-            <a class="btn btn--ghost" href="{{ path('app_agenda', { month: nextMonth }) }}">→</a>
+            <div class="garde-cal__nav-actions">
+                <a class="garde-cal__nav-btn" href="{{ path('app_agenda', { month: prevMonth }) }}" aria-label="Mois précédent">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                </a>
+                <a class="garde-cal__nav-btn" href="{{ path('app_agenda', { month: nextMonth }) }}" aria-label="Mois suivant">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                </a>
+            </div>
         </div>
         <div class="agenda-filters">
             <a class="agenda-chip {{ activeCategories is empty ? 'is-active' }}" href="{{ path('app_agenda', { month: monthValue }) }}">Toutes</a>
@@ -43,20 +48,29 @@
         {% if overlayLinks is not empty %}
         <div class="agenda-overlay-toggles">
             {% for link in overlayLinks %}
-            <label class="agenda-overlay-toggle">
-                <input type="checkbox" {{ link.enabled ? 'checked' }}
-                       data-action="change->agenda#toggleOverlay" data-link-id="{{ link.linkId }}" data-view="agenda">
-                <span><i class="agenda-linked-dot"></i> Overlay famille liée · {{ link.name }}</span>
+            <label class="overlay-card">
+                <span class="overlay-card__body">
+                    <span class="overlay-card__title"><i class="agenda-linked-square"></i> {{ link.name }}</span>
+                    <span class="overlay-card__sub">Événements de la famille liée</span>
+                </span>
+                <span class="switch">
+                    <input type="checkbox" {{ link.enabled ? 'checked' }}
+                           data-action="change->agenda#toggleOverlay" data-link-id="{{ link.linkId }}" data-view="agenda">
+                    <span class="switch__slider"></span>
+                </span>
             </label>
             {% endfor %}
         </div>
         {% endif %}
     </section>
 
-    {# ───────── Création ───────── #}
+    {# ───────── Création (CTA compact → panneau dépliable) ───────── #}
     {% if canEdit %}
-    <section class="card" style="margin-top:1.25rem">
-        <div class="eyebrow">Nouvel événement</div>
+    <details class="agenda-create card">
+        <summary class="agenda-create__cta">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Ajouter
+        </summary>
         <form data-action="submit->agenda#createEvent" class="agenda-form">
             <div class="grid-2">
                 <div class="field"><label for="a-title">Titre</label><input id="a-title" name="title" required maxlength="200"></div>
@@ -99,7 +113,7 @@
             </div>
             <button class="btn btn--primary" type="submit">Créer</button>
         </form>
-    </section>
+    </details>
     {% endif %}
 
     {# ───────── Occurrences groupées par jour ───────── #}
@@ -113,16 +127,20 @@
                 <h2 class="agenda-day__label">{{ day.label }}</h2>
                 <ul class="agenda-events">
                     {% for occ in day.items %}
-                    <li class="agenda-event">
+                    <li class="agenda-event agenda-event--{{ catClass[occ.category.value] }}">
                         <details>
                             <summary>
-                                <span class="pill pill--{{ catClass[occ.category.value] }}">{{ catLabel[occ.category.value] }}</span>
-                                <span class="agenda-event__time">{% if occ.allDay %}Journée{% else %}{{ occ.startsAt|date('H:i', timezone) }}{% if occ.endsAt %}–{{ occ.endsAt|date('H:i', timezone) }}{% endif %}{% endif %}</span>
-                                <strong class="agenda-event__title">{{ occ.title }}</strong>
-                                <span class="agenda-event__who">
-                                    {% if occ.wholeFamily %}Toute la famille{% else %}{% for c in occ.children %}{{ c.firstName }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
-                                    {% if occ.responsibleMembership %} · {{ occ.responsibleMembership.user.fullName ?: occ.responsibleMembership.user.email }}{% endif %}
+                                <span class="agenda-event__time">{% if occ.allDay %}Journée{% else %}{{ occ.startsAt|date('H:i', timezone) }}{% endif %}</span>
+                                <span class="agenda-event__sep"></span>
+                                <span class="agenda-event__body">
+                                    <strong class="agenda-event__title">{{ occ.title }}</strong>
+                                    <span class="agenda-event__who">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#B7AF9F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                        {% if occ.wholeFamily %}Toute la famille{% else %}{% for c in occ.children %}{{ c.firstName }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
+                                        {% if occ.responsibleMembership %} · {{ occ.responsibleMembership.user.fullName ?: occ.responsibleMembership.user.email }}{% endif %}
+                                    </span>
                                 </span>
+                                <span class="pill pill--{{ catClass[occ.category.value] }} agenda-event__pill">{{ catLabel[occ.category.value] }}</span>
                                 {% if occ.isOverride %}<span class="agenda-event__badge">modifié</span>{% endif %}
                             </summary>
                             {% if occ.location %}<p class="agenda-event__loc">📍 {{ occ.location }}</p>{% endif %}

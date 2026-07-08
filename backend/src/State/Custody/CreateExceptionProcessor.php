@@ -9,11 +9,13 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Dto\Custody\CreateExceptionRequest;
 use App\Dto\Custody\CustodyExceptionResource;
 use App\Enum\AuditAction;
+use App\Enum\NotificationType;
 use App\Security\Auth\AuditLogger;
 use App\Security\Custody\CustodyAccess;
 use App\Service\Custody\CustodyGenerator;
 use App\Service\Custody\CustodyPublisher;
 use App\Service\Custody\ExceptionWriter;
+use App\Service\Notification\NotificationEmitter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -31,6 +33,7 @@ final class CreateExceptionProcessor implements ProcessorInterface
         private readonly ExceptionWriter $writer,
         private readonly CustodyGenerator $generator,
         private readonly CustodyPublisher $publisher,
+        private readonly NotificationEmitter $notifier,
         private readonly AuditLogger $audit,
         private readonly RequestStack $requestStack,
     ) {
@@ -55,6 +58,8 @@ final class CreateExceptionProcessor implements ProcessorInterface
 
         $this->generator->applyException($exception);
         $this->publisher->publish($ctx->family);
+        // Notification e-mail (Lot 7) : changement de garde → membres habilités custody (hors auteur).
+        $this->notifier->emit(NotificationType::CustodyChanged, $ctx->family, $ctx->membership, (string) $exception->getId());
 
         return CustodyExceptionResource::fromException($exception);
     }

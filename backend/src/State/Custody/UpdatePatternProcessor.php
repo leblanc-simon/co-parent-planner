@@ -10,14 +10,17 @@ use App\Dto\Custody\CustodyPatternResource;
 use App\Dto\Custody\UpdatePatternRequest;
 use App\Entity\CustodyPattern;
 use App\Enum\AuditAction;
+use App\Enum\NotificationType;
 use App\Message\RegenerateCustody;
 use App\Repository\CustodyPatternRepository;
 use App\Security\Auth\AuditLogger;
 use App\Security\Custody\CustodyAccess;
 use App\Service\Custody\PatternWriter;
+use App\Service\Notification\NotificationEmitter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * US-CUST-1/2/9 — crée/modifie le rythme (custody:edit, famille séparée). Régénère le futur en
@@ -33,6 +36,7 @@ final class UpdatePatternProcessor implements ProcessorInterface
         private readonly CustodyPatternRepository $patterns,
         private readonly PatternWriter $writer,
         private readonly MessageBusInterface $bus,
+        private readonly NotificationEmitter $notifier,
         private readonly AuditLogger $audit,
         private readonly RequestStack $requestStack,
     ) {
@@ -64,6 +68,9 @@ final class UpdatePatternProcessor implements ProcessorInterface
 
         // Régénération asynchrone du futur (idempotente).
         $this->bus->dispatch(new RegenerateCustody((string) $family->getId()));
+        // Notification e-mail (Lot 7) : « planning modifié » — une seule notif par mise à jour (§3.4),
+        // pas une par jour régénéré. Clé fraîche par mutation (chaque modif notifie une fois).
+        $this->notifier->emit(NotificationType::CustodyChanged, $family, $ctx->membership, (string) Uuid::v7());
 
         return CustodyPatternResource::fromPattern($pattern);
     }

@@ -8,6 +8,7 @@ use App\Message\ExtendCustodyHorizon;
 use App\Message\HealthPing;
 use App\Message\PurgeExpiredInvitations;
 use App\Message\RefreshSchoolHolidays;
+use App\Message\SendDeadlineReminders;
 use Symfony\Component\Scheduler\Attribute\AsSchedule;
 use Symfony\Component\Scheduler\RecurringMessage;
 use Symfony\Component\Scheduler\Schedule as SymfonySchedule;
@@ -36,6 +37,8 @@ class Schedule implements ScheduleProviderInterface
             ->add(RecurringMessage::every('1 hour', new PurgeExpiredInvitations()))
             // Garde (Lot 3) : horizon glissant étendu quotidiennement ; vacances rafraîchies mensuellement.
             ->add(RecurringMessage::every('1 day', new ExtendCustodyHorizon()))
-            ->add(RecurringMessage::every('1 month', new RefreshSchoolHolidays()));
+            ->add(RecurringMessage::every('1 month', new RefreshSchoolHolidays()))
+            // Notifications (Lot 7) : rappels d'échéance des décisions (dédup idempotente).
+            ->add(RecurringMessage::every('15 minutes', new SendDeadlineReminders()));
     }
 }

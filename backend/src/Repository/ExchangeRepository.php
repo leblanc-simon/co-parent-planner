@@ -52,6 +52,23 @@ class ExchangeRepository extends ServiceEntityRepository
         return $this->findOneBy(['family' => $family, 'idempotencyKey' => $key]);
     }
 
+    /**
+     * Décisions **ouvertes avec échéance** (rappels planifiés Lot 7 §3.9).
+     *
+     * @return list<Exchange>
+     */
+    public function findOpenDecisionsWithDeadline(): array
+    {
+        /** @var list<Exchange> $result */
+        $result = $this->createQueryBuilder('e')
+            ->andWhere('e.type = :type')->setParameter('type', \App\Enum\ExchangeType::Decision)
+            ->andWhere('e.status = :open')->setParameter('open', ExchangeStatus::Open)
+            ->andWhere('e.deadline IS NOT NULL')
+            ->getQuery()->getResult();
+
+        return $result;
+    }
+
     /** Nombre d'échanges ouverts de la famille (badge §3.5). */
     public function countOpen(Family $family): int
     {

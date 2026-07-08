@@ -8,12 +8,14 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Entity\CustodyException;
 use App\Enum\AuditAction;
+use App\Enum\NotificationType;
 use App\Exception\CustodyNotFoundException;
 use App\Repository\CustodyExceptionRepository;
 use App\Security\Auth\AuditLogger;
 use App\Security\Custody\CustodyAccess;
 use App\Service\Custody\CustodyGenerator;
 use App\Service\Custody\CustodyPublisher;
+use App\Service\Notification\NotificationEmitter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Uid\Uuid;
@@ -31,6 +33,7 @@ final class DeleteExceptionProcessor implements ProcessorInterface
         private readonly CustodyExceptionRepository $exceptions,
         private readonly CustodyGenerator $generator,
         private readonly CustodyPublisher $publisher,
+        private readonly NotificationEmitter $notifier,
         private readonly AuditLogger $audit,
         private readonly RequestStack $requestStack,
     ) {
@@ -57,6 +60,8 @@ final class DeleteExceptionProcessor implements ProcessorInterface
 
         $this->generator->recomputeWindow($ctx->family, $start, $end);
         $this->publisher->publish($ctx->family);
+        // Notification e-mail (Lot 7) : exception retirée → membres habilités custody (hors auteur).
+        $this->notifier->emit(NotificationType::CustodyChanged, $ctx->family, $ctx->membership, $id);
 
         return null;
     }

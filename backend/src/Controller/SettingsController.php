@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Enum\NotificationCategory;
 use App\Enum\RightDomain;
 use App\Repository\FamilyLinkRepository;
 use App\Repository\InvitationRepository;
 use App\Repository\MembershipRepository;
+use App\Repository\NotificationPrefRepository;
 use App\Web\ActiveFamilyResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -30,6 +32,7 @@ final class SettingsController extends AbstractController
         private readonly MembershipRepository $memberships,
         private readonly InvitationRepository $invitations,
         private readonly FamilyLinkRepository $links,
+        private readonly NotificationPrefRepository $notifPrefs,
     ) {
     }
 
@@ -48,6 +51,12 @@ final class SettingsController extends AbstractController
 
         $family = $active->getFamily();
         $isAdmin = $active->isAdmin();
+        $user = $active->getUser();
+
+        $notifPrefs = [];
+        foreach (NotificationCategory::v1Cases() as $category) {
+            $notifPrefs[$category->value] = $this->notifPrefs->isEmailEnabled($user, $category);
+        }
 
         return $this->render('app/settings.html.twig', [
             'memberships' => $allMemberships,
@@ -58,6 +67,9 @@ final class SettingsController extends AbstractController
             'invitations' => $isAdmin ? $this->invitations->findPendingForFamily($family) : [],
             'links' => $this->links->findForFamily($family),
             'domains' => RightDomain::cases(),
+            'notifPrefs' => $notifPrefs,
+            'quietHoursStart' => $user->getQuietHoursStart(),
+            'quietHoursEnd' => $user->getQuietHoursEnd(),
         ]);
     }
 }

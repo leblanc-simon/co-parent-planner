@@ -105,9 +105,12 @@ test('Garde avancée : rythme custom 14 jours, vacances manuelle + règle, excep
   await expect(page.locator('.garde-list')).toContainText('fixed_parent', { timeout: 15_000 });
 
   // ---- Exception ajoutée puis supprimée via la liste ----
+  // Date dynamique dans le futur proche : le moteur fige le passé, une date en dur finit par périmer.
+  const exc = new Date(Date.now() + 3 * 86_400_000);
+  const excDate = `${exc.getFullYear()}-${String(exc.getMonth() + 1).padStart(2, '0')}-${String(exc.getDate()).padStart(2, '0')}`;
   const excForm = page.locator('form:has(input[name="reason"])');
-  await excForm.locator('[name="startDate"]').fill('2026-07-05');
-  await excForm.locator('[name="endDate"]').fill('2026-07-05');
+  await excForm.locator('[name="startDate"]').fill(excDate);
+  await excForm.locator('[name="endDate"]').fill(excDate);
   await excForm.locator('[name="reason"]').fill('Rendez-vous');
   await excForm.locator('button[type="submit"]').click();
   // Deux listes .garde-list (exceptions + vacances) : cibler l'entrée précise, pas la classe.

@@ -107,6 +107,13 @@ php bin/console messenger:consume async -v        # worker (e-mails, jobs async)
 php bin/console messenger:consume scheduler_default -v  # scheduler (tâches planifiées)
 ```
 
+> **Notifications e-mail (Lot 7)** : les notifications (`App\Message\SendNotification`) et les e-mails
+> transactionnels passent par le **même transport `async`** — le worker ci-dessus les traite (retry +
+> `failed` en cas d'échec SMTP). Les **rappels d'échéance** des décisions sont un job du
+> `scheduler_default` (toutes les 15 min, idempotent). Aucune nouvelle variable d'environnement : les
+> heures de silence (quiet-hours) et les préférences par catégorie sont stockées par utilisateur en base.
+> Le canal `push` et la catégorie `expenses` sont réservés v2 (inactifs).
+
 **Vérification de bon fonctionnement** :
 ```bash
 curl -fsS http://127.0.0.1:8000/api/docs.json | head -c 200      # OpenAPI servi

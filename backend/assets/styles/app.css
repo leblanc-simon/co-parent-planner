@@ -253,6 +253,10 @@ a:hover { text-decoration: underline; }
 .invite-panel { background: #FBF8F1; border: 1px solid #EFE8DA; border-radius: 20px; padding: 22px; }
 .invite-panel__title { font-family: var(--font-title); font-size: 19px; font-weight: 700; margin: 0; }
 .invite-panel__sub { color: #857E71; font-size: 13px; margin: .2rem 0 1rem; }
+.notif-toggles { display: flex; flex-direction: column; gap: .2rem; }
+.notif-toggle { display: flex; align-items: center; justify-content: space-between; padding: 10px 4px; border-bottom: 1px solid var(--border); }
+.notif-toggle:last-child { border-bottom: none; }
+.notif-toggle__label { font-weight: 600; }
 .member-row__grid, .member-row__rights { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: .6rem; }
 .member-row__grid label, .member-row__rights label, .invite-rights label {
     font-size: .8rem; font-weight: 600; color: var(--ink-2); display: flex; flex-direction: column; gap: .25rem;

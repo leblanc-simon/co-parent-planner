@@ -9,6 +9,7 @@ use App\Entity\Membership;
 use App\Enum\NotificationType;
 use App\Message\SendNotification;
 use App\Repository\NotificationPrefRepository;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
@@ -22,6 +23,7 @@ final class NotificationEmitter
         private readonly RecipientResolver $recipients,
         private readonly NotificationPrefRepository $prefs,
         private readonly MessageBusInterface $bus,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -37,22 +39,28 @@ final class NotificationEmitter
     ): void {
         $authorId = null !== $author ? (string) $author->getId() : null;
 
-        foreach ($this->recipients->resolve($family, $type) as $membership) {
-            if (null !== $authorId && (string) $membership->getId() === $authorId) {
-                continue; // pas d'auto-notification
+        // Best-effort (§4.6) : un échec de résolution/dispatch de notification ne doit JAMAIS annuler
+        // la mutation métier déjà committée. En prod l'envoi est asynchrone ; on journalise et on continue.
+        try {
+            foreach ($this->recipients->resolve($family, $type) as $membership) {
+                if (null !== $authorId && (string) $membership->getId() === $authorId) {
+                    continue; // pas d'auto-notification
+                }
+                $user = $membership->getUser();
+                if (!$this->prefs->isEmailEnabled($user, $type->category())) {
+                    continue;
+                }
+                $key = $type->value.':'.$factId.':'.$user->getId();
+                $this->bus->dispatch(new SendNotification(
+                    $key,
+                    (string) $user->getId(),
+                    (string) $family->getId(),
+                    $type->value,
+                    $payloadRefs,
+                ));
             }
-            $user = $membership->getUser();
-            if (!$this->prefs->isEmailEnabled($user, $type->category())) {
-                continue;
-            }
-            $key = $type->value.':'.$factId.':'.$user->getId();
-            $this->bus->dispatch(new SendNotification(
-                $key,
-                (string) $user->getId(),
-                (string) $family->getId(),
-                $type->value,
-                $payloadRefs,
-            ));
+        } catch (\Throwable $e) {
+            $this->logger->warning('Échec d\'émission de notification.', ['type' => $type->value, 'exception' => $e]);
         }
     }
 }

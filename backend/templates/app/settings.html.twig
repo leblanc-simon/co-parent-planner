@@ -19,6 +19,7 @@
 <div class="settings-layout">
 <nav class="settings-nav">
     <a href="#sec-account">Mon compte</a>
+    <a href="#sec-notifications">Notifications</a>
     <a href="#sec-family">Famille</a>
     <a href="#sec-members">Membres</a>
     {% if isAdmin %}<a href="#sec-invite">Inviter</a>{% endif %}
@@ -37,6 +38,32 @@
             <div class="settings-profile__mail">{{ activeMembership.user.email }}</div>
         </div>
     </div>
+</section>
+
+{# ───────────── Notifications (US-SET-1, Lot 7) ───────────── #}
+<section class="card" id="sec-notifications" style="margin-bottom:1.25rem" data-controller="notif-prefs">
+    <h2 class="settings-section__title">Notifications</h2>
+    <p class="settings-section__sub">Choisissez les e-mails que vous recevez et vos heures de silence.</p>
+    <p class="form-error" data-notif-prefs-target="error" role="alert" hidden></p>
+    <form data-action="submit->notif-prefs#save">
+        {% set notifLabels = {'custody':'Garde','agenda':'Agenda','exchanges':'Échanges','invitation':'Invitations'} %}
+        <div class="notif-toggles">
+            {% for cat, enabled in notifPrefs %}
+            <label class="notif-toggle">
+                <span class="notif-toggle__label">{{ notifLabels[cat] ?? cat }}</span>
+                <span class="switch">
+                    <input type="checkbox" name="notif[{{ cat }}]" {{ enabled ? 'checked' }}>
+                    <span class="switch__slider"></span>
+                </span>
+            </label>
+            {% endfor %}
+        </div>
+        <div class="grid-2" style="margin-top:1rem">
+            <div class="field"><label for="qh-start">Silence — début</label><input id="qh-start" name="quietHoursStart" type="time" value="{{ quietHoursStart }}"></div>
+            <div class="field"><label for="qh-end">Silence — fin</label><input id="qh-end" name="quietHoursEnd" type="time" value="{{ quietHoursEnd }}"></div>
+        </div>
+        <button class="btn btn--ink" type="submit">Enregistrer les préférences</button>
+    </form>
 </section>
 
 {# ───────────── Réglages de la famille (US-SET-2a) ───────────── #}

@@ -5,7 +5,9 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-07-05** — **Lot 6 (Échanges temps réel) TERMINÉ** : backend (entités Exchange/ExchangeOption/Message🔒/OptionVote, 6 endpoints, moteur de décision par consensus + verrou pessimiste, Mercure post-commit, RGPD, i18n) + contrat OpenAPI + client Dart + UI web (écran /echanges maître-détail + badge nav + temps réel) + UI mobile (écran Échanges + badge accueil) + E2E + revue ciblée. Portes : backend **241 tests** / PHPStan 0 / cs-fixer 0 / Twig 22 ; **E2E Playwright 14/14** ; mobile **140 tests** / `dart analyze` 0 / couverture 75,2 % ; client généré intact. Avant : **Revue graphique (conformité maquettes §8) APPLIQUÉE** (113 écarts, 3 P2 différés justifiés). **Lots 0→6 TERMINÉS. Prochain lot : Lot 7 — Notifications e-mail.**
+Dernière mise à jour : **2026-07-09** — **Lot 7 (Notifications e-mail) TERMINÉ** : préférences (`/api/me/notification-prefs` + quiet-hours), pipeline d'envoi **asynchrone idempotent** (Messenger `async`, `NotificationDispatch`, quiet-hours/report, locale, filtrage Voter+préférence, best-effort §4.6), **déclencheurs** garde/agenda/échanges (émission post-commit, hors auteur), **rappels d'échéance** planifiés (Scheduler /15 min), templates e-mail localisés, UI web + mobile (Paramètres › Notifications). Portes : backend **259 tests** / PHPStan 0 / cs-fixer 0 ; **E2E Playwright 15/15** ; mobile **142 tests** / couverture 75,1 %. **Lots 0→7 TERMINÉS. Prochain lot : Lot 8 — PWA / offline / RGPD Manager.**
+
+Antérieur : **Lot 6 (Échanges temps réel) TERMINÉ** : backend (entités Exchange/ExchangeOption/Message🔒/OptionVote, 6 endpoints, moteur de décision par consensus + verrou pessimiste, Mercure post-commit, RGPD, i18n) + contrat OpenAPI + client Dart + UI web (écran /echanges maître-détail + badge nav + temps réel) + UI mobile (écran Échanges + badge accueil) + E2E + revue ciblée. Portes : backend **241 tests** / PHPStan 0 / cs-fixer 0 / Twig 22 ; **E2E Playwright 14/14** ; mobile **140 tests** / `dart analyze` 0 / couverture 75,2 % ; client généré intact. Avant : **Revue graphique (conformité maquettes §8) APPLIQUÉE** (113 écarts, 3 P2 différés justifiés). **Lots 0→6 TERMINÉS. Prochain lot : Lot 7 — Notifications e-mail.**
 
 ---
 
@@ -18,6 +20,8 @@ Dernière mise à jour : **2026-07-05** — **Lot 6 (Échanges temps réel) TERM
 **Lot 3 — Garde (moteur + vacances)** (`specs/lots/lot-3-*.md`) : ✅ **TERMINÉ** (backend + moteur + adaptateur vacances + async/scheduler + endpoints + contrat OpenAPI + client Dart + UI web + E2E + temps réel + UI mobile + **revue de code + corrections**).
 
 **Lot 4 — Agenda** (`specs/lots/lot-4-agenda.md`) : ✅ **TERMINÉ** — backend + moteur + endpoints + UI web + UI mobile + E2E + temps réel + revue de code adversariale.
+
+**Lot 7 — Notifications e-mail** (`specs/lots/lot-7-notifications-email.md`) : ✅ **TERMINÉ** (préférences + pipeline async + déclencheurs garde/agenda/échanges + rappels planifiés + templates + UI web/mobile + E2E) — détail dans le journal §6 (2026-07-09). Simplifications assumées documentées : invitation conserve son handler dédié (déjà async+localisé) ; coalescence fine des rafales et rappels d'agenda récurrents non implémentés (anti-spam de masse fait à l'émission).
 
 **Lot 6 — Échanges (temps réel)** (`specs/lots/lot-6-echanges-temps-reel.md`) : ✅ **TERMINÉ** (backend + contrat + UI web + UI mobile + E2E + revue ciblée) — détail dans le journal §6 (2026-07-05).
 
@@ -248,6 +252,35 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-07-09 — Lot 7 : Notifications e-mail — préférences + pipeline + déclencheurs + rappels + UI
+- **Préférences (US-SET-1)** : `GET/PUT /api/me/notification-prefs` (scope utilisateur) — toggles e-mail
+  par catégorie v1 (`custody`/`agenda`/`exchanges`/`invitation` ; `expenses`/`push` masqués v2), quiet-hours
+  `HH:MM` (validées : format, bornes complètes, plage <23 h), locale. `NotificationPref` finalisée +
+  repo (opt-out par défaut §3.6) ; quiet-hours sur `User` (migration `Version20260708215230`).
+- **Pipeline async (§3.1)** : `NotificationEmitter` (post-commit, **best-effort** §4.6) → `RecipientResolver`
+  (memberships actifs filtrés par Voter du domaine, sécurité prime, hors auteur) → filtrage préférence →
+  `SendNotification` (Messenger `async`, retry). `SendNotificationHandler` **idempotent** (`NotificationDispatch`
+  clé unique), **quiet-hours** (report `DelayStamp`, plage circulaire/DST), **locale** (§3.5), rendu
+  `emails/notification.html.twig` localisé, audit `notification.sent` **sans clair 🔒**. Minimisation :
+  lien vers l'app, jamais le texte d'un message (`Message.text` 🔒 jamais embarqué).
+- **Déclencheurs** (émission post-commit) : échanges (message, ouverture, décision tranchée, clôture),
+  agenda (création/modif clé-par-version/suppression), garde (exception créée/supprimée, régénération du
+  modèle → une seule notif « planning modifié »). Migration `NotificationDispatch` `Version20260708220349`.
+- **Rappels d'échéance (US-NOTIF-6, §3.9)** : `SendDeadlineReminders` (Scheduler /15 min) → décisions
+  ouvertes à échéance : « échéance demain » (<24 h) puis « en retard », dédup idempotente ; tranchée → rien.
+- **UI web** : Paramètres › Notifications (sous-nav, toggles switch iOS, quiet-hours) via Stimulus
+  `notif-prefs`. **UI mobile** (sous-agent) : écran Notifications (Switch/quiet-hours) + entrée Réglages.
+- **Registre RGPD** : `NotificationPref`/quiet-hours (préférences) documentés (non chiffrés, non sensibles).
+  i18n `notification.*`/`email.notif.*` ICU. Route Messenger `SendNotification → async`.
+- **Revue ciblée** : la régression e2e (transport `sync` exécutant l'envoi dans la requête custody) a
+  révélé le besoin du best-effort (§4.6) ; tests dédiés qui exécutent le handler + rendent le template →
+  chaîne notif validée en isolation. Correctif fragilité e2e (date d'exception codée en dur → dynamique).
+- **Portes** : backend **259 tests / 2149 assertions**, PHPStan niv.8 (0), cs-fixer (0), schéma en sync ;
+  **E2E Playwright 15/15** ; mobile **142 tests**, couverture **75,1 %**, `dart analyze`/`format` propres,
+  client généré intact. OpenAPI exporté (`notification-prefs`) + client Dart régénéré. INSTALL.md à jour.
+- **Assumés documentés** : invitation garde son handler dédié (non re-routé) ; coalescence fine des rafales
+  et rappels d'agenda récurrents = hors périmètre livré (anti-spam de masse assuré à l'émission).
 
 ### 2026-07-05 — Lot 6 : Échanges (temps réel) — backend + contrat + web + mobile + E2E
 - **Modèle** : `Exchange` (discussion/décision, statut open/decided, échéance date, auteur/enfant

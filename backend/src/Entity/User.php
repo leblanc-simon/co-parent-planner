@@ -77,6 +77,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 16, options: ['default' => 'fr-FR'])]
     private string $locale = 'fr-FR';
 
+    /**
+     * Quiet-hours (plage de silence) `HH:MM`, nullable, interprétées dans le fuseau de la famille
+     * active (Lot 7 §3.3). Les deux bornes sont posées/effacées ensemble.
+     */
+    #[ORM\Column(length: 5, nullable: true)]
+    private ?string $quietHoursStart = null;
+
+    #[ORM\Column(length: 5, nullable: true)]
+    private ?string $quietHoursEnd = null;
+
     #[ORM\Column(length: 1024, nullable: true)]
     private ?string $avatarUrl = null;
 
@@ -174,6 +184,30 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getLocale(): string
     {
         return $this->locale;
+    }
+
+    public function getQuietHoursStart(): ?string
+    {
+        return $this->quietHoursStart;
+    }
+
+    public function setQuietHoursStart(?string $quietHoursStart): static
+    {
+        $this->quietHoursStart = $quietHoursStart;
+
+        return $this;
+    }
+
+    public function getQuietHoursEnd(): ?string
+    {
+        return $this->quietHoursEnd;
+    }
+
+    public function setQuietHoursEnd(?string $quietHoursEnd): static
+    {
+        $this->quietHoursEnd = $quietHoursEnd;
+
+        return $this;
     }
 
     public function setLocale(string $locale): static

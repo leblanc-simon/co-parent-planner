@@ -7,6 +7,7 @@ namespace App\Entity;
 use App\Entity\Concern\TimestampableTrait;
 use App\Enum\NotificationCategory;
 use App\Enum\NotificationChannel;
+use App\Repository\NotificationPrefRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Uuid;
@@ -15,7 +16,7 @@ use Symfony\Component\Uid\Uuid;
  * Préférence de notification par catégorie et canal (cdc §5.2). Table posée au Lot 0 ;
  * pilotée au Lot 7 (e-mail) / Lot 10 (push).
  */
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: NotificationPrefRepository::class)]
 #[ORM\Table(name: 'notification_prefs')]
 #[ORM\UniqueConstraint(name: 'uniq_notifpref', columns: ['user_id', 'category', 'channel'])]
 #[ORM\HasLifecycleCallbacks]

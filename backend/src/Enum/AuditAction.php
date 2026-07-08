@@ -70,4 +70,10 @@ enum AuditAction: string
     case ExchangeOpened = 'exchange.opened';
     case ExchangeDecided = 'exchange.decided';
     case ExchangeClosed = 'exchange.closed';
+
+    // Notifications (Lot 7)
+    case NotificationPrefsUpdated = 'notification.prefs.updated';
+    case NotificationSent = 'notification.sent';
+    case NotificationFailed = 'notification.failed';
+    case InvitationSent = 'invitation.sent';
 }

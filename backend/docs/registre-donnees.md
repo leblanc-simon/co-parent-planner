@@ -96,6 +96,18 @@ les références (`SET NULL`) sans casser les liens/audits :
 |---|---|---|---|---|---|---|
 | `Message.text` | Contenu | 🔒 Chiffré (AES-256-GCM) | Exécution du contrat (coordination parentale) | Échanger des messages sur un sujet enfant/famille | Durée de vie de l'échange ; anonymisation auteur / purge RGPD (Lot 8) | Membres habilités de la famille (exchanges ≥ view) |
 
+## Champs (Lot 7 — Notifications e-mail)
+
+> Préférences de notification et plage de silence = **données personnelles** (non chiffrées, non
+> sensibles). Le canal `push` et la catégorie `expenses` sont réservés v2 (inactifs). Aucun contenu 🔒
+> n'est stocké par ce lot ; les champs chiffrés (`Invitation.email`, `Message.text`…) sont déchiffrés
+> **uniquement en mémoire** pour le rendu d'un e-mail, jamais journalisés en clair.
+
+| Champ | Catégorie | Sensibilité | Base légale | Finalité | Conservation | Destinataires |
+|---|---|---|---|---|---|---|
+| `NotificationPref.enabled` (par `category`/`channel`) | Préférence | Standard | Exécution du contrat / intérêt légitime | Router les notifications selon le choix de l'utilisateur | Durée de vie du compte ; purge RGPD (Lot 8) | Interne (usage serveur) |
+| `User.quietHoursStart` / `User.quietHoursEnd` | Préférence | Standard (`HH:MM`) | Intérêt légitime (confort) | Reporter les e-mails hors de la plage de silence | Durée de vie du compte | Interne |
+
 ## Champs à venir (rappel, autres lots)
 
 - `Note.text` 🔒 (Lot 2 — contenu), `Message.text` 🔒 (Lot 6 — contenu).

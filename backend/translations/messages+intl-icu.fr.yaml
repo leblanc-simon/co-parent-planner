@@ -188,3 +188,15 @@ exchange:
     decided_banner: 'Décision tranchée'
     open_count: '{count, plural, =0 {Aucun échange ouvert} one {# échange ouvert} other {# échanges ouverts}}'
     votes: '{count, plural, =0 {Aucune validation} one {# validation} other {# validations}}'
+
+notification:
+    error:
+        category_invalid: 'Catégorie de notification inconnue.'
+        quiet_hours_invalid: "Les heures de silence doivent être au format HH:MM (00:00 à 23:59)."
+        quiet_hours_incomplete: 'Renseignez les deux bornes des heures de silence, ou aucune.'
+        quiet_hours_too_long: 'La plage de silence ne peut pas couvrir 23 h ou plus.'
+    category:
+        custody: 'Garde'
+        agenda: 'Agenda'
+        exchanges: 'Échanges'
+        invitation: 'Invitations'

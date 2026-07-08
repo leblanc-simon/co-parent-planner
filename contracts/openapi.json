@@ -3914,6 +3914,161 @@
                 }
             }
         },
+        "/api/me/notification-prefs": {
+            "get": {
+                "operationId": "api_menotification-prefs_get",
+                "tags": [
+                    "NotificationPrefs"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "NotificationPrefs resource",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotificationPrefs"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotificationPrefs.jsonld"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Retrieves a NotificationPrefs resource.",
+                "description": "Retrieves a NotificationPrefs resource.",
+                "parameters": []
+            },
+            "put": {
+                "operationId": "api_menotification-prefs_put",
+                "tags": [
+                    "NotificationPrefs"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "NotificationPrefs resource updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotificationPrefs"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/NotificationPrefs.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Replaces the NotificationPrefs resource.",
+                "description": "Replaces the NotificationPrefs resource.",
+                "parameters": [],
+                "requestBody": {
+                    "description": "The updated NotificationPrefs resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/NotificationPrefs"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/NotificationPrefs"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
         "/api/families/{familyId}/overlay-preferences": {
             "get": {
                 "operationId": "api_families_familyIdoverlay-preferences_get_collection",
@@ -8176,6 +8331,71 @@
                 ],
                 "description": "Note partag\u00e9e expos\u00e9e (US-CH-6). `text` d\u00e9chiffr\u00e9 au rendu serveur ; auteur r\u00e9solu (nom + couleur)."
             },
+            "NotificationPrefs": {
+                "type": "object",
+                "description": "US-SET-1 (Lot 7) \u2014 pr\u00e9f\u00e9rences de notification du compte courant. `/api/me/notification-prefs`\nest implicitement scop\u00e9 \u00e0 l'utilisateur du token (jamais un autre compte). Canal `email` seul en\nv1 ; cat\u00e9gorie `expenses` et canal `push` masqu\u00e9s (r\u00e9serv\u00e9s v2). Quiet-hours `HH:MM` interpr\u00e9t\u00e9es\ndans le fuseau de la famille active.",
+                "properties": {
+                    "email": {
+                        "description": "Activation e-mail par cat\u00e9gorie v1 (`custody`, `agenda`, `exchanges`, `invitation`).",
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "boolean"
+                        }
+                    },
+                    "quietHoursStart": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "quietHoursEnd": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "locale": {
+                        "default": "fr-FR",
+                        "type": "string"
+                    }
+                }
+            },
+            "NotificationPrefs.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "email": {
+                                "description": "Activation e-mail par cat\u00e9gorie v1 (`custody`, `agenda`, `exchanges`, `invitation`).",
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "boolean"
+                                }
+                            },
+                            "quietHoursStart": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "quietHoursEnd": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "locale": {
+                                "default": "fr-FR",
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "description": "US-SET-1 (Lot 7) \u2014 pr\u00e9f\u00e9rences de notification du compte courant. `/api/me/notification-prefs`\nest implicitement scop\u00e9 \u00e0 l'utilisateur du token (jamais un autre compte). Canal `email` seul en\nv1 ; cat\u00e9gorie `expenses` et canal `push` masqu\u00e9s (r\u00e9serv\u00e9s v2). Quiet-hours `HH:MM` interpr\u00e9t\u00e9es\ndans le fuseau de la famille active."
+            },
             "OptionView": {
                 "type": "object",
                 "properties": {
@@ -8848,6 +9068,10 @@
         {
             "name": "Note",
             "description": "Note partag\u00e9e expos\u00e9e (US-CH-6). `text` d\u00e9chiffr\u00e9 au rendu serveur ; auteur r\u00e9solu (nom + couleur)."
+        },
+        {
+            "name": "NotificationPrefs",
+            "description": "US-SET-1 (Lot 7) \u2014 pr\u00e9f\u00e9rences de notification du compte courant. `/api/me/notification-prefs`\nest implicitement scop\u00e9 \u00e0 l'utilisateur du token (jamais un autre compte). Canal `email` seul en\nv1 ; cat\u00e9gorie `expenses` et canal `push` masqu\u00e9s (r\u00e9serv\u00e9s v2). Quiet-hours `HH:MM` interpr\u00e9t\u00e9es\ndans le fuseau de la famille active."
         },
         {
             "name": "RealtimeToken",

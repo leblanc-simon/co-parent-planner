@@ -24,6 +24,42 @@ email:
         intro: 'Vous avez été invité·e à rejoindre la famille « {family} » sur CoParentPlanner. Cliquez ci-dessous pour accepter l''invitation.'
         cta: "Rejoindre la famille"
         ignore: "Si vous ne vous attendiez pas à cette invitation, ignorez simplement cet e-mail."
+    notif:
+        cta: "Ouvrir CoParentPlanner"
+        footer: "Vous recevez cet e-mail selon vos préférences de notification. Gérez-les dans l'application."
+        exchange_message:
+            subject: "Nouveau message : {title}"
+            body: "Un nouveau message a été posté dans l'échange « {title} ». Ouvrez l'application pour le lire."
+        exchange_opened:
+            subject: "Nouvel échange : {title}"
+            body: "Un nouvel échange « {title} » a été ouvert dans votre famille."
+        exchange_decided:
+            subject: "Décision prise : {title}"
+            body: "La décision « {title} » a été tranchée. Ouvrez l'application pour voir l'option retenue."
+        exchange_closed:
+            subject: "Échange clos : {title}"
+            body: "L'échange « {title} » a été clôturé."
+        decision_reminder:
+            subject: "Échéance demain : {title}"
+            body: "La décision « {title} » arrive à échéance demain et n'est pas encore tranchée."
+        decision_overdue:
+            subject: "En retard : {title}"
+            body: "La décision « {title} » a dépassé son échéance sans être tranchée."
+        agenda_event_created:
+            subject: "Nouvel événement : {title}"
+            body: "Un nouvel événement « {title} » a été ajouté à l'agenda familial."
+        agenda_event_updated:
+            subject: "Événement modifié : {title}"
+            body: "L'événement « {title} » a été modifié. Ouvrez l'agenda pour voir les détails."
+        agenda_event_deleted:
+            subject: "Événement annulé : {title}"
+            body: "L'événement « {title} » a été annulé."
+        agenda_reminder:
+            subject: "Rappel : {title}"
+            body: "L'événement « {title} » approche. Consultez votre agenda."
+        custody_changed:
+            subject: "Planning de garde modifié"
+            body: "Le planning de garde de votre famille a été modifié. Consultez-le dans l'application."
 
 auth:
     error:

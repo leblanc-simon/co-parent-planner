@@ -9,12 +9,14 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Dto\Exchange\ExchangeResource;
 use App\Dto\Exchange\UpdateExchangeRequest;
 use App\Enum\AuditAction;
+use App\Enum\NotificationType;
 use App\Exception\ExchangeConflictException;
 use App\Security\Auth\AuditLogger;
 use App\Security\Exchanges\ExchangeAccess;
 use App\Service\Exchange\ExchangeAssembler;
 use App\Service\Exchange\ExchangePublisher;
 use App\Service\Exchange\ExchangeWriter;
+use App\Service\Notification\NotificationEmitter;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\OptimisticLockException;
@@ -35,6 +37,7 @@ final class UpdateExchangeProcessor implements ProcessorInterface
         private readonly ExchangeWriter $writer,
         private readonly ExchangeAssembler $assembler,
         private readonly ExchangePublisher $publisher,
+        private readonly NotificationEmitter $notifier,
         private readonly AuditLogger $audit,
         private readonly RequestStack $requestStack,
     ) {
@@ -77,6 +80,11 @@ final class UpdateExchangeProcessor implements ProcessorInterface
         $this->publisher->publishExchange($exchange);
         if ($becameDecided) {
             $this->publisher->publishList($ctx->family);
+            // Notification e-mail (Lot 7) : échange clôturé/tranché → membres habilités (hors auteur).
+            $this->notifier->emit(NotificationType::ExchangeClosed, $ctx->family, $ctx->membership, (string) $exchange->getId(), [
+                'exchangeId' => (string) $exchange->getId(),
+                'title' => $exchange->getTitle(),
+            ]);
         }
 
         return $this->assembler->detail($exchange, $tz);

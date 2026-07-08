@@ -9,6 +9,7 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Entity\Event;
 use App\Entity\Family;
 use App\Enum\AuditAction;
+use App\Enum\NotificationType;
 use App\Exception\AgendaInputException;
 use App\Exception\AgendaNotFoundException;
 use App\Repository\EventRepository;
@@ -17,6 +18,7 @@ use App\Security\Auth\AuditLogger;
 use App\Service\Agenda\AgendaPublisher;
 use App\Service\Agenda\OccurrenceEditor;
 use App\Service\Agenda\SeriesSplitter;
+use App\Service\Notification\NotificationEmitter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Uid\Uuid;
@@ -37,6 +39,7 @@ final class DeleteEventProcessor implements ProcessorInterface
         private readonly OccurrenceEditor $occurrenceEditor,
         private readonly SeriesSplitter $splitter,
         private readonly AgendaPublisher $publisher,
+        private readonly NotificationEmitter $notifier,
         private readonly AuditLogger $audit,
         private readonly RequestStack $requestStack,
     ) {
@@ -47,6 +50,7 @@ final class DeleteEventProcessor implements ProcessorInterface
         $ctx = $this->access->write();
         $event = $this->load($uriVariables['id'] ?? null, $ctx->family);
         $id = (string) $event->getId();
+        $title = $event->getTitle();
 
         $this->applyDelete($event, $ctx->family);
 
@@ -60,6 +64,10 @@ final class DeleteEventProcessor implements ProcessorInterface
         ); // flush (commit)
 
         $this->publisher->publish($ctx->family);
+        // Notification e-mail (Lot 7) : événement annulé → membres habilités agenda (hors auteur).
+        $this->notifier->emit(NotificationType::AgendaEventDeleted, $ctx->family, $ctx->membership, $id, [
+            'title' => $title,
+        ]);
 
         return null;
     }

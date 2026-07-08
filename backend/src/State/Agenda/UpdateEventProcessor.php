@@ -11,6 +11,7 @@ use App\Dto\Agenda\UpdateEventRequest;
 use App\Entity\Event;
 use App\Entity\Family;
 use App\Enum\AuditAction;
+use App\Enum\NotificationType;
 use App\Exception\AgendaConflictException;
 use App\Exception\AgendaInputException;
 use App\Exception\AgendaNotFoundException;
@@ -21,6 +22,7 @@ use App\Service\Agenda\AgendaPublisher;
 use App\Service\Agenda\EventWriter;
 use App\Service\Agenda\OccurrenceEditor;
 use App\Service\Agenda\SeriesSplitter;
+use App\Service\Notification\NotificationEmitter;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\OptimisticLockException;
@@ -44,6 +46,7 @@ final class UpdateEventProcessor implements ProcessorInterface
         private readonly OccurrenceEditor $occurrenceEditor,
         private readonly SeriesSplitter $splitter,
         private readonly AgendaPublisher $publisher,
+        private readonly NotificationEmitter $notifier,
         private readonly AuditLogger $audit,
         private readonly RequestStack $requestStack,
     ) {
@@ -82,6 +85,10 @@ final class UpdateEventProcessor implements ProcessorInterface
         }
 
         $this->publisher->publish($ctx->family);
+        // Notification e-mail (Lot 7) : événement modifié → clé par version (une notif par édition).
+        $this->notifier->emit(NotificationType::AgendaEventUpdated, $ctx->family, $ctx->membership, $result->getId().':'.$result->getVersion(), [
+            'title' => $result->getTitle(),
+        ]);
 
         return EventResource::fromEvent($result, $tz);
     }

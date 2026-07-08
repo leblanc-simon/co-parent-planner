@@ -10,6 +10,7 @@ use App\Dto\Exchange\CreateExchangeRequest;
 use App\Dto\Exchange\ExchangeResource;
 use App\Entity\Exchange;
 use App\Enum\AuditAction;
+use App\Enum\NotificationType;
 use App\Repository\ExchangeRepository;
 use App\Security\Auth\AuditLogger;
 use App\Security\Exchanges\ExchangeAccess;
@@ -17,6 +18,7 @@ use App\Security\FamilyContext;
 use App\Service\Exchange\ExchangeAssembler;
 use App\Service\Exchange\ExchangePublisher;
 use App\Service\Exchange\ExchangeWriter;
+use App\Service\Notification\NotificationEmitter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -36,6 +38,7 @@ final class CreateExchangeProcessor implements ProcessorInterface
         private readonly ExchangeRepository $exchanges,
         private readonly ExchangeAssembler $assembler,
         private readonly ExchangePublisher $publisher,
+        private readonly NotificationEmitter $notifier,
         private readonly AuditLogger $audit,
         private readonly RequestStack $requestStack,
     ) {
@@ -54,6 +57,11 @@ final class CreateExchangeProcessor implements ProcessorInterface
         $exchange = null !== $key ? $this->createIdempotent($ctx, $data, $key) : $this->createSimple($ctx, $data);
 
         $this->publisher->publishList($ctx->family);
+        // Notification e-mail (Lot 7) : nouvel échange → membres habilités (hors auteur).
+        $this->notifier->emit(NotificationType::ExchangeOpened, $ctx->family, $ctx->membership, (string) $exchange->getId(), [
+            'exchangeId' => (string) $exchange->getId(),
+            'title' => $exchange->getTitle(),
+        ]);
 
         return $this->assembler->detail($exchange, $tz);
     }

@@ -10,12 +10,14 @@ use App\Dto\Agenda\CreateEventRequest;
 use App\Dto\Agenda\EventResource;
 use App\Entity\Event;
 use App\Enum\AuditAction;
+use App\Enum\NotificationType;
 use App\Repository\EventRepository;
 use App\Security\Agenda\AgendaAccess;
 use App\Security\Auth\AuditLogger;
 use App\Security\FamilyContext;
 use App\Service\Agenda\AgendaPublisher;
 use App\Service\Agenda\EventWriter;
+use App\Service\Notification\NotificationEmitter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -36,6 +38,7 @@ final class CreateEventProcessor implements ProcessorInterface
         private readonly EventWriter $writer,
         private readonly EventRepository $events,
         private readonly AgendaPublisher $publisher,
+        private readonly NotificationEmitter $notifier,
         private readonly AuditLogger $audit,
         private readonly RequestStack $requestStack,
     ) {
@@ -55,6 +58,10 @@ final class CreateEventProcessor implements ProcessorInterface
 
         // Après commit : diffusion temps réel best-effort (n'invalide jamais l'écriture).
         $this->publisher->publish($ctx->family);
+        // Notification e-mail (Lot 7) : événement créé → membres habilités agenda (hors auteur).
+        $this->notifier->emit(NotificationType::AgendaEventCreated, $ctx->family, $ctx->membership, (string) $event->getId(), [
+            'title' => $event->getTitle(),
+        ]);
 
         return EventResource::fromEvent($event, $tz);
     }

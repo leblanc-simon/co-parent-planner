@@ -12,6 +12,7 @@ use App\Entity\Exchange;
 use App\Entity\ExchangeOption;
 use App\Entity\OptionVote;
 use App\Enum\AuditAction;
+use App\Enum\NotificationType;
 use App\Exception\ExchangeConflictException;
 use App\Exception\ExchangeInputException;
 use App\Repository\ExchangeOptionRepository;
@@ -21,6 +22,7 @@ use App\Security\Exchanges\ExchangeAccess;
 use App\Service\Exchange\DecisionEngine;
 use App\Service\Exchange\ExchangeAssembler;
 use App\Service\Exchange\ExchangePublisher;
+use App\Service\Notification\NotificationEmitter;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -44,6 +46,7 @@ final class DecideProcessor implements ProcessorInterface
         private readonly DecisionEngine $engine,
         private readonly ExchangeAssembler $assembler,
         private readonly ExchangePublisher $publisher,
+        private readonly NotificationEmitter $notifier,
         private readonly AuditLogger $audit,
         private readonly RequestStack $requestStack,
     ) {
@@ -103,6 +106,11 @@ final class DecideProcessor implements ProcessorInterface
         $this->publisher->publishExchange($exchange);
         if ($decided) {
             $this->publisher->publishList($ctx->family);
+            // Notification e-mail (Lot 7) : décision tranchée → participants habilités (hors auteur).
+            $this->notifier->emit(NotificationType::ExchangeDecided, $ctx->family, $ctx->membership, (string) $exchange->getId(), [
+                'exchangeId' => (string) $exchange->getId(),
+                'title' => $exchange->getTitle(),
+            ]);
         }
 
         return $this->assembler->detail($exchange, $tz);

@@ -10,10 +10,12 @@ use App\Dto\Exchange\CreateMessageRequest;
 use App\Dto\Exchange\MessageResource;
 use App\Entity\Exchange;
 use App\Entity\Message;
+use App\Enum\NotificationType;
 use App\Repository\MessageRepository;
 use App\Security\Exchanges\ExchangeAccess;
 use App\Service\Exchange\ExchangePublisher;
 use App\Service\Exchange\MessageWriter;
+use App\Service\Notification\NotificationEmitter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -32,6 +34,7 @@ final class CreateMessageProcessor implements ProcessorInterface
         private readonly MessageWriter $writer,
         private readonly MessageRepository $messages,
         private readonly ExchangePublisher $publisher,
+        private readonly NotificationEmitter $notifier,
         private readonly RequestStack $requestStack,
     ) {
     }
@@ -52,6 +55,11 @@ final class CreateMessageProcessor implements ProcessorInterface
             : $this->createSimple($exchange, $ctx->membership, $data);
 
         $this->publisher->publishExchange($exchange);
+        // Notification e-mail (Lot 7) : nouveau message → participants habilités (hors auteur).
+        $this->notifier->emit(NotificationType::ExchangeMessage, $ctx->family, $ctx->membership, (string) $message->getId(), [
+            'exchangeId' => (string) $exchange->getId(),
+            'title' => $exchange->getTitle(),
+        ]);
 
         return MessageResource::fromEntity($message, $tz);
     }

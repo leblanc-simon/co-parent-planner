@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="{{ locale }}">
+<body style="font-family: Arial, sans-serif; color: #292621; background: #E5E0D6; padding: 24px;">
+    <div style="max-width: 520px; margin: 0 auto; background: #F4F1EA; border-radius: 16px; padding: 28px;">
+        <h1 style="font-size: 20px; color: #C2643D;">{{ heading }}</h1>
+        <p style="line-height: 1.5;">{{ body }}</p>
+        <p style="margin: 24px 0;">
+            <a href="{{ actionUrl }}" style="background: #C2643D; color: #fff; padding: 12px 20px; border-radius: 999px; text-decoration: none;">
+                {{ actionLabel }}
+            </a>
+        </p>
+        <p style="font-size: 13px; color: #857E71;">{{ 'email.notif.footer'|trans({}, 'messages', locale) }}</p>
+    </div>
+</body>
+</html>

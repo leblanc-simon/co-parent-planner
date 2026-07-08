@@ -30,6 +30,8 @@ framework:
             # Garde (Lot 3) : génération/import asynchrones, idempotents.
             App\Message\RegenerateCustody: async
             App\Message\ImportSchoolHolidays: async
+            # Notifications (Lot 7) : envoi e-mail asynchrone, idempotent (notification_key), retry.
+            App\Message\SendNotification: async
 
 when@test:
     framework:

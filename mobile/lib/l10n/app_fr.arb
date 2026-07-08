@@ -274,5 +274,18 @@
   "exchangeFieldOptions": "Options",
   "exchangeOptionLabel": "Option",
   "exchangeAddOption": "Ajouter une option",
-  "exchangeOptionsHint": "Une décision requiert au moins deux options."
+  "exchangeOptionsHint": "Une décision requiert au moins deux options.",
+
+  "notificationsTitle": "Notifications",
+  "notificationsEmailSection": "Notifications e-mail",
+  "notifCategoryCustody": "Garde",
+  "notifCategoryAgenda": "Agenda",
+  "notifCategoryExchanges": "Échanges",
+  "notifCategoryInvitation": "Invitations",
+  "notificationsQuietSection": "Heures silencieuses",
+  "notificationsQuietHint": "Aucun e-mail ne sera envoyé pendant cette plage (fuseau de la famille).",
+  "notificationsQuietStart": "Début",
+  "notificationsQuietEnd": "Fin",
+  "notificationsQuietUnset": "Non définie",
+  "notificationsSaved": "Préférences enregistrées."
 }

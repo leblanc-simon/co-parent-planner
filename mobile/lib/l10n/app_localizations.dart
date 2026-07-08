@@ -1514,6 +1514,78 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Une décision requiert au moins deux options.'**
   String get exchangeOptionsHint;
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notifications'**
+  String get notificationsTitle;
+
+  /// No description provided for @notificationsEmailSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notifications e-mail'**
+  String get notificationsEmailSection;
+
+  /// No description provided for @notifCategoryCustody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Garde'**
+  String get notifCategoryCustody;
+
+  /// No description provided for @notifCategoryAgenda.
+  ///
+  /// In fr, this message translates to:
+  /// **'Agenda'**
+  String get notifCategoryAgenda;
+
+  /// No description provided for @notifCategoryExchanges.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échanges'**
+  String get notifCategoryExchanges;
+
+  /// No description provided for @notifCategoryInvitation.
+  ///
+  /// In fr, this message translates to:
+  /// **'Invitations'**
+  String get notifCategoryInvitation;
+
+  /// No description provided for @notificationsQuietSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Heures silencieuses'**
+  String get notificationsQuietSection;
+
+  /// No description provided for @notificationsQuietHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun e-mail ne sera envoyé pendant cette plage (fuseau de la famille).'**
+  String get notificationsQuietHint;
+
+  /// No description provided for @notificationsQuietStart.
+  ///
+  /// In fr, this message translates to:
+  /// **'Début'**
+  String get notificationsQuietStart;
+
+  /// No description provided for @notificationsQuietEnd.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fin'**
+  String get notificationsQuietEnd;
+
+  /// No description provided for @notificationsQuietUnset.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non définie'**
+  String get notificationsQuietUnset;
+
+  /// No description provided for @notificationsSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Préférences enregistrées.'**
+  String get notificationsSaved;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

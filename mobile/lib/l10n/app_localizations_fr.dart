@@ -784,4 +784,41 @@ class AppL10nFr extends AppL10n {
   @override
   String get exchangeOptionsHint =>
       'Une décision requiert au moins deux options.';
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get notificationsEmailSection => 'Notifications e-mail';
+
+  @override
+  String get notifCategoryCustody => 'Garde';
+
+  @override
+  String get notifCategoryAgenda => 'Agenda';
+
+  @override
+  String get notifCategoryExchanges => 'Échanges';
+
+  @override
+  String get notifCategoryInvitation => 'Invitations';
+
+  @override
+  String get notificationsQuietSection => 'Heures silencieuses';
+
+  @override
+  String get notificationsQuietHint =>
+      'Aucun e-mail ne sera envoyé pendant cette plage (fuseau de la famille).';
+
+  @override
+  String get notificationsQuietStart => 'Début';
+
+  @override
+  String get notificationsQuietEnd => 'Fin';
+
+  @override
+  String get notificationsQuietUnset => 'Non définie';
+
+  @override
+  String get notificationsSaved => 'Préférences enregistrées.';
 }

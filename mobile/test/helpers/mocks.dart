@@ -6,6 +6,7 @@ import 'package:coparentplanner/features/custody/data/custody_repository.dart';
 import 'package:coparentplanner/features/exchanges/data/exchanges_repository.dart';
 import 'package:coparentplanner/features/family/data/family_repository.dart';
 import 'package:coparentplanner/features/members/data/members_repository.dart';
+import 'package:coparentplanner/features/notifications/data/notification_prefs_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockAuthRepository extends Mock implements AuthRepository {}
@@ -23,6 +24,9 @@ class MockAgendaRepository extends Mock implements AgendaRepository {}
 class MockOverlayRepository extends Mock implements OverlayRepository {}
 
 class MockExchangesRepository extends Mock implements ExchangesRepository {}
+
+class MockNotificationPrefsRepository extends Mock
+    implements NotificationPrefsRepository {}
 
 /// OverlayRepository mocké renvoyant systématiquement du vide — à injecter dans les écrans qui
 /// consomment l'overlay (agenda, garde) pour empêcher tout appel réseau réel pendant les tests.

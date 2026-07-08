@@ -14,6 +14,7 @@ import '../../family/application/family_context.dart';
 import '../../family/data/family_repository.dart';
 import '../../members/data/members_repository.dart';
 import '../../members/presentation/members_screen.dart';
+import '../../notifications/presentation/notifications_screen.dart';
 
 /// US-SET-1 (sous-ensemble Lot 0) : profil (nom/telephone), langue, famille
 /// active, deconnexion.
@@ -158,6 +159,18 @@ class _SettingsTabState extends ConsumerState<SettingsTab> {
                 MaterialPageRoute<void>(builder: (_) => const MembersScreen()),
               ),
             ),
+          ListTile(
+            key: const ValueKey('settings-notifications'),
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.notifications_none),
+            title: Text(l.notificationsTitle),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const NotificationsScreen(),
+              ),
+            ),
+          ),
           const SizedBox(height: 16),
           Text(l.settingsProfile, style: AppTypography.textTheme.titleMedium),
           const SizedBox(height: 12),

@@ -11,7 +11,7 @@
 
 ### 0.1 Objectif
 
-Poser **toutes les fondations techniques** du monorepo et livrer **l'authentification complète de bout en bout** (web + mobile), de sorte que les lots métier suivants (Lot 1 à Lot 10) puissent s'ajouter sans retoucher l'ossature : aucune décision structurante (sécurité, scope famille, i18n, chiffrement, RGPD, tests, CI, design system, génération du client mobile) ne devra être reprise après ce lot.
+Poser **toutes les fondations techniques** du monorepo et livrer **l'authentification complète de bout en bout** (web + mobile), de sorte que les lots métier suivants (Lot 1 à Lot 11) puissent s'ajouter sans retoucher l'ossature : aucune décision structurante (sécurité, scope famille, i18n, chiffrement, RGPD, tests, CI, design system, génération du client mobile) ne devra être reprise après ce lot.
 
 Le Lot 0 est **transversal** : il ne livre presque aucune fonctionnalité métier (pas de familles éditables, pas de garde, pas d'agenda), mais il pose les **rails** que tous les lots emprunteront. Sa réussite se mesure à la capacité d'un développeur à : cloner le dépôt, suivre `INSTALL.md` (avec ou sans Docker), démarrer la stack, s'inscrire, vérifier son e-mail, se connecter, rafraîchir son token, réinitialiser son mot de passe, et voir le shell applicatif thématisé — le tout sur **web** et sur **mobile**, avec une CI verte.
 
@@ -74,14 +74,14 @@ Le Lot 0 est **transversal** : il ne livre presque aucune fonctionnalité métie
 - Topics Mercure métier (exchanges/custody/agenda/notes) : posés aux lots concernés (§4.5). Au Lot 0 : la plomberie Mercure (binaire, JWT) seulement.
 - RGPD Manager fonctionnel (anonymiseur, purge, rapports, export/suppression réels) = **Lot 8**.
 - PWA offline web dégradé complet = **Lot 8**. Offline mobile riche de bout en bout = **Lot 8**.
-- Dépenses (v2) = **Lot 9**. Push mobile (v2) = **Lot 10**.
+- Dépenses (v2) = **Lot 10**. Push mobile (v2) = **Lot 11**.
 - Adaptateur vacances scolaires `SchoolHolidaysProvider` = **Lot 3** (mais la note « vérifier l'endpoint réel » est rappelée plus bas).
 
 ### 0.4 Contexte v1 / v2
 
 - Le Lot 0 est intégralement **v1**. Aucun module v2 n'est activé.
-- Les **dépenses** (`Expense`, `ExpenseShare`) ne sont PAS créées au Lot 0 (elles arrivent au Lot 9, v2) ; toutefois l'invariant « onglet/API dépenses masqués en v1 » est respecté de fait (rien n'est exposé). Le domaine de droit `expenses` existe néanmoins comme énuméré dans les Voters (squelette), forcé `none` pour les enfants.
-- Le **push mobile** (canal `push` de `NotificationPref`) n'est pas câblé (v2, Lot 10) ; seul le canal `email` est prévu, mais aucun envoi de notification métier n'est fait au Lot 0 (uniquement les e-mails transactionnels d'auth).
+- Les **dépenses** (`Expense`, `ExpenseShare`) ne sont PAS créées au Lot 0 (elles arrivent au Lot 10, v2) ; toutefois l'invariant « onglet/API dépenses masqués en v1 » est respecté de fait (rien n'est exposé). Le domaine de droit `expenses` existe néanmoins comme énuméré dans les Voters (squelette), forcé `none` pour les enfants.
+- Le **push mobile** (canal `push` de `NotificationPref`) n'est pas câblé (v2, Lot 11) ; seul le canal `email` est prévu, mais aucun envoi de notification métier n'est fait au Lot 0 (uniquement les e-mails transactionnels d'auth).
 
 ### 0.5 Décisions tranchées au Lot 0 (politiques verrouillées par ce lot)
 
@@ -120,8 +120,8 @@ Le Lot 0 est censé **verrouiller l'ossature** : plutôt que de renvoyer des cho
 | **Lot 6 — Échanges temps réel** | Dépend de la plomberie Mercure + de l'émission/scoping du JWT Mercure posée au Lot 0 (§3.12 : le Lot 6 n'aura qu'à **ajouter les topics `exchanges` aux claims**, sans retoucher le mécanisme), des Voters (`exchanges`), du chiffrement 🔒 (`Message.text`). |
 | **Lot 7 — Notifications e-mail** | Dépend de Messenger + Mailer + templates i18n + `NotificationPref` posés au Lot 0. |
 | **Lot 8 — PWA/offline/RGPD Manager** | Dépend du squelette RGPD (`RgpdManager`, `registre-donnees.md`, test de cohérence), de `AuditLog`, du chiffrement, et du squelette outbox/Drift mobile. |
-| **Lot 9 — Dépenses (v2)** | Dépend des Voters (`expenses`) et du scope. |
-| **Lot 10 — Push mobile (v2)** | Dépend de `NotificationPref` (canal `push`) et de la couche notif du Lot 7. |
+| **Lot 10 — Dépenses (v2)** | Dépend des Voters (`expenses`) et du scope. |
+| **Lot 11 — Push mobile (v2)** | Dépend de `NotificationPref` (canal `push`) et de la couche notif du Lot 7. |
 
 > En clair : **tout** le projet dépend du Lot 0. C'est pourquoi sa DoD est stricte (cdc §9, CA Lot 0).
 
@@ -857,7 +857,7 @@ Au Lot 0 : la plomberie Mercure (binaire démarrable) + l'**émission d'un JWT M
 | **Membership** (squelette) | `user_id`, `family_id`, `role` (`parent`\|`step_parent`\|`child`), `is_admin` (bool), `child_id` (nullable), `display_color` (nullable), `status` (`active`\|`invited`) | **Unicité (`user_id`, `family_id`)**. Sert au scope `X-Family-Id` et aux Voters. Gestion fine au Lot 1. |
 | **Right** (squelette) | `membership_id`, `domain` (`custody`\|`agenda`\|`children_notes`\|`expenses`\|`exchanges`\|`family_settings`), `level` (`none`\|`view`\|`edit`) | Posé pour le squelette Voters. Pour `parent`, ignoré/forcé `edit`. Détail au Lot 1. |
 | **Invitation** (squelette) | `family_id`, `email` 🔒, `role`, `proposed_rights` (jsonb), `token_hash`, `expires_at`, `status` (`pending`\|`accepted`\|`expired`\|`revoked`), `invited_by` | `email` chiffré 🔒 (entrée de registre obligatoire). Acceptation minimale (US-ONB-1) ; émission complète au Lot 1. Token **haché**. |
-| **NotificationPref** (table créée) | `user_id`, `category` (`custody`\|`agenda`\|`expenses`\|`exchanges`\|`invitation`), `channel` (`email`\|`push`), `enabled` | Table posée ; pilotée au Lot 7 (e-mail) / Lot 10 (push). |
+| **NotificationPref** (table créée) | `user_id`, `category` (`custody`\|`agenda`\|`expenses`\|`exchanges`\|`invitation`), `channel` (`email`\|`push`), `enabled` | Table posée ; pilotée au Lot 7 (e-mail) / Lot 11 (push). |
 | **AuditLog** (créée, append-only) | `actor_user_id`, `family_id` (nullable au Lot 0 pour les events d'auth), `action`, `entity_type`, `entity_id`, `ip`, `metadata` (jsonb), `occurred_at` | **Immuable (append-only)** — aucune mise à jour/suppression. Branché sur les événements d'auth. |
 | **RgpdOperation** (table créée) | `type` (`export`\|`erasure`\|`purge`\|`anonymize`\|`report`), `subject_user_id` (nullable), `requested_by`, `status`, `mode` (`live`\|`dry_run`), `result_ref`, `occurred_at` | Table posée pour le squelette RGPD ; alimentée au Lot 8. |
 
@@ -927,7 +927,7 @@ Au Lot 0 : la plomberie Mercure (binaire démarrable) + l'**émission d'un JWT M
 | GET | `/api/admin/rgpd/compliance-report` | `501 Not Implemented`. Lot 8. |
 
 ### 6.4 Endpoints hors périmètre Lot 0 (rappel, autres lots)
-Familles (PATCH réglages), memberships (PATCH/DELETE), invitations (émission), liens (Lot 1) ; enfants/notes (Lot 2) ; garde (Lot 3) ; agenda (Lot 4) ; échanges (Lot 6) ; dépenses (Lot 9). Tous absents/non routés au Lot 0.
+Familles (PATCH réglages), memberships (PATCH/DELETE), invitations (émission), liens (Lot 1) ; enfants/notes (Lot 2) ; garde (Lot 3) ; agenda (Lot 4) ; échanges (Lot 6) ; dépenses (Lot 10). Tous absents/non routés au Lot 0.
 
 ### 6.5 Exemple de réponse d'erreur (RFC 7807) — droit insuffisant
 ```http

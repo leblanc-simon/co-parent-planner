@@ -35,7 +35,7 @@ Ce lot transforme l'authentification nue du Lot 0 (un utilisateur isolé) en un 
 - **Profils enfants & notes** (Child, Note) → **Lot 2**. En conséquence, le rattachement `Membership.child_id` d'un compte-enfant à un profil `Child` ne peut être **résolu** qu'au Lot 2 ; le Lot 1 prévoit la colonne nullable mais ne crée pas de profil Child.
 - **Garde** (CustodyPattern, moteur, vacances) → **Lot 3**. Les champs de réglage `handover_weekday`, `handover_time`, `school_zone`, `academy` sont **saisis et persistés** dès le Lot 1 (volet réglages famille) mais ne déclenchent aucun calcul.
 - **Notifications e-mail configurables** (NotificationPref, déclencheurs) → **Lot 7**. L'e-mail d'**invitation** est néanmoins envoyé dès le Lot 1 (c'est un e-mail transactionnel, pas une notification préférentielle).
-- **Dépenses** (Expense / ExpenseShare) → **Lot 9 (v2)**, masquées. Le domaine de droit `expenses` existe dans le modèle de Voter mais reste **inerte** (toujours `none` pour enfant, jamais d'onglet/d'API active).
+- **Dépenses** (Expense / ExpenseShare) → **Lot 10 (v2)**, masquées. Le domaine de droit `expenses` existe dans le modèle de Voter mais reste **inerte** (toujours `none` pour enfant, jamais d'onglet/d'API active).
 - **PWA / offline riche** → **Lot 8**. Le mobile peut mettre en cache la liste des familles/membres en lecture seule, mais l'outbox d'écriture complète relève du Lot 8.
 
 ### 0.4 Contexte v1 / v2
@@ -65,7 +65,7 @@ Le Lot 1 est **bloquant pour tous les lots métier suivants**, car il pose le sc
 | **Lot 6 — Échanges** | Voter `exchanges`, scope famille, `Membership` (auteur/votant). |
 | **Lot 7 — Notifications e-mail** | Déclencheur **invitation** (déjà câblé ici), `Membership`, NotificationPref par utilisateur. |
 | **Lot 8 — RGPD Manager** | `Invitation.email` 🔒 (anonymisation), `Membership` (anonymisation « membre supprimé » sans casser les fils), AuditLog des changements de droits déjà branché. |
-| **Lot 9 — Dépenses (v2)** | Voter `expenses` (déjà modélisé, inerte en v1), `Membership` (payeur). |
+| **Lot 10 — Dépenses (v2)** | Voter `expenses` (déjà modélisé, inerte en v1), `Membership` (payeur). |
 
 ---
 

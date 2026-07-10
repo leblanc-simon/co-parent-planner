@@ -24,8 +24,8 @@ Le Lot 8 transforme l'application en produit installable et résilient hors-lign
 
 ### 0.3 Hors périmètre
 
-- **Notifications push mobile (APNs/FCM)** : Lot 10, v2.
-- **Dépenses** (`Expense`, `ExpenseShare`) : Lot 9, v2 ; masquées en v1. Le RGPD Manager doit toutefois prévoir la place de ces champs dans le registre dès qu'ils existent (le test de cohérence n'échoue que sur des champs effectivement présents et marqués personnels).
+- **Notifications push mobile (APNs/FCM)** : Lot 11, v2.
+- **Dépenses** (`Expense`, `ExpenseShare`) : Lot 10, v2 ; masquées en v1. Le RGPD Manager doit toutefois prévoir la place de ces champs dans le registre dès qu'ils existent (le test de cohérence n'échoue que sur des champs effectivement présents et marqués personnels).
 - Offline web « riche » (file d'écritures côté web) : explicitement exclu par cdc §4.3.
 - Toute donnée de santé : interdiction absolue (cdc §1.4, §7) — aucun champ typé santé n'est créé ni traité.
 
@@ -56,8 +56,8 @@ Tout le périmètre du Lot 8 est **v1**. PWA/offline et RGPD (chiffrement, expor
 
 | Lot | Ce que le Lot 8 lui apporte |
 |---|---|
-| **Lot 9 — Dépenses (v2)** | À l'introduction de `Expense`/`ExpenseShare`, le registre, l'export, l'anonymisation, l'outbox et la résolution de conflits devront simplement être étendus en suivant les patterns posés au Lot 8 (entrée de registre obligatoire, test de cohérence déjà en place). |
-| **Lot 10 — Push mobile (v2)** | Les tokens d'appareil seront des données techniques à inscrire au registre et à purger ; la mécanique RGPD/registre du Lot 8 les couvrira par extension. |
+| **Lot 10 — Dépenses (v2)** | À l'introduction de `Expense`/`ExpenseShare`, le registre, l'export, l'anonymisation, l'outbox et la résolution de conflits devront simplement être étendus en suivant les patterns posés au Lot 8 (entrée de registre obligatoire, test de cohérence déjà en place). |
+| **Lot 11 — Push mobile (v2)** | Les tokens d'appareil seront des données techniques à inscrire au registre et à purger ; la mécanique RGPD/registre du Lot 8 les couvrira par extension. |
 
 ---
 
@@ -784,7 +784,7 @@ X-Family-Id: {id}
 4. **Priorité de la garde** : exception > règle vacances > base, recalcul des stats sur les jours effectifs — respectée par la validation serveur des conflits de garde (état canonique).
 5. **Champs chiffrés au repos** (🔒 : `User.full_name`, `User.phone`, `Message.text`, `Note.text`, `Invitation.email`) : AES-256-GCM ; un dump SQL brut ne révèle ni identités ni contenus ; anonymisation irréversible (ciphertext écrasé).
 6. **Registre des données personnelles** : tout champ personnel a une entrée (attribut déclaratif + `registre-donnees.md`) ; **test CI de cohérence** échoue sinon. DoD du lot.
-7. **Dépenses = v2, masquées** : `Expense`/`ExpenseShare` non actives en v1 ; le registre/anonymiseur les couvriront par extension au Lot 9 sans rupture.
+7. **Dépenses = v2, masquées** : `Expense`/`ExpenseShare` non actives en v1 ; le registre/anonymiseur les couvriront par extension au Lot 10 sans rupture.
 8. **i18n** : toutes les chaînes (UI offline, manifest, rapports, e-mails) externalisées ICU ; seule `fr-FR` livrée ; ajout de langue sans changement de code.
 9. **Dates non codées en dur** : la date de référence des maquettes (23 juin 2026) n'est jamais une constante ; toutes les bornes temporelles s'évaluent par rapport à `now()` dans le fuseau famille (défaut **Europe/Paris**), DST/bissextiles gérés.
 10. **Pas de données de santé** : aucun champ typé santé créé/traité ; bandeau anti-santé maintenu (Lot 2).

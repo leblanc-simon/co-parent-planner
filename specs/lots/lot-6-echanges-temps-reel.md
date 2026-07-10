@@ -28,9 +28,9 @@ Le lot ajoute la **propagation temps réel ≤ 1 s** (cdc §9, Lot 6) via **Merc
 
 ### 0.3 Hors périmètre
 - **Notifications e-mail** sur message / décision / échéance : c'est le **Lot 7** (NotificationPref + déclencheurs Messenger + rappels d'échéance planifiés). Le présent lot **émet** néanmoins les événements applicatifs (ex. `MessagePosted`, `ExchangeDecided`, `ExchangeOpened`) qui seront consommés au Lot 7 ; il ne câble aucun envoi e-mail.
-- **Push mobile** : Lot 10 (v2).
+- **Push mobile** : Lot 11 (v2).
 - **Offline riche mobile** (Drift + outbox + résolution de conflits) : l'infrastructure est posée au Lot 0 ; le **parcours hors-ligne validé de bout en bout** est la DoD du **Lot 8**. Le présent lot respecte les conventions outbox (`Idempotency-Key` sur POST, autorité serveur, cf. §3 et §4) mais ne livre pas la validation E2E offline.
-- **Dépenses** (v2, Lot 9) : sans rapport.
+- **Dépenses** (v2, Lot 10) : sans rapport.
 - **RGPD Manager complet** (anonymiseur, purge, export) : Lot 8. Ce lot se contente de **déclarer** le champ personnel `Message.text` au registre et de respecter le chiffrement applicatif posé au Lot 0/8 ; l'anonymisation effective des messages (« auteur anonymisé ») est implémentée au Lot 8 (cdc §7.1).
 - **Overlay des familles liées** : les échanges ne font **pas** partie de l'overlay (qui se limite à l'agenda en lecture seule, cdc §2.1, §5/§6 Lot 5). Aucune fuite d'échange hors de la famille.
 
@@ -55,7 +55,7 @@ Les échanges sont une fonctionnalité **v1** (cdc §1.3). Aucune dépendance v2
 |---|---|
 | **Lot 7 — Notifications e-mail** | Consomme les événements applicatifs émis ici (`MessagePosted`, `ExchangeOpened`, `ExchangeDecided`, échéance approchante/dépassée) pour déclencher les e-mails localisés et les **rappels d'échéance planifiés** (catégorie de notif `exchanges`, cdc §2.9, §5.2 NotificationPref). |
 | **Lot 8 — PWA / offline / RGPD** | Valide le parcours **offline mobile** des échanges (poster un message hors-ligne → outbox → rejeu idempotent). Implémente l'**anonymisation** des `Message` (« auteur anonymisé ») préservant l'intégrité du fil (cdc §7.1) et l'inclusion des messages dans l'**export RGPD**. |
-| **Lot 10 — Push mobile** | Étend les déclencheurs « échanges » au canal push. |
+| **Lot 11 — Push mobile** | Étend les déclencheurs « échanges » au canal push. |
 
 ---
 

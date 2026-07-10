@@ -205,3 +205,90 @@ php bin/console api:openapi:export --output=../contracts/openapi.json   # contra
 
 > **Prod multi-instances** : passer le transport Messenger et les rate-limiters sur **Redis**
 > (verrou partagé), et `COOKIE_SECURE=true`, `TRUSTED_PROXIES` selon l'infra.
+
+---
+
+## E. Build iOS sans Mac (Lot 9 — deux pipelines CI)
+
+> 🚧 **À VENIR — Lot 9 non encore échafaudé.** Cette section décrit la **procédure cible** ; les
+> fichiers mentionnés (`.github/workflows/build-ios.yml`, `codemagic.yaml`, `mobile/ios/fastlane/*`,
+> `mobile/ios/Gemfile`, dépôt de certificats `match`) **n'existent pas encore** et seront créés lors
+> de l'implémentation du Lot 9. Contrairement aux sections A–D (opérationnelles, Lots 0→8), rien ici
+> n'est encore exécutable en l'état.
+
+> Objectif : produire un **`.ipa` signé** (artefact CI, puis TestFlight) **sans poste Mac local**.
+> La compilation iOS exige un runner macOS ; ce projet en maintiendra **deux, interchangeables** :
+> **GitHub Actions** (`macos-latest`, pipeline principal) et **Codemagic** (secours/alternatif).
+> Ils partageront la **même logique de build/signature** (un `Fastfile` unique) et le **même dépôt
+> de certificats `match`** — basculer de l'un à l'autre ne demandera aucune réécriture.
+> Détails et justification : `specs/lots/lot-9-cicd-build-ios-sans-mac.md`.
+
+### E.1 Prérequis (une fois, hors CI)
+
+- **Compte Apple Developer Program** actif (99 $/an) et une **clé API App Store Connect** (`.p8` +
+  `key id` + `issuer id`) — pas d'identifiant/mot de passe Apple personnel en CI.
+- **Dépôt Git privé de certificats** (`match`), initialisé **une seule fois depuis un Mac** (ou un
+  job CI manuel dédié) par un mainteneur habilité :
+  ```bash
+  cd mobile/ios
+  bundle install                       # installe fastlane (voir mobile/ios/Gemfile)
+  bundle exec fastlane match init      # crée Matchfile (URL du dépôt de certificats)
+  bundle exec fastlane match appstore  # génère + chiffre certificats/profils dans le dépôt privé
+  ```
+  > La génération/révocation de certificats reste **manuelle et locale** : la CI est **`--readonly`**
+  > (elle consomme les certificats, ne les régénère jamais).
+
+### E.2 Secrets à configurer — **dans les deux systèmes**
+
+Mêmes valeurs des deux côtés (elles pointent vers le même dépôt `match` et le même compte ASC) :
+
+| Secret | Rôle | GitHub Actions | Codemagic (groupe `ios_signing`) |
+|---|---|---|---|
+| `MATCH_GIT_URL` | URL du dépôt de certificats | Repository secret | variable de groupe |
+| `MATCH_PASSWORD` | passphrase de déchiffrement `match` | Repository secret | variable de groupe (masquée) |
+| `MATCH_GIT_TOKEN` | token d'accès (lecture seule) au dépôt de certificats | Repository secret | variable de groupe |
+| `ASC_KEY_ID` / `ASC_ISSUER_ID` / `ASC_KEY_CONTENT` | clé API App Store Connect (upload TestFlight) | Repository secrets | variables de groupe |
+| `APPLE_TEAM_ID` | identifiant d'équipe Apple | Repository secret | variable de groupe |
+
+> **Rotation synchronisée** : toute rotation de `MATCH_PASSWORD` ou de la clé API ASC doit être
+> répercutée **le même jour dans les deux systèmes**, sinon l'un des deux pipelines cesse de
+> fonctionner sans erreur explicite avant son prochain run. Pour révoquer un certificat compromis :
+> `bundle exec fastlane match nuke appstore` depuis un Mac, puis régénérer (`match appstore`) et
+> mettre à jour `MATCH_PASSWORD` des deux côtés.
+
+### E.3 Déclencher un build
+
+Aucun secret ni certificat n'apparaît jamais en clair dans les logs ou artefacts, sur aucune CI.
+
+- **GitHub Actions** — workflow `.github/workflows/build-ios.yml` :
+  - manuellement via **Actions → « iOS build » → Run workflow** (`workflow_dispatch`), en choisissant
+    la lane `build` (artefact seul) ou `release` (artefact + upload TestFlight) ;
+  - automatiquement sur **push d'un tag `v*`** (release).
+- **Codemagic** — workflow `ios-build` (`codemagic.yaml`) : **build manuel depuis le dashboard**
+  Codemagic ; un second workflow `ios-release` réalise l'upload TestFlight.
+
+> **Jamais d'upload TestFlight automatique sur simple commit** (sur aucune des deux CI). La lane
+> `release` / le workflow `ios-release` sont **explicites**. La soumission à revue App Store reste
+> **manuelle** (hors CI).
+
+### E.4 Récupérer le build
+
+- **GitHub Actions** : onglet **Artifacts** du run → `.ipa` téléchargeable (conservé N jours ;
+  nommage incluant le commit SHA / tag).
+- **Codemagic** : section **Artifacts** du build (`build/ios/ipa/*.ipa`).
+- **TestFlight** (si lane `release`) : build installable sur device réel via l'app TestFlight.
+
+### E.5 Basculer d'une CI à l'autre
+
+La logique de build vit dans `mobile/ios/fastlane/Fastfile` (lanes `build` / `release`) ; les deux
+CI ne font que l'appeler. Donc :
+
+- **GitHub Actions indisponible / en file d'attente** → déclencher le build sur Codemagic (secrets
+  déjà synchronisés, rien à préparer).
+- **Ne garder qu'une seule CI** → supprimer le fichier de déclenchement de l'autre
+  (`.github/workflows/build-ios.yml` **ou** `codemagic.yaml`) ; `Fastfile`/`Matchfile` et le dépôt
+  de certificats restent inchangés.
+
+> **Dépendances ajoutées par ce lot** (installées sur le runner macOS uniquement, pas requises pour
+> le dev backend/web) : **Ruby + Bundler**, **Fastlane** (`mobile/ios/Gemfile`), **CocoaPods**
+> (`cd ios && pod install`). La version Flutter est **figée, identique au Lot 0**.

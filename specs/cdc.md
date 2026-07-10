@@ -531,11 +531,15 @@ NotificationPref + déclencheurs (garde, agenda, échanges, invitation) via Mess
 **Web** : manifest + service worker (PWA installable), offline dégradé (shell + écrans récents en lecture seule, message clair si mutation hors-ligne). **Mobile** : parcours hors-ligne riche validé de bout en bout (lecture cache + outbox + résolution de conflits §4.4). **RGPD Manager complet (§7.1)** : registre des données personnelles (attributs sur entités + `registre-donnees.md` + test de cohérence CI), règles de rétention/anonymisation, **anonymiseur**, **purge** planifiée (avec dry-run), **rapports** (registre, opérations, conformité), endpoints `/api/admin/rgpd/*` et `/api/me/export` + `DELETE /api/me`. AuditLog branché partout ; chiffrement au repos des champs 🔒 vérifié. 
 *CA : §7 et §7.1 ; PWA installable ; mobile utilisable hors-ligne et resynchronisé ; export/suppression conformes (avec anonymisation préservant l'intégrité des fils) ; purge dry-run + live testées ; registre généré et cohérent ; un dump SQL ne révèle pas les champs sensibles.*
 
-### Lot 9 — Dépenses *(v2)*
+### Lot 9 — CI/CD & build iOS sans Mac *(outillage infra)*
+Runner CI macOS hébergé via **deux pipelines interchangeables maintenus en parallèle** (GitHub Actions `macos-latest` + Codemagic), partageant un **`Fastfile` unique** et le **même dépôt de certificats `match`** (dépôt Git privé chiffré, secrets CI). Job `build-ios` (`flutter build ipa` signé → artefact CI) et upload TestFlight sur déclenchement manuel (jamais automatique). Aucune fonctionnalité produit ; étend l'outillage CI du Lot 0. Débloque le test sur device réel des lots v2. 
+*CA : §4.8/§4.9 ; `.ipa` signé produit sans Mac local depuis chacune des deux CI (interchangeabilité prouvée) ; aucun secret en clair ; non-régression des jobs existants.*
+
+### Lot 10 — Dépenses *(v2)*
 Expense/ExpenseShare, partages personnalisés, solde + par catégorie, marquer réglé/rappel, activation par module (familles unies optionnel), onglet conditionnel, **aucun accès enfant**. 
 *CA : §3.7.*
 
-### Lot 10 — Push mobile *(v2)*
+### Lot 11 — Push mobile *(v2)*
 Canal push (APNs/FCM) ajouté à NotificationPref et aux déclencheurs ; gestion des tokens d'appareil. 
 *CA : §2.9 canal push ; opt-in respecté.*
 

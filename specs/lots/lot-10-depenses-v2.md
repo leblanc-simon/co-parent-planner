@@ -1,6 +1,6 @@
-# Lot 9 — Dépenses (v2)
+# Lot 10 — Dépenses (v2)
 
-> Spécification détaillée d'implémentation, dérivée du cahier des charges `specs/cdc.md` (source de vérité) et des invariants verrouillés de `CLAUDE.md`. Référence cdc : §1.3 (périmètre v1/v2), §1.4.4 (masquage v1), §2.2 (RBAC, `expenses` enfant forcé `none`), §2.7 (modèle métier Dépense), §3.7 (US-DEP-*), §5.2 (`Expense`, `ExpenseShare`, `expense_child`), §6.2 (endpoints Dépenses), §8 (couleurs catégories dépenses), §9 (Lot 9).
+> Spécification détaillée d'implémentation, dérivée du cahier des charges `specs/cdc.md` (source de vérité) et des invariants verrouillés de `CLAUDE.md`. Référence cdc : §1.3 (périmètre v1/v2), §1.4.4 (masquage v1), §2.2 (RBAC, `expenses` enfant forcé `none`), §2.7 (modèle métier Dépense), §3.7 (US-DEP-*), §5.2 (`Expense`, `ExpenseShare`, `expense_child`), §6.2 (endpoints Dépenses), §8 (couleurs catégories dépenses), §9 (Lot 10).
 >
 > Locale livrée : `fr-FR`. Fuseau par défaut : `Europe/Paris`. Aucune date n'est codée en dur (la date des maquettes — 23 juin 2026 — n'est jamais inscrite dans le code).
 
@@ -35,7 +35,7 @@ Le module est **piloté par activation** : il n'existe pour une famille que si `
 
 ### 0.3 Hors périmètre (explicitement)
 
-- **Notifications push mobile** : Lot 10 (v2). En Lot 9, le rappel passe uniquement par **e-mail** (canal v1, cdc §2.9).
+- **Notifications push mobile** : Lot 11 (v2). En Lot 10, le rappel passe uniquement par **e-mail** (canal v1, cdc §2.9).
 - **Multi-devise réelle** : le champ `currency` existe (cdc §5.2) ; v2 livre **EUR** uniquement (locale `fr-FR`), sans conversion. La présence du champ ne déclenche aucune logique de change.
 - **Pièces jointes / justificatifs** (photos de tickets) : non prévus par le cdc → hors périmètre. Ne pas inventer de champ.
 - **Données de santé** : la catégorie de dépense `sante` est une **étiquette de classification budgétaire libre**, pas un champ typé santé ; aucune donnée de santé n'est créée ni inférée (cdc §1.4.1).
@@ -44,7 +44,7 @@ Le module est **piloté par activation** : il n'existe pour une famille que si `
 
 ### 0.4 Contexte v1 / v2
 
-En v1 (cdc §1.4.4), le modèle de données **réserve la place** (`Expense`, `ExpenseShare`, `expense_child`, `Family.expenses_enabled`, domaine de droit `expenses`, catégorie de notification `expenses`) mais **l'onglet et le module n'apparaissent pas** et l'API est inactive. Le Lot 9 **active** ce module sans rupture de schéma : les migrations Lot 9 créent/complètent les tables si elles n'existaient pas encore matérialisées, mais ne modifient aucune sémantique v1 existante.
+En v1 (cdc §1.4.4), le modèle de données **réserve la place** (`Expense`, `ExpenseShare`, `expense_child`, `Family.expenses_enabled`, domaine de droit `expenses`, catégorie de notification `expenses`) mais **l'onglet et le module n'apparaissent pas** et l'API est inactive. Le Lot 10 **active** ce module sans rupture de schéma : les migrations Lot 10 créent/complètent les tables si elles n'existaient pas encore matérialisées, mais ne modifient aucune sémantique v1 existante.
 
 ---
 
@@ -58,17 +58,18 @@ En v1 (cdc §1.4.4), le modèle de données **réserve la place** (`Expense`, `E
 | **Lot 1 — Familles, membres, rôles & droits** | `Family` (dont `expenses_enabled`), `Membership` (rôle `parent`/`step_parent`/`child`, `is_admin`), `Right` par domaine, scope `X-Family-Id`, sélecteur de famille, mécanisme des Voters par domaine. Le module dépenses se greffe sur le domaine de droit `expenses` et sur le payeur = membre parent. |
 | **Lot 2 — Enfants & notes** | `Child` : nécessaire pour `expense_child` (rattacher une dépense à un ou plusieurs enfants) et pour la pondération par enfant. |
 | **Lot 7 — Notifications e-mail** | `NotificationPref` (catégorie `expenses`), déclencheurs e-mail via Messenger, templates Twig localisés, scheduler. L'action « Envoyer un rappel » et la notification « dépense ajoutée/réglée » (cdc §2.9) réutilisent cette infra. |
-| **Lot 8 — PWA / offline / RGPD Manager** | RGPD Manager **complet** (registre des données personnelles + test de cohérence CI, anonymiseur, purge, AuditLog branché). Tout nouveau champ personnel du Lot 9 doit s'inscrire dans le registre et passer le test de cohérence ; l'anonymiseur doit savoir traiter une dépense d'un membre supprimé. Offline mobile riche (outbox) est le socle des mutations dépenses hors-ligne. |
+| **Lot 8 — PWA / offline / RGPD Manager** | RGPD Manager **complet** (registre des données personnelles + test de cohérence CI, anonymiseur, purge, AuditLog branché). Tout nouveau champ personnel du Lot 10 doit s'inscrire dans le registre et passer le test de cohérence ; l'anonymiseur doit savoir traiter une dépense d'un membre supprimé. Offline mobile riche (outbox) est le socle des mutations dépenses hors-ligne. |
+| **Lot 9 — CI/CD & build iOS sans Mac** *(dépendance pratique, non fonctionnelle)* | Fournit le pipeline de build iOS signé (TestFlight) permettant de valider le rendu de l'onglet Dépenses sur un device iOS réel, sans dépendre d'un Mac local. Non bloquant pour la compilation, mais requis en pratique pour la recette mobile iOS. |
 
-> Remarque : le Lot 9 est, par le découpage cdc §9, le **dernier lot fonctionnel v2 hors push**. Tous les lots 0→8 sont donc supposés livrés. Les dépendances « dures » (sans lesquelles le code ne compile/fonctionne pas) sont **Lot 0, 1, 2** ; les dépendances « fonctionnelles » (sans lesquelles une fonctionnalité du lot est incomplète) sont **Lot 7** (rappel e-mail) et **Lot 8** (RGPD/anonymisation, offline).
+> Remarque : le Lot 10 est, par le découpage cdc §9, le **dernier lot fonctionnel v2 hors push**. Tous les lots 0→8 sont donc supposés livrés. Les dépendances « dures » (sans lesquelles le code ne compile/fonctionne pas) sont **Lot 0, 1, 2** ; les dépendances « fonctionnelles » (sans lesquelles une fonctionnalité du lot est incomplète) sont **Lot 7** (rappel e-mail) et **Lot 8** (RGPD/anonymisation, offline).
 
 ### 1.2 Lots débloqués (après)
 
-| Lot | Ce que le Lot 9 lui apporte |
+| Lot | Ce que le Lot 10 lui apporte |
 |---|---|
-| **Lot 10 — Push mobile (v2)** | Ajoute le **canal push** à `NotificationPref` et aux déclencheurs. La catégorie de notification `expenses` (rappel/ajout/règlement) introduite/activée ici devient un déclencheur push. Lot 9 doit donc câbler proprement ses notifications via l'abstraction de canaux pour que Lot 10 n'ait qu'à brancher APNs/FCM, sans refonte. |
+| **Lot 11 — Push mobile (v2)** | Ajoute le **canal push** à `NotificationPref` et aux déclencheurs. La catégorie de notification `expenses` (rappel/ajout/règlement) introduite/activée ici devient un déclencheur push. Lot 10 doit donc câbler proprement ses notifications via l'abstraction de canaux pour que Lot 11 n'ait qu'à brancher APNs/FCM, sans refonte. |
 
-> Aucun autre lot ne dépend du Lot 9. Le module est en bout de chaîne fonctionnelle.
+> Aucun autre lot ne dépend du Lot 10. Le module est en bout de chaîne fonctionnelle.
 
 ---
 
@@ -260,7 +261,7 @@ En v1 (cdc §1.4.4), le modèle de données **réserve la place** (`Expense`, `E
 
 **En tant que** membre `expenses=edit`, **je veux** supprimer une dépense saisie par erreur **afin de** garder des comptes justes.
 
-> Note : le cdc §6.2 liste explicitement `GET/POST` (collection) et `PATCH` (item) pour les dépenses, sans `DELETE`. Cette US est ajoutée pour la complétude fonctionnelle (corriger une erreur de saisie). La suppression est exposée si et seulement si elle est jugée nécessaire au Lot 9 ; sinon la « suppression » se fait par mise à `settled` + correction. **Décision de spec : exposer `DELETE /api/expenses/{id}` (droit `expenses:edit`)** car aucun invariant ne l'interdit et l'effacement d'une saisie erronée est attendu.
+> Note : le cdc §6.2 liste explicitement `GET/POST` (collection) et `PATCH` (item) pour les dépenses, sans `DELETE`. Cette US est ajoutée pour la complétude fonctionnelle (corriger une erreur de saisie). La suppression est exposée si et seulement si elle est jugée nécessaire au Lot 10 ; sinon la « suppression » se fait par mise à `settled` + correction. **Décision de spec : exposer `DELETE /api/expenses/{id}` (droit `expenses:edit`)** car aucun invariant ne l'interdit et l'effacement d'une saisie erronée est attendu.
 
 **CA — Cas nominal**
 - Étant donné une dépense et un membre `expenses=edit`
@@ -300,7 +301,7 @@ En v1 (cdc §1.4.4), le modèle de données **réserve la place** (`Expense`, `E
 - Alors `403` (Voter `family_settings`), drapeau inchangé.
 
 **CA — Dernier admin**
-- Cette US ne touche pas la composition admin ; l'invariant « dernier admin protégé » reste géré par le Lot 1 et n'est pas régressé par le Lot 9.
+- Cette US ne touche pas la composition admin ; l'invariant « dernier admin protégé » reste géré par le Lot 1 et n'est pas régressé par le Lot 10.
 
 ---
 
@@ -329,7 +330,7 @@ En v1 (cdc §1.4.4), le modèle de données **réserve la place** (`Expense`, `E
 - Alors **aucun** e-mail ne lui est envoyé.
 
 **CA — Quiet hours / locale**
-- Le respect des quiet-hours optionnels et de la locale (cdc §2.9) est délégué à l'infra Notifications du Lot 7 ; le Lot 9 fournit le **déclencheur** et le **gabarit** mais ne réimplémente pas la logique de fenêtre.
+- Le respect des quiet-hours optionnels et de la locale (cdc §2.9) est délégué à l'infra Notifications du Lot 7 ; le Lot 10 fournit le **déclencheur** et le **gabarit** mais ne réimplémente pas la logique de fenêtre.
 
 ---
 
@@ -565,7 +566,7 @@ classe ExpensesVoter (Voter Symfony, domaine 'expenses'):
 - **Beau-parent** : selon `Right.expenses` (`none|view|edit`). Peut être payeur ? **Non** : le payeur est un membre **parent** (cdc §2.7). Un beau-parent `edit` saisit pour le compte d'un parent payeur, mais n'est pas lui-même payeur ni dans le solde inter-parents. (Si une famille souhaite l'inclure, c'est hors cdc → non livré.)
 - **Enfant** : `expenses` **forcé `none`** ; tout accès → `403` ; onglet masqué ; topic Mercure non délivré.
 - **Admin** : seul `family_settings=edit` (porté par un admin) peut basculer `expenses_enabled`. L'admin n'a pas de privilège dépenses particulier au-delà de son rôle `parent`.
-- **Dernier admin** : aucun chemin du Lot 9 ne retire/rétrograde un admin ; l'invariant reste garanti par le Lot 1. Désactiver le module ne touche pas la composition admin.
+- **Dernier admin** : aucun chemin du Lot 10 ne retire/rétrograde un admin ; l'invariant reste garanti par le Lot 1. Désactiver le module ne touche pas la composition admin.
 - **Membre `invited` (non `active`)** : aucun accès dépenses tant que le membership n'est pas `active`.
 
 ### 4.5 Scope famille (`X-Family-Id`)
@@ -588,7 +589,7 @@ classe ExpensesVoter (Voter Symfony, domaine 'expenses'):
 ### 4.7 Échecs externes (e-mail, API vacances, Mercure hors-ligne)
 
 - **E-mail de rappel en échec** (SMTP down) : envoi via Messenger ⇒ **retry** avec backoff ; l'action utilisateur n'est pas bloquée (la dépense reste non réglée) ; échec final journalisé. L'UI confirme la **mise en file** du rappel, pas la remise effective.
-- **API vacances scolaires** : sans objet pour le Lot 9 (aucune dépendance aux vacances). Aucun appel à `SchoolHolidaysProvider`.
+- **API vacances scolaires** : sans objet pour le Lot 10 (aucune dépendance aux vacances). Aucun appel à `SchoolHolidaysProvider`.
 - **Mercure hors-ligne / indisponible** : les mutations REST réussissent quand même (la publication temps réel est best-effort, asynchrone) ; l'écran se met à jour au prochain refresh / reconnexion SSE. Aucune mutation ne dépend de la réussite de la publication Mercure. Échec de publication journalisé, pas remonté comme erreur métier.
 - **Idempotency store indisponible** : dégradation contrôlée (au pire, risque de doublon best-effort signalé) ; ne bloque pas la création en ligne.
 
@@ -621,7 +622,7 @@ classe ExpensesVoter (Voter Symfony, domaine 'expenses'):
 
 ## 5. Modèle de données touché
 
-> Référence cdc §5.2. Tous les entités ont `id` (UUID), `created_at`, `updated_at`. Aucun champ typé santé n'est créé. Le Lot 9 **active** des entités déjà réservées en v1.
+> Référence cdc §5.2. Tous les entités ont `id` (UUID), `created_at`, `updated_at`. Aucun champ typé santé n'est créé. Le Lot 10 **active** des entités déjà réservées en v1.
 
 ### 5.1 `Expense` *(v2)* — créée/activée
 
@@ -666,19 +667,19 @@ classe ExpensesVoter (Voter Symfony, domaine 'expenses'):
 
 ### 5.4 `Family` — champ déjà présent, utilisé
 
-- `expenses_enabled` (bool, déjà réservé v1) : pilote l'activation. Le Lot 9 le **consomme** (lecture) et le **modifie** via `PATCH /api/families/{id}` (admin). Aucune migration de schéma sur ce champ s'il existe déjà.
+- `expenses_enabled` (bool, déjà réservé v1) : pilote l'activation. Le Lot 10 le **consomme** (lecture) et le **modifie** via `PATCH /api/families/{id}` (admin). Aucune migration de schéma sur ce champ s'il existe déjà.
 
 ### 5.5 `Membership` / `Right` — consommés
 
-- `Right.domain = 'expenses'`, `level ∈ {none, view, edit}` (déjà réservé v1). Le Lot 9 active le Voter correspondant. Le rôle `parent` force `edit`, le rôle `child` force `none`.
+- `Right.domain = 'expenses'`, `level ∈ {none, view, edit}` (déjà réservé v1). Le Lot 10 active le Voter correspondant. Le rôle `parent` force `edit`, le rôle `child` force `none`.
 
 ### 5.6 `NotificationPref` — catégorie consommée
 
-- `category = 'expenses'`, `channel = 'email'` (canal v1). Le Lot 9 produit les déclencheurs « dépense ajoutée / réglée / rappel ». (Canal `push` = Lot 10.)
+- `category = 'expenses'`, `channel = 'email'` (canal v1). Le Lot 10 produit les déclencheurs « dépense ajoutée / réglée / rappel ». (Canal `push` = Lot 11.)
 
 ### 5.7 Champs chiffrés 🔒
 
-- **Aucun champ 🔒 nouveau** n'est introduit par le Lot 9. Les champs dépenses (titre, montant, catégorie, date) ne sont pas marqués chiffrés dans le cdc §5.2 (seuls `User.full_name`, `User.phone`, `Message.text`, `Note.text`, `Invitation.email` le sont). Le titre d'une dépense est un libellé fonctionnel ; il n'est pas typé sensible. **Ne pas ajouter de chiffrement non prévu** (cohérence avec le modèle §5.2). Si une analyse RGPD ultérieure le requiert, ce serait une évolution explicite hors périmètre Lot 9.
+- **Aucun champ 🔒 nouveau** n'est introduit par le Lot 10. Les champs dépenses (titre, montant, catégorie, date) ne sont pas marqués chiffrés dans le cdc §5.2 (seuls `User.full_name`, `User.phone`, `Message.text`, `Note.text`, `Invitation.email` le sont). Le titre d'une dépense est un libellé fonctionnel ; il n'est pas typé sensible. **Ne pas ajouter de chiffrement non prévu** (cohérence avec le modèle §5.2). Si une analyse RGPD ultérieure le requiert, ce serait une évolution explicite hors périmètre Lot 10.
 
 ### 5.8 Migrations
 
@@ -714,12 +715,12 @@ classe ExpensesVoter (Voter Symfony, domaine 'expenses'):
 
 1. **Scope famille obligatoire** : toute ressource dépense est scopée via `X-Family-Id`, validé contre les memberships. Jamais de requête dépense non scopée ; isolation stricte entre familles (anti-IDOR).
 2. **Autorisation par Voters** : Voter `expenses` (niveaux `none|view|edit`) sur **chaque** ressource (collection + item). `parent` ⇒ `edit` forcé ; `child` ⇒ `none` **forcé** (aucun accès, aucune combinaison de `Right` ne l'ouvre).
-3. **Dernier admin protégé** : non régressé par le Lot 9 (la désactivation du module ne touche pas la composition admin).
+3. **Dernier admin protégé** : non régressé par le Lot 10 (la désactivation du module ne touche pas la composition admin).
 4. **Activation par module** : `expenses_enabled` pilote l'existence de l'onglet, des écrans et de l'API ; module off ⇒ `404`. Optionnel pour familles unies.
 5. **Payeur = parent** : le payeur d'une dépense et les parties du solde « qui doit quoi » sont des membres **parent**. Un beau-parent peut éditer (selon droit) mais n'est pas payeur ni dans le solde inter-parents.
 6. **Exactitude monétaire** : montants en centimes entiers ; `Σ parts == amount_cents` (invariant testé) ; `Σ net == 0` (conservation du solde). Aucun flottant.
 7. **Pas de données de santé** : la catégorie `sante` est une étiquette budgétaire ; aucun champ typé santé n'est créé. (Invariant transverse cdc §1.4.1 / CLAUDE.md.)
-8. **Registre des données personnelles** : tout nouveau champ personnel ⇒ entrée de registre (`/backend/docs/registre-donnees.md` + attribut déclaratif sur l'entité) ; le test de cohérence CI doit passer. (Le Lot 9 n'introduit pas de champ 🔒 ; il documente néanmoins `Expense`/`ExpenseShare` au registre — finalité, base légale, rétention, destinataires — car ce sont des données personnelles relatives à la famille/aux enfants.)
+8. **Registre des données personnelles** : tout nouveau champ personnel ⇒ entrée de registre (`/backend/docs/registre-donnees.md` + attribut déclaratif sur l'entité) ; le test de cohérence CI doit passer. (Le Lot 10 n'introduit pas de champ 🔒 ; il documente néanmoins `Expense`/`ExpenseShare` au registre — finalité, base légale, rétention, destinataires — car ce sont des données personnelles relatives à la famille/aux enfants.)
 9. **Chiffrement au repos** : aucun nouveau champ 🔒 (cohérent §5.2). Ne pas introduire de chiffrement non prévu.
 10. **i18n** : toutes chaînes UI + e-mail externalisées (ICU), fr-FR livrée ; format monétaire/date localisé ; ajout de langue sans code.
 11. **Dates non codées en dur** : fuseau `Europe/Paris` par défaut ; la date des maquettes (23/06/2026) n'apparaît jamais dans le code ; tests sur dates relatives.
@@ -733,7 +734,7 @@ classe ExpensesVoter (Voter Symfony, domaine 'expenses'):
 
 ## 8. Definition of Done (DoD)
 
-> DoD générale du cdc §9 + critères spécifiques au Lot 9.
+> DoD générale du cdc §9 + critères spécifiques au Lot 10.
 
 **Tests**
 - **Unitaires (PHPUnit)** :
@@ -752,11 +753,11 @@ classe ExpensesVoter (Voter Symfony, domaine 'expenses'):
 - **OpenAPI à jour** (endpoints §6 exposés) ⇒ **client Dart régénéré** dans `/contracts`, consommé par le mobile.
 - **i18n (fr-FR) câblée** : toutes chaînes UI + e-mails (ICU), formats monétaire/date localisés ; aucun libellé en dur.
 - **Registre des données personnelles** à jour (`/backend/docs/registre-donnees.md` + attributs déclaratifs sur `Expense`/`ExpenseShare`) ; **test de cohérence CI vert**.
-- **`/infra/INSTALL.md`** mis à jour **si** une dépendance change (le Lot 9 ne devrait en introduire aucune nouvelle ; vérifier et documenter le cas échéant).
+- **`/infra/INSTALL.md`** mis à jour **si** une dépendance change (le Lot 10 ne devrait en introduire aucune nouvelle ; vérifier et documenter le cas échéant).
 - **AuditLog** branché sur toutes les actions sensibles du lot ; règle d'**anonymisation** `Expense`/`ExpenseShare` ajoutée au RGPD Manager.
 
 **Qualité & conformité**
 - **Analyse statique propre** : PHPStan (niveau élevé) + php-cs-fixer côté backend ; `dart analyze` + `dart format` côté mobile ; aucun warning bloquant.
 - **Conformité design system §8** : couleurs catégories dépenses exactes (Santé `#C75D5D`, Scolarité `#C99A3F`, Activités `#5E7CB8`, Vêtements `#7E9B7A`, Autre `#857E71`) ; typographies (Bricolage Grotesque / Hanken Grotesk) ; layout desktop grille 2 colonnes pour l'écran Dépenses, sidebar repliable ; mobile iOS « liquid glass » + Android Material adapté ; onglet conditionnel.
 - **Couverture** ≥ seuil défini au Lot 0.
-- **Périmètre v2 respecté** : pas de push (Lot 10), pas de multi-devise réelle, pas de pièces jointes, pas de `whole_family` dépenses, pas de champ santé typé.
+- **Périmètre v2 respecté** : pas de push (Lot 11), pas de multi-devise réelle, pas de pièces jointes, pas de `whole_family` dépenses, pas de champ santé typé.

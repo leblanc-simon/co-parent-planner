@@ -1,6 +1,6 @@
-# Lot 10 — Push mobile (v2)
+# Lot 11 — Push mobile (v2)
 
-> Spécification détaillée d'implémentation. Source de vérité : `specs/cdc.md` (§2.9, §4.4, §4.5, §5.2, §6, §9 Lot 10) et `CLAUDE.md` (invariants verrouillés). En cas d'ambiguïté de rendu, les maquettes HTML/iOS font foi.
+> Spécification détaillée d'implémentation. Source de vérité : `specs/cdc.md` (§2.9, §4.4, §4.5, §5.2, §6, §9 Lot 11) et `CLAUDE.md` (invariants verrouillés). En cas d'ambiguïté de rendu, les maquettes HTML/iOS font foi.
 >
 > Ce lot est le **dernier de la séquence** (§9). Il est marqué **v2**. Il **n'introduit aucun changement d'architecture** : il étend le pipeline de notifications du **Lot 7** (déclencheurs + `NotificationPref`) avec un nouveau **canal `push`** et la gestion des **tokens d'appareil** (APNs / FCM).
 
@@ -35,7 +35,7 @@ Le lot couvre :
 - **Web push** (PWA `Push API`/`Web Push`/VAPID) : **hors lot**. Le cdc réserve le push au **mobile** (§1.3 « Notifications push **mobile** v2 » ; §2.9 « push mobile en v2 »). Le web reste sur l'e-mail (Lot 7) et le temps réel Mercure/Turbo (Lot 6/8). Ne pas l'implémenter sans demande explicite.
 - **Nouveaux types d'événements notifiables** : aucun. Le lot n'ajoute pas de déclencheur métier ; il ajoute un **canal**. Les événements restent ceux de §2.9 / Lot 7.
 - **Notifications transactionnelles riches** (images, actions interactives natives, catégories APNs personnalisées au-delà du strict nécessaire au deep-link) : non requis. À garder minimal.
-- **Dépenses (Lot 9, v2)** : la catégorie `expenses` existe dans `NotificationPref`. Le canal push pour `expenses` est **fonctionnellement défini ici** mais reste **inactif tant que le module dépenses n'est pas activé** pour la famille (cohérent avec « Dépenses = v2, masquées » et l'activation par module du Lot 9). Aucun code spécifique dépenses n'est ajouté ici.
+- **Dépenses (Lot 10, v2)** : la catégorie `expenses` existe dans `NotificationPref`. Le canal push pour `expenses` est **fonctionnellement défini ici** mais reste **inactif tant que le module dépenses n'est pas activé** pour la famille (cohérent avec « Dépenses = v2, masquées » et l'activation par module du Lot 10). Aucun code spécifique dépenses n'est ajouté ici.
 
 ### 0.4 Contexte v1 / v2
 
@@ -50,20 +50,21 @@ Le push mobile fait partie de la **v2** (§1.3). Le canal `email` (v1, Lot 7) re
 | Lot | Pourquoi il est requis |
 |---|---|
 | **Lot 0 — Fondations** | Monorepo, auth JWT, scope `X-Family-Id`, Voters, i18n ICU, Mailer, Messenger, client Flutter généré depuis l'OpenAPI, couche état (Riverpod/Bloc), CI (PHPUnit/Playwright/`flutter test`/PHPStan/`dart analyze`), squelette RGPD Manager + `registre-donnees.md`. Le push s'enregistre via l'auth utilisateur et le client mobile généré. |
-| **Lot 7 — Notifications e-mail** | **Dépendance directe et structurante.** Lot 10 **étend** ce lot : il réutilise les **déclencheurs** (changement de garde, événement d'agenda, message/décision dans un échange, invitation), le **dispatcher Messenger**, le **modèle `NotificationPref`** (catégories), la **gestion du quiet-hours** et la **résolution de locale/ICU**. Sans le Lot 7, il n'y a pas de pipeline à étendre. |
-| **Lots 1–6 (transitivement via Lot 7)** | Les déclencheurs notifiables proviennent de Familles/membres/invitations (Lot 1), Enfants/notes (Lot 2), Garde (Lot 3), Agenda (Lot 4), Échanges temps réel (Lot 6). Ces événements existent déjà avant le Lot 7 ; le Lot 10 ne les recrée pas. |
+| **Lot 7 — Notifications e-mail** | **Dépendance directe et structurante.** Lot 11 **étend** ce lot : il réutilise les **déclencheurs** (changement de garde, événement d'agenda, message/décision dans un échange, invitation), le **dispatcher Messenger**, le **modèle `NotificationPref`** (catégories), la **gestion du quiet-hours** et la **résolution de locale/ICU**. Sans le Lot 7, il n'y a pas de pipeline à étendre. |
+| **Lots 1–6 (transitivement via Lot 7)** | Les déclencheurs notifiables proviennent de Familles/membres/invitations (Lot 1), Enfants/notes (Lot 2), Garde (Lot 3), Agenda (Lot 4), Échanges temps réel (Lot 6). Ces événements existent déjà avant le Lot 7 ; le Lot 11 ne les recrée pas. |
+| **Lot 9 — CI/CD & build iOS sans Mac** *(dépendance pratique, non fonctionnelle)* | Les notifications push APNs **ne fonctionnent pas sur simulateur iOS** : leur validation exige un build signé installé sur un device réel (TestFlight). Le Lot 9 fournit ce pipeline sans nécessiter de Mac local. Le Lot 11 pourrait théoriquement être livré sans lui, mais **ne serait pas testable sur iOS** en pratique. |
 
-> **Remarque** : le Lot 8 (PWA/offline/RGPD) **n'est pas un prérequis fonctionnel** du push, mais le **RGPD Manager** (Lot 8) doit déjà connaître le registre des données personnelles, car le nouveau champ personnel/technique `DeviceToken.token` y est inscrit (voir §5.4 et §7). Comme la séquence livre le Lot 8 avant le Lot 10, le registre et l'anonymiseur existent déjà ; ce lot **ajoute une entrée** au registre et **une règle d'anonymisation/purge** pour `DeviceToken` (DoD).
+> **Remarque** : le Lot 8 (PWA/offline/RGPD) **n'est pas un prérequis fonctionnel** du push, mais le **RGPD Manager** (Lot 8) doit déjà connaître le registre des données personnelles, car le nouveau champ personnel/technique `DeviceToken.token` y est inscrit (voir §5.4 et §7). Comme la séquence livre le Lot 8 avant le Lot 11, le registre et l'anonymiseur existent déjà ; ce lot **ajoute une entrée** au registre et **une règle d'anonymisation/purge** pour `DeviceToken` (DoD).
 
 ### 1.2 Lots débloqués (après)
 
-Aucun. Le **Lot 10 est le dernier lot** de la séquence (§9). Il ne conditionne aucun lot ultérieur. Il **clôt** la matrice de périmètre v2 (§1.3 : « Notifications push mobile » devient ✅).
+Aucun. Le **Lot 11 est le dernier lot** de la séquence (§9). Il ne conditionne aucun lot ultérieur. Il **clôt** la matrice de périmètre v2 (§1.3 : « Notifications push mobile » devient ✅).
 
 ---
 
 ## 2. User stories complètes
 
-> Convention : nouvelles US préfixées **`US-PUSH-*`** (le cdc ne nomme pas d'US dédiées push, §2.9 et Lot 10 décrivant le périmètre). Les US **réutilisées** du cdc (`US-SET-1`) sont rappelées et étendues. Critères d'acceptation en **Étant donné / Quand / Alors**, plusieurs scénarios par US (nominal, erreur, autorisation, temps réel/OS).
+> Convention : nouvelles US préfixées **`US-PUSH-*`** (le cdc ne nomme pas d'US dédiées push, §2.9 et Lot 11 décrivant le périmètre). Les US **réutilisées** du cdc (`US-SET-1`) sont rappelées et étendues. Critères d'acceptation en **Étant donné / Quand / Alors**, plusieurs scénarios par US (nominal, erreur, autorisation, temps réel/OS).
 >
 > Rappel d'autorisation : le canal push relève des **préférences de l'utilisateur** (`/api/me/...`), donc **scopé à l'utilisateur authentifié**, **non** à une famille. Les Voters de domaine (§2.2) **ne gouvernent pas** l'opt-in lui-même ; ils gouvernent **l'éligibilité d'un destinataire à un événement** (déjà appliqué au Lot 7 : on ne notifie un membre que s'il a le droit `view`/`edit` sur le domaine concerné). Voir §7.
 
@@ -176,7 +177,7 @@ Aucun. Le **Lot 10 est le dernier lot** de la séquence (§9). Il ne conditionne
 - **Scénario — catégorie `expenses` alors que le module est inactif**
   - *Étant donné* une famille où `expenses_enabled=false`
   - *Quand* un utilisateur active le push `expenses`
-  - *Alors* la préférence est **enregistrée** (le toggle peut exister) mais **aucun déclencheur** dépense n'existe tant que le module est inactif (Lot 9) ⇒ aucun push `expenses` n'est émis. Optionnellement le toggle est masqué dans l'UI si aucune des familles de l'utilisateur n'a le module actif.
+  - *Alors* la préférence est **enregistrée** (le toggle peut exister) mais **aucun déclencheur** dépense n'existe tant que le module est inactif (Lot 10) ⇒ aucun push `expenses` n'est émis. Optionnellement le toggle est masqué dans l'UI si aucune des familles de l'utilisateur n'a le module actif.
 
 ### US-PUSH-5 — Recevoir un push et atterrir au bon endroit (deep-link)
 
@@ -309,7 +310,7 @@ ENTREE: user (authentifié), { platform, token, installation_id?, app_version?, 
 
 ### 3.3 Décision d'envoi push pour un déclencheur (extension du dispatcher Lot 7)
 
-Le Lot 7 produit, pour chaque évènement métier notifiable, un **`NotificationEvent`** (identité stable `notification_event_id`, catégorie, famille concernée, ressource, données de rendu i18n). Le dispatcher calcule les **destinataires éligibles** puis fan-out par canal. Le Lot 10 ajoute le bloc « canal push ».
+Le Lot 7 produit, pour chaque évènement métier notifiable, un **`NotificationEvent`** (identité stable `notification_event_id`, catégorie, famille concernée, ressource, données de rendu i18n). Le dispatcher calcule les **destinataires éligibles** puis fan-out par canal. Le Lot 11 ajoute le bloc « canal push ».
 
 ```
 ENTREE: NotificationEvent E { id, category, family_id, resource_ref, payload_i18n, occurred_at }
@@ -496,7 +497,7 @@ Au login / au démarrage app :
 ### 5.1 Entités modifiées
 
 - **`NotificationPref`** *(existant, Lot 7 — §5.2)* : `user_id`, `category (custody|agenda|expenses|exchanges|invitation)`, `channel (email|push)`, `enabled`.
-  - **Aucun changement de schéma** : l'énumération `channel` inclut déjà `push`. Le Lot 10 **exploite** la valeur `push` (création de lignes `channel='push'`). Unicité logique `(user_id, category, channel)`.
+  - **Aucun changement de schéma** : l'énumération `channel` inclut déjà `push`. Le Lot 11 **exploite** la valeur `push` (création de lignes `channel='push'`). Unicité logique `(user_id, category, channel)`.
 
 ### 5.2 Entités créées
 
@@ -612,7 +613,7 @@ Invariants du cdc / `CLAUDE.md` **pertinents pour ce lot** :
 5. **Pas de données de santé** : aucun champ santé créé ; aucun contenu sensible dans le payload push.
 6. **Champs chiffrés au repos (🔒)** : `DeviceToken.token` chiffré AES-256-GCM ; aucun champ 🔒 (texte de message/note, identités) n'est inclus en clair dans un payload push ni dans les logs de passerelle.
 7. **Registre des données personnelles** : ajout obligatoire d'une entrée pour `DeviceToken` (attribut déclaratif + `registre-donnees.md`) ; le test CI de cohérence doit passer. Fait partie de la DoD.
-8. **Dépenses = v2 / activation par module** : le canal push `expenses` n'émet rien tant que le module dépenses n'est pas activé (Lot 9) ; aucun code dépense ajouté ici.
+8. **Dépenses = v2 / activation par module** : le canal push `expenses` n'émet rien tant que le module dépenses n'est pas activé (Lot 10) ; aucun code dépense ajouté ici.
 9. **i18n** : toutes les chaînes (titres/corps push, UI réglages) externalisées en ICU ; seule `fr-FR` livrée, ajout de langue sans code.
 10. **Dates non codées en dur / fuseau** : `Europe/Paris` par défaut, conversions via base IANA (été/hiver), pas de « 23 juin 2026 » en dur.
 11. **Idempotence & autorité serveur** : `Idempotency-Key` sur les POST outbox ; anti-doublon par clé `(event, channel, target)` ; le serveur reste l'autorité (le push ne porte qu'un déclencheur, l'état canonique vient de l'API).
@@ -623,7 +624,7 @@ Invariants du cdc / `CLAUDE.md` **pertinents pour ce lot** :
 
 ## 8. Definition of Done (DoD)
 
-Reprend la **DoD générale par lot** (§9 cdc) appliquée au périmètre Lot 10 :
+Reprend la **DoD générale par lot** (§9 cdc) appliquée au périmètre Lot 11 :
 
 - **Tests unitaires (backend)** :
   - Résolution des destinataires éligibles × canal `push` (réutilise Lot 7) avec respect des Voters (enfant/`expenses` exclu, beau-parent sans droit exclu).

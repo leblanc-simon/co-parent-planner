@@ -48,7 +48,7 @@ Vacances scolaires : dataset officiel `fr-en-calendrier-scolaire` sur data.educa
 
 ## Découpage en lots (cdc §9)
 
-Implémentation séquentielle, chaque lot livré en web ET mobile, conditionnant les suivants : Lot 0 Fondations (monorepo, CI, auth complète, harnais de tests) → 1 Familles/membres/droits/invitations → 2 Enfants/notes → 3 Garde (moteur + vacances) → 4 Agenda → 5 Familles liées/overlay → 6 Échanges temps réel → 7 Notifications e-mail → 8 PWA/offline/RGPD Manager → 9 Dépenses (v2) → 10 Push mobile (v2).
+Implémentation séquentielle, chaque lot livré en web ET mobile, conditionnant les suivants : Lot 0 Fondations (monorepo, CI, auth complète, harnais de tests) → 1 Familles/membres/droits/invitations → 2 Enfants/notes → 3 Garde (moteur + vacances) → 4 Agenda → 5 Familles liées/overlay → 6 Échanges temps réel → 7 Notifications e-mail → 8 PWA/offline/RGPD Manager → 9 CI/CD & build iOS sans Mac (outillage infra) → 10 Dépenses (v2) → 11 Push mobile (v2).
 
 **DoD générale par lot** : tests unitaires + fonctionnels (API) + E2E web (Playwright) verts (+ tests Flutter si écran mobile), migrations fournies, OpenAPI à jour, i18n câblée, registre données à jour si nouveaux champs personnels, INSTALL.md à jour si dépendance change, analyse statique propre, écrans conformes au design system §8.
 

@@ -30,7 +30,7 @@ Doter CoParentPlanner d'un **agenda d'activités** scopé à la famille active, 
 
 - **Overlay des événements de la famille liée** (lecture seule, couleur `#9C6FB0`) : **Lot 5** (US-AG-4). Le paramètre `overlay=` de l'endpoint agenda (§6.2) et la sémantique « famille liée » sont **réservés mais inactifs en Lot 4** ; on prévoit le point d'extension sans l'implémenter.
 - **Notifications e-mail** (rappel/création d'événement, cdc §2.9) : **Lot 7**. Le Lot 4 ne déclenche **aucun** e-mail ; il publie seulement les messages Mercure.
-- **Push mobile** : **Lot 10** (v2).
+- **Push mobile** : **Lot 11** (v2).
 - **Offline riche mobile** (Drift + outbox) : la **couche** existe depuis le Lot 0 ; le Lot 4 doit être **compatible** outbox/`Idempotency-Key` mais le parcours offline complet de l'agenda est consolidé/validé au **Lot 8**.
 - **Garde** : l'agenda **ne modifie jamais** la garde (lecture éventuelle des `CustodyDay`/`SchoolHoliday` uniquement). La garde est livrée au **Lot 3**.
 
@@ -60,7 +60,7 @@ L'agenda est **entièrement v1** (cdc §1.3). Aucune dépendance aux dépenses (
 | **Lot 5 — Familles liées & overlay** | L'agenda et son endpoint (paramètre `overlay=`) sont la cible de l'overlay lecture seule (US-AG-4). Le Lot 4 fournit la structure d'événements, l'expansion et le rendu sur lesquels l'overlay se greffe. |
 | **Lot 7 — Notifications e-mail** | Les déclencheurs « événement d'agenda (création/rappel) » (cdc §2.9, `NotificationPref.category=agenda`) s'appuient sur les événements et leurs occurrences produits par ce lot. |
 | **Lot 8 — PWA / offline mobile** | Le parcours offline riche (cache lecture + outbox + résolution de conflits) sera validé de bout en bout sur, entre autres, l'agenda. |
-| **Lot 10 — Push mobile (v2)** | Réutilise les déclencheurs agenda côté notifications. |
+| **Lot 11 — Push mobile (v2)** | Réutilise les déclencheurs agenda côté notifications. |
 
 ---
 

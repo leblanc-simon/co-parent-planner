@@ -30,7 +30,7 @@ Le lot ajoute également les **rappels d'échéance planifiés** (Scheduler) pou
 
 ### 0.3 Hors périmètre
 
-- **Push mobile (APNs/FCM)** : explicitement **v2 / Lot 10**. `NotificationPref.channel` réserve déjà la valeur `push`, mais le canal `push` reste **inactif** en v1 (aucun déclencheur, aucun toggle visible côté UI v1).
+- **Push mobile (APNs/FCM)** : explicitement **v2 / Lot 11**. `NotificationPref.channel` réserve déjà la valeur `push`, mais le canal `push` reste **inactif** en v1 (aucun déclencheur, aucun toggle visible côté UI v1).
 - **Notifications de dépenses** : la catégorie `expenses` existe dans l'énumération `NotificationPref.category` (réservation v2), mais **aucun déclencheur dépense** n'est branché en v1 (module dépenses masqué — invariant « Dépenses = v2 »). Les toggles `expenses` ne sont pas affichés tant que le module n'est pas actif.
 - Notifications **in-app / temps réel** (badges, Turbo Streams over Mercure) : c'est le périmètre des lots temps réel (Lot 6 pour les échanges) ; ce lot ne traite **que** le canal e-mail. Le temps réel reste la voie « immédiate » ; l'e-mail est la voie « asynchrone/absence ».
 - **SMS**, webhooks tiers, digests quotidiens configurables (au-delà du regroupement anti-spam de base).
@@ -40,7 +40,7 @@ Le lot ajoute également les **rappels d'échéance planifiés** (Scheduler) pou
 | Canal | v1 (ce lot) | v2 |
 |---|:--:|:--:|
 | E-mail | ✅ | |
-| Push mobile | (réservé, inactif) | ✅ (Lot 10) |
+| Push mobile | (réservé, inactif) | ✅ (Lot 11) |
 
 | Catégorie de notification | v1 (ce lot) | v2 |
 |---|:--:|:--:|
@@ -48,7 +48,7 @@ Le lot ajoute également les **rappels d'échéance planifiés** (Scheduler) pou
 | `agenda` | ✅ | |
 | `exchanges` | ✅ | |
 | `invitation` | ✅ | |
-| `expenses` | (réservé, inactif) | ✅ (Lot 9/10) |
+| `expenses` | (réservé, inactif) | ✅ (Lot 10/11) |
 
 ---
 
@@ -71,8 +71,8 @@ Le lot ajoute également les **rappels d'échéance planifiés** (Scheduler) pou
 | Lot | Ce qu'il réutilise |
 |---|---|
 | **Lot 8 — PWA / offline / RGPD Manager** | L'`AuditLog` des envois et l'anonymiseur RGPD doivent neutraliser les destinataires/contenus des notifications déjà envoyées ; le registre des données personnelles doit contenir l'entrée `Invitation.email` 🔒 et les préférences. Les e-mails RGPD (lien d'export signé, confirmation de suppression) réutilisent le **pipeline et les templates** de ce lot. |
-| **Lot 9 — Dépenses (v2)** | Branche les déclencheurs `expenses` (dépense ajoutée / remboursée / rappel) sur le **même pipeline** et active le toggle `expenses` dans l'UI préférences. Aucun changement de pipeline attendu. |
-| **Lot 10 — Push mobile (v2)** | Ajoute le canal `push` à `NotificationPref` et à la **table de routage** des canaux. Le filtrage par catégorie, les quiet-hours, la locale et la déduplication sont **réutilisés tels quels** ; seul l'adaptateur de transport (e-mail → APNs/FCM) change. |
+| **Lot 10 — Dépenses (v2)** | Branche les déclencheurs `expenses` (dépense ajoutée / remboursée / rappel) sur le **même pipeline** et active le toggle `expenses` dans l'UI préférences. Aucun changement de pipeline attendu. |
+| **Lot 11 — Push mobile (v2)** | Ajoute le canal `push` à `NotificationPref` et à la **table de routage** des canaux. Le filtrage par catégorie, les quiet-hours, la locale et la déduplication sont **réutilisés tels quels** ; seul l'adaptateur de transport (e-mail → APNs/FCM) change. |
 
 ---
 
@@ -712,7 +712,7 @@ Issus du cdc et de `CLAUDE.md`, **pertinents pour ce lot** :
 10. **Fuseau & dates** : `Europe/Paris` par défaut ; aucune date codée en dur (pas le 23 juin 2026) ; DST géré.
 11. **Asynchrone & fiabilité** : envoi via Messenger (dispatch after commit), retry + dead-letter ; idempotence sur `notification_key`.
 12. **Dépenses = v2** : catégorie `expenses` réservée mais inactive (aucun déclencheur, toggle masqué).
-13. **Push = v2** : canal `push` réservé mais inactif (Lot 10).
+13. **Push = v2** : canal `push` réservé mais inactif (Lot 11).
 14. **`/infra/INSTALL.md`** : mettre à jour si une dépendance/réglage change (transport Messenger e-mail, configuration Scheduler des rappels, variables d'environnement Mailer/quiet-hours).
 
 ---

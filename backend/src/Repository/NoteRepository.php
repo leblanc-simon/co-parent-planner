@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Child;
 use App\Entity\Note;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -32,6 +33,25 @@ class NoteRepository extends ServiceEntityRepository
             ->setParameter('child', $child)
             ->orderBy('n.noteDate', 'DESC')
             ->addOrderBy('n.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+
+        return $result;
+    }
+
+    /**
+     * Notes dont l'utilisateur est l'auteur (export RGPD, portabilité — §3.5).
+     *
+     * @return list<Note>
+     */
+    public function findByAuthorUser(User $user): array
+    {
+        /** @var list<Note> $result */
+        $result = $this->createQueryBuilder('n')
+            ->join('n.authorMembership', 'm')
+            ->andWhere('m.user = :user')
+            ->setParameter('user', $user)
+            ->orderBy('n.noteDate', 'DESC')
             ->getQuery()
             ->getResult();
 

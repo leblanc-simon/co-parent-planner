@@ -99,6 +99,93 @@
                 }
             }
         },
+        "/api/admin/step-up": {
+            "post": {
+                "operationId": "api_adminstep-up_post",
+                "tags": [
+                    "AdminStepUp"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "AdminStepUp resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AdminStepUp"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AdminStepUp.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a AdminStepUp resource.",
+                "description": "Creates a AdminStepUp resource.",
+                "parameters": [],
+                "requestBody": {
+                    "description": "The new AdminStepUp resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AdminStepUp.StepUpRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AdminStepUp.StepUpRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
         "/api/children/{id}": {
             "get": {
                 "operationId": "api_children_id_get",
@@ -3179,11 +3266,23 @@
             "post": {
                 "operationId": "api_meexport_post",
                 "tags": [
-                    "Me"
+                    "MeExport"
                 ],
                 "responses": {
-                    "204": {
-                        "description": "Me resource created",
+                    "202": {
+                        "description": "MeExport resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MeExport"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MeExport.jsonld"
+                                }
+                            }
+                        },
                         "links": {}
                     },
                     "400": {
@@ -3229,25 +3328,87 @@
                         "links": {}
                     }
                 },
-                "summary": "Creates a Me resource.",
-                "description": "Creates a Me resource.",
+                "summary": "Creates a MeExport resource.",
+                "description": "Creates a MeExport resource.",
                 "parameters": [],
                 "requestBody": {
-                    "description": "The new Me resource",
+                    "description": "The new MeExport resource",
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/Me-me.write"
+                                "$ref": "#/components/schemas/MeExport"
                             }
                         },
                         "application/ld+json": {
                             "schema": {
-                                "$ref": "#/components/schemas/Me-me.write"
+                                "$ref": "#/components/schemas/MeExport"
                             }
                         }
                     },
                     "required": true
                 }
+            }
+        },
+        "/api/me/export/{id}": {
+            "get": {
+                "operationId": "api_meexport_id_get",
+                "tags": [
+                    "MeExport"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "MeExport resource",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MeExport"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MeExport.jsonld"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Retrieves a MeExport resource.",
+                "description": "Retrieves a MeExport resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "MeExport identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
             }
         },
         "/api/families/{familyId}/members": {
@@ -4564,17 +4725,50 @@
         },
         "/api/admin/rgpd/compliance-report": {
             "get": {
-                "operationId": "api_adminrgpdcompliance-report_get_collection",
+                "operationId": "api_adminrgpdcompliance-report_get",
                 "tags": [
-                    "RgpdAdmin"
+                    "RgpdComplianceReport"
                 ],
                 "responses": {
-                    "204": {
-                        "description": "RgpdAdmin collection"
+                    "200": {
+                        "description": "RgpdComplianceReport resource",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RgpdComplianceReport"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RgpdComplianceReport.jsonld"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
                     }
                 },
-                "summary": "Retrieves the collection of RgpdAdmin resources.",
-                "description": "Retrieves the collection of RgpdAdmin resources.",
+                "summary": "Retrieves a RgpdComplianceReport resource.",
+                "description": "Retrieves a RgpdComplianceReport resource.",
                 "parameters": []
             }
         },
@@ -4582,15 +4776,50 @@
             "get": {
                 "operationId": "api_adminrgpdoperations_get_collection",
                 "tags": [
-                    "RgpdAdmin"
+                    "RgpdOperationLog"
                 ],
                 "responses": {
-                    "204": {
-                        "description": "RgpdAdmin collection"
+                    "200": {
+                        "description": "RgpdOperationLog collection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/RgpdOperationLog"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "RgpdOperationLog.jsonld collection.",
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/HydraCollectionBaseSchemaNoPagination"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "member"
+                                            ],
+                                            "properties": {
+                                                "member": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/RgpdOperationLog.jsonld"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
                     }
                 },
-                "summary": "Retrieves the collection of RgpdAdmin resources.",
-                "description": "Retrieves the collection of RgpdAdmin resources.",
+                "summary": "Retrieves the collection of RgpdOperationLog resources.",
+                "description": "Retrieves the collection of RgpdOperationLog resources.",
                 "parameters": []
             }
         },
@@ -4598,11 +4827,23 @@
             "post": {
                 "operationId": "api_adminrgpdpurge_post",
                 "tags": [
-                    "RgpdAdmin"
+                    "RgpdPurge"
                 ],
                 "responses": {
-                    "204": {
-                        "description": "RgpdAdmin resource created",
+                    "200": {
+                        "description": "RgpdPurge resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RgpdPurge"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RgpdPurge.jsonld"
+                                }
+                            }
+                        },
                         "links": {}
                     },
                     "400": {
@@ -4648,20 +4889,20 @@
                         "links": {}
                     }
                 },
-                "summary": "Creates a RgpdAdmin resource.",
-                "description": "Creates a RgpdAdmin resource.",
+                "summary": "Creates a RgpdPurge resource.",
+                "description": "Creates a RgpdPurge resource.",
                 "parameters": [],
                 "requestBody": {
-                    "description": "The new RgpdAdmin resource",
+                    "description": "The new RgpdPurge resource",
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/RgpdAdmin"
+                                "$ref": "#/components/schemas/RgpdPurge"
                             }
                         },
                         "application/ld+json": {
                             "schema": {
-                                "$ref": "#/components/schemas/RgpdAdmin"
+                                "$ref": "#/components/schemas/RgpdPurge"
                             }
                         }
                     },
@@ -4673,15 +4914,50 @@
             "get": {
                 "operationId": "api_adminrgpdregister_get_collection",
                 "tags": [
-                    "RgpdAdmin"
+                    "RgpdRegisterEntry"
                 ],
                 "responses": {
-                    "204": {
-                        "description": "RgpdAdmin collection"
+                    "200": {
+                        "description": "RgpdRegisterEntry collection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/RgpdRegisterEntry"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "RgpdRegisterEntry.jsonld collection.",
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/HydraCollectionBaseSchemaNoPagination"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "member"
+                                            ],
+                                            "properties": {
+                                                "member": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/RgpdRegisterEntry.jsonld"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
                     }
                 },
-                "summary": "Retrieves the collection of RgpdAdmin resources.",
-                "description": "Retrieves the collection of RgpdAdmin resources.",
+                "summary": "Retrieves the collection of RgpdRegisterEntry resources.",
+                "description": "Retrieves the collection of RgpdRegisterEntry resources.",
                 "parameters": []
             }
         },
@@ -5274,6 +5550,54 @@
                     }
                 ],
                 "description": "US-ONB-1 sc.3-5 \u2014 accepter une invitation (squelette Lot 0). Authentification requise :\nl'e-mail du compte connect\u00e9 doit correspondre \u00e0 l'invit\u00e9. Renvoie la famille rejointe."
+            },
+            "AdminStepUp": {
+                "type": "object",
+                "description": "Auth renforc\u00e9e admin technique (cdc \u00a76.2). `POST /api/admin/step-up` (ROLE_ADMIN requis) : re-saisie\ndu mot de passe \u2192 grant step-up court \u00e0 pr\u00e9senter dans l'en-t\u00eate `X-Admin-Step-Up` sur `/api/admin/rgpd/*`.",
+                "properties": {
+                    "token": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "expiresIn": {
+                        "default": 0,
+                        "type": "integer"
+                    }
+                }
+            },
+            "AdminStepUp.StepUpRequest": {
+                "type": "object",
+                "description": "Auth renforc\u00e9e admin technique (cdc \u00a76.2). `POST /api/admin/step-up` (ROLE_ADMIN requis) : re-saisie\ndu mot de passe \u2192 grant step-up court \u00e0 pr\u00e9senter dans l'en-t\u00eate `X-Admin-Step-Up` sur `/api/admin/rgpd/*`.",
+                "required": [
+                    "password"
+                ],
+                "properties": {
+                    "password": {
+                        "default": "",
+                        "type": "string"
+                    }
+                }
+            },
+            "AdminStepUp.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "token": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "expiresIn": {
+                                "default": 0,
+                                "type": "integer"
+                            }
+                        }
+                    }
+                ],
+                "description": "Auth renforc\u00e9e admin technique (cdc \u00a76.2). `POST /api/admin/step-up` (ROLE_ADMIN requis) : re-saisie\ndu mot de passe \u2192 grant step-up court \u00e0 pr\u00e9senter dans l'en-t\u00eate `X-Admin-Step-Up` sur `/api/admin/rgpd/*`."
             },
             "Child": {
                 "type": "object",
@@ -7738,33 +8062,6 @@
                     }
                 }
             },
-            "Me-me.write": {
-                "type": "object",
-                "description": "US-SET-1 (sous-ensemble Lot 0) \u2014 profil du compte courant. `/api/me` est implicitement scop\u00e9 \u00e0\nl'utilisateur du token (jamais un autre compte). `full_name`/`phone` \ud83d\udd12 d\u00e9chiffr\u00e9s en lecture.\n\n`avatarUrl`, `email`, `status`, `emailVerified` sont en lecture seule (groupe `me:read` uniquement) :\nun PATCH les ignore (cf. \u00a74.5 pour avatar_url).",
-                "properties": {
-                    "locale": {
-                        "maxLength": 16,
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
-                    "fullName": {
-                        "maxLength": 200,
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    },
-                    "phone": {
-                        "maxLength": 40,
-                        "type": [
-                            "string",
-                            "null"
-                        ]
-                    }
-                }
-            },
             "Me-me.write.jsonMergePatch": {
                 "type": "object",
                 "description": "US-SET-1 (sous-ensemble Lot 0) \u2014 profil du compte courant. `/api/me` est implicitement scop\u00e9 \u00e0\nl'utilisateur du token (jamais un autre compte). `full_name`/`phone` \ud83d\udd12 d\u00e9chiffr\u00e9s en lecture.\n\n`avatarUrl`, `email`, `status`, `emailVerified` sont en lecture seule (groupe `me:read` uniquement) :\nun PATCH les ignore (cf. \u00a74.5 pour avatar_url).",
@@ -7849,6 +8146,53 @@
                     }
                 ],
                 "description": "US-SET-1 (sous-ensemble Lot 0) \u2014 profil du compte courant. `/api/me` est implicitement scop\u00e9 \u00e0\nl'utilisateur du token (jamais un autre compte). `full_name`/`phone` \ud83d\udd12 d\u00e9chiffr\u00e9s en lecture.\n\n`avatarUrl`, `email`, `status`, `emailVerified` sont en lecture seule (groupe `me:read` uniquement) :\nun PATCH les ignore (cf. \u00a74.5 pour avatar_url)."
+            },
+            "MeExport": {
+                "type": "object",
+                "description": "Export RGPD du compte courant (US-SET-4). `POST /me/export` cr\u00e9e une op\u00e9ration asynchrone (202) ;\n`GET /me/export/{id}` renvoie son statut et, une fois `done`, un **lien sign\u00e9 temporaire** de\nt\u00e9l\u00e9chargement (\u00a73.5). Le t\u00e9l\u00e9chargement lui-m\u00eame passe par {@see \\App\\Controller\\Rgpd\\ExportDownloadController}.",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "status": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "downloadUrl": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "MeExport.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "status": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "downloadUrl": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "description": "Export RGPD du compte courant (US-SET-4). `POST /me/export` cr\u00e9e une op\u00e9ration asynchrone (202) ;\n`GET /me/export/{id}` renvoie son statut et, une fois `done`, un **lien sign\u00e9 temporaire** de\nt\u00e9l\u00e9chargement (\u00a73.5). Le t\u00e9l\u00e9chargement lui-m\u00eame passe par {@see \\App\\Controller\\Rgpd\\ExportDownloadController}."
             },
             "Member": {
                 "type": "object",
@@ -8731,9 +9075,335 @@
                 ],
                 "description": "US-AUTH-2 sc.9 \u2014 r\u00e9initialisation effective (token usage unique ; r\u00e9voque tous les refresh)."
             },
-            "RgpdAdmin": {
+            "RgpdComplianceReport": {
                 "type": "object",
-                "description": "Endpoints d'administration RGPD (cdc \u00a76.2). Rout\u00e9s et pr\u00e9sents dans l'OpenAPI mais **501**\njusqu'au Lot 8 (d\u00e9cision D7). Auth technique renforc\u00e9e et logique r\u00e9elles = Lot 8."
+                "description": "Rapport d'\u00e9tat de conformit\u00e9 (US-RGPD-4) : r\u00e9tentions en vigueur, \u00e9carts d\u00e9tect\u00e9s, h\u00e9bergement UE.\n`GET /admin/rgpd/compliance-report` (admin technique + step-up).",
+                "properties": {
+                    "retentionRules": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        }
+                    },
+                    "gaps": {
+                        "description": "\u00e9carts (ex. champ chiffr\u00e9 sans entr\u00e9e de registre)",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "personalFields": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "euHosting": {
+                        "default": true,
+                        "type": "boolean"
+                    },
+                    "generatedAt": {
+                        "default": "",
+                        "type": "string"
+                    }
+                }
+            },
+            "RgpdComplianceReport.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "retentionRules": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    }
+                                }
+                            },
+                            "gaps": {
+                                "description": "\u00e9carts (ex. champ chiffr\u00e9 sans entr\u00e9e de registre)",
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "personalFields": {
+                                "default": 0,
+                                "type": "integer"
+                            },
+                            "euHosting": {
+                                "default": true,
+                                "type": "boolean"
+                            },
+                            "generatedAt": {
+                                "default": "",
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "description": "Rapport d'\u00e9tat de conformit\u00e9 (US-RGPD-4) : r\u00e9tentions en vigueur, \u00e9carts d\u00e9tect\u00e9s, h\u00e9bergement UE.\n`GET /admin/rgpd/compliance-report` (admin technique + step-up)."
+            },
+            "RgpdOperationLog": {
+                "type": "object",
+                "description": "Une op\u00e9ration du journal RGPD (US-RGPD-2), lecture seule. `GET /admin/rgpd/operations`\n(admin technique + step-up), filtrable par `type`/`status`, pagin\u00e9 (`page`, `itemsPerPage`).",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "type": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "status": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "mode": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "subjectUserId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "requestedById": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "resultRef": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "occurredAt": {
+                        "default": "",
+                        "type": "string"
+                    }
+                }
+            },
+            "RgpdOperationLog.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "type": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "status": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "mode": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "subjectUserId": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "requestedById": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "resultRef": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "occurredAt": {
+                                "default": "",
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "description": "Une op\u00e9ration du journal RGPD (US-RGPD-2), lecture seule. `GET /admin/rgpd/operations`\n(admin technique + step-up), filtrable par `type`/`status`, pagin\u00e9 (`page`, `itemsPerPage`)."
+            },
+            "RgpdPurge": {
+                "type": "object",
+                "description": "R\u00e9sultat d'une purge RGPD (US-RGPD-3). `POST /admin/rgpd/purge?dryRun=true|false` (admin technique\n+ step-up) \u2014 **dry-run par d\u00e9faut** : renvoie ce qui SERAIT purg\u00e9 sans rien modifier.",
+                "properties": {
+                    "mode": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "totals": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "integer"
+                        }
+                    },
+                    "rules": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "anyOf": [
+                                    {
+                                        "type": "integer"
+                                    },
+                                    {
+                                        "type": "string"
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+            "RgpdPurge.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "mode": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "totals": {
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "integer"
+                                }
+                            },
+                            "rules": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "anyOf": [
+                                            {
+                                                "type": "integer"
+                                            },
+                                            {
+                                                "type": "string"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "description": "R\u00e9sultat d'une purge RGPD (US-RGPD-3). `POST /admin/rgpd/purge?dryRun=true|false` (admin technique\n+ step-up) \u2014 **dry-run par d\u00e9faut** : renvoie ce qui SERAIT purg\u00e9 sans rien modifier."
+            },
+            "RgpdRegisterEntry": {
+                "type": "object",
+                "description": "Une entr\u00e9e du registre des traitements (US-RGPD-1), synth\u00e9tis\u00e9e depuis les attributs `#[PersonalData]`.\n`GET /admin/rgpd/register` (admin technique + step-up).",
+                "properties": {
+                    "entity": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "field": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "category": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "encrypted": {
+                        "default": false,
+                        "type": "boolean"
+                    },
+                    "legalBasis": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "purpose": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "retention": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "recipients": {
+                        "default": "",
+                        "type": "string"
+                    }
+                }
+            },
+            "RgpdRegisterEntry.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "entity": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "field": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "category": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "encrypted": {
+                                "default": false,
+                                "type": "boolean"
+                            },
+                            "legalBasis": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "purpose": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "retention": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "recipients": {
+                                "default": "",
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "description": "Une entr\u00e9e du registre des traitements (US-RGPD-1), synth\u00e9tis\u00e9e depuis les attributs `#[PersonalData]`.\n`GET /admin/rgpd/register` (admin technique + step-up)."
             },
             "SchoolHoliday": {
                 "type": "object",
@@ -8970,6 +9640,10 @@
     "security": [],
     "tags": [
         {
+            "name": "AdminStepUp",
+            "description": "Auth renforc\u00e9e admin technique (cdc \u00a76.2). `POST /api/admin/step-up` (ROLE_ADMIN requis) : re-saisie\ndu mot de passe \u2192 grant step-up court \u00e0 pr\u00e9senter dans l'en-t\u00eate `X-Admin-Step-Up` sur `/api/admin/rgpd/*`."
+        },
+        {
             "name": "Event",
             "description": "\u00c9v\u00e9nement / occurrence d'agenda expos\u00e9 (Lot 4 \u00a76.1). `GET /families/{id}/events` renvoie les\n**occurrences** sur [from, to] (une par occurrence de s\u00e9rie) ; `POST` cr\u00e9e un \u00e9v\u00e9nement ou une\ns\u00e9rie et renvoie l'\u00e9v\u00e9nement ma\u00eetre. `startsAt`/`endsAt` sont format\u00e9s en ISO 8601 avec offset du\nfuseau famille. Le param\u00e8tre `overlay=` est **r\u00e9serv\u00e9** (Lot 5, ignor\u00e9 ici)."
         },
@@ -9078,8 +9752,24 @@
             "description": "Jeton Mercure scop\u00e9 par famille active (cdc \u00a74.5, \u00a73.12). Distinct du JWT d'acc\u00e8s API ; \u00e9mis\npar le serveur (seule autorit\u00e9 sur `subscribe`). Au Lot 0, `subscribe` est **vide** (aucun topic\nm\u00e9tier) ; recalcul\u00e9 \u00e0 chaque bascule de famille (nouveau X-Family-Id)."
         },
         {
-            "name": "RgpdAdmin",
-            "description": "Endpoints d'administration RGPD (cdc \u00a76.2). Rout\u00e9s et pr\u00e9sents dans l'OpenAPI mais **501**\njusqu'au Lot 8 (d\u00e9cision D7). Auth technique renforc\u00e9e et logique r\u00e9elles = Lot 8."
+            "name": "RgpdComplianceReport",
+            "description": "Rapport d'\u00e9tat de conformit\u00e9 (US-RGPD-4) : r\u00e9tentions en vigueur, \u00e9carts d\u00e9tect\u00e9s, h\u00e9bergement UE.\n`GET /admin/rgpd/compliance-report` (admin technique + step-up)."
+        },
+        {
+            "name": "MeExport",
+            "description": "Export RGPD du compte courant (US-SET-4). `POST /me/export` cr\u00e9e une op\u00e9ration asynchrone (202) ;\n`GET /me/export/{id}` renvoie son statut et, une fois `done`, un **lien sign\u00e9 temporaire** de\nt\u00e9l\u00e9chargement (\u00a73.5). Le t\u00e9l\u00e9chargement lui-m\u00eame passe par {@see \\App\\Controller\\Rgpd\\ExportDownloadController}."
+        },
+        {
+            "name": "RgpdPurge",
+            "description": "R\u00e9sultat d'une purge RGPD (US-RGPD-3). `POST /admin/rgpd/purge?dryRun=true|false` (admin technique\n+ step-up) \u2014 **dry-run par d\u00e9faut** : renvoie ce qui SERAIT purg\u00e9 sans rien modifier."
+        },
+        {
+            "name": "RgpdRegisterEntry",
+            "description": "Une entr\u00e9e du registre des traitements (US-RGPD-1), synth\u00e9tis\u00e9e depuis les attributs `#[PersonalData]`.\n`GET /admin/rgpd/register` (admin technique + step-up)."
+        },
+        {
+            "name": "RgpdOperationLog",
+            "description": "Une op\u00e9ration du journal RGPD (US-RGPD-2), lecture seule. `GET /admin/rgpd/operations`\n(admin technique + step-up), filtrable par `type`/`status`, pagin\u00e9 (`page`, `itemsPerPage`)."
         }
     ],
     "webhooks": {}

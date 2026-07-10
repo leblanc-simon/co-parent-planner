@@ -33,7 +33,8 @@ class ApiClients {
       overlayPreferences = api.OverlayPreferenceClient(dio),
       exchanges = api.ExchangeClient(dio),
       messages = api.MessageClient(dio),
-      notificationPrefs = api.NotificationPrefsClient(dio);
+      notificationPrefs = api.NotificationPrefsClient(dio),
+      meExport = api.MeExportClient(dio);
 
   final api.RegisterRequestClient register;
   final api.LoginRequestClient login;
@@ -60,6 +61,7 @@ class ApiClients {
   final api.ExchangeClient exchanges;
   final api.MessageClient messages;
   final api.NotificationPrefsClient notificationPrefs;
+  final api.MeExportClient meExport;
 }
 
 final apiClientsProvider = Provider<ApiClients>(

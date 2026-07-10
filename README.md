@@ -43,3 +43,7 @@ Propriétaire.
 * notification si échéance
 * couleur de fond de notes (priorité)
 * voir toutes les notes d'un coup
+* interface d'admin :
+  * vue sur les familles sans édition possible (hors suppression)
+  * vue sur les membres sans édition possible (hors suppression)
+

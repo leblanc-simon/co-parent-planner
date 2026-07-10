@@ -96,6 +96,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 16, enumType: UserStatus::class, options: ['default' => 'pending'])]
     private UserStatus $status = UserStatus::Pending;
 
+    /**
+     * Rôle d'administration technique RGPD (cdc §6.2), **orthogonal** aux rôles familiaux
+     * (MembershipRole). Dérivé en `ROLE_ADMIN` par {@see getRoles()} — jamais injecté dans le JWT :
+     * l'entité est rechargée et l'autorisation revérifiée en base à chaque requête (§4.11). Donnée
+     * technique non personnelle → pas d'attribut #[PersonalData].
+     */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $technicalAdmin = false;
+
     /** @var Collection<int, Membership> */
     #[ORM\OneToMany(targetEntity: Membership::class, mappedBy: 'user')]
     private Collection $memberships;
@@ -253,6 +262,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    public function isTechnicalAdmin(): bool
+    {
+        return $this->technicalAdmin;
+    }
+
+    public function setTechnicalAdmin(bool $technicalAdmin): static
+    {
+        $this->technicalAdmin = $technicalAdmin;
+
+        return $this;
+    }
+
     /** @return Collection<int, Membership> */
     public function getMemberships(): Collection
     {
@@ -275,7 +296,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /** @return list<string> */
     public function getRoles(): array
     {
-        return ['ROLE_USER'];
+        $roles = ['ROLE_USER'];
+        if ($this->technicalAdmin) {
+            $roles[] = 'ROLE_ADMIN';
+        }
+
+        return $roles;
     }
 
     public function getPassword(): string

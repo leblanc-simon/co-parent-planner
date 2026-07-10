@@ -236,3 +236,19 @@ notification:
         agenda: 'Agenda'
         exchanges: 'Échanges'
         invitation: 'Invitations'
+
+# RGPD Manager (Lot 8)
+rgpd:
+    error:
+        operation_not_found: "Opération RGPD introuvable."
+        export_link_invalid: "Ce lien de téléchargement est invalide ou a expiré. Relancez un export."
+
+# Administration technique RGPD (Lot 8, cdc §6.2)
+admin:
+    error:
+        step_up_required: "Authentification renforcée requise. Ré-authentifiez-vous pour accéder à l'administration RGPD."
+
+# Idempotence serveur (Lot 8, §3.1/§6.3)
+idempotency:
+    error:
+        conflict: "Cette clé d'idempotence est déjà utilisée pour une autre requête ou une opération en cours."

@@ -1586,6 +1586,120 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Préférences enregistrées.'**
   String get notificationsSaved;
+
+  /// No description provided for @offlineBanner.
+  ///
+  /// In fr, this message translates to:
+  /// **'Hors-ligne — affichage des données mises en cache'**
+  String get offlineBanner;
+
+  /// No description provided for @offlineUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Données non disponibles hors-ligne'**
+  String get offlineUnavailable;
+
+  /// No description provided for @offlineQueued.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistré — en attente de synchro'**
+  String get offlineQueued;
+
+  /// No description provided for @syncPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{Tout est synchronisé} =1{1 modification en attente de synchro} other{{count} modifications en attente de synchro}}'**
+  String syncPending(int count);
+
+  /// No description provided for @syncRejected.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, =0{} =1{1 modification refusée} other{{count} modifications refusées}}'**
+  String syncRejected(int count);
+
+  /// No description provided for @privacyTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confidentialité & données'**
+  String get privacyTitle;
+
+  /// No description provided for @privacyExportSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Exporter mes données'**
+  String get privacyExportSection;
+
+  /// No description provided for @privacyExportHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recevez une archive de vos données personnelles (droit d\'accès et de portabilité).'**
+  String get privacyExportHint;
+
+  /// No description provided for @privacyExportButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'Demander l\'export'**
+  String get privacyExportButton;
+
+  /// No description provided for @privacyExportPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'Export en cours de préparation…'**
+  String get privacyExportPending;
+
+  /// No description provided for @privacyExportRefresh.
+  ///
+  /// In fr, this message translates to:
+  /// **'Actualiser le statut'**
+  String get privacyExportRefresh;
+
+  /// No description provided for @privacyExportReady.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre export est prêt (lien temporaire) :'**
+  String get privacyExportReady;
+
+  /// No description provided for @privacyDeleteSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer mon compte'**
+  String get privacyDeleteSection;
+
+  /// No description provided for @privacyDeleteHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vos données personnelles sont anonymisées de façon irréversible. Vos messages et notes sont conservés sous « Membre supprimé » pour préserver les fils.'**
+  String get privacyDeleteHint;
+
+  /// No description provided for @privacyDeleteButton.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer mon compte'**
+  String get privacyDeleteButton;
+
+  /// No description provided for @privacyDeleteConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer définitivement ?'**
+  String get privacyDeleteConfirmTitle;
+
+  /// No description provided for @privacyDeleteConfirmBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cette action est irréversible : votre compte sera anonymisé et vous serez déconnecté.'**
+  String get privacyDeleteConfirmBody;
+
+  /// No description provided for @privacyDeleteConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get privacyDeleteConfirm;
+
+  /// No description provided for @privacyCancel.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler'**
+  String get privacyCancel;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

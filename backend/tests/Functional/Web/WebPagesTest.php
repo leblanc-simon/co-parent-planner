@@ -83,6 +83,47 @@ final class WebPagesTest extends WebTestCase
         }
     }
 
+    public function testPwaManifestServiceWorkerAndOfflineRender(): void
+    {
+        $client = static::createClient();
+
+        // Manifest localisé, servi à la racine du scope.
+        $client->request('GET', '/manifest.webmanifest');
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('application/manifest+json', (string) $client->getResponse()->headers->get('Content-Type'));
+        $manifest = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('"CoParentPlanner"', $manifest);
+        self::assertStringContainsString('"standalone"', $manifest);
+        self::assertStringContainsString('#C2643D', $manifest);
+
+        // Service worker servi à la racine (en-tête Service-Worker-Allowed) et non mis en cache long.
+        $client->request('GET', '/sw.js');
+        self::assertResponseIsSuccessful();
+        self::assertSame('/', $client->getResponse()->headers->get('Service-Worker-Allowed'));
+        $sw = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('offline-mutation', $sw);
+        self::assertStringContainsString('caches', $sw);
+
+        // Page hors-ligne dédiée.
+        $client->request('GET', '/offline');
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('hors-ligne', mb_strtolower((string) $client->getResponse()->getContent()));
+    }
+
+    public function testAppShellRegistersPwa(): void
+    {
+        $client = static::createClient();
+        $this->createUser($client, true);
+        $this->login($client);
+
+        $client->request('GET', '/');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('rel="manifest"', $html);
+        self::assertStringContainsString('data-controller="pwa"', $html);
+        self::assertStringContainsString('name="theme-color"', $html);
+    }
+
     public function testHomeRedirectsToLoginWhenAnonymous(): void
     {
         $client = static::createClient();

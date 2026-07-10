@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
 import '../../../core/network/api_clients.dart';
+import '../../../core/sync/read_cache.dart';
 import '../../family/application/family_context.dart';
 
 /// Accès aux échanges (Lot 6) de la famille active. Le scope `X-Family-Id` est
@@ -17,19 +18,23 @@ import '../../family/application/family_context.dart';
 ///    rafraîchissement se fait par pull-to-refresh et par invalidation après action.
 ///    Le backend émet déjà les événements Mercure ; l'abonnement mobile est reporté.
 class ExchangesRepository {
-  ExchangesRepository(this._clients);
+  ExchangesRepository(this._clients, this._cache);
 
   final ApiClients _clients;
+  final ReadCache _cache;
 
-  /// US-EX-4 — liste des échanges de la famille (résumés, sans fil).
+  /// US-EX-4 — liste des échanges de la famille (résumés, sans fil). Repli **cache local**
+  /// cloisonné famille hors-ligne (Lot 8 §2.2, US-OFF-1).
   Future<List<api.Exchange>> list(String familyId) async {
-    try {
-      return await _clients.exchanges.apiFamiliesFamilyIdexchangesGetCollection(
-        familyId: familyId,
-      );
-    } on DioException catch (e) {
-      throw ApiException.fromDio(e);
-    }
+    final result = await _cache.list<api.Exchange>(
+      familyId: familyId,
+      endpoint: 'exchanges',
+      networkCall: () => _clients.exchanges
+          .apiFamiliesFamilyIdexchangesGetCollection(familyId: familyId),
+      toJson: (e) => e.toJson(),
+      fromJson: api.Exchange.fromJson,
+    );
+    return result.items;
   }
 
   /// US-EX-5 — détail d'un échange (options + décomptes + fil en clair).
@@ -161,7 +166,10 @@ int openCount(List<api.Exchange> items) =>
     items.where((e) => e.status == 'open').length;
 
 final exchangesRepositoryProvider = Provider<ExchangesRepository>(
-  (ref) => ExchangesRepository(ref.watch(apiClientsProvider)),
+  (ref) => ExchangesRepository(
+    ref.watch(apiClientsProvider),
+    ref.watch(readCacheProvider),
+  ),
 );
 
 /// Échanges de la famille active (recalculés à la bascule de famille).

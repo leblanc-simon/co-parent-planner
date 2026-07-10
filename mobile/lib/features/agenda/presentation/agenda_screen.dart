@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
+import '../../../core/sync/outbox_queued_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
@@ -688,6 +689,7 @@ class _EventFormState extends ConsumerState<_EventForm> {
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     final createdMsg = AppL10n.of(context).agendaCreated;
+    final queuedMsg = AppL10n.of(context).offlineQueued;
     try {
       await ref
           .read(agendaRepositoryProvider)
@@ -707,6 +709,10 @@ class _EventFormState extends ConsumerState<_EventForm> {
       ref.invalidate(familyEventsProvider);
       if (navigator.canPop()) navigator.pop();
       messenger.showSnackBar(SnackBar(content: Text(createdMsg)));
+    } on OutboxQueuedException {
+      // Hors-ligne : la création est en file (US-OFF-2), rejouée au retour réseau.
+      if (navigator.canPop()) navigator.pop();
+      messenger.showSnackBar(SnackBar(content: Text(queuedMsg)));
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } finally {

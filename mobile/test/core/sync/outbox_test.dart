@@ -23,67 +23,96 @@ void main() {
     return OutboxService(dao: db.outboxDao, dio: dio);
   }
 
-  test('enqueue insere une entree pending avec Idempotency-Key', () async {
-    final svc = service(ScriptedAdapter((_) => (200, null)));
-    final id = await svc.enqueue(
-      method: 'POST',
-      path: '/api/x',
-      body: {'a': 1},
-      xFamilyId: 'f1',
-    );
-    expect(await db.outboxDao.countByStatus(OutboxStatus.pending), 1);
-    final entry = (await db.outboxDao.pendingEntries()).single;
-    expect(entry.id, id);
-    expect(entry.idempotencyKey, isNotEmpty);
-    expect(entry.headers, contains('f1'));
-  });
+  test(
+    'enqueue insère une entrée pending avec Idempotency-Key et X-Family-Id figé',
+    () async {
+      final svc = service(ScriptedAdapter((_) => (200, null)));
+      final id = await svc.enqueue(
+        method: 'POST',
+        path: '/api/x',
+        body: {'a': 1},
+        xFamilyId: 'f1',
+      );
+      expect(await db.outboxDao.countByStatus(OutboxStatus.pending), 1);
+      final entry = (await db.outboxDao.pendingEntries()).single;
+      expect(entry.id, id);
+      expect(entry.idempotencyKey, isNotEmpty);
+      expect(entry.headers, contains('f1'));
+    },
+  );
 
-  test('flush 2xx -> done + envoie Idempotency-Key et X-Family-Id', () async {
+  test('flush 2xx -> synced + envoie Idempotency-Key et X-Family-Id', () async {
     final adapter = ScriptedAdapter((_) => (200, {'ok': true}));
     final svc = service(adapter);
     await svc.enqueue(method: 'POST', path: '/api/x', xFamilyId: 'f1');
     await svc.flush();
-    expect(await db.outboxDao.countByStatus(OutboxStatus.done), 1);
+    expect(await db.outboxDao.countByStatus(OutboxStatus.synced), 1);
+    expect(await db.outboxDao.pendingEntries(), isEmpty);
     final sent = adapter.requests.single;
     expect(sent.headers['Idempotency-Key'], isNotNull);
     expect(sent.headers['X-Family-Id'], 'f1');
   });
 
-  test('flush 5xx -> failed + attempts incremente', () async {
-    final svc = service(ScriptedAdapter((_) => (500, null)));
-    await svc.enqueue(method: 'POST', path: '/api/x');
-    await svc.flush();
-    expect(await db.outboxDao.countByStatus(OutboxStatus.failed), 1);
-    final entry =
-        (await db.outboxDao.pendingEntries()).single; // failed rejouable
-    expect(entry.attempts, 1);
-  });
+  test(
+    'flush 5xx -> reste pending + attempts incrémenté (transitoire)',
+    () async {
+      final svc = service(ScriptedAdapter((_) => (500, null)));
+      await svc.enqueue(method: 'POST', path: '/api/x');
+      await svc.flush();
+      expect(await db.outboxDao.countByStatus(OutboxStatus.pending), 1);
+      expect((await db.outboxDao.pendingEntries()).single.attempts, 1);
+    },
+  );
 
-  test('flush 409 -> conflict (terminal)', () async {
-    final svc = service(ScriptedAdapter((_) => (409, null)));
-    await svc.enqueue(method: 'POST', path: '/api/x');
-    await svc.flush();
-    expect(await db.outboxDao.countByStatus(OutboxStatus.conflict), 1);
-    expect(
-      await db.outboxDao.pendingEntries(),
-      isEmpty,
-    ); // ni pending ni failed
-  });
-
-  test('flush 401 -> reste pending (session perdue, sec.4.7)', () async {
+  test('flush 401 -> reste pending (session perdue, §4.7)', () async {
     final svc = service(ScriptedAdapter((_) => (401, null)));
     await svc.enqueue(method: 'POST', path: '/api/x');
     await svc.flush();
     expect(await db.outboxDao.countByStatus(OutboxStatus.pending), 1);
   });
 
-  test('rejoue plusieurs entrees', () async {
+  for (final status in [409, 403, 422, 404, 410]) {
+    test(
+      'flush $status -> rejected (refus terminal, autorité serveur)',
+      () async {
+        final svc = service(ScriptedAdapter((_) => (status, null)));
+        await svc.enqueue(method: 'POST', path: '/api/x');
+        await svc.flush();
+        expect(await db.outboxDao.countByStatus(OutboxStatus.rejected), 1);
+        expect(await db.outboxDao.pendingEntries(), isEmpty); // plus rejoué
+      },
+    );
+  }
+
+  test(
+    'retry() repasse une entrée rejetée en pending (relance manuelle US-OFF-5)',
+    () async {
+      final svc = service(ScriptedAdapter((_) => (409, null)));
+      final id = await svc.enqueue(method: 'POST', path: '/api/x');
+      await svc.flush();
+      expect(await db.outboxDao.countByStatus(OutboxStatus.rejected), 1);
+      await svc.retry(id);
+      expect(await db.outboxDao.countByStatus(OutboxStatus.pending), 1);
+    },
+  );
+
+  test('purgeSynced() retire les entrées confirmées', () async {
+    final svc = service(ScriptedAdapter((_) => (200, null)));
+    await svc.enqueue(method: 'POST', path: '/api/a');
+    await svc.enqueue(method: 'POST', path: '/api/b');
+    await svc.flush();
+    expect(await db.outboxDao.countByStatus(OutboxStatus.synced), 2);
+    expect(await db.outboxDao.purgeSynced(), 2);
+    expect(await db.outboxDao.countByStatus(OutboxStatus.synced), 0);
+  });
+
+  test('rejeu FIFO de plusieurs entrées pending', () async {
     final adapter = ScriptedAdapter((_) => (200, null));
     final svc = service(adapter);
     await svc.enqueue(method: 'POST', path: '/api/a');
     await svc.enqueue(method: 'POST', path: '/api/b');
     await svc.flush();
-    expect(await db.outboxDao.countByStatus(OutboxStatus.done), 2);
-    expect(adapter.requests.length, 2);
+    expect(await db.outboxDao.countByStatus(OutboxStatus.synced), 2);
+    expect(adapter.requests.map((r) => r.path).toList(), ['/api/a', '/api/b']);
   });
 }

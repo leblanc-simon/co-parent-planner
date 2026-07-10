@@ -32,6 +32,9 @@ framework:
             App\Message\ImportSchoolHolidays: async
             # Notifications (Lot 7) : envoi e-mail asynchrone, idempotent (notification_key), retry.
             App\Message\SendNotification: async
+            # RGPD (Lot 8) : assemblage d'export asynchrone + purge planifiée, idempotents.
+            App\Message\ExportUserData: async
+            App\Message\RunRgpdPurge: async
 
 when@test:
     framework:

@@ -88,4 +88,41 @@ class InvitationRepository extends ServiceEntityRepository
             ->getQuery()
             ->execute();
     }
+
+    /** Invitations dont l'échéance est antérieure au seuil (purge RGPD §3.4). */
+    public function countExpiredBefore(\DateTimeImmutable $before): int
+    {
+        return (int) $this->createQueryBuilder('i')
+            ->select('COUNT(i.id)')
+            ->andWhere('i.expiresAt < :before')
+            ->setParameter('before', $before)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /** Supprime les invitations expirées au-delà de la rétention. Idempotent ; renvoie le nombre supprimé. */
+    public function deleteExpiredBefore(\DateTimeImmutable $before): int
+    {
+        return (int) $this->createQueryBuilder('i')
+            ->delete()
+            ->andWhere('i.expiresAt < :before')
+            ->setParameter('before', $before)
+            ->getQuery()
+            ->execute();
+    }
+
+    /**
+     * Supprime toutes les invitations adressées à un e-mail (via son blind index), quel que soit leur
+     * statut. Utilisé par l'anonymisation : `Invitation.email` est chiffré **réversiblement** (clé
+     * applicative) — le conserver rendrait l'effacement réversible (§4.8). Renvoie le nombre supprimé.
+     */
+    public function deleteByEmailHash(string $emailHash): int
+    {
+        return (int) $this->createQueryBuilder('i')
+            ->delete()
+            ->andWhere('i.emailHash = :hash')
+            ->setParameter('hash', $emailHash)
+            ->getQuery()
+            ->execute();
+    }
 }

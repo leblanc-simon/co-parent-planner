@@ -27,6 +27,35 @@ class NotificationPrefRepository extends ServiceEntityRepository
     }
 
     /**
+     * Préférences de l'utilisateur (pour l'export RGPD).
+     *
+     * @return list<NotificationPref>
+     */
+    public function findForUser(User $user): array
+    {
+        /** @var list<NotificationPref> $result */
+        $result = $this->findBy(['user' => $user]);
+
+        return $result;
+    }
+
+    public function countForUser(User $user): int
+    {
+        return (int) $this->count(['user' => $user]);
+    }
+
+    /** Supprime les préférences d'un utilisateur (anonymisation/effacement). Retourne le nombre supprimé. */
+    public function deleteForUser(User $user): int
+    {
+        return (int) $this->createQueryBuilder('p')
+            ->delete()
+            ->andWhere('p.user = :user')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->execute();
+    }
+
+    /**
      * Préférences e-mail explicites de l'utilisateur, indexées par valeur de catégorie.
      *
      * @return array<string, bool>

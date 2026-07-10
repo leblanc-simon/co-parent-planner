@@ -12,7 +12,8 @@ use App\Enum\MembershipRole;
 use App\Security\Auth\TokenHasher;
 
 /**
- * US-ONB-1 (acceptation d'invitation) + endpoints RGPD non implémentés (501, décision D7).
+ * US-ONB-1 (acceptation d'invitation). Les endpoints RGPD, jadis 501 (décision D7), sont
+ * implémentés au Lot 8 et couverts par les tests dédiés (App\Tests\Functional\Rgpd\*).
  */
 final class InvitationAndStubsTest extends ApiAuthTestCase
 {
@@ -93,26 +94,5 @@ final class InvitationAndStubsTest extends ApiAuthTestCase
             'headers' => ['Accept' => 'application/json'],
         ]);
         self::assertSame(401, $response->getStatusCode());
-    }
-
-    /**
-     * Endpoints RGPD routés mais non implémentés → 501 (décision D7), jamais 404.
-     */
-    public function testRgpdEndpointsReturn501(): void
-    {
-        [$client, $token] = $this->authenticatedClient('tech@example.com');
-        $auth = $this->bearer($token);
-
-        foreach ([
-            ['POST', '/api/me/export'],
-            ['DELETE', '/api/me'],
-            ['GET', '/api/admin/rgpd/register'],
-            ['GET', '/api/admin/rgpd/operations'],
-            ['GET', '/api/admin/rgpd/compliance-report'],
-            ['POST', '/api/admin/rgpd/purge'],
-        ] as [$method, $uri]) {
-            $response = $client->request($method, $uri, ['headers' => $auth]);
-            self::assertSame(501, $response->getStatusCode(), "$method $uri doit renvoyer 501");
-        }
     }
 }

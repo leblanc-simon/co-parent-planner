@@ -34,6 +34,10 @@ security:
     access_control:
         # Endpoints publics : auth et documentation OpenAPI.
         - { path: '^/api/(auth|docs)', roles: PUBLIC_ACCESS }
+        # Administration technique RGPD (cdc §6.2) : ROLE_ADMIN (dérivé de User::getRoles, jamais
+        # dans le JWT — revérifié en base). L'auth *renforcée* (step-up) est en plus imposée par
+        # AdminAccess sur /api/admin/rgpd/*. Placé AVANT la règle générique (premier match gagnant).
+        - { path: ^/api/admin, roles: ROLE_ADMIN }
         # Tout le reste de l'API exige une authentification (dont l'acceptation d'invitation,
         # nominative : l'utilisateur doit être connecté pour que son e-mail soit vérifié).
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }

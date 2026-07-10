@@ -5,6 +5,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>{% block title %}CoParentPlanner{% endblock %}</title>
         <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.05em%22 font-size=%22104%22>🧡</text></svg>">
+        {# PWA (Lot 8) : manifest, thème et icônes d'installation. #}
+        <link rel="manifest" href="{{ path('app_manifest') }}">
+        <meta name="theme-color" content="#C2643D">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="default">
+        <meta name="apple-mobile-web-app-title" content="CoParent">
+        <link rel="apple-touch-icon" href="{{ asset('icons/apple-touch-icon.png') }}">
         {% block stylesheets %}{% endblock %}
 
         {% block javascripts %}
@@ -20,5 +27,19 @@
     </head>
     <body>
         {% block body %}{% endblock %}
+
+        {# PWA : enregistrement du SW + bannière hors-ligne / reconnexion + prompt d'installation.
+           Libellés en FR (cohérent avec l'UI web hardcodée FR — divergence assumée Lot 5). #}
+        <div data-controller="pwa"
+             data-pwa-offline-message-value="Hors-ligne — affichage des données mises en cache."
+             data-pwa-online-message-value="Connexion rétablie."
+             data-pwa-mutation-message-value="Action impossible hors-ligne — reconnectez-vous pour enregistrer."
+             data-pwa-update-message-value="Nouvelle version disponible."
+             data-pwa-family-value="{{ app.request.cookies.get('cpp_family')|default('') }}">
+            <div class="pwa-banner" role="status" aria-live="polite" data-pwa-target="banner" hidden></div>
+            <button type="button" class="pwa-install" data-pwa-target="install" data-action="pwa#install" hidden>
+                Installer l'application
+            </button>
+        </div>
     </body>
 </html>

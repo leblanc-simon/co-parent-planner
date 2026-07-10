@@ -821,4 +821,83 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get notificationsSaved => 'Préférences enregistrées.';
+
+  @override
+  String get offlineBanner =>
+      'Hors-ligne — affichage des données mises en cache';
+
+  @override
+  String get offlineUnavailable => 'Données non disponibles hors-ligne';
+
+  @override
+  String get offlineQueued => 'Enregistré — en attente de synchro';
+
+  @override
+  String syncPending(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count modifications en attente de synchro',
+      one: '1 modification en attente de synchro',
+      zero: 'Tout est synchronisé',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncRejected(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count modifications refusées',
+      one: '1 modification refusée',
+      zero: '',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get privacyTitle => 'Confidentialité & données';
+
+  @override
+  String get privacyExportSection => 'Exporter mes données';
+
+  @override
+  String get privacyExportHint =>
+      'Recevez une archive de vos données personnelles (droit d\'accès et de portabilité).';
+
+  @override
+  String get privacyExportButton => 'Demander l\'export';
+
+  @override
+  String get privacyExportPending => 'Export en cours de préparation…';
+
+  @override
+  String get privacyExportRefresh => 'Actualiser le statut';
+
+  @override
+  String get privacyExportReady => 'Votre export est prêt (lien temporaire) :';
+
+  @override
+  String get privacyDeleteSection => 'Supprimer mon compte';
+
+  @override
+  String get privacyDeleteHint =>
+      'Vos données personnelles sont anonymisées de façon irréversible. Vos messages et notes sont conservés sous « Membre supprimé » pour préserver les fils.';
+
+  @override
+  String get privacyDeleteButton => 'Supprimer mon compte';
+
+  @override
+  String get privacyDeleteConfirmTitle => 'Supprimer définitivement ?';
+
+  @override
+  String get privacyDeleteConfirmBody =>
+      'Cette action est irréversible : votre compte sera anonymisé et vous serez déconnecté.';
+
+  @override
+  String get privacyDeleteConfirm => 'Supprimer';
+
+  @override
+  String get privacyCancel => 'Annuler';
 }

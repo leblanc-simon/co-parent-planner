@@ -13,9 +13,10 @@ import '../storage/storage_providers.dart';
 import 'connectivity_provider.dart';
 import 'outbox_status.dart';
 
-/// Machine d'etat d'envoi/rejeu des mutations sortantes (§3.10). Squelette Lot 0 :
-/// pose l'`Idempotency-Key`, le statut « en attente de synchro » et le rejeu FIFO.
-/// Les mutations metier offline arrivent au Lot 8.
+/// Machine d'état d'envoi/rejeu des mutations sortantes (Lot 8 §3.1). Pose
+/// l'`Idempotency-Key`, fige le `X-Family-Id` (§4.7) et rejoue en FIFO. Résolution
+/// **autorité serveur** : 2xx → `synced` ; 409/403/422/404/410 → `rejected` (terminal) ;
+/// 5xx/réseau/timeout/401 → reste `pending` (retry ultérieur, backoff via l'intercepteur).
 class OutboxService {
   OutboxService({
     required OutboxDao dao,
@@ -55,7 +56,7 @@ class OutboxService {
     return id;
   }
 
-  /// Rejoue les entrees pending/failed dans l'ordre FIFO (meme Idempotency-Key).
+  /// Rejoue les entrées `pending` dans l'ordre FIFO (même Idempotency-Key).
   Future<void> flush() async {
     final entries = await _dao.pendingEntries();
     for (final entry in entries) {
@@ -64,7 +65,7 @@ class OutboxService {
   }
 
   Future<void> _send(OutboxEntry entry) async {
-    await _dao.updateStatus(entry.id, OutboxStatus.sending);
+    await _dao.updateStatus(entry.id, OutboxStatus.inFlight);
 
     String? xFamilyId;
     if (entry.headers != null) {
@@ -86,41 +87,54 @@ class OutboxService {
       );
       final status = response.statusCode ?? 0;
       if (status >= 200 && status < 300) {
-        await _dao.updateStatus(entry.id, OutboxStatus.done);
+        await _dao.updateStatus(entry.id, OutboxStatus.synced);
       } else {
+        // Réponse non-2xx sans exception : traiter comme transitoire (retry).
         await _dao.updateStatus(
           entry.id,
-          OutboxStatus.failed,
+          OutboxStatus.pending,
           lastError: 'HTTP $status',
           incrementAttempts: true,
         );
       }
     } on DioException catch (e) {
       final status = e.response?.statusCode;
-      if (status == 409) {
-        // Conflit : etat serveur canonique conserve (politique Lot 8).
+      if (status == 409 ||
+          status == 403 ||
+          status == 422 ||
+          status == 404 ||
+          status == 410) {
+        // Refus terminal (autorité serveur) : conflit garde/décision, droits, validation, disparu.
         await _dao.updateStatus(
           entry.id,
-          OutboxStatus.conflict,
-          lastError: 'conflict',
+          OutboxStatus.rejected,
+          lastError: _reason(status),
         );
-      } else if (status == 401) {
-        // Session perdue malgre le refresh : l'entree reste a rejouer (§4.7).
+      } else {
+        // 5xx / réseau / timeout / 401 : transitoire → reste pending pour un rejeu ultérieur (§4.7).
         await _dao.updateStatus(
           entry.id,
           OutboxStatus.pending,
-          lastError: 'unauthorized',
-        );
-      } else {
-        await _dao.updateStatus(
-          entry.id,
-          OutboxStatus.failed,
-          lastError: e.message,
+          lastError: e.message ?? (status == null ? 'network' : 'HTTP $status'),
           incrementAttempts: true,
         );
       }
     }
   }
+
+  /// Relance manuelle : repasse une entrée rejetée en file (US-OFF-5).
+  Future<void> retry(String id) => _dao.updateStatus(id, OutboxStatus.pending);
+
+  /// Abandon : retire une entrée rejetée (rollback de l'optimiste côté appelant).
+  Future<void> discard(String id) => _dao.deleteEntry(id);
+
+  static String _reason(int? status) => switch (status) {
+    409 => 'conflict',
+    403 => 'forbidden',
+    422 => 'invalid',
+    404 || 410 => 'gone',
+    _ => 'rejected',
+  };
 }
 
 final outboxServiceProvider = Provider<OutboxService>((ref) {

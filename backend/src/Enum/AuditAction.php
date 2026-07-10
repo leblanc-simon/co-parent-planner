@@ -76,4 +76,19 @@ enum AuditAction: string
     case NotificationSent = 'notification.sent';
     case NotificationFailed = 'notification.failed';
     case InvitationSent = 'invitation.sent';
+
+    // RGPD Manager (Lot 8) — export, effacement, anonymisation, purge, accès admin technique
+    case RgpdExportRequested = 'rgpd.export.requested';
+    case RgpdExportCompleted = 'rgpd.export.completed';
+    case RgpdExportFailed = 'rgpd.export.failed';
+    case RgpdExportDownloaded = 'rgpd.export.downloaded';
+    case RgpdErasureRequested = 'rgpd.erasure.requested';
+    case RgpdErasureCompleted = 'rgpd.erasure.completed';
+    case RgpdAnonymized = 'rgpd.anonymized';
+    case RgpdPurgeExecuted = 'rgpd.purge.executed';
+    case RgpdRegisterViewed = 'rgpd.register.viewed';
+    case RgpdOperationsViewed = 'rgpd.operations.viewed';
+    case RgpdComplianceReportViewed = 'rgpd.compliance_report.viewed';
+    case AdminStepUpGranted = 'admin.step_up.granted';
+    case AdminStepUpFailed = 'admin.step_up.failed';
 }

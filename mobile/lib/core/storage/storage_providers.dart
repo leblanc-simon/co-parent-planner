@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'drift/daos/cache_dao.dart';
 import 'drift/daos/outbox_dao.dart';
 import 'drift/database.dart';
 import 'secure_storage.dart';
@@ -18,4 +19,8 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
 
 final outboxDaoProvider = Provider<OutboxDao>(
   (ref) => ref.watch(appDatabaseProvider).outboxDao,
+);
+
+final cacheDaoProvider = Provider<CacheDao>(
+  (ref) => ref.watch(appDatabaseProvider).cacheDao,
 );

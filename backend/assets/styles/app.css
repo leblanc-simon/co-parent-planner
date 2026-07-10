@@ -1,7 +1,19 @@
 /* CoParentPlanner — design system (cdc §8). Tokens, base et composants partagés.
  * Polices : Bricolage Grotesque (titres), Hanken Grotesk (corps).
- * NB : fonts via CDN en dev ; à auto-héberger pour la PWA/offline (Lot 8). */
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Hanken+Grotesk:wght@400..700&display=swap');
+ * Auto-hébergées (OFL) via AssetMapper — indispensable pour l'offline PWA (Lot 8) : aucune
+ * dépendance réseau (CDN). AssetMapper réécrit les url() en chemins digérés (cache-first du SW). */
+@font-face {
+    font-family: 'Bricolage Grotesque';
+    src: url('../fonts/BricolageGrotesque.ttf') format('truetype-variations');
+    font-weight: 400 800;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Hanken Grotesk';
+    src: url('../fonts/HankenGrotesk.ttf') format('truetype-variations');
+    font-weight: 400 700;
+    font-display: swap;
+}
 
 :root {
     /* Surfaces & encre */
@@ -496,3 +508,43 @@ a:hover { text-decoration: underline; }
 .exchange-option-row input { flex: 1; padding: .5rem .7rem; border: 1px solid var(--border); border-radius: 10px; background: var(--card); font: inherit; }
 .exchange-form textarea, .exchange-form input, .exchange-form select { font: inherit; }
 .exchange-form textarea { width: 100%; padding: .6rem .7rem; border: 1px solid var(--border-3); border-radius: 12px; background: var(--card); resize: vertical; }
+
+/* ---------- PWA (Lot 8) : bannière hors-ligne, prompt d'installation, écran offline ---------- */
+/* L'attribut `hidden` doit primer sur `display:flex` ci-dessous (sinon bannière vide visible). */
+.pwa-banner[hidden], .pwa-install[hidden] { display: none; }
+.pwa-banner {
+    position: fixed; left: 50%; bottom: 1rem; transform: translateX(-50%);
+    z-index: 1000; max-width: min(92vw, 640px);
+    display: flex; align-items: center; gap: .6rem;
+    padding: .7rem 1.1rem; border-radius: 999px;
+    font-family: 'Hanken Grotesk', system-ui, sans-serif; font-size: .9rem; font-weight: 600;
+    color: #fff; background: var(--ink); box-shadow: 0 8px 24px rgba(41, 38, 33, .28);
+}
+.pwa-banner--offline { background: var(--ink); }
+.pwa-banner--warn { background: var(--accent-strong); }
+.pwa-banner--online { background: var(--positive-strong); }
+.pwa-banner--update { background: var(--accent); }
+.pwa-banner__action {
+    border: 0; background: rgba(255, 255, 255, .22); color: #fff;
+    font: inherit; font-weight: 700; padding: .25rem .7rem; border-radius: 999px; cursor: pointer;
+}
+.pwa-install {
+    position: fixed; right: 1rem; bottom: 1rem; z-index: 999;
+    border: 0; cursor: pointer; padding: .7rem 1.1rem; border-radius: 999px;
+    font-family: 'Hanken Grotesk', system-ui, sans-serif; font-weight: 700; font-size: .9rem;
+    color: #fff; background: var(--accent); box-shadow: 0 8px 24px rgba(194, 100, 61, .35);
+}
+
+.offline-screen {
+    min-height: 100vh; display: grid; place-items: center; padding: 1.5rem;
+    background: var(--app-bg); font-family: 'Hanken Grotesk', system-ui, sans-serif;
+}
+.offline-card {
+    max-width: 420px; text-align: center; background: var(--surface);
+    border: 1px solid var(--border-3); border-radius: var(--radius-card);
+    padding: 2.5rem 2rem; box-shadow: 0 12px 32px rgba(41, 38, 33, .12);
+}
+.offline-icon { display: inline-grid; place-items: center; width: 72px; height: 72px; margin-bottom: 1rem;
+    border-radius: 999px; color: var(--accent); background: var(--accent-soft); }
+.offline-card h1 { font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 1.5rem; margin: 0 0 .5rem; color: var(--ink); }
+.offline-card p { color: var(--ink-2); margin: 0 0 1.5rem; }

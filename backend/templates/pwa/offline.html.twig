@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Hors-ligne — CoParentPlanner{% endblock %}
+
+{% block body %}
+<div class="offline-screen">
+    <div class="offline-card">
+        <span class="offline-icon" aria-hidden="true">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.58 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/></svg>
+        </span>
+        <h1>Vous êtes hors-ligne</h1>
+        <p>Cet écran n'est pas disponible hors-ligne. Reconnectez-vous pour y accéder.</p>
+        <a href="{{ path('app_home') }}" class="btn btn--ink" data-turbo="false">Réessayer</a>
+    </div>
+</div>
+{% endblock %}

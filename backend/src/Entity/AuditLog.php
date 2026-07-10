@@ -55,7 +55,14 @@ class AuditLog
     #[ORM\Column(length: 45, nullable: true)]
     private ?string $ip = null;
 
-    /** @var array<string, mixed> */
+    /**
+     * ⚠️ JAMAIS de donnée personnelle en clair ici (nom, e-mail, téléphone, texte de message/note) —
+     * cdc §5.3/§5.4. Colonne `json` en clair NON couverte par le garde-fou de chiffrement (qui n'inspecte
+     * que les colonnes `encrypted_string`) : n'y stocker que des identifiants/codes techniques. Pour une
+     * empreinte d'e-mail, utiliser le blind index (cf. LoginProcessor `email_hash`).
+     *
+     * @var array<string, mixed>
+     */
     #[ORM\Column(type: 'json', options: ['default' => '{}'])]
     private array $metadata = [];
 

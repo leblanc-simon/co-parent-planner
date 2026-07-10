@@ -6,8 +6,8 @@ import '../tables/outbox_entry.dart';
 
 part 'outbox_dao.g.dart';
 
-/// Acces aux entrees outbox (§3.10). Le rejeu lit les entrees `pending`/`failed`
-/// dans l'ordre de creation (FIFO).
+/// Accès aux entrées outbox (Lot 8 §3.1). Le rejeu lit les entrées `pending` dans
+/// l'ordre de création (FIFO). Les entrées `synced` sont purgées après succès.
 @DriftAccessor(tables: [OutboxEntries])
 class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
   OutboxDao(super.db);
@@ -15,17 +15,29 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
   Future<void> enqueue(OutboxEntriesCompanion entry) =>
       into(outboxEntries).insert(entry);
 
-  /// Entrees a (re)jouer, FIFO : pending puis failed, par `createdAt`.
+  /// Entrées à (re)jouer, FIFO strict par `createdAt` : `pending` uniquement.
   Future<List<OutboxEntry>> pendingEntries() {
     return (select(outboxEntries)
-          ..where(
-            (t) =>
-                t.status.equalsValue(OutboxStatus.pending) |
-                t.status.equalsValue(OutboxStatus.failed),
-          )
+          ..where((t) => t.status.equalsValue(OutboxStatus.pending))
           ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
         .get();
   }
+
+  /// Toutes les entrées non finalisées (pour l'UI de synchro), les plus récentes d'abord.
+  Future<List<OutboxEntry>> activeEntries() {
+    return (select(outboxEntries)
+          ..where((t) => t.status.equalsValue(OutboxStatus.synced).not())
+          ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
+        .get();
+  }
+
+  Future<void> deleteEntry(String id) =>
+      (delete(outboxEntries)..where((t) => t.id.equals(id))).go();
+
+  /// Purge les entrées confirmées (ne pas laisser grossir la base locale, US-OFF-5).
+  Future<int> purgeSynced() => (delete(
+    outboxEntries,
+  )..where((t) => t.status.equalsValue(OutboxStatus.synced))).go();
 
   Future<void> updateStatus(
     String id,
@@ -55,5 +67,14 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
       ..where(outboxEntries.status.equalsValue(status));
     final row = await query.getSingle();
     return row.read(count) ?? 0;
+  }
+
+  /// Flux réactif du nombre d'entrées d'un statut (badges/compteur de synchro, US-OFF-5).
+  Stream<int> watchCountByStatus(OutboxStatus status) {
+    final count = countAll();
+    final query = selectOnly(outboxEntries)
+      ..addColumns([count])
+      ..where(outboxEntries.status.equalsValue(status));
+    return query.map((row) => row.read(count) ?? 0).watchSingle();
   }
 }

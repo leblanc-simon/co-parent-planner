@@ -287,5 +287,32 @@
   "notificationsQuietStart": "Début",
   "notificationsQuietEnd": "Fin",
   "notificationsQuietUnset": "Non définie",
-  "notificationsSaved": "Préférences enregistrées."
+  "notificationsSaved": "Préférences enregistrées.",
+
+  "offlineBanner": "Hors-ligne — affichage des données mises en cache",
+  "offlineUnavailable": "Données non disponibles hors-ligne",
+  "offlineQueued": "Enregistré — en attente de synchro",
+  "syncPending": "{count, plural, =0{Tout est synchronisé} =1{1 modification en attente de synchro} other{{count} modifications en attente de synchro}}",
+  "@syncPending": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "syncRejected": "{count, plural, =0{} =1{1 modification refusée} other{{count} modifications refusées}}",
+  "@syncRejected": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "privacyTitle": "Confidentialité & données",
+  "privacyExportSection": "Exporter mes données",
+  "privacyExportHint": "Recevez une archive de vos données personnelles (droit d'accès et de portabilité).",
+  "privacyExportButton": "Demander l'export",
+  "privacyExportPending": "Export en cours de préparation…",
+  "privacyExportRefresh": "Actualiser le statut",
+  "privacyExportReady": "Votre export est prêt (lien temporaire) :",
+  "privacyDeleteSection": "Supprimer mon compte",
+  "privacyDeleteHint": "Vos données personnelles sont anonymisées de façon irréversible. Vos messages et notes sont conservés sous « Membre supprimé » pour préserver les fils.",
+  "privacyDeleteButton": "Supprimer mon compte",
+  "privacyDeleteConfirmTitle": "Supprimer définitivement ?",
+  "privacyDeleteConfirmBody": "Cette action est irréversible : votre compte sera anonymisé et vous serez déconnecté.",
+  "privacyDeleteConfirm": "Supprimer",
+  "privacyCancel": "Annuler"
 }

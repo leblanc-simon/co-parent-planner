@@ -8,6 +8,7 @@ use App\Entity\Concern\TimestampableTrait;
 use App\Enum\RgpdMode;
 use App\Enum\RgpdOperationStatus;
 use App\Enum\RgpdOperationType;
+use App\Repository\RgpdOperationRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Clock\Clock;
@@ -17,7 +18,7 @@ use Symfony\Component\Uid\Uuid;
  * Trace applicative des opérations du RGPD Manager (cdc §5.2 / §7.1). Table posée au Lot 0,
  * alimentée au Lot 8 (export, effacement, purge, anonymisation, rapports).
  */
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: RgpdOperationRepository::class)]
 #[ORM\Table(name: 'rgpd_operations')]
 #[ORM\HasLifecycleCallbacks]
 class RgpdOperation

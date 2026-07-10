@@ -13,14 +13,11 @@ part 'me_me_write.g.dart';
 /// un PATCH les ignore (cf. §4.5 pour avatar_url).
 @JsonSerializable()
 class MeMeWrite {
-  const MeMeWrite({
-    this.locale,
-    this.fullName,
-    this.phone,
-  });
-  
-  factory MeMeWrite.fromJson(Map<String, Object?> json) => _$MeMeWriteFromJson(json);
-  
+  const MeMeWrite({this.locale, this.fullName, this.phone});
+
+  factory MeMeWrite.fromJson(Map<String, Object?> json) =>
+      _$MeMeWriteFromJson(json);
+
   final String? locale;
   final String? fullName;
   final String? phone;

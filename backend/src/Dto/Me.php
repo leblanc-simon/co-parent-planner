@@ -8,11 +8,10 @@ use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\Patch;
-use ApiPlatform\Metadata\Post;
 use App\Entity\User;
+use App\State\Me\DeleteMeProcessor;
 use App\State\Me\MeProcessor;
 use App\State\Me\MeProvider;
-use App\State\NotImplementedProcessor;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -28,9 +27,9 @@ use Symfony\Component\Validator\Constraints as Assert;
     operations: [
         new Get(uriTemplate: '/me', provider: MeProvider::class),
         new Patch(uriTemplate: '/me', provider: MeProvider::class, processor: MeProcessor::class),
-        // RGPD (décision D7) : routés et dans l'OpenAPI mais 501 jusqu'au Lot 8.
-        new Post(uriTemplate: '/me/export', output: false, read: false, deserialize: false, processor: NotImplementedProcessor::class),
-        new Delete(uriTemplate: '/me', output: false, read: false, processor: NotImplementedProcessor::class),
+        // RGPD (Lot 8) : effacement/anonymisation du compte courant (US-SET-4b). L'export
+        // (US-SET-4) est porté par la ressource dédiée App\Dto\Rgpd\ExportResource (/me/export).
+        new Delete(uriTemplate: '/me', status: 204, output: false, read: false, processor: DeleteMeProcessor::class),
     ],
     normalizationContext: ['groups' => ['me:read']],
     denormalizationContext: ['groups' => ['me:write']],

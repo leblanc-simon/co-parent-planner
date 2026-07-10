@@ -4,30 +4,40 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
 import '../../../core/network/api_clients.dart';
+import '../../../core/sync/outbox_queued_exception.dart';
+import '../../../core/sync/outbox_service.dart';
+import '../../../core/sync/read_cache.dart';
 import '../../family/application/family_context.dart';
 
-/// Accès à l'agenda de la famille active (Lot 4). Le scope `X-Family-Id` est posé
-/// par l'intercepteur réseau. La fenêtre des occurrences n'est pas paramétrée ici :
-/// le backend renvoie le **mois courant** par défaut. La création est limitée aux
-/// événements **ponctuels** côté mobile (les séries s'affichent ; leur création et
-/// l'édition par portée passent par le web — l'offline riche est consolidé au Lot 8).
+/// Accès à l'agenda de la famille active (Lot 4 + offline Lot 8). Le scope `X-Family-Id`
+/// est posé par l'intercepteur réseau. Écran de référence de l'offline riche (§2.2) :
+/// lecture avec repli **cache local** cloisonné famille, création mise en **file outbox**
+/// hors-ligne. Le même patron s'étend aux autres écrans (garde, échanges, enfants…).
 class AgendaRepository {
-  AgendaRepository(this._clients);
+  AgendaRepository(this._clients, this._cache, this._outbox);
 
   final ApiClients _clients;
+  final ReadCache _cache;
+  final OutboxService _outbox;
 
-  /// Occurrences du mois courant, triées par date/heure (groupables par jour).
+  /// Occurrences du mois courant. En ligne : réseau + mise en cache ; hors-ligne :
+  /// repli sur le cache local de la famille (US-OFF-1). Liste vide si rien en cache.
   Future<List<api.Event>> listEvents(String familyId) async {
-    try {
-      return await _clients.events.apiFamiliesFamilyIdeventsGetCollection(
+    final result = await _cache.list<api.Event>(
+      familyId: familyId,
+      endpoint: 'events',
+      networkCall: () => _clients.events.apiFamiliesFamilyIdeventsGetCollection(
         familyId: familyId,
-      );
-    } on DioException catch (e) {
-      throw ApiException.fromDio(e);
-    }
+      ),
+      toJson: (e) => e.toJson(),
+      fromJson: api.Event.fromJson,
+    );
+    return result.items;
   }
 
-  /// US-AG-1 — crée un événement ponctuel.
+  /// US-AG-1 — crée un événement ponctuel. Hors-ligne (§2.2, US-OFF-2) : la mutation
+  /// est mise en file dans l'outbox (Idempotency-Key + X-Family-Id figés) et rejouée au
+  /// retour réseau ; l'appelant reçoit [OutboxQueuedException] (succès différé).
   Future<api.Event> createEvent(
     String familyId, {
     required String title,
@@ -40,28 +50,40 @@ class AgendaRepository {
     String? endsAt,
     String? location,
   }) async {
+    final request = api.EventCreateEventRequest(
+      title: title,
+      category: category,
+      responsibleMembershipId: responsibleMembershipId,
+      wholeFamily: wholeFamily,
+      childIds: childIds,
+      allDay: allDay,
+      startsAt: startsAt,
+      endsAt: endsAt,
+      location: location,
+    );
     try {
       return await _clients.events.apiFamiliesFamilyIdeventsPost(
         familyId: familyId,
-        body: api.EventCreateEventRequest(
-          title: title,
-          category: category,
-          responsibleMembershipId: responsibleMembershipId,
-          wholeFamily: wholeFamily,
-          childIds: childIds,
-          allDay: allDay,
-          startsAt: startsAt,
-          endsAt: endsAt,
-          location: location,
-        ),
+        body: request,
       );
     } on DioException catch (e) {
-      throw ApiException.fromDio(e);
+      if (e.response != null) {
+        throw ApiException.fromDio(
+          e,
+        ); // erreur métier en ligne → remontée normale
+      }
+      // Hors-ligne : mise en file (le rejeu réutilisera la même Idempotency-Key).
+      await _outbox.enqueue(
+        method: 'POST',
+        path: '/api/families/$familyId/events',
+        body: request.toJson(),
+        xFamilyId: familyId,
+      );
+      throw const OutboxQueuedException();
     }
   }
 
-  /// US-AG-5 — supprime un événement ponctuel (l'édition/suppression par portée
-  /// des séries reste web au Lot 4).
+  /// US-AG-5 — supprime un événement ponctuel.
   Future<void> deleteEvent(String eventId) async {
     try {
       await _clients.events.apiEventsIdDelete(id: eventId);
@@ -72,7 +94,11 @@ class AgendaRepository {
 }
 
 final agendaRepositoryProvider = Provider<AgendaRepository>(
-  (ref) => AgendaRepository(ref.watch(apiClientsProvider)),
+  (ref) => AgendaRepository(
+    ref.watch(apiClientsProvider),
+    ref.watch(readCacheProvider),
+    ref.watch(outboxServiceProvider),
+  ),
 );
 
 /// Occurrences de la famille active (recalculées à la bascule de famille).

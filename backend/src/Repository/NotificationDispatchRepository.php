@@ -22,4 +22,25 @@ class NotificationDispatchRepository extends ServiceEntityRepository
     {
         return $this->findOneBy(['notificationKey' => $notificationKey]);
     }
+
+    public function countOlderThan(\DateTimeImmutable $before): int
+    {
+        return (int) $this->createQueryBuilder('d')
+            ->select('COUNT(d.id)')
+            ->andWhere('d.createdAt < :before')
+            ->setParameter('before', $before)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /** Purge des journaux d'envoi au-delà de la rétention (§3.4). Idempotent. */
+    public function deleteOlderThan(\DateTimeImmutable $before): int
+    {
+        return (int) $this->createQueryBuilder('d')
+            ->delete()
+            ->andWhere('d.createdAt < :before')
+            ->setParameter('before', $before)
+            ->getQuery()
+            ->execute();
+    }
 }

@@ -5,7 +5,7 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-07-09** — **Lot 7 (Notifications e-mail) TERMINÉ** : préférences (`/api/me/notification-prefs` + quiet-hours), pipeline d'envoi **asynchrone idempotent** (Messenger `async`, `NotificationDispatch`, quiet-hours/report, locale, filtrage Voter+préférence, best-effort §4.6), **déclencheurs** garde/agenda/échanges (émission post-commit, hors auteur), **rappels d'échéance** planifiés (Scheduler /15 min), templates e-mail localisés, UI web + mobile (Paramètres › Notifications). Portes : backend **259 tests** / PHPStan 0 / cs-fixer 0 ; **E2E Playwright 15/15** ; mobile **142 tests** / couverture 75,1 %. **Lots 0→7 TERMINÉS. Prochain lot : Lot 8 — PWA / offline / RGPD Manager.**
+Dernière mise à jour : **2026-07-10** — **Lot 8 EN COURS** — chantiers **RGPD Manager**, **idempotence serveur** et **PWA web** TERMINÉS. (1) **RGPD** : registre, `RetentionPolicy`, Anonymiseur (irréversible, fils préservés, dernier admin, scrub invitations), Purger (dry-run/live, isolation d'erreur, bornes UTC), export async (ZIP + lien signé HMAC), `DELETE /me`, admin technique + step-up rate-limité, endpoints `/admin/rgpd/*`, test chiffrement au repos. (2) **Idempotence serveur** (§3.1/§6.3) : middleware `IdempotencySubscriber` sur POST `/api` avec `Idempotency-Key`, scope (user, endpoint, clé) + empreinte payload, **corps de réponse chiffré au repos**, store `IdempotencyKey` (TTL/purge). (3) **PWA** : manifest, service worker (précache shell + écrans RO cloisonnés famille, blocage mutations, page offline), contrôleur Stimulus `pwa` (install + bannière online/offline), **polices OFL auto-hébergées**, icônes. (4) **Offline mobile riche** : outbox statuts `pending/inFlight/synced/rejected` (autorité serveur : 2xx→synced, 409/403/422/404/410→rejected, 5xx/réseau/401→pending), cache de lecture générique cloisonné famille (agenda + enfants + échanges), rejeu auto, bannière hors-ligne + compteur, migration Drift v2. (5) **E2E Playwright PWA** : installabilité + hors-ligne RO + blocage mutation (503) + reconnexion. (6) **UI mobile RGPD** : Paramètres › Confidentialité (export async + lien signé ; suppression de compte, refus dernier admin). **Revues adversariales** : RGPD 8 corrigés / idempotence 2 P1/P2 corrigés. Portes : backend **280 tests** / PHPStan 0 / cs-fixer 0 / schéma sync ; mobile **157 tests** / couverture 75,5 % / analyze 0 / client canonique ; **E2E Playwright 18/18** ; OpenAPI inchangé. **Lot 8 TERMINÉ — Lots 0→8 TERMINÉS (v1 complète). Prochains : Lot 9 Dépenses (v2), Lot 10 Push mobile (v2).**
 
 Antérieur : **Lot 6 (Échanges temps réel) TERMINÉ** : backend (entités Exchange/ExchangeOption/Message🔒/OptionVote, 6 endpoints, moteur de décision par consensus + verrou pessimiste, Mercure post-commit, RGPD, i18n) + contrat OpenAPI + client Dart + UI web (écran /echanges maître-détail + badge nav + temps réel) + UI mobile (écran Échanges + badge accueil) + E2E + revue ciblée. Portes : backend **241 tests** / PHPStan 0 / cs-fixer 0 / Twig 22 ; **E2E Playwright 14/14** ; mobile **140 tests** / `dart analyze` 0 / couverture 75,2 % ; client généré intact. Avant : **Revue graphique (conformité maquettes §8) APPLIQUÉE** (113 écarts, 3 P2 différés justifiés). **Lots 0→6 TERMINÉS. Prochain lot : Lot 7 — Notifications e-mail.**
 
@@ -16,6 +16,8 @@ Antérieur : **Lot 6 (Échanges temps réel) TERMINÉ** : backend (entités Exch
 **Lot 0 — Fondations** : ✅ **TERMINÉ**.
 **Lot 1 — Familles/membres/droits/invitations/liens** : ✅ **TERMINÉ** (+ revue de code).
 **Lot 2 — Enfants & notes** : ✅ **TERMINÉ** (+ revue de code).
+
+**Lot 8 — PWA / offline mobile / RGPD Manager** (`specs/lots/lot-8-*.md`) : ✅ **TERMINÉ** — RGPD Manager complet (registre, rétention config, anonymiseur irréversible, purge dry-run/live, export lien signé, `DELETE /me`, admin technique + step-up), idempotence serveur générique (§6.3), PWA web (manifest + service worker + offline dégradé), offline mobile riche (outbox + cache cloisonné famille + résolution de conflits autorité serveur), UI mobile RGPD. **DoD vérifiée** (voir journal §6, 2026-07-10) : 2 revues adversariales (RGPD 8 corrigés, idempotence 2 P1/P2 corrigés) ; backend 280 / mobile 157 / E2E 18 ; test chiffrement au repos + cohérence registre verts. **v1 COMPLÈTE (Lots 0→8).**
 
 **Lot 3 — Garde (moteur + vacances)** (`specs/lots/lot-3-*.md`) : ✅ **TERMINÉ** (backend + moteur + adaptateur vacances + async/scheduler + endpoints + contrat OpenAPI + client Dart + UI web + E2E + temps réel + UI mobile + **revue de code + corrections**).
 
@@ -252,6 +254,132 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-07-10 — Lot 8 (Étape F) : finitions + clôture DoD
+- **UI mobile RGPD** (`lib/features/settings`) : `RgpdRepository` (export POST/GET, `DELETE /me`) +
+  écran `PrivacyScreen` (Paramètres › Confidentialité) : demande d'export → statut → **lien signé
+  temporaire** ; suppression de compte (dialogue de confirmation → anonymisation → déconnexion locale ;
+  **refus dernier admin 409** affiché). Client `meExport` ajouté à `ApiClients`. i18n `privacy*`.
+- **Cache de lecture étendu** : enfants (`listChildren`) et échanges (`list`) passent par `ReadCache`
+  (repli hors-ligne cloisonné famille), en plus de l'agenda. Patron uniforme (`toJson`/`fromJson` du
+  modèle généré).
+- **Tests** : `privacy_screen_test` (export → lien ; suppression → refus dernier admin). **157 tests
+  mobiles** verts, couverture **75,5 %**, `dart analyze` 0, format propre, client généré canonique.
+- **DoD Lot 8 — vérifiée** :
+  - Tests : backend **280** (unit + fonctionnels : anonymiseur/purge/export/idempotence/chiffrement) ✓ ;
+    **E2E Playwright 18/18** (dont installabilité PWA + offline RO + blocage mutation) ✓ ;
+    mobile **157** (outbox, cache, bannière, RGPD) ✓.
+  - Test de cohérence du registre **vert** ; **test de chiffrement au repos** (dump SQL = ciphertext,
+    5 champs 🔒) vert.
+  - Migrations fournies (`users.technical_admin`, `idempotency_keys`) + Drift v2 ; OpenAPI exporté à jour,
+    client Dart régénéré **sans drift**.
+  - i18n ICU (backend + mobile ; manifest/UI web en FR hardcodé, divergence assumée Lot 5) ; registre
+    `registre-donnees.md` à jour ; **INSTALL.md** à jour (env RGPD, exports, step-up) ; PHPStan 8 / cs-fixer
+    / `dart analyze` propres ; design §8 respecté (palette/typos PWA, badges/bannière mobile).
+  - Invariants : dernier admin protégé (409), champs 🔒 chiffrés + anonymisation irréversible, offline web
+    dégradé (aucune outbox web), scope famille (caches cloisonnés), pas de données de santé.
+- **Reste v1 (finitions non bloquantes, hors périmètre DoD)** : câblage outbox-écriture des autres
+  écrans mobiles (garde/échanges) sur le patron agenda ; auto-héberger d'éventuelles pièces jointes
+  d'export (avatars) ; store objet UE réel en prod (interface `ExportStorage` prête).
+
+### 2026-07-10 — Lot 8 (Étape E) : E2E Playwright PWA + suite complète
+- `tests/lot8-pwa.spec.ts` : (1) manifest servi/valide (`standalone`, icônes) + SW servi à la racine
+  (`Service-Worker-Allowed: /`) + enregistrement effectif dans le navigateur ; (2) hors-ligne —
+  écran servi depuis le cache du SW (titre applicatif, pas d'erreur brute) + bannière « Hors-ligne »,
+  **mutation POST bloquée** (503 synthétique, aucune file), reconnexion → bannière masquée.
+- **Bugs attrapés par l'E2E** : (a) le contrôleur `pwa` rechargeait la page à la **prise de contrôle
+  initiale** du SW (`clients.claim`) → interrompait le formulaire d'inscription ; corrigé (reload gaté
+  aux **mises à jour acceptées** uniquement). (b) `.pwa-banner { display:flex }` **écrasait** l'attribut
+  `hidden` (bannière vide visible sur toutes les pages) → règle `.pwa-banner[hidden]{display:none}`.
+- **Suite E2E complète : 18/18 verte** — aucune régression (le SW s'enregistre partout de façon
+  transparente : pass-through en ligne, network-first pour les navigations).
+
+### 2026-07-10 — Lot 8 (Étape D) : offline mobile riche (outbox + cache + UI)
+- **Statuts outbox** alignés §3.1 : `pending / inFlight / synced / rejected`. Résolution **autorité
+  serveur** dans `OutboxService._send` : 2xx→synced ; 409/403/422/404/410→rejected (terminal, `lastError`
+  qualifié) ; 5xx/réseau/timeout/401→reste pending (retry, `attempts++`). `retry()` (relance manuelle) /
+  `discard()` / `purgeSynced()`.
+- **Cache de lecture générique** `CacheEntries` (clé `"$familyId::$endpoint"`, **cloisonné famille**) +
+  `CacheDao` + helper `ReadCache` (stale-while-revalidate : réseau→cache ; hors-ligne→cache ; erreur
+  métier HTTP→propagée). Migration Drift **v2** (+ `MigrationStrategy`).
+- **Agenda = écran de référence** : `listEvents` via `ReadCache` (repli hors-ligne), `createEvent`
+  routé vers l'**outbox** hors-ligne (`OutboxQueuedException` → « en attente de synchro »). Patron
+  extensible aux autres écrans (garde/échanges/enfants) — non encore câblés (polish).
+- **Rejeu auto** activé : `OfflineBanner` (ConsumerStatefulWidget) tient `outboxServiceProvider` vivant
+  (écoute connectivité) + flush initial. **Bannière hors-ligne** + **compteur « N en attente de synchro »**
+  (pluriel ICU) branchés dans le shell. Providers `pendingSyncCountProvider`/`rejectedSyncCountProvider`
+  (streams Drift réactifs).
+- **Tests** : outbox (transitions de statut, retry, purge, FIFO), `ReadCache` (repli hors-ligne,
+  cloisonnement famille, erreur métier propagée), bannière (offline/compteur/masquée). **155 tests
+  mobiles** verts, couverture **75,5 %**, `dart analyze` 0, format propre, **client généré canonique**
+  (drift = ajouts RGPD uniquement). i18n ARB `offline*`/`sync*`.
+- **NB** : le sous-agent délégué au départ a échoué (0 action) ; chantier réalisé directement.
+
+### 2026-07-10 — Lot 8 (Étape C) : PWA web (manifest + service worker + offline)
+- **Manifest** (`GET /manifest.webmanifest`, `PwaController`) : `standalone`, thème terracotta, icônes
+  192/512 + maskable, servi à la **racine du scope**.
+- **Service worker** (`GET /sw.js`, Twig-rendu, `Service-Worker-Allowed: /`) : précache du shell
+  (CSS/JS digérés, polices, icônes, page offline) ; `activate` purge les caches d'anciennes versions
+  (clé = empreinte des assets) ; `fetch` = **network-first + repli cache pour les navigations**
+  (cache **cloisonné par famille** via message du client, §2.2), cache-first pour `/assets/`,
+  **blocage des mutations hors-ligne** (503 synthétique + message, **aucune file** — cdc §4.3).
+- **Contrôleur Stimulus `pwa`** : enregistrement SW + gestion de mise à jour (skip-waiting/reload),
+  bannière persistante « Hors-ligne » / toast « Connexion rétablie », prompt d'installation
+  (`beforeinstallprompt`), message « Action impossible hors-ligne » (via postMessage du SW).
+- **Polices OFL auto-hébergées** (Bricolage/Hanken TTF, réutilisées du mobile) : suppression de l'`@import`
+  CDN Google (offline réellement fonctionnel), `@font-face` réécrit par AssetMapper. Icônes PNG générées.
+- **Page hors-ligne** dédiée (`GET /offline`), précachée. Libellés FR hardcodés (cohérent UI web, Lot 5).
+- **Portes** : WebPagesTest +2 (manifest/sw/offline + intégration shell), lint Twig OK, `asset-map:compile`
+  OK (réécriture des polices). Aucun endpoint `/api` ajouté → OpenAPI inchangé.
+
+### 2026-07-10 — Lot 8 (Étape B) : idempotence serveur générique (§3.1/§6.3) + revue
+- **Middleware** `IdempotencySubscriber` (kernel.request prio 4 après firewall / kernel.response) : sur
+  `POST /api/*` (hors `/api/auth`) portant `Idempotency-Key`, scope `(user, endpoint, clé)` + empreinte
+  du payload (query+body). Verrou `pg_advisory_xact_lock` sérialisant la réclamation `in_progress`.
+- **Store** `IdempotencyKey` (unique `(user, clé)`) + `IdempotencyStatus` ; **corps de réponse mémorisé
+  CHIFFRÉ au repos** (`#[PersonalData]` encrypted, §4.8) → un dump SQL ne révèle rien. Rejeu à l'identique
+  d'une mutation aboutie ; **409** sur payload divergent (§4.2). Migration `Version20260710150000` ;
+  rétention `IdempotencyKeys` réactivée dans `RetentionPolicy` + purge (TTL 48 h à l'heure près).
+- **Revue adversariale ciblée** (2 dimensions → vérification) : **2 constats corrigés** — **P1** : les 4xx
+  transitoires (429/403/404-réplication) étaient mémorisées et rejouées → gel/perte de mutation ⇒ **seuls
+  les 2xx sont mémorisés**, toute erreur libère la clé ; **P1/P2** : une entrée `in_progress` orpheline
+  (worker mort) bloquait la clé jusqu'au TTL ⇒ **bail de fraîcheur** (réclamation après 5 min).
+- **Coexistence** : l'idempotence par colonne des Lots 4/6 (Event/Exchange/Message) reste en défense en
+  profondeur ; le middleware court-circuite avant le contrôleur sur rejeu (aucun double effet).
+- **Portes** : backend tests idempotence +5 (rejeu, scope par utilisateur, incohérence payload 409,
+  clé non brûlée par une 4xx), PHPStan 0, cs-fixer 0. OpenAPI inchangé (comportement d'en-tête).
+
+### 2026-07-10 — Lot 8 (Étape A) : backend RGPD Manager complet + revue de sécurité
+- **Décisions** (validées) : rétention en **config déclarative** (`RetentionPolicy`, pas de table) ; export
+  sur **filesystem local + route signée HMAC** derrière `ExportStorage` (prod → objet UE) ; auth renforcée
+  par **step-up** (ré-authentification → jeton court réutilisable dans sa fenêtre).
+- **Registre & rapports** : `PersonalDataRegistry` exposé via `GET /admin/rgpd/register` ; `ComplianceReporter`
+  (`/admin/rgpd/compliance-report` : rétentions, écarts = champs chiffrés sans entrée, hébergement UE) ;
+  journal `GET /admin/rgpd/operations` (filtré/paginé) via `RgpdOperationRepository`.
+- **Anonymiseur** (`DELETE /me` + purge) : neutralisation irréversible (`fullName`/`phone`→null, e-mail
+  pseudonymisé, hash écrasé), fils **préservés** (retrait des memberships → `SET NULL` auteur), **dernier
+  admin protégé** (409), sessions révoquées, **invitations du sujet scrubées** (e-mail chiffré réversible),
+  idempotent.
+- **Purge planifiée** (`POST /admin/rgpd/purge?dryRun=`, Scheduler /jour) : dry-run par défaut (aucune
+  écriture), live idempotent, **isolation d'erreur par compte**, exclusion dernier admin/admin technique,
+  bornes en jours civils Europe/Paris **rendues en UTC** ; exports purgés à l'heure près (TTL).
+- **Export** (`POST /me/export` 202 → worker async idempotent **réclamation atomique** → `GET /me/export/{id}`
+  + **lien signé temporaire** → téléchargement `no-store`, scopé sujet, tiers 403, rate-limité).
+- **Auth admin** : `User.technicalAdmin` → `ROLE_ADMIN` (dérivé de l'entité, jamais dans le JWT),
+  `access_control ^/api/admin`, `AdminAccess` (step-up requis), `POST /admin/step-up` (rate-limité anti
+  brute-force). Migration `Version20260710120000` (`users.technical_admin`).
+- **AuditLog** : 13 actions RGPD/admin, sans clair sensible en `metadata` (avertissement ancré) ;
+  test append-only. **Chiffrement au repos** : test qui prouve par lecture SQL brute que les 5 champs 🔒
+  sont du ciphertext.
+- **Revue de sécurité adversariale** (5 dimensions → vérification réfutatrice, 15 agents) : **8 confirmés
+  corrigés** — P2 (invitations non scrubées, step-up sans rate-limit, purge sans isolation d'erreur),
+  P3 (download sans `no-store`, idempotence export concurrente, sur-rétention exports, décalage fuseau
+  borne/ancre, `metadata` json hors garde-fou → différé documenté). **2 réfutés** (admin `Suspended`
+  inatteignable ; FK `SET NULL` append-only théorique).
+- **Portes** : backend **273 tests / 2304 assertions**, PHPStan niv.8 (0), cs-fixer (0), `lint:container`,
+  schéma en sync ; OpenAPI exporté (7 chemins RGPD) + client Dart régénéré (mobile **142 tests**, analyze 0).
+  Registre + INSTALL.md à jour. **Reste Lot 8** : idempotence serveur générique (§6.3), PWA web, offline
+  mobile riche, E2E Playwright.
 
 ### 2026-07-09 — Lot 7 : Notifications e-mail — préférences + pipeline + déclencheurs + rappels + UI
 - **Préférences (US-SET-1)** : `GET/PUT /api/me/notification-prefs` (scope utilisateur) — toggles e-mail

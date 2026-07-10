@@ -6,7 +6,6 @@ import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 
 import '../models/me_me_read.dart';
-import '../models/me_me_write.dart';
 import '../models/me_me_write_json_merge_patch.dart';
 
 part 'me_client.g.dart';
@@ -33,13 +32,5 @@ abstract class MeClient {
   @PATCH('/api/me')
   Future<MeMeRead> apiMePatch({
     @Body() required MeMeWriteJsonMergePatch body,
-  });
-
-  /// Creates a Me resource.
-  ///
-  /// Creates a Me resource.
-  @POST('/api/me/export')
-  Future<void> apiMeexportPost({
-    @Body() required MeMeWrite body,
   });
 }

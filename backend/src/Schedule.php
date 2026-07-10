@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App;
 
+use App\Enum\RgpdMode;
 use App\Message\ExtendCustodyHorizon;
 use App\Message\HealthPing;
 use App\Message\PurgeExpiredInvitations;
 use App\Message\RefreshSchoolHolidays;
+use App\Message\RunRgpdPurge;
 use App\Message\SendDeadlineReminders;
 use Symfony\Component\Scheduler\Attribute\AsSchedule;
 use Symfony\Component\Scheduler\RecurringMessage;
@@ -39,6 +41,8 @@ class Schedule implements ScheduleProviderInterface
             ->add(RecurringMessage::every('1 day', new ExtendCustodyHorizon()))
             ->add(RecurringMessage::every('1 month', new RefreshSchoolHolidays()))
             // Notifications (Lot 7) : rappels d'échéance des décisions (dédup idempotente).
-            ->add(RecurringMessage::every('15 minutes', new SendDeadlineReminders()));
+            ->add(RecurringMessage::every('15 minutes', new SendDeadlineReminders()))
+            // RGPD (Lot 8) : purge planifiée quotidienne (live), idempotente et journalisée (§3.4).
+            ->add(RecurringMessage::every('1 day', new RunRgpdPurge(RgpdMode::Live->value)));
     }
 }

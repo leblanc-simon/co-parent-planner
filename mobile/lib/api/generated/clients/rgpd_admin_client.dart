@@ -29,9 +29,7 @@ abstract class RgpdAdminClient {
   ///
   /// Creates a RgpdAdmin resource.
   @POST('/api/admin/rgpd/purge')
-  Future<void> apiAdminrgpdpurgePost({
-    @Body() required RgpdAdmin body,
-  });
+  Future<void> apiAdminrgpdpurgePost({@Body() required RgpdAdmin body});
 
   /// Retrieves the collection of RgpdAdmin resources.
   ///

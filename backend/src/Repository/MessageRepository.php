@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Exchange;
 use App\Entity\Message;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -35,6 +36,24 @@ class MessageRepository extends ServiceEntityRepository
     public function findOneByIdempotencyKey(Exchange $exchange, string $key): ?Message
     {
         return $this->findOneBy(['exchange' => $exchange, 'idempotencyKey' => $key]);
+    }
+
+    /**
+     * Messages dont l'utilisateur est l'auteur (export RGPD, portabilité — §3.5).
+     *
+     * @return list<Message>
+     */
+    public function findByAuthorUser(User $user): array
+    {
+        /** @var list<Message> $result */
+        $result = $this->createQueryBuilder('m')
+            ->join('m.authorMembership', 'am')
+            ->andWhere('am.user = :user')
+            ->setParameter('user', $user)
+            ->orderBy('m.sentAt', 'ASC')
+            ->getQuery()->getResult();
+
+        return $result;
     }
 
     /**

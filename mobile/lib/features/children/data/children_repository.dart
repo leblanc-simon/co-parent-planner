@@ -4,22 +4,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
 import '../../../core/network/api_clients.dart';
+import '../../../core/sync/read_cache.dart';
 import '../../family/application/family_context.dart';
 
 /// Accès aux enfants et à leurs notes (Lot 2). Scope `X-Family-Id` posé par l'intercepteur réseau.
+/// Lecture avec repli **cache local** cloisonné famille (Lot 8 §2.2, US-OFF-1).
 class ChildrenRepository {
-  ChildrenRepository(this._clients);
+  ChildrenRepository(this._clients, this._cache);
 
   final ApiClients _clients;
+  final ReadCache _cache;
 
   Future<List<api.Child>> listChildren(String familyId) async {
-    try {
-      return await _clients.children.apiFamiliesFamilyIdchildrenGetCollection(
-        familyId: familyId,
-      );
-    } on DioException catch (e) {
-      throw ApiException.fromDio(e);
-    }
+    final result = await _cache.list<api.Child>(
+      familyId: familyId,
+      endpoint: 'children',
+      networkCall: () => _clients.children
+          .apiFamiliesFamilyIdchildrenGetCollection(familyId: familyId),
+      toJson: (c) => c.toJson(),
+      fromJson: api.Child.fromJson,
+    );
+    return result.items;
   }
 
   Future<List<api.Note>> listNotes(String childId) async {
@@ -46,7 +51,10 @@ class ChildrenRepository {
 }
 
 final childrenRepositoryProvider = Provider<ChildrenRepository>(
-  (ref) => ChildrenRepository(ref.watch(apiClientsProvider)),
+  (ref) => ChildrenRepository(
+    ref.watch(apiClientsProvider),
+    ref.watch(readCacheProvider),
+  ),
 );
 
 /// Enfants de la famille active (recalculé à la bascule de famille).

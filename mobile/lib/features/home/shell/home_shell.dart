@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/liquid_glass.dart';
+import '../../../core/widgets/offline_banner.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// Shell a onglets (US-HOME-1). `StatefulShellRoute.indexedStack` conserve
@@ -30,7 +31,12 @@ class HomeShell extends StatelessWidget {
     ];
 
     return Scaffold(
-      body: navigationShell,
+      body: Column(
+        children: [
+          const OfflineBanner(),
+          Expanded(child: navigationShell),
+        ],
+      ),
       bottomNavigationBar: LiquidGlass(
         enableBlur: isIos,
         border: const Border(top: BorderSide(color: AppColors.divider)),

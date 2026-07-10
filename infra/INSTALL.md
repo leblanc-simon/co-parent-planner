@@ -189,6 +189,19 @@ php bin/console api:openapi:export --output=../contracts/openapi.json   # contra
 | `ACCESS_TOKEN_TTL` / `REFRESH_TOKEN_TTL` / `ONE_TIME_TOKEN_TTL` | durées de vie (s) | 900 / 2592000 / 3600 |
 | `COOKIE_SECURE` | force le flag Secure des cookies d'auth | `false` (dev) — **`true` en prod** |
 | `TRUSTED_PROXIES` | proxies de confiance (CIDR) | vide — **à définir derrière un LB** |
+| `RGPD_EXPORT_DIR` | répertoire des archives d'export RGPD (hors web-root) | `%kernel.project_dir%/var/exports` — **prod : stockage objet UE** |
+| `RGPD_EXPORT_LINK_TTL` | TTL (s) du lien signé de téléchargement d'export | `3600` |
+| `RGPD_ADMIN_STEP_UP_TTL` | TTL (s) du grant step-up admin technique (auth renforcée) | `900` |
+| `RGPD_EU_HOSTING` | hébergement UE confirmé (reporté par le rapport de conformité) | `1` |
+| `RGPD_RETENTION_*` | durées de rétention/purge (comptes inactifs, invitations, exports, journaux, notifications) | 1095 j / 30 j / 24 h / 1095 j / 90 j |
+| `RL_RGPD_EXPORT_LIMIT` | exports RGPD max par utilisateur et par heure | `5` |
+
+> **RGPD (Lot 8)** : en dev/bare-metal les exports sont écrits dans `backend/var/exports` (créé
+> automatiquement, hors web-root) et servis par lien signé HMAC ; **en prod**, brancher une impl
+> `ExportStorage` sur un stockage objet UE (S3-compatible) et fournir `RGPD_EXPORT_DIR`/équivalent.
+> La purge RGPD est planifiée quotidiennement (worker `scheduler_default`). Promouvoir un
+> administrateur technique : `UPDATE users SET technical_admin = true WHERE email = '…';` (aucun rôle
+> familial n'accède à `/api/admin/rgpd/*` ; auth renforcée par step-up en plus).
 
 > **Prod multi-instances** : passer le transport Messenger et les rate-limiters sur **Redis**
 > (verrou partagé), et `COOKIE_SECURE=true`, `TRUSTED_PROXIES` selon l'infra.

@@ -11,7 +11,7 @@
 > 🔒 = chiffré au repos (AES-256-GCM, clé hors base — cdc §5.3).
 > La clé `Entité.champ` doit apparaître telle quelle dans la colonne « Champ ».
 
-Dernière mise à jour : 2026-07-01 (Lot 5).
+Dernière mise à jour : 2026-07-10 (Lot 8 — RGPD Manager actif).
 
 ## Champs (Lot 0)
 
@@ -107,6 +107,33 @@ les références (`SET NULL`) sans casser les liens/audits :
 |---|---|---|---|---|---|---|
 | `NotificationPref.enabled` (par `category`/`channel`) | Préférence | Standard | Exécution du contrat / intérêt légitime | Router les notifications selon le choix de l'utilisateur | Durée de vie du compte ; purge RGPD (Lot 8) | Interne (usage serveur) |
 | `User.quietHoursStart` / `User.quietHoursEnd` | Préférence | Standard (`HH:MM`) | Intérêt légitime (confort) | Reporter les e-mails hors de la plage de silence | Durée de vie du compte | Interne |
+
+## Lot 8 — RGPD Manager (export, effacement, anonymisation, purge)
+
+> Le Lot 8 **active** le RGPD Manager sans introduire de nouveau champ personnel. Il consomme et
+> protège les champs déjà déclarés ci-dessus :
+>
+> - **Export (`POST /me/export`)** : les champs 🔒 du sujet sont déchiffrés **en mémoire** pour le sujet
+>   uniquement, sérialisés dans une archive ZIP servie par **lien signé temporaire** (jamais les données
+>   d'autrui). Artefact à TTL court (stockage objet UE en prod ; filesystem local hors web-root en dev),
+>   purgé par la purge planifiée (scope `expired_exports`).
+> - **Effacement (`DELETE /me`) / anonymisation** : neutralisation **irréversible** de `User.fullName`,
+>   `User.phone` (→ null), `User.email` (pseudonymisé), `passwordHash` (écrasé) ; les fils (`Message.text`,
+>   `Note.text` 🔒) sont **conservés**, l'auteur passant à « Membre supprimé » via le `ON DELETE SET NULL`
+>   des FK auteur. Dernier admin protégé (409). Sessions révoquées.
+> - **Purge planifiée** : durées de rétention **déclaratives** (config versionnée `RetentionPolicy`,
+>   surchargeables par env), bornes calculées en fuseau Europe/Paris. Comptes inactifs → anonymisation
+>   (hors dernier admin / admin technique) ; invitations/journaux/notifications/OTT expirés → suppression.
+> - **`User.technicalAdmin`** : booléen **technique, non personnel** (rôle `ROLE_ADMIN` dérivé, cdc §6.2) —
+>   pas d'attribut `#[PersonalData]`, hors registre.
+> - **Audit** : chaque opération RGPD (export/erasure/anonymize/purge) et chaque accès admin sont
+>   journalisés dans `AuditLog` (append-only), **sans clair sensible** dans `metadata` (identifiants seuls).
+> - **Idempotence serveur (§6.3)** : la réponse mémorisée d'une mutation rejouée est **chiffrée au repos**
+>   (elle peut contenir des données déchiffrées pour le sujet) et purgée par TTL court.
+
+| Champ | Catégorie | Sensibilité | Base légale | Finalité | Conservation | Destinataires |
+|---|---|---|---|---|---|---|
+| `IdempotencyKey.responseBody` | Contenu | 🔒 Chiffré (AES-256-GCM) | Exécution du contrat (fiabilité de la synchro hors-ligne) | Rejouer à l'identique une mutation idempotente (dédoublonnage réseau) | TTL court (défaut 48 h) ; purge planifiée RGPD (scope `idempotency_keys`) | Interne (usage serveur), jamais exposé |
 
 ## Champs à venir (rappel, autres lots)
 

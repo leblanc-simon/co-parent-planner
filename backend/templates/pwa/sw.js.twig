@@ -1,0 +1,104 @@
+/* Service worker CoParentPlanner (Lot 8 §3.7). Généré par Symfony (chemins d'assets digérés injectés).
+ * Offline WEB = dégradé : lecture seule des écrans consultés + shell ; AUCUNE file d'écriture
+ * (décision verrouillée cdc §4.3). Cache cloisonné par famille (jamais de mélange de scopes, §2.2). */
+const VERSION = '{{ version }}';
+const STATIC_CACHE = 'cpp-static-' + VERSION;
+const PAGES_CACHE = 'cpp-pages-' + VERSION;
+const OFFLINE_URL = '{{ path('app_offline')|e('js') }}';
+const PRECACHE = {{ precache|json_encode|raw }};
+
+// Famille active : fournie par le client (le SW ne peut pas lire les cookies). Cloisonne le cache.
+let currentFamily = '';
+
+self.addEventListener('install', (event) => {
+    event.waitUntil(caches.open(STATIC_CACHE).then((c) => c.addAll(PRECACHE)).catch(() => {}));
+});
+
+self.addEventListener('activate', (event) => {
+    event.waitUntil((async () => {
+        const keys = await caches.keys();
+        await Promise.all(
+            keys.filter((k) => k.startsWith('cpp-') && !k.endsWith(VERSION)).map((k) => caches.delete(k)),
+        );
+        await self.clients.claim();
+    })());
+});
+
+self.addEventListener('message', (event) => {
+    const data = event.data || {};
+    if (data.type === 'family') { currentFamily = data.family || ''; }
+    if (data.type === 'skip-waiting') { self.skipWaiting(); }
+});
+
+self.addEventListener('fetch', (event) => {
+    const req = event.request;
+    const url = new URL(req.url);
+    if (url.origin !== self.location.origin) { return; }
+
+    // Mutations : jamais mises en file hors-ligne ; message clair (US-PWA-3), état inchangé.
+    if (req.method !== 'GET') {
+        event.respondWith(
+            fetch(req).catch(() => {
+                broadcast({ type: 'offline-mutation' });
+                return new Response(JSON.stringify({ offline: true }), {
+                    status: 503, headers: { 'Content-Type': 'application/json' },
+                });
+            }),
+        );
+        return;
+    }
+
+    // Assets versionnés : cache-first (immutables par hash).
+    if (url.pathname.startsWith('/assets/')) {
+        event.respondWith(cacheFirst(req));
+        return;
+    }
+
+    // Navigations d'écrans : network-first, repli sur le cache (cloisonné famille), sinon page offline.
+    if (req.mode === 'navigate') {
+        event.respondWith(navigationStrategy(req));
+        return;
+    }
+
+    // Autres GET même origine : réseau, repli cache.
+    event.respondWith(fetch(req).catch(() => caches.match(req).then((r) => r || offlineFallback())));
+});
+
+async function cacheFirst(req) {
+    const cached = await caches.match(req);
+    if (cached) { return cached; }
+    try {
+        const resp = await fetch(req);
+        if (resp.ok) { (await caches.open(STATIC_CACHE)).put(req, resp.clone()); }
+        return resp;
+    } catch (e) {
+        return offlineFallback();
+    }
+}
+
+async function navigationStrategy(req) {
+    const key = familyKey(req.url);
+    try {
+        const resp = await fetch(req);
+        if (resp.ok) { (await caches.open(PAGES_CACHE)).put(key, resp.clone()); }
+        return resp;
+    } catch (e) {
+        const cached = await caches.match(key);
+        return cached || offlineFallback();
+    }
+}
+
+async function offlineFallback() {
+    return (await caches.match(OFFLINE_URL)) || new Response('Hors-ligne', { status: 503 });
+}
+
+// Clé de cache cloisonnée par famille active : deux familles ne partagent jamais le même écran caché.
+function familyKey(rawUrl) {
+    const u = new URL(rawUrl);
+    u.searchParams.set('__fam', currentFamily);
+    return u.toString();
+}
+
+function broadcast(message) {
+    self.clients.matchAll().then((clients) => clients.forEach((c) => c.postMessage(message)));
+}

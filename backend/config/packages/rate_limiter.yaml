@@ -22,3 +22,18 @@ framework:
             interval: '1 hour'
             cache_pool: cache.app
             lock_factory: null
+        # Export RGPD : par utilisateur (anti-abus de génération d'archives, US-SET-4).
+        rgpd_export:
+            policy: sliding_window
+            limit: '%env(int:RL_RGPD_EXPORT_LIMIT)%'
+            interval: '1 hour'
+            cache_pool: cache.app
+            lock_factory: null
+        # Step-up admin technique : anti brute-force du mot de passe sur une session admin volée
+        # (cdc §6.2). Par (IP, utilisateur).
+        admin_step_up:
+            policy: sliding_window
+            limit: '%env(int:RL_ADMIN_STEP_UP_LIMIT)%'
+            interval: '15 minutes'
+            cache_pool: cache.app
+            lock_factory: null

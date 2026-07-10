@@ -210,11 +210,13 @@ php bin/console api:openapi:export --output=../contracts/openapi.json   # contra
 
 ## E. Build iOS sans Mac (Lot 9 — deux pipelines CI)
 
-> 🚧 **À VENIR — Lot 9 non encore échafaudé.** Cette section décrit la **procédure cible** ; les
-> fichiers mentionnés (`.github/workflows/build-ios.yml`, `codemagic.yaml`, `mobile/ios/fastlane/*`,
-> `mobile/ios/Gemfile`, dépôt de certificats `match`) **n'existent pas encore** et seront créés lors
-> de l'implémentation du Lot 9. Contrairement aux sections A–D (opérationnelles, Lots 0→8), rien ici
-> n'est encore exécutable en l'état.
+> ✅ **Échafaudé (Lot 9).** Fichiers livrés : `.github/workflows/build-ios.yml` (pipeline
+> principal), `codemagic.yaml` (secours), `mobile/ios/fastlane/{Fastfile,Matchfile,Appfile}`,
+> `mobile/ios/Gemfile`, `mobile/ios/ExportOptions.plist`. **Reste à faire une fois, hors dépôt**
+> (action du porteur produit / mainteneur, cf. §E.1) : créer le compte Apple Developer + la clé
+> API ASC, initialiser le dépôt de certificats `match`, et renseigner les secrets (§E.2) dans les
+> deux CI. Tant que ces prérequis manquants ne sont pas fournis, chaque pipeline **échoue tôt et
+> proprement** (message listant les secrets absents) plutôt que de produire un build non signé.
 
 > Objectif : produire un **`.ipa` signé** (artefact CI, puis TestFlight) **sans poste Mac local**.
 > La compilation iOS exige un runner macOS ; ce projet en maintiendra **deux, interchangeables** :
@@ -228,15 +230,23 @@ php bin/console api:openapi:export --output=../contracts/openapi.json   # contra
 - **Compte Apple Developer Program** actif (99 $/an) et une **clé API App Store Connect** (`.p8` +
   `key id` + `issuer id`) — pas d'identifiant/mot de passe Apple personnel en CI.
 - **Dépôt Git privé de certificats** (`match`), initialisé **une seule fois depuis un Mac** (ou un
-  job CI manuel dédié) par un mainteneur habilité :
+  job CI manuel dédié) par un mainteneur habilité. Le `Matchfile` est déjà commité
+  (`mobile/ios/fastlane/Matchfile`) : il lit l'URL du dépôt dans `MATCH_GIT_URL`, la passphrase dans
+  `MATCH_PASSWORD` et l'auth Git dans `MATCH_GIT_BASIC_AUTHORIZATION`. La génération initiale utilise
+  la lane dédiée `certificates` (seule à écrire dans le dépôt, `readonly:false`) :
   ```bash
   cd mobile/ios
-  bundle install                       # installe fastlane (voir mobile/ios/Gemfile)
-  bundle exec fastlane match init      # crée Matchfile (URL du dépôt de certificats)
-  bundle exec fastlane match appstore  # génère + chiffre certificats/profils dans le dépôt privé
+  bundle install                              # installe fastlane + cocoapods (mobile/ios/Gemfile)
+  export MATCH_GIT_URL="git@…/certificats-ios.git"   # dépôt PRIVÉ dédié
+  export MATCH_PASSWORD="…"                    # passphrase de chiffrement match
+  export APPLE_TEAM_ID="…" ASC_KEY_ID="…" ASC_ISSUER_ID="…"
+  export ASC_KEY_CONTENT="$(base64 -i ~/secrets/AuthKey_XXXX.p8)"   # .p8 HORS dépôt (cf. §E.2)
+  bundle exec fastlane ios certificates       # génère + chiffre certificats/profils dans le dépôt
   ```
-  > La génération/révocation de certificats reste **manuelle et locale** : la CI est **`--readonly`**
-  > (elle consomme les certificats, ne les régénère jamais).
+  > La génération/révocation de certificats reste **manuelle et locale** (lane `certificates`) : la
+  > CI est **toujours `readonly`** (lanes `build`/`release`) — elle consomme les certificats, ne les
+  > régénère jamais (invariant §6.3). Toute la logique vit dans `mobile/ios/fastlane/Fastfile` ; les
+  > deux CI ne font que l'appeler (§E.5).
 
 ### E.2 Secrets à configurer — **dans les deux systèmes**
 
@@ -249,6 +259,18 @@ Mêmes valeurs des deux côtés (elles pointent vers le même dépôt `match` et
 | `MATCH_GIT_TOKEN` | token d'accès (lecture seule) au dépôt de certificats | Repository secret | variable de groupe |
 | `ASC_KEY_ID` / `ASC_ISSUER_ID` / `ASC_KEY_CONTENT` | clé API App Store Connect (upload TestFlight) | Repository secrets | variables de groupe |
 | `APPLE_TEAM_ID` | identifiant d'équipe Apple | Repository secret | variable de groupe |
+
+**Formats attendus** (identiques des deux côtés) :
+- `ASC_KEY_CONTENT` = **contenu du fichier `.p8` encodé en base64** (`base64 -i ~/secrets/AuthKey_XXXX.p8`,
+  depuis un emplacement **hors dépôt**). Le `Fastfile` le décode (`is_key_content_base64: true`). Ne
+  jamais committer le `.p8` (le `.gitignore` racine ignore `*.p8`/`*.p12`/`*.cer`/`*.mobileprovision`
+  par filet de sécurité, mais le bon réflexe reste de garder la clé hors de l'arbre suivi par git).
+- `MATCH_GIT_TOKEN` = **token brut** (PAT en lecture seule sur le dépôt de certificats). Les deux
+  pipelines en dérivent automatiquement `MATCH_GIT_BASIC_AUTHORIZATION`
+  (`base64("x-access-token:$MATCH_GIT_TOKEN")`) écrit dans l'env du job — le token n'apparaît jamais
+  dans les logs (secrets masqués par la CI). Alternative : `MATCH_GIT_URL` en HTTPS avec le token
+  déjà inclus (déconseillé — le token transiterait dans l'URL).
+- `MATCH_GIT_URL` = URL SSH ou HTTPS du **dépôt de certificats dédié** (jamais le dépôt applicatif).
 
 > **Rotation synchronisée** : toute rotation de `MATCH_PASSWORD` ou de la clé API ASC doit être
 > répercutée **le même jour dans les deux systèmes**, sinon l'un des deux pipelines cesse de
@@ -263,7 +285,9 @@ Aucun secret ni certificat n'apparaît jamais en clair dans les logs ou artefact
 - **GitHub Actions** — workflow `.github/workflows/build-ios.yml` :
   - manuellement via **Actions → « iOS build » → Run workflow** (`workflow_dispatch`), en choisissant
     la lane `build` (artefact seul) ou `release` (artefact + upload TestFlight) ;
-  - automatiquement sur **push d'un tag `v*`** (release).
+  - automatiquement sur **push d'un tag `v*`** (déclenche la lane `release`).
+  - Un job préalable `mobile-tests` (runner Linux : `flutter test` + `dart analyze` + drift OpenAPI)
+    **conditionne** le build signé (§3.4) : pas d'`.ipa` si les tests Flutter échouent.
 - **Codemagic** — workflow `ios-build` (`codemagic.yaml`) : **build manuel depuis le dashboard**
   Codemagic ; un second workflow `ios-release` réalise l'upload TestFlight.
 
@@ -275,7 +299,7 @@ Aucun secret ni certificat n'apparaît jamais en clair dans les logs ou artefact
 
 - **GitHub Actions** : onglet **Artifacts** du run → `.ipa` téléchargeable (conservé N jours ;
   nommage incluant le commit SHA / tag).
-- **Codemagic** : section **Artifacts** du build (`build/ios/ipa/*.ipa`).
+- **Codemagic** : section **Artifacts** du build (`mobile/build/ios/ipa/*.ipa`).
 - **TestFlight** (si lane `release`) : build installable sur device réel via l'app TestFlight.
 
 ### E.5 Basculer d'une CI à l'autre
@@ -290,5 +314,8 @@ CI ne font que l'appeler. Donc :
   de certificats restent inchangés.
 
 > **Dépendances ajoutées par ce lot** (installées sur le runner macOS uniquement, pas requises pour
-> le dev backend/web) : **Ruby + Bundler**, **Fastlane** (`mobile/ios/Gemfile`), **CocoaPods**
-> (`cd ios && pod install`). La version Flutter est **figée, identique au Lot 0**.
+> le dev backend/web) : **Ruby 3.3 + Bundler**, **Fastlane `~> 2.226`** et **CocoaPods `~> 1.16`**
+> (bornées dans `mobile/ios/Gemfile` ; committer `mobile/ios/Gemfile.lock` depuis un poste macOS fige
+> complètement la résolution). `pod install` n'est **pas** une étape CI séparée : le `Fastfile` le
+> déclenche via `flutter build ios --no-codesign` (le projet ne committe pas de `Podfile`, généré par
+> le tool Flutter au 1er build). La version **Flutter est figée à `3.38.9`**, identique au Lot 0.

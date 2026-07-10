@@ -1,0 +1,139 @@
+# Build iOS signé sans Mac (Lot 9, cdc §3.1) — PIPELINE PRINCIPAL (GitHub Actions).
+#
+# Ce workflow ne contient AUCUNE logique de build/signature : il installe les prérequis
+# (Flutter, Ruby/Bundler, CocoaPods) puis appelle la lane Fastlane partagée
+# (mobile/ios/fastlane/Fastfile), strictement identique à celle appelée par Codemagic
+# (codemagic.yaml). Basculer de CI = changer de déclencheur, jamais la logique (§2.4).
+#
+# Déclenchement : MANUEL (workflow_dispatch, choix build|release) ou push d'un tag v* (release).
+# Jamais d'upload TestFlight sur simple commit (§6.2). Certificats en lecture seule (§6.3).
+name: iOS build
+
+on:
+  workflow_dispatch:
+    inputs:
+      lane:
+        description: "Lane Fastlane : build = .ipa en artefact ; release = .ipa + upload TestFlight"
+        type: choice
+        options:
+          - build
+          - release
+        default: build
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: '3.38.9'   # figé, identique au job mobile du Lot 0 (.github/workflows/ci.yml)
+
+jobs:
+  # Porte de non-régression (§3.4) : pas de build iOS signé si les tests Flutter échouent.
+  # Réplique les gates rapides du job mobile (Lot 0) sur un runner Linux (moins coûteux).
+  mobile-tests:
+    name: Mobile (tests — préalable au build iOS)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - run: flutter pub get
+      - name: Régénérer le client + vérifier le drift OpenAPI
+        run: |
+          dart run swagger_parser
+          dart run build_runner build --delete-conflicting-outputs --force-jit
+          git diff --exit-code lib/api/generated \
+            || { echo "::error::Client Dart désaligné de l'OpenAPI — régénérez et committez."; exit 1; }
+      - name: Analyse statique
+        run: dart analyze
+      - name: Tests
+        run: flutter test
+
+  build-ios:
+    name: iOS (.ipa signé via Fastlane match)
+    needs: mobile-tests
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      # Secrets de signature — configurés dans les deux CI sous les mêmes noms (infra/INSTALL.md §E.2).
+      MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      MATCH_GIT_TOKEN: ${{ secrets.MATCH_GIT_TOKEN }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_CONTENT: ${{ secrets.ASC_KEY_CONTENT }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # tags nécessaires au versionnage/traçabilité de l'artefact
+
+      # Échec explicite et lisible si un secret requis manque — pas de build non signé silencieux (DoD).
+      - name: Vérifier la présence des secrets requis
+        run: |
+          missing=()
+          for v in MATCH_GIT_URL MATCH_PASSWORD MATCH_GIT_TOKEN APPLE_TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_CONTENT; do
+            if [ -z "${!v}" ]; then missing+=("$v"); fi
+          done
+          if [ ${#missing[@]} -ne 0 ]; then
+            echo "::error::Secrets manquants : ${missing[*]} — voir infra/INSTALL.md §E.2 (Build iOS sans Mac)."
+            exit 1
+          fi
+
+      # Auth Git du dépôt de certificats match, dérivée du token (le token brut n'apparaît pas
+      # dans les logs : GitHub masque les secrets, et la valeur base64 est écrite dans l'env).
+      - name: Configurer l'accès Git au dépôt de certificats match
+        run: |
+          echo "MATCH_GIT_BASIC_AUTHORIZATION=$(printf 'x-access-token:%s' "$MATCH_GIT_TOKEN" | base64 | tr -d '\n')" >> "$GITHUB_ENV"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - run: flutter pub get
+
+      # Cohérence du contrat (comme le job backend/mobile du Lot 0, §3.9) : échec si drift.
+      - name: Régénérer le client + vérifier le drift OpenAPI
+        run: |
+          dart run swagger_parser
+          dart run build_runner build --delete-conflicting-outputs --force-jit
+          git diff --exit-code lib/api/generated \
+            || { echo "::error::Client Dart désaligné de l'OpenAPI — régénérez et committez."; exit 1; }
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+          working-directory: mobile/ios
+
+      # NB : pas de `pod install` explicite ici — le projet Flutter ne committe pas de Podfile
+      # (généré par le tool Flutter au 1er build). Le Fastfile fait `flutter build ios --no-codesign`,
+      # qui génère le Podfile ET exécute pod install avant l'archive gym. Un `pod install` ici
+      # échouerait (« No Podfile found ») et serait de toute façon redondant.
+
+      # Appel de la lane partagée — le SEUL endroit où GHA touche à la logique de build (via Fastfile).
+      - name: Build (+ TestFlight si lane=release)
+        working-directory: mobile/ios
+        run: bundle exec fastlane ios ${{ github.event_name == 'push' && 'release' || inputs.lane }}
+
+      # Traçabilité (§6.7) : artefact nommé par ref (tag/branche) + SHA du commit déclencheur.
+      - name: Publier l'.ipa en artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa-${{ github.ref_name }}-${{ github.sha }}
+          path: mobile/build/ios/ipa/*.ipa
+          if-no-files-found: error
+          retention-days: 14

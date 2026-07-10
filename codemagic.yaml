@@ -1,0 +1,113 @@
+# Build iOS signé sans Mac (Lot 9, cdc §3.2) — PIPELINE DE SECOURS / ALTERNATIF (Codemagic).
+#
+# Comme le workflow GitHub Actions (.github/workflows/build-ios.yml), ce fichier ne contient
+# AUCUNE logique de build/signature propre : il installe les mêmes prérequis puis appelle la
+# MÊME lane Fastlane (mobile/ios/fastlane/Fastfile) et utilise le MÊME dépôt de certificats
+# `match`. C'est ce qui rend les deux CI interchangeables (§2.4) : si les runners macOS GitHub
+# sont indisponibles/en file d'attente, on déclenche ici sans aucune préparation supplémentaire.
+#
+# Déclenchement MANUEL uniquement (triggering.events: []) depuis le dashboard Codemagic. Jamais
+# d'upload TestFlight automatique (§6.2) : la mise sur TestFlight passe par le workflow ios-release.
+#
+# Les secrets vivent dans le GROUPE de variables « ios_signing » (dashboard Codemagic), sous les
+# mêmes noms que les secrets GitHub Actions (infra/INSTALL.md §E.2). Rotation à répercuter des
+# deux côtés le même jour.
+
+definitions:
+  # Ancre YAML réutilisée par les deux workflows : environnement + étapes de build identiques.
+  # Seule la lane Fastlane finale diffère (build vs release), d'où sa duplication minimale.
+  scripts:
+    - &verify_secrets
+      name: Vérifier la présence des secrets requis
+      script: |
+        missing=""
+        for v in MATCH_GIT_URL MATCH_PASSWORD MATCH_GIT_TOKEN APPLE_TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_CONTENT; do
+          eval "val=\${$v}"
+          if [ -z "$val" ]; then missing="$missing $v"; fi
+        done
+        if [ -n "$missing" ]; then
+          echo "Secrets manquants :$missing — voir infra/INSTALL.md §E.2 (Build iOS sans Mac)."
+          exit 1
+        fi
+    - &match_git_auth
+      name: Configurer l'accès Git au dépôt de certificats match
+      script: |
+        echo "MATCH_GIT_BASIC_AUTHORIZATION=$(printf 'x-access-token:%s' "$MATCH_GIT_TOKEN" | base64 | tr -d '\n')" >> "$CM_ENV"
+    - &flutter_deps
+      name: Dépendances Flutter
+      script: cd mobile && flutter pub get
+    - &openapi_drift
+      name: Vérifier le drift du client OpenAPI (cohérence contrat, Lot 0 §3.9)
+      script: |
+        cd mobile
+        dart run swagger_parser
+        dart run build_runner build --delete-conflicting-outputs --force-jit
+        git diff --exit-code lib/api/generated \
+          || { echo "Client Dart désaligné de l'OpenAPI — régénérez et committez."; exit 1; }
+    - &flutter_tests
+      # Porte de non-régression §3.4 — répliquée à l'identique du job `mobile-tests` de GitHub
+      # Actions, pour que le build signé soit conditionné aux tests Flutter sur LES DEUX CI.
+      name: Gate non-régression (§3.4) — analyse statique + tests Flutter
+      script: |
+        cd mobile
+        dart analyze
+        flutter test
+    - &bundler
+      # Installe fastlane + la gem cocoapods (pour `bundle exec fastlane`). Pas de `pod install`
+      # ici : le Fastfile le déclenche via `flutter build ios --no-codesign` (Podfile généré au build).
+      name: Bundler (Fastlane + gem CocoaPods)
+      script: cd mobile/ios && bundle install
+
+  environment: &ios_env
+    groups:
+      - ios_signing        # MATCH_GIT_URL, MATCH_PASSWORD, MATCH_GIT_TOKEN, ASC_KEY_*, APPLE_TEAM_ID
+    vars:
+      APP_IDENTIFIER: "net.coparentplanner.coparentplanner"  # consommé par ENV[] dans le Fastfile
+    flutter: 3.38.9        # version figée (source unique), cohérente avec GitHub Actions / Lot 0
+    xcode: latest
+    cocoapods: default
+
+workflows:
+  ios-build:
+    name: iOS Build (secours / alternatif à GitHub Actions)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment: *ios_env
+    triggering:
+      events: []           # déclenchement manuel uniquement (dashboard Codemagic)
+    scripts:
+      - *verify_secrets
+      - *match_git_auth
+      - *flutter_deps
+      - *openapi_drift
+      - *flutter_tests
+      - *bundler
+      - name: Build & sign via Fastlane (lane partagée)
+        script: cd mobile/ios && bundle exec fastlane ios build
+    artifacts:
+      - mobile/build/ios/ipa/*.ipa
+    publishing:
+      email:
+        recipients: []
+
+  ios-release:
+    name: iOS Release → TestFlight (manuel, jamais automatique)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment: *ios_env
+    triggering:
+      events: []           # déclenchement manuel uniquement — équivalent de la lane `release` GHA
+    scripts:
+      - *verify_secrets
+      - *match_git_auth
+      - *flutter_deps
+      - *openapi_drift
+      - *flutter_tests
+      - *bundler
+      - name: Build + upload TestFlight via Fastlane (lane partagée)
+        script: cd mobile/ios && bundle exec fastlane ios release
+    artifacts:
+      - mobile/build/ios/ipa/*.ipa
+    publishing:
+      email:
+        recipients: []

@@ -1,0 +1,7 @@
+# Appfile — identité de l'app iOS (Lot 9).
+# L'authentification App Store Connect en CI passe par une CLÉ API (.p8), configurée dans le
+# Fastfile via `app_store_connect_api_key` — JAMAIS par un identifiant/mot de passe Apple perso.
+# On ne met donc volontairement PAS de `apple_id` ici : `team_id` vient du secret APPLE_TEAM_ID.
+
+app_identifier(ENV["APP_IDENTIFIER"] || "net.coparentplanner.coparentplanner")
+team_id(ENV["APPLE_TEAM_ID"])

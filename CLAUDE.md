@@ -105,6 +105,23 @@ CI : `.github/workflows/ci.yml` (jobs `backend` + `web-e2e` + `mobile`) encode t
 qualité ci-dessus + les garde-fous de couverture (`backend/bin/coverage-gate.php` ≥80 %,
 `mobile/tool/check_coverage.py` ≥70 %) et la détection de drift (OpenAPI + client Dart).
 
+**Build iOS signé sans Mac (Lot 9)** : toute la logique de build/signature vit dans un `Fastfile`
+unique (`mobile/ios/fastlane/Fastfile`, lanes `build`/`release`/`certificates`) ; **deux CI
+interchangeables** l'appellent sans dupliquer la logique — GitHub Actions
+(`.github/workflows/build-ios.yml`, `macos-latest`, principal) et Codemagic (`codemagic.yaml`,
+secours). Signature via **Fastlane match** (dépôt de certificats Git privé chiffré, secrets CI,
+**jamais** de `.p12`/`.p8` en clair au dépôt). Déclenchement **manuel** (`workflow_dispatch` /
+dashboard) ou tag `v*` ; **jamais d'upload TestFlight automatique** sur simple commit ; CI toujours
+`readonly` sur les certificats. Prérequis à fournir une fois (compte Apple, clé API ASC, dépôt
+`match`, secrets des deux côtés) et procédure de rotation : `infra/INSTALL.md §E`.
+
+```bash
+cd mobile/ios && bundle install                 # fastlane + cocoapods (Gemfile)
+bundle exec fastlane ios build                  # .ipa signé (artefact) — CI et local
+bundle exec fastlane ios release                # + upload TestFlight (jamais auto)
+bundle exec fastlane ios certificates           # (MANUEL, mainteneur) génère/renouvelle les certifs
+```
+
 Installation détaillée (Docker **et** bare-metal) : `infra/INSTALL.md`.
 
 ## Design system (cdc §8 — fait foi pour le rendu)

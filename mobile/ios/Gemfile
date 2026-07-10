@@ -1,0 +1,19 @@
+# Gemfile — outillage de build/signature iOS (Lot 9).
+# Installé UNIQUEMENT sur le runner macOS de la CI (GitHub Actions ou Codemagic) ou sur
+# le poste d'un mainteneur habilité qui (re)génère les certificats — jamais requis pour le
+# développement backend/web ni pour `flutter test`/`dart analyze` (qui tournent sous Linux).
+#
+#   bundle install                         # résout les gems (génère Gemfile.lock — à committer
+#                                          #   depuis un poste macOS pour figer complètement le build)
+#   bundle exec fastlane ios build         # compile un .ipa signé (artefact CI)
+#   bundle exec fastlane ios release       # + upload TestFlight (jamais automatique)
+#
+# Voir mobile/ios/fastlane/Fastfile (logique de build unique, partagée par les deux CI)
+# et infra/INSTALL.md §E (« Build iOS sans Mac »). Versions bornées (`~>`) pour la reproductibilité ;
+# le CocoaPods réellement invoqué par `flutter build ios` est celui du runner (préinstallé), la gem
+# ci-dessous garantit une version disponible pour l'outillage Fastlane et un `pod` local cohérent.
+
+source "https://rubygems.org"
+
+gem "fastlane", "~> 2.226"   # match (signature), gym (build_app), pilot (upload_to_testflight)
+gem "cocoapods", "~> 1.16"   # dépendances natives Flutter iOS (pod install déclenché par flutter build)

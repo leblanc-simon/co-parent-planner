@@ -1,0 +1,14 @@
+# Artefacts générés par Fastlane à l'exécution — ne jamais committer.
+README.md
+report.xml
+Preview.html
+fastlane/report.xml
+fastlane/README.md
+fastlane/Preview.html
+
+# Identités de signature — ne doivent JAMAIS toucher le dépôt applicatif (elles vivent
+# chiffrées dans le dépôt match dédié). Filet de sécurité contre une fuite accidentelle.
+*.p12
+*.cer
+*.mobileprovision
+*.p8

@@ -1,0 +1,17 @@
+# Matchfile — configuration Fastlane match (Lot 9).
+#
+# `match` centralise certificats + profils de provisionnement dans un dépôt Git PRIVÉ dédié,
+# chiffrés par MATCH_PASSWORD (secret). Ce fichier est COMMUN aux deux CI (GitHub Actions et
+# Codemagic) : les deux runners clonent le même dépôt et installent les mêmes identités de
+# signature — c'est ce qui garantit des .ipa interchangeables (cdc Lot 9 §2.2).
+#
+# Aucune valeur secrète ici : l'URL du dépôt vient de l'env (MATCH_GIT_URL), la passphrase de
+# MATCH_PASSWORD, et l'auth Git de MATCH_GIT_BASIC_AUTHORIZATION (dérivée du token en CI). Le
+# mode lecture seule n'est PAS figé ici : il est passé par lane (`readonly: true` en CI,
+# `readonly: false` uniquement pour la lane manuelle `certificates` d'un mainteneur habilité).
+
+git_url(ENV["MATCH_GIT_URL"])
+storage_mode("git")
+
+type("appstore")
+app_identifier([ENV["APP_IDENTIFIER"] || "net.coparentplanner.coparentplanner"])

@@ -5,13 +5,15 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-07-10** — **Lot 8 EN COURS** — chantiers **RGPD Manager**, **idempotence serveur** et **PWA web** TERMINÉS. (1) **RGPD** : registre, `RetentionPolicy`, Anonymiseur (irréversible, fils préservés, dernier admin, scrub invitations), Purger (dry-run/live, isolation d'erreur, bornes UTC), export async (ZIP + lien signé HMAC), `DELETE /me`, admin technique + step-up rate-limité, endpoints `/admin/rgpd/*`, test chiffrement au repos. (2) **Idempotence serveur** (§3.1/§6.3) : middleware `IdempotencySubscriber` sur POST `/api` avec `Idempotency-Key`, scope (user, endpoint, clé) + empreinte payload, **corps de réponse chiffré au repos**, store `IdempotencyKey` (TTL/purge). (3) **PWA** : manifest, service worker (précache shell + écrans RO cloisonnés famille, blocage mutations, page offline), contrôleur Stimulus `pwa` (install + bannière online/offline), **polices OFL auto-hébergées**, icônes. (4) **Offline mobile riche** : outbox statuts `pending/inFlight/synced/rejected` (autorité serveur : 2xx→synced, 409/403/422/404/410→rejected, 5xx/réseau/401→pending), cache de lecture générique cloisonné famille (agenda + enfants + échanges), rejeu auto, bannière hors-ligne + compteur, migration Drift v2. (5) **E2E Playwright PWA** : installabilité + hors-ligne RO + blocage mutation (503) + reconnexion. (6) **UI mobile RGPD** : Paramètres › Confidentialité (export async + lien signé ; suppression de compte, refus dernier admin). **Revues adversariales** : RGPD 8 corrigés / idempotence 2 P1/P2 corrigés. Portes : backend **280 tests** / PHPStan 0 / cs-fixer 0 / schéma sync ; mobile **157 tests** / couverture 75,5 % / analyze 0 / client canonique ; **E2E Playwright 18/18** ; OpenAPI inchangé. **Lot 8 TERMINÉ — Lots 0→8 TERMINÉS (v1 complète). Prochains : Lot 9 CI/CD & build iOS sans Mac (outillage infra), Lot 10 Dépenses (v2), Lot 11 Push mobile (v2).**
+Dernière mise à jour : **2026-07-10** — **Lot 9 (CI/CD & build iOS sans Mac) — OUTILLAGE LIVRÉ.** Deux pipelines CI **interchangeables** produisant un `.ipa` iOS signé sans poste Mac : GitHub Actions (`.github/workflows/build-ios.yml`, `macos-latest`, principal) + Codemagic (`codemagic.yaml`, secours), tous deux appelant la **même** logique — un `Fastfile` unique (`mobile/ios/fastlane/Fastfile`, lanes `build`/`release`/`certificates`) et le **même** dépôt de certificats **Fastlane match**. Signature via match (dépôt Git privé chiffré, secrets CI, **jamais** de `.p12`/`.p8`/passphrase en clair), auth ASC par **clé API** (`.p8` base64), CI **toujours `readonly`** sur les certificats, déclenchement **manuel** (`workflow_dispatch`/dashboard) ou tag `v*`, **jamais d'upload TestFlight sur simple commit**, job `mobile-tests` (Linux) **gating** le build signé (§3.4). Livrables : `Fastfile`/`Matchfile`/`Appfile`/`Gemfile`/`ExportOptions.plist` + les deux fichiers de CI + `infra/INSTALL.md §E` (bandeau « À VENIR » retiré, secrets + rotation synchronisée documentés) + `CLAUDE.md` (Outillage). YAML (build-ios + codemagic) et plist **validés**. **Non exécutable de bout en bout depuis ce dépôt** : les runs CI réels exigent un compte Apple Developer, une clé API ASC et le dépôt `match` initialisés hors dépôt (action mainteneur, §E.1) — sans eux chaque pipeline échoue tôt et proprement (secrets manquants listés). **Aucun code produit, aucune migration, aucun endpoint, registre RGPD inchangé** (lot purement infra). CI existante (backend/web-e2e/mobile) **inchangée** (job additif). — Antérieur : **Lot 8** — chantiers **RGPD Manager**, **idempotence serveur** et **PWA web** TERMINÉS. (1) **RGPD** : registre, `RetentionPolicy`, Anonymiseur (irréversible, fils préservés, dernier admin, scrub invitations), Purger (dry-run/live, isolation d'erreur, bornes UTC), export async (ZIP + lien signé HMAC), `DELETE /me`, admin technique + step-up rate-limité, endpoints `/admin/rgpd/*`, test chiffrement au repos. (2) **Idempotence serveur** (§3.1/§6.3) : middleware `IdempotencySubscriber` sur POST `/api` avec `Idempotency-Key`, scope (user, endpoint, clé) + empreinte payload, **corps de réponse chiffré au repos**, store `IdempotencyKey` (TTL/purge). (3) **PWA** : manifest, service worker (précache shell + écrans RO cloisonnés famille, blocage mutations, page offline), contrôleur Stimulus `pwa` (install + bannière online/offline), **polices OFL auto-hébergées**, icônes. (4) **Offline mobile riche** : outbox statuts `pending/inFlight/synced/rejected` (autorité serveur : 2xx→synced, 409/403/422/404/410→rejected, 5xx/réseau/401→pending), cache de lecture générique cloisonné famille (agenda + enfants + échanges), rejeu auto, bannière hors-ligne + compteur, migration Drift v2. (5) **E2E Playwright PWA** : installabilité + hors-ligne RO + blocage mutation (503) + reconnexion. (6) **UI mobile RGPD** : Paramètres › Confidentialité (export async + lien signé ; suppression de compte, refus dernier admin). **Revues adversariales** : RGPD 8 corrigés / idempotence 2 P1/P2 corrigés. Portes : backend **280 tests** / PHPStan 0 / cs-fixer 0 / schéma sync ; mobile **157 tests** / couverture 75,5 % / analyze 0 / client canonique ; **E2E Playwright 18/18** ; OpenAPI inchangé. **Lot 8 TERMINÉ — Lots 0→8 TERMINÉS (v1 complète). Prochains : Lot 9 CI/CD & build iOS sans Mac (outillage infra), Lot 10 Dépenses (v2), Lot 11 Push mobile (v2).**
 
 Antérieur : **Lot 6 (Échanges temps réel) TERMINÉ** : backend (entités Exchange/ExchangeOption/Message🔒/OptionVote, 6 endpoints, moteur de décision par consensus + verrou pessimiste, Mercure post-commit, RGPD, i18n) + contrat OpenAPI + client Dart + UI web (écran /echanges maître-détail + badge nav + temps réel) + UI mobile (écran Échanges + badge accueil) + E2E + revue ciblée. Portes : backend **241 tests** / PHPStan 0 / cs-fixer 0 / Twig 22 ; **E2E Playwright 14/14** ; mobile **140 tests** / `dart analyze` 0 / couverture 75,2 % ; client généré intact. Avant : **Revue graphique (conformité maquettes §8) APPLIQUÉE** (113 écarts, 3 P2 différés justifiés). **Lots 0→6 TERMINÉS. Prochain lot : Lot 7 — Notifications e-mail.**
 
 ---
 
 ## 0. Où en est-on ?
+
+**Lot 9 — CI/CD & build iOS sans Mac** (`specs/lots/lot-9-cicd-build-ios-sans-mac.md`) : ✅ **OUTILLAGE LIVRÉ** (lot purement infra, aucun code produit). Deux pipelines CI interchangeables (GitHub Actions principal + Codemagic secours) appelant un `Fastfile` unique et le même dépôt `match` ; signature sans secret en clair ; job `mobile-tests` gating ; docs INSTALL.md/CLAUDE.md à jour ; YAML/plist validés. **Exécution de bout en bout = action mainteneur** (compte Apple + clé API ASC + dépôt `match` + secrets, §E.1) — non réalisable depuis ce dépôt (voir journal §6, 2026-07-10). CI existante inchangée.
 
 **Lot 0 — Fondations** : ✅ **TERMINÉ**.
 **Lot 1 — Familles/membres/droits/invitations/liens** : ✅ **TERMINÉ** (+ revue de code).
@@ -254,6 +256,59 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-07-10 — Lot 9 : CI/CD & build iOS sans Mac (outillage infra)
+- **Principe directeur (§0.1/§2.4/§6.5)** : la logique de build/signature ne vit **jamais** dans la
+  config d'une CI. Elle vit dans un **`Fastfile` unique** (`mobile/ios/fastlane/Fastfile`). GitHub
+  Actions et Codemagic ne sont que deux **déclencheurs** appelant les mêmes lanes ; changer de CI =
+  changer un fichier de déclenchement, jamais la logique métier ni le `Matchfile`.
+- **Fastlane** (`mobile/ios/`) : `Fastfile` (lanes `build` = `.ipa` App Store signé readonly ;
+  `release` = build + `upload_to_testflight` interne, jamais auto ; `certificates` = génération
+  MANUELLE readonly:false, mainteneur habilité), `Matchfile` (storage git, type appstore, URL/passphrase/
+  auth via env), `Appfile` (bundle id + team_id via env, **pas** d'Apple ID perso — auth ASC par clé
+  API), `Gemfile` (fastlane + cocoapods), `ExportOptions.plist` (référence : app-store, signature
+  **manuelle**, profil `match AppStore net.coparentplanner.coparentplanner`). Build : `setup_ci`
+  (keychain temporaire éphémère) → `match(readonly:true)` → `update_code_signing_settings` (manuel) →
+  `flutter build ios --no-codesign` → `build_app` (gym, teamID depuis secret, export vers
+  `mobile/build/ios/ipa`). Clé API ASC mémoïsée (`is_key_content_base64:true`).
+- **GitHub Actions** (`.github/workflows/build-ios.yml`, **principal**, `macos-latest`) : trigger
+  `workflow_dispatch` (choix lane `build`/`release`) **ou** tag `v*` (→ `release`). Job **`mobile-tests`
+  (Linux)** en préalable (§3.4 : `flutter test` + `dart analyze` + drift OpenAPI) → `build-ios`
+  `needs: mobile-tests`. Étapes : vérif secrets (échec listant les manquants), dérivation
+  `MATCH_GIT_BASIC_AUTHORIZATION` depuis `MATCH_GIT_TOKEN`, setup Flutter/Ruby(bundler-cache)/CocoaPods,
+  **appel de la lane partagée** (seul point touchant la logique de build), upload artefact
+  `ios-ipa-<ref>-<sha>` (traçabilité §6.7, `if-no-files-found: error`). `permissions: contents:read`.
+- **Codemagic** (`codemagic.yaml`, **secours**) : workflows `ios-build` + `ios-release`, `triggering.events: []`
+  (**manuel uniquement**), groupe de secrets `ios_signing`, Flutter figé `3.38.9`, mêmes étapes (ancres
+  YAML `definitions` pour éviter la duplication), **même lane Fastlane**, artefacts `mobile/build/ios/ipa/*.ipa`.
+- **Secrets (§4)** : mêmes noms des deux côtés — `MATCH_GIT_URL`/`MATCH_PASSWORD`/`MATCH_GIT_TOKEN`,
+  `ASC_KEY_ID`/`ASC_ISSUER_ID`/`ASC_KEY_CONTENT` (`.p8` base64), `APPLE_TEAM_ID`. Aucun secret en clair
+  au dépôt ni dans les logs (masqués par la CI, token converti en basic-auth). **Rotation synchronisée**
+  documentée. Filet `.gitignore` fastlane (`*.p12/*.cer/*.mobileprovision/*.p8`).
+- **Docs** : `infra/INSTALL.md §E` — bandeau « 🚧 À VENIR » **retiré**, aligné sur les fichiers réels
+  (formats `ASC_KEY_CONTENT`/`MATCH_GIT_TOKEN`, lane `certificates`, gating `mobile-tests`, rotation) ;
+  `CLAUDE.md` (§ Outillage) — commandes `bundle exec fastlane ios build|release|certificates`.
+- **Revue adversariale** (workflow 7 dimensions → vérification skeptique par constat, 23 agents) :
+  16 constats bruts, **5 réfutés** (tag `v*`→release conforme §3.1 ; `APP_IDENTIFIER` défaut Ruby ;
+  Ruby non figé Codemagic ; `Generated.xcconfig` généré par `pub get` ; version Flutter en plage dans
+  INSTALL non contradictoire), **11 confirmés/plausibles → tous corrigés** : **P1** `pod install`
+  prématuré (aucun `Podfile` commité, généré par `flutter build` → étape retirée des 2 CI, redondante
+  avec le Fastfile) ; **P2** filet `.gitignore` des identités confiné à `fastlane/` → règles
+  `*.p8`/`*.p12`/`*.cer`/`*.mobileprovision` remontées au `.gitignore` **racine** + `.p8` référencée
+  hors dépôt ; **P2** Codemagic ne répliquait pas la porte `flutter test`/`dart analyze` (§3.4 exige
+  les 2 pipelines) → ancre `flutter_tests` ajoutée aux 2 workflows ; **P3** `output_name` avec
+  extension (double `.ipa`) → sans extension ; `changelog` inopérant sous `skip_waiting…` → retiré ;
+  `FLUTTER_VERSION` redondant Codemagic → retiré (clé `flutter:` fait foi) ; chemin artefact doc
+  Codemagic `build/…`→`mobile/build/…` ; gems bornés (`fastlane ~> 2.226`, `cocoapods ~> 1.16`) +
+  versions documentées (Ruby 3.3) dans INSTALL §E.5.
+- **Portes** : YAML `build-ios.yml` + `codemagic.yaml` **re-validés** après correctifs (parse OK,
+  gate non-régression présent dans les 2 workflows Codemagic, plus d'étape `pod install`),
+  `ExportOptions.plist` **XML valide**, CI existante `ci.yml` **inchangée** (job additif). **Modèle de
+  données / API / registre RGPD : non applicable** (§5, lot infra).
+- **Limite assumée (hors périmètre §0.3)** : les 5 cases DoD « run réel » (produire un `.ipa` sur
+  chaque CI, upload TestFlight, non-régression sur runner) exigent des **credentials Apple réels + un
+  runner macOS** — indisponibles depuis ce dépôt. L'outillage est livré, validé statiquement et prêt ;
+  l'exécution de bout en bout est une action de mainteneur une fois les prérequis §E.1 fournis.
 
 ### 2026-07-10 — Lot 8 (Étape F) : finitions + clôture DoD
 - **UI mobile RGPD** (`lib/features/settings`) : `RgpdRepository` (export POST/GET, `DELETE /me`) +

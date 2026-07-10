@@ -1,0 +1,121 @@
+# Fastfile — LOGIQUE DE BUILD/SIGNATURE iOS UNIQUE (Lot 9, cdc §2.4).
+#
+# INVARIANT (§6.5) : toute la logique de compilation/signature vit ICI. Ni le workflow GitHub
+# Actions (.github/workflows/build-ios.yml) ni codemagic.yaml ne contiennent de logique métier —
+# ils installent les prérequis (Flutter, Ruby/Bundler, CocoaPods) puis appellent l'une de ces
+# lanes. Changer de CI = changer un fichier de déclenchement, JAMAIS ce fichier ni le Matchfile.
+#
+# Lanes publiques :
+#   ios build   → compile un .ipa signé App Store (lecture seule sur les certificats match).
+#   ios release → build + upload TestFlight (interne). JAMAIS automatique sur simple commit.
+#   ios certificates → génère/renouvelle certificats & profils (MANUEL, mainteneur habilité).
+#
+# Sécurité : aucun secret en clair. Sur CI (`setup_ci`), les identités sont installées dans un
+# keychain temporaire détruit en fin de job (runner éphémère). L'auth ASC passe par une clé API.
+
+default_platform(:ios)
+
+APP_IDENTIFIER = ENV["APP_IDENTIFIER"] || "net.coparentplanner.coparentplanner"
+
+# Clé API App Store Connect (.p8) depuis les secrets — méthode partagée (top-level).
+# Utilisée par match (readonly:false), gym et pilot. ASC_KEY_CONTENT = contenu du .p8 encodé
+# en base64 (voir infra/INSTALL.md §E.2). Mémoïsée pour ne lire les secrets qu'une fois.
+def asc_api_key
+  @asc_api_key ||= app_store_connect_api_key(
+    key_id: ENV["ASC_KEY_ID"],
+    issuer_id: ENV["ASC_ISSUER_ID"],
+    key_content: ENV["ASC_KEY_CONTENT"],
+    is_key_content_base64: true,
+    in_house: false
+  )
+end
+
+platform :ios do
+  before_all do
+    # Sur CI (GITHUB_ACTIONS / Codemagic exportent CI=true), crée un keychain temporaire
+    # éphémère et désarme les prompts interactifs. Sans effet en local.
+    setup_ci if ENV["CI"]
+  end
+
+  desc "Compile un .ipa signé App Store (readonly sur les certificats match)"
+  lane :build do
+    sync_signing(readonly: true)
+    build_signed_ipa
+  end
+
+  desc "Compile puis pousse le build sur TestFlight (interne). Jamais automatique."
+  lane :release do
+    sync_signing(readonly: true)
+    build_signed_ipa
+    upload_to_testflight(
+      api_key: asc_api_key,
+      skip_waiting_for_build_processing: true, # rendrait `changelog` inopérant → non fourni ici ;
+      distribute_external: false               # traçabilité assurée par le nom d'artefact CI (SHA/tag)
+    )
+  end
+
+  desc "MANUEL (hors CI) : (re)génère certificats et profils dans le dépôt match. Mainteneur habilité."
+  lane :certificates do
+    # Seule lane à écrire dans le dépôt de certificats : readonly:false. La CI, elle, est
+    # TOUJOURS readonly (§6.3) — elle consomme les identités, ne les régénère jamais.
+    match(
+      type: "appstore",
+      readonly: false,
+      app_identifier: APP_IDENTIFIER,
+      api_key: asc_api_key
+    )
+  end
+
+  # --- Helpers privés (pas des points d'entrée CI) --------------------------------------------
+
+  # Synchronise l'identité de signature App Store depuis le dépôt match.
+  # git_url / passphrase / auth Git viennent de l'env (Matchfile + MATCH_GIT_BASIC_AUTHORIZATION).
+  private_lane :sync_signing do |options|
+    match(
+      type: "appstore",
+      readonly: options.fetch(:readonly, true),
+      app_identifier: APP_IDENTIFIER,
+      api_key: asc_api_key
+    )
+  end
+
+  # Compile l'app puis archive/exporte un .ipa signé en signature MANUELLE (profil installé
+  # par match). Sortie déterministe : mobile/build/ios/ipa/coparentplanner.ipa.
+  private_lane :build_signed_ipa do
+    # 1) Force la signature manuelle sur le profil match (le projet est en Automatic par défaut ;
+    #    modification locale sur le runner éphémère, jamais recommittée).
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path: "Runner.xcodeproj",
+      team_id: ENV["APPLE_TEAM_ID"],
+      bundle_identifier: APP_IDENTIFIER,
+      code_sign_identity: "Apple Distribution",
+      profile_name: "match AppStore #{APP_IDENTIFIER}"
+    )
+
+    # 2) Compile le Dart + les assets et génère la config Xcode, SANS signer (Flutter pilote).
+    #    CWD Fastlane = mobile/ios ; `..` = mobile (racine du projet Flutter).
+    Dir.chdir("..") do
+      sh("flutter", "build", "ios", "--release", "--no-codesign")
+    end
+
+    # 3) Archive + export du .ipa signé (gym). L'export référence le profil match par son nom
+    #    déterministe ; teamID vient du secret (jamais commité).
+    build_app(
+      workspace: "Runner.xcworkspace",
+      scheme: "Runner",
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "../build/ios/ipa", # -> mobile/build/ios/ipa (glob des deux CI)
+      output_name: "coparentplanner",       # gym appose « .ipa » -> coparentplanner.ipa
+      export_options: {
+        method: "app-store",
+        signingStyle: "manual",
+        teamID: ENV["APPLE_TEAM_ID"],
+        provisioningProfiles: {
+          APP_IDENTIFIER => "match AppStore #{APP_IDENTIFIER}"
+        }
+      }
+    )
+  end
+end

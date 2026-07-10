@@ -22,6 +22,14 @@ Thumbs.db
 *.pem
 backend/config/jwt/*.pem
 
+# Identités de signature iOS / App Store Connect (Lot 9) — vivent chiffrées dans le dépôt match
+# dédié, JAMAIS dans le dépôt applicatif. Filet transverse (couvre mobile/ios, le poste mainteneur…).
+*.p8
+*.p12
+*.cer
+*.mobileprovision
+AuthKey_*.p8
+
 # Logs / temporaire
 *.log
 /tmp/

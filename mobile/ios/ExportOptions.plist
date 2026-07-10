@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ExportOptions.plist — options d'export .ipa App Store, RÉFÉRENCE COMMITÉE (Lot 9, DoD §Livrables).
+
+  En CI, le Fastfile (build_signed_ipa) passe ces mêmes options à `build_app` sous forme de hash,
+  en y injectant `teamID` depuis le secret APPLE_TEAM_ID (jamais commité en clair). Ce fichier
+  documente donc la configuration de référence (méthode app-store, signature MANUELLE, profil
+  installé par `match`) et sert de repli pour un export xcodebuild/`flutter build ipa` manuel.
+
+  Le nom de profil « match AppStore net.coparentplanner.coparentplanner » est déterministe :
+  c'est celui installé par `fastlane match appstore` pour ce bundle id.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>app-store</string>
+    <key>signingStyle</key>
+    <string>manual</string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>net.coparentplanner.coparentplanner</key>
+        <string>match AppStore net.coparentplanner.coparentplanner</string>
+    </dict>
+    <key>uploadBitcode</key>
+    <false/>
+    <key>uploadSymbols</key>
+    <true/>
+    <key>destination</key>
+    <string>export</string>
+</dict>
+</plist>

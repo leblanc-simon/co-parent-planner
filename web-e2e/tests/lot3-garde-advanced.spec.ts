@@ -56,7 +56,8 @@ async function setupTwoParentFamily(
   const pageB = await contextB.newPage();
   await signUpAndLogin(pageB, request, parentBEmail, 'Bob Adv');
   await pageB.goto(`/invitations/accept?token=${encodeURIComponent(inviteToken)}`);
-  await pageB.waitForURL('**/settings', { timeout: 15_000 });
+  await pageB.click('button[type="submit"]');
+  await pageB.waitForURL('**/invitations/accepted', { timeout: 15_000 });
   await contextB.close();
 }
 

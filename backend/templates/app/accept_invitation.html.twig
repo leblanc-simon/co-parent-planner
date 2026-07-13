@@ -1,22 +1,32 @@
 {% extends 'base.html.twig' %}
-{% block title %}Accepter l'invitation · CoParentPlanner{% endblock %}
+{% block title %}Rejoindre la famille · CoParentPlanner{% endblock %}
 {% block body %}
+{# Écran de confirmation d'invitation pour un utilisateur connecté. Rejoindre est un acte volontaire :
+   acceptation SUR CLIC (pas d'auto-soumission). Sur échec, l'erreur s'affiche et la reprise reste
+   possible (le token n'est purgé qu'au retour de succès app_invitation_accepted). Libellés FR
+   (UI web 100 % hardcodée, divergence assumée Lot 5). #}
 <div class="auth">
     <div class="auth__card">
-        <div class="auth__brand">🧡 CoParentPlanner</div>
-        <h1 class="auth__title">Rejoindre la famille</h1>
-        <p class="auth__sub">Nous vérifions votre invitation…</p>
+        <div class="auth__brand"><img class="auth__logo" src="{{ asset('icons/logo.png') }}" width="28" height="28" alt=""> CoParentPlanner</div>
 
-        {# Auto-soumission du token à l'API au nom de l'utilisateur connecté (cookie JWT, D2). #}
-        <form data-controller="auth-form" data-auth-form-auto-value="true"
-              data-auth-form-redirect-value="{{ path('app_settings') }}"
-              data-action="submit->auth-form#submit" action="/api/invitations/accept" novalidate>
-            <input type="hidden" name="token" value="{{ app.request.query.get('token') }}">
-            <p class="form-error" data-auth-form-target="error" role="alert"></p>
-            <p class="auth__notice" data-auth-form-target="notice" hidden>Invitation acceptée.</p>
-        </form>
+        {% if valid %}
+            <h1 class="auth__title">Rejoindre {{ familyName }}</h1>
+            <p class="auth__sub">Confirmez que vous souhaitez rejoindre « {{ familyName }} ».</p>
 
-        <p class="auth__alt"><a href="{{ path('app_home') }}">Retour à l'accueil</a></p>
+            <form data-controller="auth-form"
+                  data-auth-form-redirect-value="{{ path('app_invitation_accepted') }}"
+                  data-action="submit->auth-form#submit" action="/api/invitations/accept" novalidate>
+                <input type="hidden" name="token" value="{{ token }}">
+                <p class="form-error" data-auth-form-target="error" role="alert"></p>
+                <button class="btn btn--primary btn--block" type="submit" data-auth-form-target="submit">Rejoindre {{ familyName }}</button>
+            </form>
+
+            <p class="auth__alt"><a href="{{ path('app_home') }}">Plus tard</a></p>
+        {% else %}
+            <h1 class="auth__title">Invitation indisponible</h1>
+            <p class="auth__sub">Ce lien d'invitation est invalide ou a expiré. Demandez à la personne qui vous a invité·e de vous en renvoyer un.</p>
+            <p class="auth__alt"><a href="{{ path('app_home') }}">Retour à l'accueil</a></p>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

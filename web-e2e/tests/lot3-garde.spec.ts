@@ -68,7 +68,8 @@ test('Garde : configurer un rythme → calendrier coloré → échanger un jour'
   const pageB = await contextB.newPage();
   await signUpAndLogin(pageB, request, parentBEmail, 'Bob Garde');
   await pageB.goto(`/invitations/accept?token=${encodeURIComponent(inviteToken)}`);
-  await pageB.waitForURL('**/settings', { timeout: 15_000 });
+  await pageB.click('button[type="submit"]');
+  await pageB.waitForURL('**/invitations/accepted', { timeout: 15_000 });
   await contextB.close();
 
   // ---- Parent A : écran Garde, sans rythme encore configuré ----

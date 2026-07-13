@@ -7,16 +7,20 @@ namespace App\Tests\Functional\Web;
 use App\Entity\Event;
 use App\Entity\Family;
 use App\Entity\FamilyLink;
+use App\Entity\Invitation;
 use App\Entity\Membership;
 use App\Entity\OverlayPreference;
 use App\Entity\User;
 use App\Enum\EventCategory;
 use App\Enum\FamilyLinkStatus;
 use App\Enum\FamilyType;
+use App\Enum\InvitationStatus;
 use App\Enum\MembershipRole;
 use App\Enum\MembershipStatus;
 use App\Enum\OverlayView;
 use App\Enum\UserStatus;
+use App\Security\Auth\TokenHasher;
+use App\Security\Encryption\BlindIndexHasher;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -64,6 +68,223 @@ final class WebPagesTest extends WebTestCase
             'HTTP_ACCEPT' => 'application/json',
         ], content: json_encode(['email' => 'web@example.com', 'password' => self::PASSWORD], \JSON_THROW_ON_ERROR));
         self::assertResponseIsSuccessful();
+    }
+
+    private function seedInvitation(
+        string $email,
+        string $token,
+        string $familyName = 'Famille Invitante',
+        InvitationStatus $status = InvitationStatus::Pending,
+        int $expiresInDays = 7,
+    ): void {
+        $container = static::getContainer();
+        $em = $container->get(EntityManagerInterface::class);
+        $hasher = $container->get(TokenHasher::class);
+        $blind = $container->get(BlindIndexHasher::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $em);
+        self::assertInstanceOf(TokenHasher::class, $hasher);
+        self::assertInstanceOf(BlindIndexHasher::class, $blind);
+
+        $founder = (new User())->setEmail('founder-'.$email)->setStatus(UserStatus::Active);
+        $founder->setPasswordHash('x');
+        $family = (new Family())->setName($familyName)->setType(FamilyType::Separated);
+        $founderMembership = (new Membership())->setUser($founder)->setFamily($family)
+            ->setRole(MembershipRole::Parent)->setIsAdmin(true)->setStatus(MembershipStatus::Active);
+        $invitation = (new Invitation())
+            ->setFamily($family)
+            ->setEmail($email)
+            ->setEmailHash($blind->hash($email))
+            ->setRole(MembershipRole::Parent)
+            ->setProposedRights([])
+            ->setProposedAdmin(false)
+            ->setTokenHash($hasher->hash($token))
+            ->setExpiresAt(Clock::get()->now()->modify(($expiresInDays >= 0 ? '+' : '-').abs($expiresInDays).' days'))
+            ->setStatus($status);
+
+        foreach ([$founder, $family, $founderMembership, $invitation] as $entity) {
+            $em->persist($entity);
+        }
+        $em->flush();
+    }
+
+    public function testAcceptInvitationShowsJoinFormWhenAnonymous(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedInvitation('invitee@example.com', 'plain-token-123');
+
+        // Anonyme + aucun compte pour l'invité·e → écran unique « créer le compte ET rejoindre ».
+        $client->request('GET', '/invitations/accept?token=plain-token-123');
+        self::assertResponseIsSuccessful();
+        // Le token transite en query du GET → pas de fuite via Referer.
+        self::assertSame('no-referrer', $client->getResponse()->headers->get('Referrer-Policy'));
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('Rejoindre Famille Invitante', $html);
+        self::assertStringContainsString('/api/auth/register-and-accept-invitation', $html); // création + acceptation en un POST
+        self::assertStringContainsString('value="invitee@example.com"', $html);              // e-mail nominatif pré-rempli
+        self::assertStringContainsString('value="plain-token-123"', $html);                  // token en champ caché (plus en session)
+    }
+
+    public function testAcceptInvitationShowsInvalidStateForBadToken(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/invitations/accept?token=inconnu');
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('Invitation indisponible', (string) $client->getResponse()->getContent());
+    }
+
+    public function testAcceptInvitationDoesNotLeakFamilyOnWrongToken(): void
+    {
+        // Non-énumération (invariant CLAUDE.md) : un token erroné ne doit révéler ni la famille ni
+        // l'e-mail d'une invitation pourtant bien réelle.
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedInvitation('victime@example.com', 'vrai-token-secret', familyName: 'Famille Secrete');
+
+        $client->request('GET', '/invitations/accept?token=mauvais-token');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('Invitation indisponible', $html);
+        self::assertStringNotContainsString('Famille Secrete', $html);
+        self::assertStringNotContainsString('victime@example.com', $html);
+    }
+
+    /**
+     * @return iterable<string, array{InvitationStatus, int}>
+     */
+    public static function invalidInvitationProvider(): iterable
+    {
+        yield 'expirée (pending mais passée)' => [InvitationStatus::Pending, -1];
+        yield 'déjà acceptée' => [InvitationStatus::Accepted, 7];
+        yield 'révoquée' => [InvitationStatus::Revoked, 7];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('invalidInvitationProvider')]
+    public function testAcceptInvitationShowsInvalidStateForNonUsableInvitation(InvitationStatus $status, int $expiresInDays): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedInvitation('x@example.com', 'token-nonutilisable', familyName: 'Famille Cachée', status: $status, expiresInDays: $expiresInDays);
+
+        $client->request('GET', '/invitations/accept?token=token-nonutilisable');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('Invitation indisponible', $html);
+        self::assertStringNotContainsString('Famille Cachée', $html);
+    }
+
+    public function testAcceptInvitationShowsLoginToJoinWhenAccountExists(): void
+    {
+        // Anonyme + un compte existe DÉJÀ pour l'adresse invitée → écran « se connecter et rejoindre »
+        // (mot de passe exigé, frontière de sécurité). Pas de création de compte silencieuse.
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedInvitation('web@example.com', 'plain-token-456', familyName: 'Famille Existante');
+        $this->createUser($client, withFamily: false); // compte actif pour web@example.com
+
+        $client->request('GET', '/invitations/accept?token=plain-token-456');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('Rejoindre Famille Existante', $html);
+        self::assertStringContainsString('/api/auth/login-and-accept-invitation', $html);
+        self::assertStringContainsString('value="plain-token-456"', $html);
+        self::assertStringContainsString('value="web@example.com"', $html);
+    }
+
+    public function testLoginHasNoInvitationRedirectByDefault(): void
+    {
+        // Négatif de testLoginRedirectsToAcceptAfterPendingInvitation : sans invitation en session,
+        // l'après-connexion reste l'accueil et aucune bannière n'apparaît.
+        $client = static::createClient();
+        $client->request('GET', '/login');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('data-auth-form-redirect-value="/"', $html);
+        self::assertStringNotContainsString('rejoindre la famille qui vous a invité', $html);
+    }
+
+    public function testInvalidTokenIsNotMemorisedForLoginRedirect(): void
+    {
+        // Constat P1 : un token invalide ne doit pas réarmer la redirection post-connexion.
+        $client = static::createClient();
+        $client->disableReboot();
+
+        $client->request('GET', '/invitations/accept?token=token-bidon');
+        self::assertResponseIsSuccessful();
+
+        $client->request('GET', '/login');
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('data-auth-form-redirect-value="/"', $html);
+        self::assertStringNotContainsString('rejoindre la famille qui vous a invité', $html);
+    }
+
+    public function testAcceptInvitationRendersConfirmWhenAuthenticated(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser($client, withFamily: true);
+        $this->login($client);
+        $this->seedInvitation('web@example.com', 'confirm-token', familyName: 'Famille Confirm');
+
+        $client->request('GET', '/invitations/accept?token=confirm-token');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('Rejoindre Famille Confirm', $html); // confirmation explicite
+        self::assertStringContainsString('action="/api/invitations/accept"', $html);
+        self::assertStringContainsString('value="confirm-token"', $html);
+    }
+
+    public function testAcceptInvitationShowsMismatchWhenAuthenticatedAsOtherUser(): void
+    {
+        // Connecté·e sous un e-mail différent de l'invité·e (invitation nominative) → écran d'impasse
+        // « se déconnecter et continuer », avec réarmement du token vers /invitations/accept.
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser($client, withFamily: true); // web@example.com
+        $this->login($client);
+        $this->seedInvitation('someone-else@example.com', 'mismatch-token', familyName: 'Famille Autre');
+
+        $client->request('GET', '/invitations/accept?token=mismatch-token');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('Se déconnecter et continuer', $html);
+        self::assertStringContainsString('someone-else@example.com', $html);
+        self::assertStringContainsString('web@example.com', $html);
+        // La cible de reprise post-déconnexion pointe vers l'acceptation avec le token.
+        self::assertStringContainsString('/invitations/accept?token=mismatch-token', $html);
+    }
+
+    public function testAcceptInvitationShowsInvalidStateWhenAuthenticatedWithoutToken(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser($client, withFamily: true);
+        $this->login($client);
+
+        $client->request('GET', '/invitations/accept');
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('Invitation indisponible', (string) $client->getResponse()->getContent());
+    }
+
+    public function testInvitationAcceptedShowsWelcomeWhenAuthenticated(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser($client, withFamily: true);
+        $this->login($client);
+
+        $client->request('GET', '/invitations/accepted');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('Bienvenue', $html);
+        self::assertStringContainsString('Accéder à l\'application', $html);
+    }
+
+    public function testInvitationAcceptedRedirectsToLoginWhenAnonymous(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/invitations/accepted');
+        self::assertResponseRedirects('/login');
     }
 
     public function testPublicAuthPagesRender(): void

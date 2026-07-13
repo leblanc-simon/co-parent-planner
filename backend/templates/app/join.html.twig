@@ -1,0 +1,44 @@
+{% extends 'base.html.twig' %}
+{% block title %}Rejoindre la famille · CoParentPlanner{% endblock %}
+{% block body %}
+{# Landing d'invitation pour un·e invité·e SANS compte (US-INV-3, flux simplifié §3.3). Un seul écran :
+   création de compte ET acceptation en un POST, avec ouverture de session immédiate (ni e-mail de
+   vérification, ni reconnexion). E-mail dérivé de l'invitation côté serveur (champ readonly purement
+   ergonomique). Libellés en FR (UI web 100 % hardcodée, divergence assumée Lot 5). #}
+<div class="auth">
+    <div class="auth__card">
+        <div class="auth__brand"><img class="auth__logo" src="{{ asset('icons/logo.png') }}" width="28" height="28" alt=""> CoParentPlanner</div>
+
+        {% if valid %}
+            <h1 class="auth__title">Rejoindre {{ familyName }}</h1>
+            <p class="auth__sub">Vous avez été invité·e à rejoindre « {{ familyName }} ». Choisissez un mot de passe pour créer votre compte et rejoindre la famille.</p>
+
+            <form data-controller="auth-form" data-action="submit->auth-form#submit"
+                  data-auth-form-redirect-value="{{ path('app_invitation_accepted') }}"
+                  action="/api/auth/register-and-accept-invitation" novalidate>
+                <input type="hidden" name="token" value="{{ token }}">
+                <div class="field">
+                    <label for="fullName">Nom complet <span class="form-note">(facultatif)</span></label>
+                    <input id="fullName" name="fullName" type="text" autocomplete="name">
+                </div>
+                <div class="field">
+                    <label for="email">Adresse e-mail</label>
+                    <input id="email" type="email" value="{{ invitationEmail }}" autocomplete="email" readonly>
+                    <p class="form-note">Invitation nominative : votre compte utilise cette adresse.</p>
+                </div>
+                <div class="field">
+                    <label for="password">Mot de passe</label>
+                    <input id="password" name="password" type="password" autocomplete="new-password" required minlength="12">
+                    <p class="form-note">12 caractères minimum.</p>
+                </div>
+                <p class="form-error" data-auth-form-target="error" role="alert"></p>
+                <button class="btn btn--primary btn--block" type="submit" data-auth-form-target="submit">Créer mon compte et rejoindre {{ familyName }}</button>
+            </form>
+        {% else %}
+            <h1 class="auth__title">Invitation indisponible</h1>
+            <p class="auth__sub">Ce lien d'invitation est invalide ou a expiré. Demandez à la personne qui vous a invité·e de vous en renvoyer un.</p>
+            <p class="auth__alt"><a href="{{ path('app_login') }}">Se connecter</a> · <a href="{{ path('app_register') }}">Créer un compte</a></p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

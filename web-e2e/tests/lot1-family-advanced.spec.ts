@@ -65,7 +65,8 @@ test('membre : inviter → accepter → retirer de la famille', async ({
   const pageB = await contextB.newPage();
   await signUpAndLogin(pageB, request, inviteeEmail, 'Bob Invitee');
   await pageB.goto(`/invitations/accept?token=${encodeURIComponent(inviteToken)}`);
-  await pageB.waitForURL('**/settings', { timeout: 15_000 });
+  await pageB.click('button[type="submit"]');
+  await pageB.waitForURL('**/invitations/accepted', { timeout: 15_000 });
   await contextB.close();
 
   // L'admin voit le membre, puis le retire (confirm() accepté).
@@ -141,9 +142,11 @@ test('bascule de famille active : X-Family-Id suit la famille choisie', async ({
 
   // A accepte → membre de Alpha ET Beta.
   await page.goto(`/invitations/accept?token=${encodeURIComponent(inviteToken)}`);
-  await page.waitForURL('**/settings', { timeout: 15_000 });
+  await page.click('button[type="submit"]');
+  await page.waitForURL('**/invitations/accepted', { timeout: 15_000 });
 
-  // A bascule sur Beta via le sélecteur de famille.
+  // A bascule sur Beta via le sélecteur de famille (depuis l'app, l'écran de bienvenue n'a pas le shell).
+  await page.goto('/settings');
   await page.locator('.family-select__button').click();
   await page.locator('.family-select__item', { hasText: 'Beta E2E' }).click();
   await page.waitForLoadState('networkidle');

@@ -94,6 +94,8 @@ invitation:
         expired: "Cette invitation a expiré."
         already_member: 'Cette personne est déjà membre de la famille.'
         not_found: 'Invitation introuvable.'
+        account_exists: 'Un compte existe déjà pour cette adresse. Connectez-vous pour rejoindre la famille.'
+        no_account: "Aucun compte n'existe pour cette adresse. Créez votre compte pour rejoindre la famille."
     accepted: 'Invitation acceptée.'
 
 membership:

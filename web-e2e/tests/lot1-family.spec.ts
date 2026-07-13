@@ -79,9 +79,12 @@ test('créer une famille → inviter → accepter → vérifier accès → ajust
   const pageB = await contextB.newPage();
   await signUpAndLogin(pageB, request, inviteeEmail, 'Bob Beau-parent');
   await pageB.goto(`/invitations/accept?token=${encodeURIComponent(inviteToken)}`);
-  await pageB.waitForURL('**/settings', { timeout: 15_000 });
-  // B voit bien la famille rejointe.
-  await expect(pageB.locator('h1')).toContainText('Compte');
+  // Déjà connecté avec l'e-mail invité : confirmation explicite (rejoindre est un acte volontaire).
+  await expect(pageB.locator('.auth__title')).toContainText('Rejoindre Famille E2E');
+  await pageB.click('button[type="submit"]');
+  // Arrivée sur l'écran de bienvenue (connecté).
+  await pageB.waitForURL('**/invitations/accepted', { timeout: 15_000 });
+  await expect(pageB.locator('.auth__title')).toContainText('Bienvenue');
 
   // ---- A voit B dans la liste des membres (vérification de l'accès) ----
   await page.goto('/settings');
@@ -101,6 +104,64 @@ test('créer une famille → inviter → accepter → vérifier accès → ajust
   await expect(
     memberFormReloaded.locator('select[name="rights[agenda]"]'),
   ).toHaveValue('edit');
+
+  await contextB.close();
+});
+
+test('lien d\'invitation (non connecté) → création de compte contextualisée → acceptation', async ({
+  page,
+  request,
+  browser,
+}: {
+  page: Page;
+  request: import('@playwright/test').APIRequestContext;
+  browser: Browser;
+}) => {
+  const stamp = Date.now();
+  const adminEmail = `e2e-admin2-${stamp}@example.test`;
+  const inviteeEmail = `e2e-join-${stamp}@example.test`;
+
+  // ---- Parent A : compte + famille + invitation ----
+  await signUpAndLogin(page, request, adminEmail, 'Alice Admin');
+  await page.fill('#name', 'Famille Join');
+  await page.selectOption('#type', 'separated');
+  await page.click('button[type="submit"]');
+  await page.waitForURL((url) => !url.pathname.includes('/onboarding'), {
+    timeout: 15_000,
+  });
+  await page.goto('/settings');
+  await page.fill('#i-email', inviteeEmail);
+  await page.selectOption('#i-role', 'step_parent');
+  await page.locator('[data-settings-target="inviteForm"] button[type="submit"]').click();
+  await page.waitForLoadState('networkidle');
+  await expect(page.locator('.invitations')).toContainText(inviteeEmail);
+
+  // ---- Parent B : ouvre le lien SANS être connecté → formulaire de création de compte ----
+  const inviteToken = await waitForInvitationToken(request, inviteeEmail);
+  const contextB = await browser.newContext();
+  const pageB = await contextB.newPage();
+
+  await pageB.goto(`/invitations/accept?token=${encodeURIComponent(inviteToken)}`);
+  // Contexte affiché : nom de la famille + e-mail nominatif pré-rempli (readonly), pas de redirection login.
+  await expect(pageB.locator('.auth__title')).toContainText('Rejoindre Famille Join');
+  await expect(pageB.locator('#email')).toHaveValue(inviteeEmail);
+  await expect(pageB.locator('#email')).toHaveAttribute('readonly', '');
+
+  // Flux simplifié : UN seul écran (mot de passe) → création de compte ET acceptation en un POST,
+  // arrivée CONNECTÉ. Ni second e-mail de vérification, ni reconnexion.
+  await pageB.fill('#fullName', 'Bob Beau-parent');
+  await pageB.fill('#password', PASSWORD);
+  await pageB.click('button[type="submit"]');
+  await pageB.waitForURL('**/invitations/accepted', { timeout: 20_000 });
+  await expect(pageB.locator('.auth__title')).toContainText('Bienvenue');
+
+  // B est bien connecté : l'accueil ne renvoie pas vers /login.
+  await pageB.goto('/');
+  await expect(pageB).not.toHaveURL(/\/login$/);
+
+  // ---- A voit B parmi les membres ----
+  await page.goto('/settings');
+  await expect(page.locator('.members')).toContainText(inviteeEmail);
 
   await contextB.close();
 });

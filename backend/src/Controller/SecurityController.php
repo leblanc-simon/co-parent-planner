@@ -32,6 +32,8 @@ final class SecurityController extends AbstractController
             return $this->redirectToRoute('app_home');
         }
 
+        // Le flux d'invitation ne transite plus par le login générique : un invité anonyme atterrit
+        // directement sur l'écran contextualisé « se connecter et rejoindre » (US-INV-3, §3.3).
         return $this->render('security/login.html.twig');
     }
 
@@ -72,7 +74,12 @@ final class SecurityController extends AbstractController
             $em->flush();
         }
 
-        $response = $this->redirectToRoute('app_login');
+        // « Se déconnecter et continuer » (écran de mismatch d'invitation) : on n'honore une cible de
+        // redirection que si c'est un chemin local d'acceptation d'invitation (jamais une URL absolue).
+        $next = $request->request->get('next');
+        $response = (\is_string($next) && str_starts_with($next, '/invitations/accept'))
+            ? $this->redirect($next)
+            : $this->redirectToRoute('app_login');
         $secure = $request->isSecure();
         $response->headers->clearCookie('access_token', '/', null, $secure, true, Cookie::SAMESITE_LAX);
         $response->headers->clearCookie('refresh_token', '/api/auth/refresh', null, $secure, true, Cookie::SAMESITE_LAX);

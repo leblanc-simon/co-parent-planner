@@ -1,0 +1,16 @@
+{% extends 'base.html.twig' %}
+{% block title %}Bienvenue · CoParentPlanner{% endblock %}
+{% block body %}
+{# Écran de bienvenue après acceptation réussie : l'invité·e est déjà connecté·e (session ouverte par
+   le POST d'acceptation). Libellés FR (UI web 100 % hardcodée, divergence assumée Lot 5). #}
+<div class="auth">
+    <div class="auth__card">
+        <div class="auth__brand"><img class="auth__logo" src="{{ asset('icons/logo.png') }}" width="28" height="28" alt=""> CoParentPlanner</div>
+
+        <h1 class="auth__title">{% if familyName %}Bienvenue dans {{ familyName }} !{% else %}Bienvenue !{% endif %}</h1>
+        <p class="auth__sub">Votre compte est actif et vous avez rejoint la famille. Vous pouvez commencer tout de suite.</p>
+
+        <p><a class="btn btn--primary btn--block" href="{{ path('app_home') }}">Accéder à l'application</a></p>
+    </div>
+</div>
+{% endblock %}

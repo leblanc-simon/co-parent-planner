@@ -1,0 +1,22 @@
+{% extends 'base.html.twig' %}
+{% block title %}Rejoindre la famille · CoParentPlanner{% endblock %}
+{% block body %}
+{# L'utilisateur·rice est connecté·e sous un e-mail différent de celui de l'invitation (nominative).
+   On propose explicitement de se déconnecter puis de reprendre l'acceptation (le token est réarmé
+   côté serveur, validé comme chemin local uniquement). Libellés FR (UI web 100 % hardcodée). #}
+<div class="auth">
+    <div class="auth__card">
+        <div class="auth__brand"><img class="auth__logo" src="{{ asset('icons/logo.png') }}" width="28" height="28" alt=""> CoParentPlanner</div>
+
+        <h1 class="auth__title">Compte différent</h1>
+        <p class="auth__sub">Vous êtes connecté·e en tant que <strong>{{ currentEmail }}</strong>, mais cette invitation à rejoindre « {{ familyName }} » est destinée à <strong>{{ invitationEmail }}</strong>.</p>
+
+        <form action="{{ path('app_logout') }}" method="post">
+            <input type="hidden" name="next" value="{{ path('app_accept_invitation', {token: token}) }}">
+            <button class="btn btn--primary btn--block" type="submit">Se déconnecter et continuer</button>
+        </form>
+
+        <p class="auth__alt"><a href="{{ path('app_home') }}">Rester connecté·e et retourner à l'accueil</a></p>
+    </div>
+</div>
+{% endblock %}

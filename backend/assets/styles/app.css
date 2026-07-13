@@ -142,7 +142,8 @@ a:hover { text-decoration: underline; }
 /* ---------- Layout d'authentification ---------- */
 .auth { min-height: 100vh; display: grid; place-items: center; padding: 2rem; }
 .auth__card { width: 100%; max-width: 420px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-card-lg); box-shadow: var(--shadow-soft); padding: 2rem 2.2rem; }
-.auth__brand { font-family: var(--font-title); font-weight: 800; font-size: 1.15rem; color: var(--accent); margin-bottom: 1.2rem; }
+.auth__brand { font-family: var(--font-title); font-weight: 800; font-size: 1.15rem; color: var(--accent); margin-bottom: 1.2rem; display: flex; align-items: center; gap: .55rem; }
+.auth__logo { width: 28px; height: 28px; border-radius: 8px; object-fit: cover; flex: 0 0 auto; }
 .auth__title { font-size: 1.6rem; margin-bottom: .3rem; }
 .auth__sub { color: var(--muted); margin-bottom: 1.5rem; }
 .auth__alt { text-align: center; margin-top: 1.25rem; color: var(--muted); font-size: .9rem; }
@@ -151,7 +152,7 @@ a:hover { text-decoration: underline; }
 .app-shell { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
 .sidebar { background: var(--sidebar); color: #EDE7DB; padding: 1.4rem 1rem; display: flex; flex-direction: column; gap: .2rem; }
 .sidebar__brand { font-family: var(--font-title); font-weight: 700; font-size: 17px; color: var(--surface); padding: .4rem .6rem .8rem; display: flex; align-items: center; gap: .5rem; }
-.sidebar__logo { width: 32px; height: 32px; border-radius: 9px; background: var(--accent); display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.sidebar__logo { width: 32px; height: 32px; border-radius: 9px; background: var(--accent); object-fit: cover; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
 .sidebar__eyebrow { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #7A7062; margin: 22px 10px 8px; }
 .sidebar__nav a {
     display: flex; align-items: center; gap: 12px; color: #C9C1B2; font-weight: 600; font-size: 14.5px;

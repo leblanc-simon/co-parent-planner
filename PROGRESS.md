@@ -16,9 +16,12 @@ Antérieur : **Lot 6 (Échanges temps réel) TERMINÉ** : backend (entités Exch
 **Revue de l'application web desktop** (`specs/revue-web-desktop-2026-07.md`) — chantier en cours,
 39 constats confirmés : **étapes 1 à 5 livrées** (socle Stimulus · CSS/débordements · i18n ·
 garde-fous destructifs · accessibilité de la palette + marqueur non chromatique A/B web & mobile,
-`cdc §8.1`). **Reste l'étape 6** — 12 **écarts de périmètre** (fonctionnalités contractualisées non
-livrées côté web : fiche de jour + activités sur `/garde`, champ Commentaire, écran RGPD web,
-`/settings` en onglets, UUID des familles liées, famille à un seul parent…) **plus** la liste
+`cdc §8.1`). **Étape 6 (12 écarts de périmètre) en cours — vague 1 livrée** : 6.7 famille à un seul
+parent (boucle `/settings` ↔ `/garde` fermée), 6.9 réglage d'échange inerte supprimé, 6.11 barre
+latérale collante, 6.12 UI alignée sur les droits (extension Twig `can()`), 6.2 champ Commentaire.
+**Restent** : vague 2 — 6.8 liens e-mail sans cible + page d'erreur brute, 6.10 seconde famille
+impossible, 6.6 familles liées inutilisables ; vague 3 — 6.1 fiche de jour `/garde`, 6.5 phrase de
+garde sur l'accueil, 6.4 `/settings` en trois onglets, 6.3 écran RGPD web ; **plus** la liste
 « Reste à traiter » (P2/P3 de finition). ⚠️ L'étape 6 nuance le « Lots 0→8 TERMINÉS » ci-dessous.
 
 **Lot 9 — CI/CD & build iOS sans Mac** (`specs/lots/lot-9-cicd-build-ios-sans-mac.md`) : ✅ **OUTILLAGE LIVRÉ** (lot purement infra, aucun code produit). Deux pipelines CI interchangeables (GitHub Actions principal + Codemagic secours) appelant un `Fastfile` unique et le même dépôt `match` ; signature sans secret en clair ; job `mobile-tests` gating ; docs INSTALL.md/CLAUDE.md à jour ; YAML/plist validés. **Exécution de bout en bout = action mainteneur** (compte Apple + clé API ASC + dépôt `match` + secrets, §E.1) — non réalisable depuis ce dépôt (voir journal §6, 2026-07-10). CI existante inchangée.

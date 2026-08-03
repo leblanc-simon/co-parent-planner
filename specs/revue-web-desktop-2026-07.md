@@ -336,3 +336,54 @@ Aucune dépendance ajoutée : `parent_initials.dart` itère sur les **runes** pl
 
 #### Reste à faire
 Étape 6 (12 écarts de périmètre) et la liste « Reste à traiter ». L'étape 5 est **close**.
+
+### 2026-08-03 — Étape 6, vague 1 : bloqueurs à coût contenu (6.7, 6.9, 6.11, 6.12, 6.2)
+
+Les constats datant du 27/07 et les étapes 1 à 5 ayant beaucoup remanié le code, **chaque item a été
+re-vérifié dans le code avant correction**. Les cinq ci-dessous étaient tous confirmés.
+
+**6.7 — famille à un seul parent.** Les deux sélecteurs « Parent A » et « Parent B » proposaient la
+même personne : « Enregistrer » répondait 422 (titulaires identiques) sans dire pourquoi, et `/garde`
+renvoyait vers ce même formulaire — boucle fermée pendant tout le premier jour d'usage. Le builder,
+les exceptions et les règles de vacances (toutes désignent un parent bénéficiaire) sont remplacés par
+la condition manquante et l'action qui la lève ; `/garde` renvoie vers les membres et non plus vers le
+builder. **Deux tests existants échouaient après correction — ils affirmaient la présence du builder
+dans une famille à un seul parent, c'est-à-dire qu'ils validaient le bug.** Adaptés, et la dette
+signalée par la revue (« aucun test ne couvre `parents|length < 2` ») est fermée dans les deux sens :
+un test pour un parent, un pour deux.
+
+**6.9 — réglage inerte supprimé.** Le « jour / heure d'échange » du § Famille était bien le doublon
+mort : stocké dans `family.settings` (« persistés non interprétés », décision Lot 1 §3.7), lu ni par
+le moteur, ni par le mobile, ni par rien. Pire, les deux champs employaient des conventions
+incompatibles (1=Lundi…7=Dimanche ici, 0=Dimanche…6=Samedi dans le rythme) : une valeur recopiée de
+l'un vers l'autre désignait un autre jour. Saisie retirée de l'UI ; `FamilyResource` conserve les
+champs, donc **contrat OpenAPI inchangé**. Les lignes correspondantes du contrôleur Stimulus ont dû
+partir aussi : le champ disparu, `data.get()` aurait renvoyé `null` et le processor — qui n'écrit que
+les clés reçues — aurait effacé la valeur en base à chaque sauvegarde des réglages.
+
+**6.11 — barre latérale collante.** `align-self: start` est la clé : sans lui, la colonne du grid est
+étirée sur toute la hauteur de la ligne et `sticky` n'a rien à coller. Neutralisée dans le repli
+responsive, où la barre devient horizontale.
+
+**6.12 — l'UI suit les droits.** Constat plus large que décrit : seul l'onglet Échanges se masquait
+(via `ExchangeBadgeExtension`) ; **Garde, Agenda et Enfants s'affichaient sans vérifier le domaine**
+et menaient à un écran de refus. Nouvelle extension Twig `can('domaine', 'niveau')` — le shell est
+rendu pour toutes les pages, y compris celles dont le contrôleur n'a aucune raison de résoudre les
+droits, d'où une extension plutôt qu'une variable de contrôleur (appartenance résolue une seule fois
+par requête). L'encart « Le planning de garde s'affichera ici. » n'est plus montré à qui n'aura jamais
+le droit, et porte désormais le lien de configuration quand la promesse est tenable ; « + Nouvel
+événement » exige `agenda:edit`.
+
+**6.2 — champ Commentaire.** Le contrôleur Stimulus savait **déjà** l'envoyer (création et PATCH
+partiel), et l'API l'accepte (max 2000) : seul le HTML manquait, dans les deux formulaires. Au
+passage, `textarea` rejoint le style générique `.field` au lieu d'un sixième traitement local de champ
+de saisie — le déséquilibre entre ces traitements est lui-même un constat de la revue.
+
+Portes : backend **341 tests / 2778 assertions** (338 avant), PHPStan 0, cs-fixer 0, Twig 30 ;
+**E2E 21/21** (assertions Commentaire ajoutées au parcours agenda, aller-retour complet jusqu'à
+l'affichage). Aucun changement d'API, d'OpenAPI, de migration ni de registre RGPD.
+
+**Reste de l'étape 6** : vague 2 — parcours cassés (**6.8** liens e-mail sans cible + page d'erreur
+brute de Symfony, **6.10** seconde famille impossible, **6.6** familles liées inutilisables) ;
+vague 3 — vrais développements (**6.1** fiche de jour + activités sur `/garde`, **6.5** phrase de
+garde sur l'accueil, **6.4** `/settings` en trois onglets, **6.3** écran RGPD web).

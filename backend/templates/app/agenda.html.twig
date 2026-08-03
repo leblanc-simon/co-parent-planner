@@ -86,6 +86,15 @@
                 </div>
                 <div class="field"><label for="a-loc">Lieu</label><input id="a-loc" name="location" maxlength="255"></div>
             </div>
+            {# Commentaire (revue 6.2) : le gabarit savait l'AFFICHER (`.agenda-event__desc`) et
+               l'API l'accepte de bout en bout (`CreateEventRequest::$description`, max 2000), mais
+               aucun formulaire ne permettait de le saisir — l'information n'avait aucun moyen
+               d'entrer dans le système. `maxlength` aligné sur la contrainte serveur pour que la
+               limite se voie avant l'envoi plutôt que sous forme de 422. #}
+            <div class="field">
+                <label for="a-desc">Commentaire</label>
+                <textarea id="a-desc" name="description" rows="2" maxlength="2000" placeholder="Précisions utiles à l'autre parent (facultatif)"></textarea>
+            </div>
             <fieldset class="agenda-target">
                 <legend>Concerne</legend>
                 <label><input type="checkbox" name="wholeFamily" data-action="change->agenda#toggleWholeFamily" data-agenda-target="wholeFamily"> Toute la famille</label>
@@ -161,6 +170,13 @@
                                     <div class="field"><label>Fin</label><input name="endsAt" type="datetime-local" value="{{ occ.endsAt ? occ.endsAt|date('Y-m-d\\TH:i', timezone) }}"></div>
                                     {% endif %}
                                     <div class="field"><label>Lieu</label><input name="location" value="{{ occ.location }}" maxlength="255"></div>
+                                </div>
+                                {# Commentaire éditable (revue 6.2). Le contrôleur Stimulus n'ajoute
+                                   `description` au PATCH que si le champ est présent, précisément
+                                   pour ne pas effacer la valeur depuis un formulaire qui l'ignore. #}
+                                <div class="field">
+                                    <label>Commentaire</label>
+                                    <textarea name="description" rows="2" maxlength="2000">{{ occ.description }}</textarea>
                                 </div>
                                 {% if occ.isRecurring %}
                                 <div class="field"><label>Portée</label>

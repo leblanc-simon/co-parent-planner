@@ -73,12 +73,19 @@ test('Agenda : créer un événement, une série, filtrer, éditer, supprimer, �
   await page.fill('#a-title', 'Cours de tennis');
   await page.selectOption('#a-cat', 'sport');
   await page.fill('#a-start', `${soon.date}T10:00`);
+  // Commentaire (revue 6.2) : le gabarit savait l'afficher et l'API l'acceptait, mais aucun
+  // formulaire ne permettait de le saisir — l'information n'avait aucun moyen d'entrer.
+  await page.fill('#a-desc', 'Prévoir la raquette et une bouteille');
   await page.locator('.agenda-form button[type="submit"]').click();
   await page.waitForLoadState('networkidle');
 
   await page.goto(`/agenda?month=${soon.month}`);
   await expect(page.locator('.agenda-events')).toContainText('Cours de tennis');
   await expect(page.locator('.agenda-event .pill--sport').first()).toBeVisible();
+  // Le commentaire saisi fait l'aller-retour complet jusqu'à l'affichage.
+  await expect(page.locator('.agenda-event__desc').first()).toContainText(
+    'Prévoir la raquette',
+  );
 
   // ---- Filtre par catégorie : « Musique » masque l'événement sport ----
   const tennisTiles = page.locator('.agenda-event').filter({ hasText: 'Cours de tennis' });
@@ -94,10 +101,17 @@ test('Agenda : créer un événement, une série, filtrer, éditer, supprimer, �
     (d as HTMLDetailsElement).open = true;
   });
   await tennis.locator('input[name="title"]').fill('Tennis modifié');
+  // Le commentaire est aussi modifiable depuis le panneau d'édition (revue 6.2).
+  await tennis
+    .locator('textarea[name="description"]')
+    .fill('Raquette déjà dans le sac');
   await tennis.locator('form.agenda-edit').dispatchEvent('submit');
   await page.waitForLoadState('networkidle');
   await page.goto(`/agenda?month=${soon.month}`);
   await expect(page.locator('.agenda-events')).toContainText('Tennis modifié');
+  await expect(page.locator('.agenda-event__desc').first()).toContainText(
+    'Raquette déjà dans le sac',
+  );
 
   // ---- Créer une série hebdomadaire (4 occurrences) ----
   await page.locator('.agenda-create').evaluate((d) => {

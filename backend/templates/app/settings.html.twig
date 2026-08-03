@@ -113,20 +113,16 @@
                 <label for="f-academy">Académie</label>
                 <input id="f-academy" name="academy" value="{{ family.academy }}" {{ isAdmin ? '' : 'disabled' }}>
             </div>
-            <div class="field">
-                <label for="f-hw">Jour d'échange</label>
-                <select id="f-hw" name="handoverWeekday" {{ isAdmin ? '' : 'disabled' }}>
-                    <option value="">—</option>
-                    {% set days = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'] %}
-                    {% set hw = family.settings['handover_weekday']|default(null) %}
-                    {% for d in 1..7 %}<option value="{{ d }}" {{ hw == d ? 'selected' }}>{{ days[d-1] }}</option>{% endfor %}
-                </select>
-            </div>
-            <div class="field">
-                <label for="f-ht">Heure d'échange</label>
-                <input id="f-ht" name="handoverTime" type="time" value="{{ family.settings['handover_time']|default('') }}" {{ isAdmin ? '' : 'disabled' }}>
-            </div>
         </div>
+        {# Le « jour / heure d'échange » de cette section a été RETIRÉ (revue 6.9). Il existait en
+           double avec celui du § Rythme de garde, et c'était celui-ci qui était inerte : stocké dans
+           `family.settings` (jsonb, « persistés non interprétés » — décision Lot 1 §3.7), il n'était
+           lu ni par le moteur de garde, ni par le mobile, ni par quoi que ce soit. Il s'affichait
+           donc vide alors que le rythme était configuré, et les deux champs employaient même des
+           conventions incompatibles (ici 1=Lundi…7=Dimanche, là-bas 0=Dimanche…6=Samedi), si bien
+           qu'une valeur recopiée de l'un vers l'autre désignait un autre jour.
+           `FamilyResource.handoverWeekday/handoverTime` reste dans l'API (contrat inchangé) : seule
+           la saisie disparaît de l'UI, là où la garde a une source de vérité unique. #}
         {% if isAdmin %}<button class="btn btn--primary" type="submit">Enregistrer</button>{% endif %}
     </form>
 </section>
@@ -134,7 +130,27 @@
 {# ───────────── Rythme de garde + exceptions + vacances (US-CUST-1/2/9) ─────────────
    Rapatriés depuis l'écran Garde (qui reste en consultation). Édition réservée à custody:edit.
    Les mutations passent par l'API via le contrôleur Stimulus `garde`, scopées X-Family-Id. #}
-{% if canEditCustody %}
+{% if canEditCustody and parents|length < 2 %}
+{# Une garde alternée suppose DEUX parents. Avec un seul, les deux sélecteurs « Parent A » et
+   « Parent B » proposaient la même personne : « Enregistrer » répondait 422 (l'API refuse un
+   titulaire identique) sans jamais dire pourquoi, et `/garde` renvoyait vers ce formulaire —
+   l'utilisateur bouclait entre les deux écrans pendant tout son premier jour d'usage, c'est-à-dire
+   exactement au moment où il découvre le produit. On énonce la condition manquante et on donne
+   l'action qui la lève. Idem pour les exceptions et les règles de vacances, qui désignent toutes un
+   parent bénéficiaire : elles n'ont pas de sens avant que le second soit là. #}
+<section class="card rhythm" id="sec-custody" style="margin-bottom:1.25rem">
+    <h2 class="settings-section__title">Rythme de garde</h2>
+    <p class="settings-section__sub">Le planning de garde répartit les jours entre <strong>deux parents</strong>. Il ne peut donc pas être configuré tant que le second parent n'a pas rejoint la famille.</p>
+    <p class="empty-state">Cette famille ne compte qu'un seul parent pour l'instant.</p>
+    {# La section d'invitation n'existe que pour un admin : sans cette garde, le bouton renverrait
+       vers une ancre absente de la page. #}
+    {% if isAdmin %}
+        <p><a class="btn btn--primary" href="#sec-invite">Inviter le second parent</a></p>
+    {% else %}
+        <p class="form-note">Un administrateur de la famille doit l'inviter.</p>
+    {% endif %}
+</section>
+{% elseif canEditCustody %}
 {% set currentKind = pattern ? pattern.kind.value : 'alternating' %}
 {% set dowShort = {0:'dim.',1:'lun.',2:'mar.',3:'mer.',4:'jeu.',5:'ven.',6:'sam.'} %}
 {% set anchorW = pattern and pattern.anchorDate ? (pattern.anchorDate|date('w')) + 0 : 1 %}

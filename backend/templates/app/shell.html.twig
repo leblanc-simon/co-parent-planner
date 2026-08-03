@@ -55,21 +55,27 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
                 Accueil
             </a>
-            {# Onglet Garde masqué pour les familles unies (intact) — cdc §2.4. #}
-            {% if activeMembership is defined and activeMembership.family.hasCustody %}
+            {# Onglet Garde masqué pour les familles unies (intact, cdc §2.4) ET pour qui n'a pas le
+               domaine : proposer un onglet qui mène à un écran de refus n'informe personne (revue
+               6.12). Même règle pour Agenda et Enfants ci-dessous ; Échanges l'appliquait déjà. #}
+            {% if activeMembership is defined and activeMembership.family.hasCustody and can('custody') %}
                 <a href="{{ path('app_garde') }}" class="{{ nav == 'garde' ? 'is-active' }}">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
                     Garde
                 </a>
             {% endif %}
+            {% if can('agenda') %}
             <a href="{{ path('app_agenda') }}" class="{{ nav == 'agenda' ? 'is-active' }}">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
                 Agenda
             </a>
+            {% endif %}
+            {% if can('children_notes') %}
             <a href="{{ path('app_children') }}" class="{{ nav == 'children' ? 'is-active' }}">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2M17 11l2 2 4-4"/></svg>
                 Enfants
             </a>
+            {% endif %}
             {% set openExchanges = exchanges_open_count() %}
             {% if openExchanges is not null %}
             <a href="{{ path('app_echanges') }}" class="{{ nav == 'echanges' ? 'is-active' }}">

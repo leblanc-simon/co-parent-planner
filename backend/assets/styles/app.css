@@ -142,10 +142,14 @@ a:hover { text-decoration: underline; }
 /* ---------- Formulaires ---------- */
 .field { margin-bottom: 1rem; }
 .field label { display: block; font-weight: 600; font-size: .85rem; color: var(--ink-2); margin-bottom: .35rem; }
-.field input:not([type='checkbox']):not([type='radio']):not([type='color']), .field select {
+/* `textarea` est traité ici avec les autres champs, plutôt que redéclaré localement comme le font
+   `.note-form` et `.exchange-form` : c'était le sixième traitement de champ de saisie de la feuille,
+   alors que le déséquilibre entre ces traitements est déjà un constat de la revue. */
+.field input:not([type='checkbox']):not([type='radio']):not([type='color']), .field select, .field textarea {
     width: 100%; padding: .7rem .85rem; font: inherit; color: var(--ink);
     background: var(--card); border: 1px solid var(--border-3); border-radius: 12px;
 }
+.field textarea { resize: vertical; min-height: 2.6rem; }
 /* Une case à cocher étirée à 100 % centrait son glyphe et renvoyait son libellé à la ligne
    suivante : dans un `.field`, la case garde sa taille intrinsèque et s'aligne avec son texte. */
 .field label:has(> input[type='checkbox']), .field label:has(> input[type='radio']) {
@@ -157,7 +161,7 @@ a:hover { text-decoration: underline; }
     width: 56px; height: 34px; padding: 2px; cursor: pointer;
     background: var(--card); border: 1px solid var(--border-3); border-radius: 10px;
 }
-.field input:focus, .field select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft-2); }
+.field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft-2); }
 .field input[type='color']:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Confirmation de succès, pendant de `.form-error` (le socle Stimulus l'alimente après rechargement). */
@@ -180,7 +184,13 @@ a:hover { text-decoration: underline; }
 
 /* ---------- Shell applicatif (desktop) ---------- */
 .app-shell { display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: 100vh; }
-.sidebar { background: var(--sidebar); color: #EDE7DB; padding: 1.4rem 1rem; display: flex; flex-direction: column; gap: .2rem; }
+/* Barre latérale COLLANTE. Colonne d'un grid, elle suivait la hauteur du contenu principal : sur
+   `/settings` (près de 4 000 px de haut) la navigation partait à `top: -1316` après 1 500 px de
+   défilement et « Se déconnecter » se retrouvait à `top: 2380` — plus aucun moyen de changer d'écran
+   sans remonter toute la page. `align-self: start` est indispensable : sans lui l'élément est étiré
+   sur toute la hauteur de la ligne du grid et `sticky` n'a rien à coller. Neutralisé dans le repli
+   responsive, où la barre devient une navigation horizontale. */
+.sidebar { background: var(--sidebar); color: #EDE7DB; padding: 1.4rem 1rem; display: flex; flex-direction: column; gap: .2rem; position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto; }
 .sidebar__brand { font-family: var(--font-title); font-weight: 700; font-size: 17px; color: var(--surface); padding: .4rem .6rem .8rem; display: flex; align-items: center; gap: .5rem; }
 .sidebar__logo { width: 32px; height: 32px; border-radius: 9px; background: var(--accent); object-fit: cover; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
 .sidebar__eyebrow { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: #7A7062; margin: 22px 10px 8px; }
@@ -712,7 +722,10 @@ a:hover { text-decoration: underline; }
     /* `minmax(0, …)` et non `1fr` : `1fr` vaut `minmax(auto, 1fr)` et la colonne ne pouvait pas
        descendre sous le min-content du contenu, ce qui élargissait la page au lieu de la replier. */
     .app-shell { grid-template-columns: minmax(0, 1fr); }
-    .sidebar { flex-direction: row; align-items: center; overflow-x: auto; padding: .6rem .8rem; gap: .2rem; }
+    /* `height: 100vh` de la barre collante n'a aucun sens une fois qu'elle est horizontale : elle
+       occuperait tout l'écran avant le contenu. On garde `sticky` (navigation toujours atteignable)
+       en rendant la hauteur au contenu. */
+    .sidebar { flex-direction: row; align-items: center; overflow-x: auto; padding: .6rem .8rem; gap: .2rem; height: auto; overflow-y: visible; }
     .sidebar__brand { padding: .4rem .6rem; }
     .sidebar__spacer { display: none; }
     .sidebar__eyebrow { display: none; }

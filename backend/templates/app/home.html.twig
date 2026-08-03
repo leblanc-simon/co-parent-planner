@@ -11,16 +11,25 @@
         <div class="eyebrow">{{ "now"|date("d/m/Y", timezone) }}</div>
         <h1>Bonjour {{ user.fullName ?: user.email }}</h1>
     </div>
+    {# Proposé au seul membre qui peut effectivement créer : avec `agenda: view`, le formulaire de
+       l'écran Agenda n'est pas rendu, et l'invitation ne menait donc nulle part (revue 6.12). #}
+    {% if can('agenda', 'edit') %}
     <div class="main__header-actions">
         <a class="btn btn--ink" href="{{ path('app_agenda') }}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
             Nouvel événement
         </a>
     </div>
+    {% endif %}
 </header>
 
 <div class="home-grid">
     <div class="home-col">
+        {# Carte masquée à qui n'a pas le domaine `custody` : elle annonçait « Le planning de garde
+           s'affichera ici. » à un membre qui n'aura JAMAIS ce droit — une promesse que rien ne
+           tiendra jamais (revue 6.12). L'information « famille unie » n'est pas un droit et reste
+           donc affichée. #}
+        {% if not activeMembership.family.hasCustody or can('custody') %}
         <section class="card card--accent">
             <div class="eyebrow">Cette semaine</div>
             {% if not activeMembership.family.hasCustody %}
@@ -46,9 +55,14 @@
                 </div>
                 <a class="section-head__link" href="{{ path('app_garde') }}">Planning complet →</a>
             {% else %}
+                {# Ici le droit est acquis : la promesse est tenable, on donne l'action qui la tient. #}
                 <p class="empty-state">Le planning de garde s'affichera ici.</p>
+                {% if can('custody', 'edit') %}
+                    <a class="section-head__link" href="{{ path('app_settings') }}#sec-custody">Configurer le rythme de garde →</a>
+                {% endif %}
             {% endif %}
         </section>
+        {% endif %}
 
         <section>
             <div class="section-head">

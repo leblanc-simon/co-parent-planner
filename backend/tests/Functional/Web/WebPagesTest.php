@@ -395,6 +395,14 @@ final class WebPagesTest extends WebTestCase
         $this->createUser($client, withFamily: true);
         $this->login($client);
 
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $em);
+        [$family] = $this->activeFamilyOf($em);
+        // Un rythme de garde suppose DEUX parents. Ce test n'en créait qu'un et affirmait pourtant la
+        // présence du builder : il validait donc un formulaire qui répondait 422 à tout coup
+        // (revue 6.7). Le cas à un seul parent a désormais son propre test.
+        $this->addSecondParent($em, $family);
+
         $client->request('GET', '/settings');
         self::assertResponseIsSuccessful();
         $html = (string) $client->getResponse()->getContent();
@@ -406,6 +414,66 @@ final class WebPagesTest extends WebTestCase
         self::assertStringContainsString('Rythme de garde', $html);
         self::assertStringContainsString('Enregistrer le rythme', $html);
         self::assertStringContainsString('data-action="submit->garde#savePattern"', $html);
+        // Le doublon inerte de « jour / heure d'échange » a été retiré du § Famille (revue 6.9) :
+        // il n'était lu par personne et employait la convention inverse de celle du rythme.
+        self::assertStringNotContainsString('id="f-hw"', $html);
+        self::assertStringNotContainsString('id="f-ht"', $html);
+    }
+
+    /**
+     * Famille à **un seul parent actif** (revue 6.7) : le builder de rythme est remplacé par la
+     * condition manquante et l'action qui la lève, au lieu d'un formulaire dont « Enregistrer »
+     * répondait 422 sans expliquer pourquoi — l'utilisateur bouclait alors entre `/settings` et
+     * `/garde` pendant tout son premier jour d'usage.
+     */
+    public function testSettingsExplainsMissingSecondParentInsteadOfBrokenRhythmBuilder(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser($client, withFamily: true); // séparée, un seul parent
+        $this->login($client);
+
+        $client->request('GET', '/settings');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+
+        self::assertStringContainsString('Rythme de garde', $html);
+        self::assertStringContainsString("Cette famille ne compte qu'un seul parent", $html);
+        self::assertStringContainsString('Inviter le second parent', $html);
+        // Aucun formulaire de rythme, donc aucun 422 possible : ni sélecteurs de parents, ni bouton.
+        self::assertStringNotContainsString('data-action="submit->garde#savePattern"', $html);
+        self::assertStringNotContainsString('id="g-pa"', $html);
+        self::assertStringNotContainsString('id="g-pb"', $html);
+        self::assertStringNotContainsString('Enregistrer le rythme', $html);
+    }
+
+    /**
+     * Ajoute un second membership parent actif à la famille : un rythme de garde en exige deux
+     * (titulaires distincts), et plusieurs écrans se comportent différemment en dessous.
+     */
+    private function addSecondParent(
+        EntityManagerInterface $em,
+        Family $family,
+        string $email = 'web2@example.com',
+        ?string $fullName = null,
+    ): Membership {
+        $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
+        self::assertInstanceOf(UserPasswordHasherInterface::class, $hasher);
+
+        $user = (new User())->setEmail($email)->setStatus(UserStatus::Active)->setEmailVerifiedAt(Clock::get()->now());
+        $user->setPasswordHash($hasher->hashPassword($user, self::PASSWORD));
+        if (null !== $fullName) {
+            $user->setFullName($fullName);
+        }
+
+        $membership = (new Membership())->setUser($user)->setFamily($family)
+            ->setRole(MembershipRole::Parent)->setIsAdmin(false)->setStatus(MembershipStatus::Active);
+
+        $em->persist($user);
+        $em->persist($membership);
+        $em->flush();
+
+        return $membership;
     }
 
     /**
@@ -467,6 +535,38 @@ final class WebPagesTest extends WebTestCase
         self::assertStringNotContainsString('data-action="submit->garde#savePattern"', $html);
         self::assertStringNotContainsString('Enregistrer le rythme', $html);
         self::assertStringNotContainsString('href="#sec-custody"', $html);
+    }
+
+    /**
+     * Revue 6.12 — l'interface ne doit proposer que ce que les droits autorisent. Un membre sans
+     * aucun domaine voyait : les onglets Garde, Agenda et Enfants (qui menaient tous à un écran de
+     * refus), l'encart « Le planning de garde s'affichera ici. » — une promesse que rien ne tiendrait
+     * jamais pour lui — et le bouton « Nouvel événement » alors qu'il ne peut rien créer.
+     */
+    public function testNavigationAndHomeHideDomainsWithoutRights(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        // Beau-parent sans aucun droit : `customRights` vide ⇒ tous les domaines à `none`.
+        $this->createMemberAndLogin(
+            $client,
+            FamilyType::Separated,
+            MembershipRole::StepParent,
+            admin: false,
+            customRights: [new Right(RightDomain::Custody, RightLevel::None)],
+        );
+
+        $client->request('GET', '/');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+
+        // La page rend, mais sans onglet menant à un refus…
+        self::assertStringContainsString('Bonjour', $html);
+        self::assertStringNotContainsString('href="/garde"', $html);
+        // …sans promesse intenable…
+        self::assertStringNotContainsString("Le planning de garde s'affichera ici", $html);
+        // …et sans invitation à créer ce qu'il ne peut pas créer.
+        self::assertStringNotContainsString('Nouvel événement', $html);
     }
 
     public function testSettingsHidesCustodyEditingForIntactFamily(): void
@@ -731,9 +831,13 @@ final class WebPagesTest extends WebTestCase
         $client->request('GET', '/garde');
         self::assertResponseIsSuccessful();
         $html = (string) $client->getResponse()->getContent();
-        // Sans rythme configuré : message + renvoi vers Paramètres (l'édition y a été déplacée).
+        // Sans rythme configuré : message d'état vide.
         self::assertStringContainsString('Aucun rythme de garde configuré', $html);
-        self::assertStringContainsString('#sec-custody', $html);
+        // Cette famille n'a qu'un parent : renvoyer vers le builder de rythme entretenait une boucle
+        // /garde → /settings → 422 → /garde (revue 6.7). On énonce la condition manquante.
+        self::assertStringContainsString('deux parents', $html);
+        self::assertStringContainsString('#sec-members', $html);
+        self::assertStringNotContainsString('#sec-custody', $html);
         // Le builder de rythme ne vit plus sur l'écran Garde (déplacé vers Paramètres).
         self::assertStringNotContainsString('data-action="submit->garde#savePattern"', $html);
         self::assertStringNotContainsString('Enregistrer le rythme', $html);
@@ -741,6 +845,31 @@ final class WebPagesTest extends WebTestCase
         self::assertStringContainsString('href="/garde"', $html);
         // Abonnement temps réel câblé.
         self::assertStringContainsString('turbo-stream-source', $html);
+    }
+
+    /**
+     * Contrepartie du test précédent : **deux** parents et pas encore de rythme. Le renvoi vers le
+     * builder est alors légitime, et c'est le cas qu'aucun test ne couvrait — les fixtures web ne
+     * créaient qu'un parent.
+     */
+    public function testGardeLinksToRhythmBuilderWhenSecondParentIsPresent(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser($client, withFamily: true);
+        $this->login($client);
+
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $em);
+        [$family] = $this->activeFamilyOf($em);
+        $this->addSecondParent($em, $family);
+
+        $client->request('GET', '/garde');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('Aucun rythme de garde configuré', $html);
+        self::assertStringContainsString('#sec-custody', $html);
+        self::assertStringNotContainsString('#sec-members', $html);
     }
 
     /**

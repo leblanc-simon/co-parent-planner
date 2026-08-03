@@ -35,10 +35,11 @@ export default class extends ApiController {
         body.academy = academy === '' || academy === null ? null : academy;
         const zone = data.get('schoolZone');
         body.schoolZone = zone === '' || zone === null ? null : zone;
-        const hw = data.get('handoverWeekday');
-        body.handoverWeekday = hw === '' || hw === null ? null : parseInt(hw, 10);
-        const ht = data.get('handoverTime');
-        body.handoverTime = ht === '' || ht === null ? null : ht;
+        // `handoverWeekday`/`handoverTime` ne sont plus saisis ici (revue 6.9 : doublon inerte du
+        // § Rythme de garde). Ils ne doivent SURTOUT pas rester dans le corps : le champ ayant
+        // disparu du formulaire, `data.get()` renverrait `null` et le processor, qui n'écrit que les
+        // clés reçues, effacerait alors la valeur enregistrée en base à chaque sauvegarde des
+        // réglages de la famille.
         this._send('PATCH', `/api/families/${this.familyIdValue}`, body, {
             event,
             notice: 'Réglages de la famille enregistrés.',

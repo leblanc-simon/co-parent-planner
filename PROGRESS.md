@@ -24,6 +24,28 @@ impossible, 6.6 familles liées inutilisables ; vague 3 — 6.1 fiche de jour `/
 garde sur l'accueil, 6.4 `/settings` en trois onglets, 6.3 écran RGPD web ; **plus** la liste
 « Reste à traiter » (P2/P3 de finition). ⚠️ L'étape 6 nuance le « Lots 0→8 TERMINÉS » ci-dessous.
 
+### Point de reprise immédiat (au 2026-08-03)
+
+Dépôt **propre**, dernier commit `86887f9`. Toutes les portes vertes (voir §5.3 pour les relancer).
+**7 constats restants**, dans cet ordre :
+
+| # | Constat | Nature |
+|---|---|---|
+| **6.8** | Liens des e-mails de notification perdant leur cible (redirection `/login` sans `next`, redirection en dur vers l'accueil) **et** page d'erreur brute de Symfony sur toute URL web inconnue (`ProblemExceptionSubscriber` ne traite que `/api`, `templates/bundles/` absent) | parcours cassé |
+| **6.10** | Impossible de créer ou rejoindre une **seconde famille** depuis l'UI (`/onboarding` répond 200 mais aucun template ne le lie ; le menu du sélecteur n'offre aucune action) | parcours cassé |
+| **6.6** | **Familles liées** inutilisables : le formulaire réclame un UUID que l'UI n'affiche nulle part | parcours cassé |
+| **6.1** | `/garde` sans **fiche de jour ni activités** — contractualisé au **Lot 3** (`cdc.md:158` et `:511`, maquette `:234-242` et `:828-868`) ; un membre en lecture seule n'a aucune interaction | développement |
+| **6.5** | Accueil sans **phrase de garde** ni prochain échange (maquette : phrase 25 px, sous-ligne horloge « Retour chez X dimanche 28 juin, 19h00 », avatars enfants ; `custodyWeek()` ne calcule pas l'information) | développement |
+| **6.4** | `/settings` en **master-détail à trois onglets** au lieu d'une page unique de 4 094 px à 9 ancres dont aucune active | développement |
+| **6.3** | Aucun **écran RGPD ni gestion de compte** web, alors que l'API expose `POST /api/me/export`, `DELETE /api/me`, `PATCH /api/me` et que le mobile a l'écran — **Lot 8** (`cdc.md:531`) | développement |
+
+**⚠️ Question ouverte à trancher avec le PO avant de coder 6.4** : la maquette impose *trois* onglets
+exclusifs, mais `/settings` porte aujourd'hui **neuf** sections (Compte, Notifications, Famille,
+Rythme de garde, Exceptions, Vacances, Membres, Invitations, Familles liées). Le regroupement en trois
+n'est pas déductible du constat — lire la maquette aux lignes `:581/630/720` et **faire valider le
+découpage** plutôt que d'inventer une taxonomie. Noter que 6.3 (écran RGPD/compte) ajoutera du contenu
+à l'onglet « Compte » : traiter 6.3 **avant** 6.4 évite de refondre `/settings` deux fois.
+
 **Lot 9 — CI/CD & build iOS sans Mac** (`specs/lots/lot-9-cicd-build-ios-sans-mac.md`) : ✅ **OUTILLAGE LIVRÉ** (lot purement infra, aucun code produit). Deux pipelines CI interchangeables (GitHub Actions principal + Codemagic secours) appelant un `Fastfile` unique et le même dépôt `match` ; signature sans secret en clair ; job `mobile-tests` gating ; docs INSTALL.md/CLAUDE.md à jour ; YAML/plist validés. **Exécution de bout en bout = action mainteneur** (compte Apple + clé API ASC + dépôt `match` + secrets, §E.1) — non réalisable depuis ce dépôt (voir journal §6, 2026-07-10). CI existante inchangée.
 
 **Lot 0 — Fondations** : ✅ **TERMINÉ**.
@@ -207,12 +229,28 @@ Config clé : `config/packages/doctrine.yaml` (types citext/encrypted_string), `
 
 ## 5. Comment reprendre
 
-1. Lire ce fichier (§3 statuts, §4 état, §6 journal) puis `specs/lots/lot-0-fondations.md`.
+> Le §3 ci-dessus est le **suivi du Lot 0**, entièrement ✅ ; il est conservé comme archive. Le
+> chantier courant n'est plus un lot mais la **revue web desktop** (§0), dont le plan et le journal
+> détaillé vivent dans `specs/revue-web-desktop-2026-07.md`.
+
+1. Lire le §0 (« Où en est-on ? ») puis le **journal de `specs/revue-web-desktop-2026-07.md`**, de la
+   fin vers le début : la dernière entrée porte le point de reprise exact.
 2. Démarrer la base : `cd backend && docker compose up -d database` (+ `mercure mailer` au besoin).
-3. Vérifier : `cd backend && symfony console doctrine:schema:validate && php bin/phpunit tests/Unit`.
-4. Reprendre la 1ʳᵉ tâche non ✅ du §3. **Prochaine priorité : Tâche 6 (auth HTTP)** —
-   c'est le livrable phare du Lot 0 ; elle débloque le test fonctionnel du scope (Tâche 7) et le front.
-5. À chaque jalon : MAJ §3 (statut) + §6 (journal) + date en tête.
+   **Sans le conteneur, `symfony` retombe sur un PostgreSQL local et l'auth échoue.**
+3. Vérifier l'état sain avant de toucher au code (toutes ces portes doivent être vertes) :
+   ```bash
+   cd backend && symfony php bin/phpunit                 # 341 tests / 2778 assertions
+   vendor/bin/phpstan analyse --memory-limit=1G          # niveau 8, 0
+   PHP_CS_FIXER_IGNORE_ENV=1 vendor/bin/php-cs-fixer fix --dry-run
+   symfony console lint:twig templates                   # 30 fichiers
+   cd ../web-e2e && ./scripts/e2e-local.sh               # 21/21
+   cd ../mobile && flutter test && dart analyze          # 180 tests, 0 issue
+   ```
+4. **Point de reprise : étape 6, vague 2.** Voir « Point de reprise immédiat » au §0.
+5. **Re-vérifier chaque constat dans le code avant de le corriger.** Les constats datent du
+   2026-07-27 et les étapes 1 à 5 ont beaucoup remanié ces fichiers ; certains ont évolué, et la
+   vague 1 a montré que des tests existants pouvaient *valider* le défaut décrit.
+6. À chaque jalon : MAJ du §0 + de la date en tête + une entrée dans le journal de la revue.
 
 ### Commandes réelles (validées)
 ```bash

@@ -20,6 +20,7 @@ use App\Repository\SchoolHolidayRepository;
 use App\Service\Agenda\OverlayReader;
 use App\Service\Custody\CustodyStatsCalculator;
 use App\Web\ActiveFamilyResolver;
+use App\Web\ParentInitials;
 use Psr\Clock\ClockInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -50,6 +51,7 @@ final class GardeController extends AbstractController
         private readonly OverlayPreferenceRepository $overlayPreferences,
         private readonly ClockInterface $clock,
         private readonly HubInterface $hub,
+        private readonly ParentInitials $parentInitials,
     ) {
     }
 
@@ -102,7 +104,16 @@ final class GardeController extends AbstractController
         [$overlayLinks, $enabledFamilyIds] = $this->overlayGardeLinks($family, $active);
         $overlayBadges = [] === $enabledFamilyIds ? [] : $this->overlayBadges($family, $enabledFamilyIds, $monthStart, $monthEnd);
 
+        // Nom affiché et marqueur non chromatique des deux parents, résolus **au même endroit** :
+        // l'initiale d'une case de calendrier doit toujours désigner le nom de la légende (cdc §8).
+        $parentNames = [
+            'A' => self::displayName($pattern?->getParentA()) ?: 'Parent A',
+            'B' => self::displayName($pattern?->getParentB()) ?: 'Parent B',
+        ];
+
         $response = $this->render('app/garde.html.twig', [
+            'parentNames' => $parentNames,
+            'initials' => $this->parentInitials->pair($parentNames['A'], $parentNames['B']),
             'overlayLinks' => $overlayLinks,
             'overlayBadges' => $overlayBadges,
             'memberships' => $memberships,
@@ -139,6 +150,16 @@ final class GardeController extends AbstractController
         }
 
         return $response;
+    }
+
+    /** Nom d'affichage d'un parent : `full_name` (chiffré au repos, déchiffré par Doctrine) ou l'e-mail. */
+    private static function displayName(?Membership $parent): string
+    {
+        if (null === $parent) {
+            return '';
+        }
+
+        return $parent->getUser()->getFullName() ?: $parent->getUser()->getEmail();
     }
 
     /**

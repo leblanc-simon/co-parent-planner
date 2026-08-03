@@ -126,6 +126,40 @@ void main() {
     expect(find.textContaining('55 %'), findsOneWidget);
   });
 
+  // Garde-fou du marqueur non chromatique (cdc §8, WCAG 1.4.1) : les deux fonds A/B ne se
+  // distinguent que par la teinte, donc l'attribution DOIT être portée par un canal textuel.
+  // Miroir de `WebPagesTest::testGardeCarriesNonColourParentMarker`.
+  testWidgets(
+    'marqueur non chromatique : initiale du parent par case et en légende',
+    (tester) async {
+      stubReads();
+      // Prénoms volontairement distincts de « Alice »/« Bob » : leurs initiales seraient « A »/« B »,
+      // indiscernables du repli — le test ne prouverait alors rien.
+      when(() => membersRepo.listMembers('fam-1')).thenAnswer(
+        (_) async => const [
+          api.Member(id: 'mA', role: 'parent', fullName: 'Sophie Martin'),
+          api.Member(id: 'mB', role: 'parent', fullName: 'Marc Durand'),
+        ],
+      );
+
+      await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+
+      // La légende nomme les parents et reproduit leur marqueur.
+      expect(find.text('Sophie Martin'), findsOneWidget);
+      expect(find.text('Marc Durand'), findsOneWidget);
+
+      // Chaque jour attribué porte le marqueur de SON parent.
+      String markerOf(String date) => tester
+          .widget<Text>(find.byKey(ValueKey('garde-day-marker-$date')))
+          .data!;
+
+      expect(markerOf('2026-07-01'), 'S'); // parent A
+      expect(markerOf('2026-07-02'), 'M'); // parent B
+      expect(markerOf('2026-07-03'), 'M'); // parent B (exception)
+    },
+  );
+
   testWidgets(
     'détail du jour → « Échanger ce jour » crée une exception vers l\'autre parent',
     (tester) async {

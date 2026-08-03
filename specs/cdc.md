@@ -484,6 +484,77 @@ Toutes les opérations du RGPD Manager sont **journalisées dans `AuditLog`** (a
 
 **Formes** : rayons cartes 14–20px, items de nav 11px, pastilles `999px`, modales 22px. Ombres douces (cf. maquette). 
 
+### 8.1 Accessibilité de la palette — AMENDEMENT (décision produit, 2026-08-03)
+
+Les couleurs ci-dessus **restent normatives**. L'amendement qui suit lève une ambiguïté qui a déjà
+coûté un défaut : les paires prescrites ci-dessus ont été mesurées et plusieurs échouent au niveau
+**WCAG 2.1 AA** (§1.4.3, seuil 4,5:1 pour du texte courant — aucun des textes visés n'atteint les
+18,66px bold / 24px qui ouvriraient le seuil assoupli de 3:1).
+
+**Décision : ne pas modifier la palette par défaut.** L'identité terracotta/crème primait sur la
+conformité stricte pour des libellés secondaires. Cette non-conformité est donc **assumée et
+documentée**, non un oubli : un futur passage de « réalignement » ne doit ni la traiter comme un bug
+à corriger, ni assombrir ces tokens sans nouvelle décision produit.
+
+| Paire | Ratio mesuré | Statut |
+|---|---|---|
+| `--muted-2` `#A39B8C` sur `--app-bg` (en-têtes de calendrier, eyebrows, mini-semaine, 10-12px) | **2,09:1** | non conforme, assumé |
+| `--muted` `#857E71` (une trentaine de règles, dont les sous-titres d'authentification) | 3,06 à 4,02:1 selon le fond | non conforme, assumé |
+| Pastilles de catégorie sur leur propre fond : École **2,21:1**, Musique 3,25, Autre 3,21, Santé 3,30, Sport 3,44 | 2,21 à 3,44:1 | non conforme, assumé |
+| `--cat-health` en `.form-error` sur `--surface` (**tous** les messages d'erreur) | 3,61:1 | non conforme, assumé |
+
+**Contrepartie obligatoire — mode contraste renforcé.** La feuille de style doit fournir un bloc
+`@media (prefers-contrast: more)` redéfinissant ces tokens de texte à ≥ 4,5:1 **sur tous les fonds
+où ils apparaissent** (`--app-bg`, `--surface`, `--card`, et le fond de pastille pour les
+catégories). Chaque valeur est le token d'origine assombri à teinte constante. Conséquence acceptée
+dans ce mode seulement : `--muted` et `--muted-2` convergent, aucune valeur plus claire ne tenant le
+seuil — la hiérarchie à trois gris tombe à deux. Verrouillé par `ContrastTokensTest`, qui recalcule
+les ratios depuis le CSS.
+
+**Attribution parent A / parent B — marqueur non chromatique OBLIGATOIRE.** Distinct de ce qui
+précède : ce n'est pas un défaut de lisibilité mais une **violation de WCAG 1.4.1**, et elle porte
+sur la fonction centrale du produit — savoir chez quel parent est l'enfant.
+
+Les fonds `--accent-soft` `#FBF4EE` (A) et `--positive-soft` `#DCECE8` (B) ne se distinguent que par
+la **teinte** : leur contraste de luminance est de **1,12:1** (bordures `--accent`/`--positive` :
+1,21:1). La couleur est donc le **seul** canal d'information, et il tombe dans trois situations :
+
+| Situation | Fonds A/B | Bordures A/B |
+|---|---|---|
+| Vision normale | 1,12:1 | 1,21:1 |
+| Deutéranopie (simulée Viénot) | 1,14:1 | 1,38:1 |
+| Protanopie (simulée Viénot) | 1,10:1 | **1,08:1** |
+| Niveaux de gris (impression) | 1,12:1 | 1,20:1 |
+| `forced-colors: active` | identiques (fonds écrasés par le système) | identiques |
+
+**Règle : toute vue affichant l'attribution d'un jour doit porter un marqueur textuel du parent, en
+plus de la couleur** — calendrier de garde et mini-semaine de l'accueil, sur **web et mobile**.
+
+Le marqueur est l'**initiale du prénom**, calculée ainsi (règle normative, implémentée dans les deux
+clients par `backend/src/Web/ParentInitials.php` et
+`mobile/lib/features/custody/presentation/parent_initials.dart`, aux jeux de tests jumeaux) :
+
+1. prénom = premier mot du nom d'affichage ; à défaut de nom, partie locale de l'e-mail
+   (`marc.durand@…` → `marc`) ;
+2. marqueur = première lettre, capitale (accent conservé : `Élodie` → `É`) ;
+3. **collision** entre les deux parents → deux lettres (`Sophie`/`Simon` → `So`/`Si`) ;
+4. collision persistante, ou nom absent → repli sur **`A`** / **`B`**.
+
+Deux lettres est un **plafond**, pas une étape : le marqueur s'inscrit dans une case de 53px au pire
+cas, déjà occupée par le numéro du jour, la mention de vacances et la pastille de famille liée.
+
+La **légende** porte le marqueur elle-même et reproduit l'aspect de la case (fond doux + bordure du
+parent), au lieu d'un carré de couleur pleine : une légende purement chromatique n'explique rien à
+qui ne distingue pas les deux teintes. Le marqueur est `aria-hidden` — les lecteurs d'écran reçoivent
+le **nom en clair**, jamais l'initiale seule.
+
+Enfin, un bloc `@media (forced-colors: active)` doit rendre à la légende son contour et au jour
+courant son cadre (`box-shadow` étant ignoré dans ce mode).
+
+Verrouillé par : `WebPagesTest::testGardeCarriesNonColourParentMarker`, le test Flutter « marqueur
+non chromatique », et l'E2E `lot3-garde.spec.ts` (présence, distinction A≠B, survie sous contraste
+forcé).
+
 **Cibles & layout** :
 - **Web (Symfony UX)** : recréation directe du HTML/CSS des maquettes en **Twig + CSS**, interactivité via **Stimulus**, navigation via **Turbo**. Médium identique à la maquette ⇒ rendu fidèle naturel.
 - **Desktop** : sidebar fixe (252px, sombre) + zone principale ; gabarit de référence 1320×840 ; grilles 2 colonnes pour Accueil/Garde/Dépenses ; master-détail pour Enfants/Échanges/Paramètres. Responsive : la sidebar se replie en navigation compacte sous un breakpoint.

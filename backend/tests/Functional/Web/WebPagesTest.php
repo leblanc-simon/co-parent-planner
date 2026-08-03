@@ -743,6 +743,83 @@ final class WebPagesTest extends WebTestCase
         self::assertStringContainsString('turbo-stream-source', $html);
     }
 
+    /**
+     * Garde-fou d'accessibilité (cdc §8, WCAG 1.4.1) : l'attribution d'un jour de garde ne doit
+     * JAMAIS dépendre de la seule couleur. Les deux fonds prescrits par le §8 ne se distinguent que
+     * par la teinte — 1,12:1 de contraste de luminance, 1,08:1 en protanopie simulée sur les
+     * bordures — donc le planning devenait illisible en niveaux de gris, en daltonisme rouge-vert et
+     * en contraste forcé. Miroir du test Flutter « marqueur non chromatique ».
+     *
+     * Le test ne se contente pas de trouver le marqueur : il vérifie qu'il porte l'initiale RÉELLE
+     * de chaque parent et que les deux diffèrent — un marqueur identique des deux côtés ne
+     * distinguerait rien.
+     */
+    public function testGardeCarriesNonColourParentMarker(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser($client, withFamily: true);
+        $this->login($client);
+
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $em);
+        self::assertInstanceOf(UserPasswordHasherInterface::class, $hasher);
+        [$family, $parentA] = $this->activeFamilyOf($em);
+
+        // Noms explicites des deux côtés : sans eux le repli e-mail donnerait « A »/« B », et le
+        // test ne prouverait pas que les initiales réelles sont utilisées.
+        $parentA->getUser()->setFullName('Sophie Martin');
+
+        $userB = (new User())->setEmail('marc@example.com')->setStatus(UserStatus::Active)->setEmailVerifiedAt(Clock::get()->now());
+        $userB->setPasswordHash($hasher->hashPassword($userB, self::PASSWORD))->setFullName('Marc Durand');
+        $parentB = (new Membership())->setUser($userB)->setFamily($family)
+            ->setRole(MembershipRole::Parent)->setIsAdmin(false)->setStatus(MembershipStatus::Active);
+
+        $today = Clock::get()->now()->setTimezone(new \DateTimeZone('Europe/Paris'))->setTime(0, 0);
+        $pattern = (new CustodyPattern())
+            ->setFamily($family)
+            ->setKind(CustodyPatternKind::Alternating)
+            ->setAnchorDate($today)
+            ->setHandoverWeekday(0)
+            ->setHandoverTime('19:00')
+            ->setParentA($parentA)
+            ->setParentB($parentB);
+
+        // Deux jours consécutifs, un par parent : le marqueur doit différer de l'un à l'autre.
+        $dayA = (new CustodyDay())->setFamily($family)->setDate($today)
+            ->setParentMembership($parentA)->setSource(CustodyDaySource::Base);
+        $dayB = (new CustodyDay())->setFamily($family)->setDate($today->modify('+1 day'))
+            ->setParentMembership($parentB)->setSource(CustodyDaySource::Base);
+
+        foreach ([$userB, $parentB, $pattern, $dayA, $dayB] as $entity) {
+            $em->persist($entity);
+        }
+        $em->flush();
+
+        $client->request('GET', '/garde?month='.$today->format('Y-m'));
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+
+        // Le marqueur existe et porte l'initiale de chaque parent (« Sophie » → S, « Marc » → M).
+        self::assertStringContainsString('garde-day__parent', $html);
+        self::assertStringContainsString('<span class="garde-day__parent" aria-hidden="true">S</span>', $html);
+        self::assertStringContainsString('<span class="garde-day__parent" aria-hidden="true">M</span>', $html);
+        // La légende porte le même marqueur : purement colorée, elle n'expliquerait rien.
+        self::assertStringContainsString('garde-dot--a" aria-hidden="true">S<', $html);
+        self::assertStringContainsString('garde-dot--b" aria-hidden="true">M<', $html);
+        // Les lecteurs d'écran reçoivent le nom en clair, jamais l'initiale seule.
+        self::assertStringContainsString('chez Sophie Martin', $html);
+        self::assertStringContainsString('chez Marc Durand', $html);
+
+        // Même invariant sur la mini-semaine de l'accueil (elle était à 1,09:1).
+        $client->request('GET', '/');
+        self::assertResponseIsSuccessful();
+        $home = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('home-custody__parent', $home);
+        self::assertStringContainsString('<span class="home-custody__parent" aria-hidden="true">S</span>', $home);
+    }
+
     public function testExchangesPageRendersEmpty(): void
     {
         $client = static::createClient();

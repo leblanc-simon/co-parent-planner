@@ -2,12 +2,13 @@
 {% block title %}Garde · CoParentPlanner{% endblock %}
 {% set nav_active = 'garde' %}
 
-{% set pAName = 'Parent A' %}
-{% set pBName = 'Parent B' %}
-{% for m in parents %}
-    {% if m.id == parentAId %}{% set pAName = m.user.fullName ?: m.user.email %}{% endif %}
-    {% if m.id == parentBId %}{% set pBName = m.user.fullName ?: m.user.email %}{% endif %}
-{% endfor %}
+{# Noms et marqueurs non chromatiques résolus par le contrôleur (cdc §8) : l'initiale portée par une
+   case doit toujours désigner le nom de la légende. `|default` couvre les rendus dégradés (famille
+   unie, droit de lecture absent) où le calendrier n'est pas construit. #}
+{% set pAName = parentNames.A|default('Parent A') %}
+{% set pBName = parentNames.B|default('Parent B') %}
+{% set pAInitial = initials.A|default('A') %}
+{% set pBInitial = initials.B|default('B') %}
 {% set rhythmLabel = {'alternating':'Une semaine sur deux','pattern_2_2_3':'Rythme 2-2-3','midweek_weekends':'Milieu de semaine + week-ends','custom':'Rythme personnalisé (14 jours)'} %}
 
 {% block main %}
@@ -61,9 +62,11 @@
         <div class="garde-cal__nav">
             <strong class="garde-cal__title">{{ monthLabel }}</strong>
             <div class="garde-cal__nav-actions">
+                {# La légende porte le marqueur lui-même, pas seulement la couleur : sans lui elle
+                   n'explique rien à qui ne distingue pas les deux teintes. #}
                 <div class="garde-legend">
-                    <span><i class="garde-dot garde-dot--a"></i> {{ pAName }}</span>
-                    <span><i class="garde-dot garde-dot--b"></i> {{ pBName }}</span>
+                    <span><i class="garde-dot garde-dot--a" aria-hidden="true">{{ pAInitial }}</i> {{ pAName }}</span>
+                    <span><i class="garde-dot garde-dot--b" aria-hidden="true">{{ pBInitial }}</i> {{ pBName }}</span>
                 </div>
                 <a class="garde-cal__nav-btn" href="{{ path('app_garde', { month: prevMonth }) }}" aria-label="Mois précédent">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
@@ -87,10 +90,19 @@
                             data-date-label="{{ cell.date|date('d/m/Y') }}"
                             role="button" tabindex="0" title="Échanger ce jour"
                             aria-label="{{ cell.date|date('d/m/Y') }} — chez {{ cell.slot == 'A' ? pAName : pBName }}{{ cell.source == 'exception' ? ' (exception)' }}{{ cell.source == 'holiday' ? ' (vacances scolaires)' }}. Échanger ce jour."
-                         {% elseif cell.inMonth and cell.slot %}
-                            aria-label="{{ cell.date|date('d/m/Y') }} — chez {{ cell.slot == 'A' ? pAName : pBName }}{{ cell.source == 'exception' ? ' (exception)' }}{{ cell.source == 'holiday' ? ' (vacances scolaires)' }}"
                          {% endif %}>
                         <span class="garde-day__num">{{ cell.day }}</span>
+                        {# Marqueur non chromatique de l'attribution (cdc §8) : les fonds A/B ne
+                           diffèrent que par la teinte (1,12:1 de luminance), donc l'initiale est le
+                           seul canal qui survit au niveaux de gris, au daltonisme rouge-vert et à
+                           `forced-colors`. Masqué aux lecteurs d'écran, qui reçoivent le nom en
+                           clair — via l'aria-label de la case échangeable, ou le `.sr-only`. #}
+                        {% if cell.slot %}
+                            <span class="garde-day__parent" aria-hidden="true">{{ cell.slot == 'A' ? pAInitial : pBInitial }}</span>
+                            {% if not (canEdit and cell.inMonth) %}
+                                <span class="sr-only">chez {{ cell.slot == 'A' ? pAName : pBName }}</span>
+                            {% endif %}
+                        {% endif %}
                         {% if cell.source == 'holiday' %}<span class="garde-day__tag">vac.</span>{% endif %}
                         {% if overlayBadges is defined and overlayBadges[cell.date] is defined %}<span class="garde-day__overlay" title="Famille liée"></span>{% endif %}
                     </div>

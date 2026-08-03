@@ -14,6 +14,7 @@ import '../../agenda/data/overlay_repository.dart';
 import '../../family/application/family_context.dart';
 import '../data/custody_repository.dart';
 import 'custody_settings_screen.dart';
+import 'parent_initials.dart';
 
 /// US-CUST-5/6 — écran Garde mobile : calendrier mensuel coloré par parent
 /// (terracotta = A, teal = B), jours exceptionnels distingués, statistiques,
@@ -512,6 +513,25 @@ class _DayCell extends ConsumerWidget {
               ),
             ),
           Center(child: numberPill),
+          // Marqueur NON CHROMATIQUE de l'attribution (cdc §8, WCAG 1.4.1) : les deux fonds A/B ne
+          // diffèrent que par la teinte, donc l'information disparaissait en niveaux de gris, en
+          // daltonisme rouge-vert et en contraste forcé. Bas-gauche : les autres coins sont pris
+          // (vacances bas-droite, activité bas-centre, famille liée bas-droite). Miroir du web
+          // (`.garde-day__parent`).
+          if (inMonth && slot != null)
+            Align(
+              alignment: Alignment.bottomLeft,
+              child: Text(
+                ref.watch(parentMarkersProvider).markerForSlot(slot!),
+                key: ValueKey('garde-day-marker-$dateKey'),
+                style: const TextStyle(
+                  fontSize: 9,
+                  height: 1,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.ink2,
+                ),
+              ),
+            ),
           if (isHoliday)
             const Align(
               alignment: Alignment.bottomRight,
@@ -560,18 +580,31 @@ class _DayCell extends ConsumerWidget {
   }
 }
 
-class _Legend extends StatelessWidget {
+class _Legend extends ConsumerWidget {
   const _Legend();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = AppL10n.of(context);
+    final markers = ref.watch(parentMarkersProvider);
     return Wrap(
       spacing: 16,
       runSpacing: 6,
       children: [
-        _LegendItem(color: AppColors.accent, label: l.custodyParentA),
-        _LegendItem(color: AppColors.positive, label: l.custodyParentB),
+        // Le nom réel du parent dès que les membres sont chargés ; sinon « Parent A »/« Parent B »,
+        // que les marqueurs « A »/« B » accompagnent alors naturellement.
+        _LegendItem(
+          color: AppColors.accent,
+          fill: AppColors.accentSoft2,
+          marker: markers.markerA,
+          label: markers.nameA.isNotEmpty ? markers.nameA : l.custodyParentA,
+        ),
+        _LegendItem(
+          color: AppColors.positive,
+          fill: AppColors.positiveSoft,
+          marker: markers.markerB,
+          label: markers.nameB.isNotEmpty ? markers.nameB : l.custodyParentB,
+        ),
         // U-06 : exception = liseré pointillé (pas d'icône).
         _LegendItem(
           color: AppColors.muted,
@@ -742,6 +775,8 @@ class _LegendItem extends StatelessWidget {
     this.icon,
     this.dashed = false,
     this.ring = false,
+    this.marker,
+    this.fill,
   });
 
   final Color color;
@@ -749,6 +784,13 @@ class _LegendItem extends StatelessWidget {
   final IconData? icon;
   final bool dashed;
   final bool ring;
+
+  /// Marqueur non chromatique reproduit dans la puce (cdc §8) : une légende purement colorée
+  /// n'explique rien à qui ne distingue pas les deux teintes.
+  final String? marker;
+
+  /// Fond de la puce quand elle reproduit l'aspect d'une case (bordure [color] + ce fond doux).
+  final Color? fill;
 
   @override
   Widget build(BuildContext context) {
@@ -771,6 +813,29 @@ class _LegendItem extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(4),
           border: Border.all(color: color, width: 1.5),
+        ),
+      );
+    } else if (marker != null) {
+      // Puce reproduisant la case qu'elle explique : fond doux, bordure du parent, marqueur au
+      // centre. `ink2` sur ces deux fonds vaut 7,55:1 et 6,74:1 — un blanc sur `accent` plafonnait
+      // à 4,05:1, sous le seuil AA pour un texte de cette taille.
+      swatch = Container(
+        width: 16,
+        height: 16,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: fill,
+          borderRadius: BorderRadius.circular(5),
+          border: Border.all(color: color),
+        ),
+        child: Text(
+          marker!,
+          style: const TextStyle(
+            fontSize: 9,
+            height: 1,
+            fontWeight: FontWeight.w700,
+            color: AppColors.ink2,
+          ),
         ),
       );
     } else {

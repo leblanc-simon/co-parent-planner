@@ -27,14 +27,20 @@
                 <p>Toute la famille est réunie.</p>
             {% elseif custody and custody.cells|filter(c => c.slot)|length %}
                 <div class="garde-legend home-custody__legend">
-                    <span><i class="garde-dot garde-dot--a"></i> {{ custody.names.A }}</span>
-                    <span><i class="garde-dot garde-dot--b"></i> {{ custody.names.B }}</span>
+                    <span><i class="garde-dot garde-dot--a" aria-hidden="true">{{ custody.initials.A }}</i> {{ custody.names.A }}</span>
+                    <span><i class="garde-dot garde-dot--b" aria-hidden="true">{{ custody.initials.B }}</i> {{ custody.names.B }}</span>
                 </div>
                 <div class="home-custody">
                     {% for cell in custody.cells %}
                     <div class="home-custody__day home-custody__day--{{ cell.slot == 'A' ? 'a' : (cell.slot == 'B' ? 'b' : 'none') }}{{ cell.isToday ? ' is-today' }}">
                         <span class="home-custody__dow">{{ dowFr[cell.dow] }}</span>
                         <span class="home-custody__num">{{ cell.day }}</span>
+                        {# Même marqueur non chromatique que /garde (cdc §8) : les deux fonds de cette
+                           mini-semaine ne se distinguaient que par la teinte, à 1,09:1. #}
+                        {% if cell.slot %}
+                            <span class="home-custody__parent" aria-hidden="true">{{ cell.slot == 'A' ? custody.initials.A : custody.initials.B }}</span>
+                            <span class="sr-only">chez {{ cell.slot == 'A' ? custody.names.A : custody.names.B }}</span>
+                        {% endif %}
                     </div>
                     {% endfor %}
                 </div>

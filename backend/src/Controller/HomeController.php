@@ -20,6 +20,7 @@ use App\Security\Auth\TokenHasher;
 use App\Service\Agenda\UpcomingEventsFinder;
 use App\Service\Exchange\ExchangeAssembler;
 use App\Web\ActiveFamilyResolver;
+use App\Web\ParentInitials;
 use Psr\Clock\ClockInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -49,6 +50,7 @@ final class HomeController extends AbstractController
         private readonly InvitationRepository $invitations,
         private readonly UserRepository $users,
         private readonly TokenHasher $tokenHasher,
+        private readonly ParentInitials $parentInitials,
     ) {
     }
 
@@ -100,7 +102,7 @@ final class HomeController extends AbstractController
      * Semaine de garde courante (lundi→dimanche, Europe/Paris) mappée en slots A/B, ou `null` si la
      * famille est unie ou si le membre n'a pas `custody ≥ view`. Miroir de `GardeController::buildWeeks`.
      *
-     * @return array{cells: list<array{dow: int, day: int, slot: ?string, source: ?string, isToday: bool}>, names: array{A: string, B: string}}|null
+     * @return array{cells: list<array{dow: int, day: int, slot: ?string, source: ?string, isToday: bool}>, names: array{A: string, B: string}, initials: array{A: string, B: string}}|null
      */
     private function custodyWeek(Membership $active): ?array
     {
@@ -143,10 +145,14 @@ final class HomeController extends AbstractController
         }
 
         $nameOf = static fn (?Membership $m): string => null !== $m ? ($m->getUser()->getFullName() ?: $m->getUser()->getEmail()) : '';
+        $names = ['A' => $nameOf($parentA) ?: 'Parent A', 'B' => $nameOf($parentB) ?: 'Parent B'];
 
         return [
             'cells' => $cells,
-            'names' => ['A' => $nameOf($parentA) ?: 'Parent A', 'B' => $nameOf($parentB) ?: 'Parent B'],
+            'names' => $names,
+            // Marqueur non chromatique, identique à celui de /garde (cdc §8) : la mini-semaine
+            // distinguait ses deux parents par la seule teinte, à 1,09:1 de contraste de luminance.
+            'initials' => $this->parentInitials->pair($names['A'], $names['B']),
         ];
     }
 

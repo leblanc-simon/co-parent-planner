@@ -246,6 +246,8 @@ a:hover { text-decoration: underline; }
 .home-custody__day.is-today { box-shadow: 0 0 0 2px var(--accent); border-color: transparent; }
 .home-custody__dow { font-size: 10px; font-weight: 700; letter-spacing: .05em; color: var(--muted-2); }
 .home-custody__num { font-family: var(--font-title); font-weight: 700; font-size: 15px; color: var(--ink); }
+/* Même marqueur non chromatique que le calendrier (cdc §8) : ces deux fonds étaient à 1,09:1. */
+.home-custody__parent { font-size: 10px; font-weight: 700; line-height: 1; color: var(--ink-2); }
 .note-item__child { color: var(--muted); font-size: .82rem; }
 
 /* ---------- Sélecteur de famille ---------- */
@@ -390,13 +392,24 @@ a:hover { text-decoration: underline; }
    La mini-semaine de l'accueil le posait déjà (`.home-custody__day.is-today`), pas le calendrier. */
 .garde-day--today { box-shadow: inset 0 0 0 2px var(--ink); }
 .garde-day--today .garde-day__num { background: var(--ink); color: #fff; }
+/* Marqueur NON CHROMATIQUE de l'attribution du jour (cdc §8, WCAG 1.4.1). Les fonds A/B prescrits
+   par le §8 ne diffèrent que par la teinte : 1,12:1 de contraste de luminance. L'information
+   disparaissait donc entièrement en niveaux de gris, en daltonisme rouge-vert (1,08:1 simulé en
+   protanopie sur les bordures) et sous `forced-colors`, où le système écrase les fonds.
+   L'initiale est du texte : elle survit aux trois cas. `--ink-2` sur les deux fonds = 7,55:1 et
+   6,74:1. Coin bas GAUCHE : les trois autres sont pris (numéro, « vac. », pastille famille liée). */
+.garde-day__parent { position: absolute; bottom: .2rem; left: .4rem; font-size: .7rem; font-weight: 700; line-height: 1; color: var(--ink-2); }
 .garde-day__tag { position: absolute; bottom: .25rem; right: .35rem; font-size: .65rem; color: var(--muted); }
 /* Pastille d'activité de la famille liée (overlay §3.4), superposée sans masquer la couleur du parent. */
 .garde-day__overlay { position: absolute; top: .25rem; right: .3rem; width: 8px; height: 8px; border-radius: 50%; background: var(--linked); box-shadow: 0 0 0 1.5px var(--card); }
 .garde-legend { display: flex; gap: .9rem; font-size: .8rem; color: var(--ink-2); }
-.garde-dot { display: inline-block; width: 12px; height: 12px; border-radius: 4px; vertical-align: middle; }
-.garde-dot--a { background: var(--accent); }
-.garde-dot--b { background: var(--positive); }
+/* La pastille de légende porte l'initiale et reproduit l'aspect de la case qu'elle explique (fond
+   doux + bordure du parent) au lieu d'un carré de couleur pleine : une légende purement chromatique
+   n'explique rien à qui ne distingue pas les deux teintes — et le blanc sur `--accent` ne
+   plafonnait qu'à 4,05:1, sous le seuil AA pour un texte de cette taille. Ici : 7,55:1 / 6,74:1. */
+.garde-dot { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 6px; vertical-align: middle; font-size: 10px; font-weight: 700; font-style: normal; color: var(--ink); }
+.garde-dot--a { background: var(--accent-soft); border: 1px solid var(--accent); }
+.garde-dot--b { background: var(--positive-soft); border: 1px solid var(--positive); }
 .garde-dot--exc { background: transparent; border: 2px dashed var(--ink-2); }
 .garde-stats { display: flex; gap: 10px; }
 .garde-stat { flex: 1; text-align: center; padding: 12px 0; border-radius: 12px; }
@@ -727,4 +740,55 @@ a:hover { text-decoration: underline; }
    de 252 px : on empile avant d'atteindre le point de rupture principal. */
 @media (max-width: 1100px) {
     .child-detail-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* =========================================================================
+   Contraste renforcé — OPT-IN utilisateur, EN FIN DE FEUILLE (même raison que le repli responsive).
+
+   La palette livrée reste **exactement** celle du cdc §8 : c'est une décision produit assumée et
+   documentée au §8 (« Contraste — divergence assumée »), pas un oubli. Plusieurs paires prescrites
+   échouent au niveau AA pour du texte de 10-12 px — `--muted-2` à 2,09:1 sur `--app-bg`, la
+   pastille École à 2,21:1, `.form-error` à 3,61:1 — et les corriger par défaut aurait changé
+   l'identité visuelle terracotta/crème du produit.
+
+   Ce bloc offre la sortie de secours à qui la demande explicitement au niveau de son système
+   (« contraste élevé » / « augmenter le contraste »). Chaque valeur est le token d'origine assombri
+   à teinte constante, jusqu'à ≥ 4,5:1 sur TOUS les fonds où il apparaît (`--app-bg` #E5E0D6,
+   `--surface` #F4F1EA, `--card` #FFFFFF, et son propre fond de pastille pour les catégories).
+   `ContrastTokensTest` échoue si l'une d'elles redescend sous le seuil.
+
+   Conséquence acceptée : `--muted` et `--muted-2` convergent (4,59:1 et 4,53:1 sur `--app-bg`) —
+   aucune valeur plus claire ne tient le seuil, donc la hiérarchie à trois gris du §8 tombe à deux
+   dans ce mode. Qui demande du contraste demande de la lisibilité, pas de la nuance.
+   ========================================================================= */
+@media (prefers-contrast: more) {
+    :root {
+        --muted: #686258;
+        --muted-2: #68635A;
+        --cat-sport: #4B6393;
+        --cat-music: #785588;
+        --cat-school: #7D5F27;
+        --cat-health: #9D4949;
+        --cat-other: #686258;
+    }
+}
+
+/* =========================================================================
+   Contraste forcé (Windows High Contrast et équivalents) — EN FIN DE FEUILLE.
+
+   Le système remplace tous les fonds et bordures d'auteur : les cases A et B deviennent
+   rigoureusement identiques, et la pastille de légende un carré vide. Le marqueur d'initiale
+   (`.garde-day__parent`, `.home-custody__parent`, contenu de `.garde-dot`) est du **texte** : il
+   survit sans rien demander — c'est précisément pourquoi il a été retenu plutôt qu'une trame ou un
+   écart de luminosité, qui disparaissent ici tous les deux.
+
+   Reste à réparer ce que le mode casse : la pastille de légende doit conserver un contour, et le
+   jour courant son cadre (`box-shadow` est ignoré en contraste forcé).
+   ========================================================================= */
+@media (forced-colors: active) {
+    .garde-dot { border: 1px solid currentColor; }
+    .garde-day--today { outline: 2px solid currentColor; outline-offset: -2px; }
+    .home-custody__day.is-today { outline: 2px solid currentColor; outline-offset: -2px; }
+    /* L'exception reste distinguable par son style de trait, que le mode préserve. */
+    .garde-day--exception { border-style: dashed; }
 }

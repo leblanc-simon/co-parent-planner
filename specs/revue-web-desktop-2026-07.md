@@ -77,7 +77,14 @@ Tous validés empiriquement dans le navigateur avant rédaction.
 | 4.4 | Aucune variante destructive dans le CSS : « Supprimer le profil », « Supprimer » (exceptions, membres, liens) sont des boutons neutres | P2 |
 | 4.5 | Un membre sans « Nom complet » (champ facultatif) est signé **« Membre supprimé »** dans les fils d'échange, avatar « ? », pendant que la barre latérale de la même page affiche son e-mail : chaîne vide non normalisée en `null` + `??` au lieu de `?:`. Une note poussée en temps réel apparaît sans auteur du tout | **P1** |
 
-### Étape 5 — Arbitrage produit requis avant codage : les contrastes
+### Étape 5 — ✅ LIVRÉE le 2026-08-03 (arbitrage rendu : ne pas assombrir · initiale · amender le §8)
+
+> Constat initial ci-dessous, conservé tel quel. **Issue** : 5.5 corrigé par un marqueur non
+> chromatique (initiale du parent, web + mobile) ; 5.1 à 5.4 **conservés en divergence assumée** et
+> documentés au nouveau **cdc §8.1**, avec un `@media (prefers-contrast: more)` conforme AA en
+> contrepartie. Détail dans le journal (2026-08-03).
+
+#### Étape 5 — Arbitrage produit requis avant codage : les contrastes
 
 Ces constats **ne peuvent pas être corrigés sans décision**, parce que `cdc.md` §8 (l.475-481) et la
 maquette prescrivent verbatim des paires de couleurs qui échouent au niveau AA. Corriger exige
@@ -255,3 +262,77 @@ savoir **pourquoi** un jour est une exception, information que le calendrier mon
 #### Reste à faire
 Étapes 5 (arbitrage contrastes — **décision produit requise**) et 6 (écarts de périmètre), plus la
 liste « Reste à traiter » ci-dessus. Rien n'a été entamé sur ces deux étapes.
+
+### 2026-08-03 — Étape 5 livrée (arbitrage produit rendu, web + mobile)
+
+**Arbitrage rendu par le PO**, sur les trois questions ouvertes du 28/07 :
+**(a) ne pas assombrir** la palette par défaut · **(b)** marqueur = **initiale du parent** ·
+**(c) amender** le §8. Le mobile Flutter a été ajouté au périmètre.
+
+#### Décisions et conséquence assumée
+La non-conformité AA de 5.1 à 5.4 est **conservée** et devient une **divergence documentée** au
+nouveau **cdc §8.1**, ratios mesurés à l'appui — y compris `.form-error` à 3,61:1, qui concerne tous
+les messages d'erreur du produit. Le but de l'amendement est qu'un futur réalignement ne la traite ni
+comme un bug à corriger, ni comme une licence pour assombrir sans décision. **Contrepartie** ajoutée
+sans toucher à la palette livrée : un bloc **`@media (prefers-contrast: more)`** en opt-in système,
+où chaque token de texte est assombri à teinte constante jusqu'à ≥ 4,5:1 **sur les quatre fonds**
+possibles (`--app-bg`, `--surface`, `--card`, fond de pastille). Conséquence acceptée dans ce mode :
+`--muted` et `--muted-2` convergent (4,59 et 4,53 sur `--app-bg`) — aucune valeur plus claire ne
+tient le seuil, donc la hiérarchie à trois gris tombe à deux.
+
+#### 5.5 — le constat de nature différente, traité en priorité
+Mesures refaites avant codage : le contraste de luminance des fonds A/B est de **1,12:1 en vision
+normale**. La couleur n'était donc pas *un* canal parmi d'autres, elle était le **seul**. Simulation
+Viénot 1999 : protanopie **1,08:1** sur les bordures (pire que la vision normale), deutéranopie
+1,38:1, niveaux de gris 1,20:1, et fonds écrasés en `forced-colors`. Trois situations, pas une.
+
+**Marqueur retenu : initiale du prénom** — le seul canal qui survive aux trois (du texte), et qui
+donne en plus l'information *en clair*, ce que ne fait aucune trame ni écart de luminosité. Règle
+normative au §8.1 : initiale capitale (accent conservé), **deux lettres** en cas de collision
+(`Sophie`/`Simon` → `So`/`Si`), repli `A`/`B` si aucune longueur ne sépare ou si le nom manque.
+**Plafond à deux lettres** : défaut trouvé pendant l'implémentation — sans plafond, deux parents sans
+nom renseigné retombent sur leur e-mail et produisaient des marqueurs à 4 caractères (« Web »/
+« Web2 ») dans une case de 53px déjà chargée. Cas de test dédié.
+
+Livré sur les **deux clients** et les **deux vues** : `/garde` (`.garde-day__parent`, coin bas
+gauche — les trois autres sont pris) et la mini-semaine de l'accueil (`.home-custody__parent`, elle
+était à 1,09:1) côté web ; `CustodyScreen` côté Flutter. La **légende** porte désormais le marqueur
+et reproduit l'aspect de la case (fond doux + bordure) au lieu d'un carré de couleur pleine : une
+légende purement chromatique n'explique rien, et le blanc sur `--accent` n'atteignait que 4,05:1.
+Marqueur `aria-hidden`, les lecteurs d'écran recevant le **nom en clair** (aria-label de la case
+échangeable, ou `.sr-only` ajouté aux cases non interactives — l'aria-label sur un `<div>` sans rôle
+n'était de toute façon pas exposé de façon fiable). Bloc `@media (forced-colors: active)` rendant à
+la légende son contour et au jour courant son cadre (`box-shadow` étant ignoré dans ce mode).
+
+La règle est **dupliquée** entre `ParentInitials.php` et `parent_initials.dart`, avec des jeux de
+tests **jumeaux** (22 cas identiques de part et d'autre) : duplication assumée pour ne pas exposer
+une donnée de présentation dans le contrat OpenAPI — le seul risque est de faire diverger les deux
+jeux, d'où leur alignement littéral. Côté mobile, la résolution des noms est **best-effort** (comme
+l'overlay du Lot 5) : membres non chargés → repli `A`/`B`, marqueur dégradé mais toujours non
+chromatique. Effet de bord favorable : la légende mobile affiche enfin le **nom réel** des parents,
+là où elle disait « Parent A »/« Parent B ».
+
+#### Garde-fous (la revue avait relevé « aucun test de contraste »)
+- `ContrastTokensTest` — recalcule les ratios WCAG **depuis le CSS** (aucune valeur attendue
+  recopiée, seul le seuil l'est) pour 7 tokens × 3-4 fonds ; vérifie aussi la présence du marqueur et
+  du bloc `forced-colors`. **Vérifié négativement** : en remettant `--muted: #857E71` dans le bloc
+  opt-in, il échoue avec « 3,06:1, sous le seuil AA de 4,5:1 ».
+- `WebPagesTest::testGardeCarriesNonColourParentMarker` — vérifie que le marqueur porte l'initiale
+  **réelle** de chaque parent (« Sophie » → S, « Marc » → M), que les deux diffèrent, que la légende
+  les reproduit, que les lecteurs d'écran reçoivent le nom en clair, et que la mini-semaine de
+  l'accueil est traitée aussi.
+- Test widget Flutter « marqueur non chromatique » — prénoms volontairement **autres** qu'Alice/Bob,
+  dont les initiales « A »/« B » seraient indiscernables du repli : le test ne prouverait rien.
+- E2E `lot3-garde.spec.ts` — présence sur chaque case attribuée, A ≠ B, autant de marqueurs que de
+  cases colorées, et **survie sous `forcedColors: 'active'`**.
+
+#### Portes
+Backend **338 tests / 2740 assertions** (313 avant), couverture **85,6 %**, PHPStan 8 à 0, cs-fixer 0,
+lint Twig 30 ; mobile **180 tests** (157 avant), couverture **75,9 %**, `dart analyze` 0, `format` 0 ;
+**E2E Playwright 21/21**. **Aucun changement d'API, d'OpenAPI, de client Dart, de migration ni de
+registre RGPD** (aucun champ personnel nouveau — l'initiale est dérivée d'un nom déjà affiché).
+Aucune dépendance ajoutée : `parent_initials.dart` itère sur les **runes** plutôt que d'introduire
+`package:characters`, donc INSTALL.md est inchangé.
+
+#### Reste à faire
+Étape 6 (12 écarts de périmètre) et la liste « Reste à traiter ». L'étape 5 est **close**.

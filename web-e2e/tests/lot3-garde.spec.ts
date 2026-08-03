@@ -110,6 +110,30 @@ test('Garde : configurer un rythme → calendrier coloré → échanger un jour'
   await expect(page.locator('.garde-stat--a')).toBeVisible();
   await expect(page.locator('.garde-stat--b')).toBeVisible();
 
+  // ---- Marqueur NON CHROMATIQUE de l'attribution (cdc §8, WCAG 1.4.1) ----
+  // Les deux fonds A/B ne se distinguent que par la teinte (1,12:1 de luminance) : sans marqueur
+  // textuel, le planning est illisible en niveaux de gris, en daltonisme rouge-vert et en contraste
+  // forcé. On vérifie ici l'intégration réelle : chaque case attribuée porte un marqueur, et celui
+  // de A diffère de celui de B.
+  const markerA = page.locator('.garde-day--a .garde-day__parent').first();
+  const markerB = page.locator('.garde-day--b .garde-day__parent').first();
+  await expect(markerA).not.toBeEmpty();
+  await expect(markerB).not.toBeEmpty();
+  expect(await markerA.textContent()).not.toBe(await markerB.textContent());
+  // Autant de marqueurs que de cases attribuées : aucune case colorée ne reste muette.
+  expect(await page.locator('.garde-day__parent').count()).toBe(
+    await page.locator('.garde-day--a, .garde-day--b').count(),
+  );
+  // La légende porte le même marqueur — purement colorée, elle n'expliquerait rien.
+  await expect(page.locator('.garde-dot--a').first()).not.toBeEmpty();
+
+  // Sous contraste forcé, le système écrase fonds et bordures : le marqueur, qui est du texte,
+  // doit rester visible. C'est le seul canal d'information qui subsiste dans ce mode.
+  await page.emulateMedia({ forcedColors: 'active' });
+  await expect(markerA).toBeVisible();
+  await expect(markerB).toBeVisible();
+  await page.emulateMedia({ forcedColors: 'none' });
+
   // ---- Échanger un jour : clic sur une case → exception d'un jour (interaction restée sur le calendrier) ----
   await page.locator('.garde-day[role="button"]').first().click();
   await expect(page.locator('.garde-day--exception').first()).toBeVisible({ timeout: 15_000 });

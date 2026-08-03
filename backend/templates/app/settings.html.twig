@@ -5,6 +5,13 @@
 {% set editableDomains = ['custody', 'agenda', 'children_notes', 'exchanges'] %}
 {% set levels = ['none', 'view', 'edit'] %}
 
+{% set pAName = 'Parent A' %}
+{% set pBName = 'Parent B' %}
+{% for m in parents %}
+    {% if m.id == parentAId %}{% set pAName = m.user.fullName ?: m.user.email %}{% endif %}
+    {% if m.id == parentBId %}{% set pBName = m.user.fullName ?: m.user.email %}{% endif %}
+{% endfor %}
+
 {% block main %}
 <div data-controller="settings" data-settings-family-id-value="{{ family.id }}">
 <header class="main__header">
@@ -15,12 +22,18 @@
 </header>
 
 <p class="form-error" data-settings-target="error" role="alert" hidden></p>
+<p class="form-success" data-settings-target="notice" role="status" aria-live="polite" hidden></p>
 
 <div class="settings-layout">
 <nav class="settings-nav">
     <a href="#sec-account">Mon compte</a>
     <a href="#sec-notifications">Notifications</a>
     <a href="#sec-family">Famille</a>
+    {% if canEditCustody %}
+    <a href="#sec-custody">Rythme de garde</a>
+    <a href="#sec-exceptions">Exceptions</a>
+    <a href="#sec-holidays">Vacances</a>
+    {% endif %}
     <a href="#sec-members">Membres</a>
     {% if isAdmin %}<a href="#sec-invite">Inviter</a>{% endif %}
     <a href="#sec-links">Familles liées</a>
@@ -33,7 +46,7 @@
     <p class="settings-section__sub">Vos informations personnelles.</p>
     <div class="settings-profile">
         <span class="avatar avatar--64" style="background: {{ activeMembership.displayColor ?: '#C2643D' }}">{{ (activeMembership.user.fullName ?: activeMembership.user.email)|first|upper }}</span>
-        <div>
+        <div class="settings-profile__id">
             <div class="settings-profile__name">{{ activeMembership.user.fullName ?: activeMembership.user.email }}</div>
             <div class="settings-profile__mail">{{ activeMembership.user.email }}</div>
         </div>
@@ -45,6 +58,7 @@
     <h2 class="settings-section__title">Notifications</h2>
     <p class="settings-section__sub">Choisissez les e-mails que vous recevez et vos heures de silence.</p>
     <p class="form-error" data-notif-prefs-target="error" role="alert" hidden></p>
+    <p class="form-success" data-notif-prefs-target="notice" role="status" aria-live="polite" hidden></p>
     <form data-action="submit->notif-prefs#save">
         {% set notifLabels = {'custody':'Garde','agenda':'Agenda','exchanges':'Échanges','invitation':'Invitations'} %}
         <div class="notif-toggles">
@@ -117,6 +131,228 @@
     </form>
 </section>
 
+{# ───────────── Rythme de garde + exceptions + vacances (US-CUST-1/2/9) ─────────────
+   Rapatriés depuis l'écran Garde (qui reste en consultation). Édition réservée à custody:edit.
+   Les mutations passent par l'API via le contrôleur Stimulus `garde`, scopées X-Family-Id. #}
+{% if canEditCustody %}
+{% set currentKind = pattern ? pattern.kind.value : 'alternating' %}
+{% set dowShort = {0:'dim.',1:'lun.',2:'mar.',3:'mer.',4:'jeu.',5:'ven.',6:'sam.'} %}
+{% set anchorW = pattern and pattern.anchorDate ? (pattern.anchorDate|date('w')) + 0 : 1 %}
+<div data-controller="garde"
+     data-garde-family-id-value="{{ family.id }}"
+     data-garde-parent-a-value="{{ parentAId }}"
+     data-garde-parent-b-value="{{ parentBId }}"
+     data-garde-pa-name-value="{{ pAName }}"
+     data-garde-pb-name-value="{{ pBName }}">
+    <p class="form-error" data-garde-target="error" role="alert" hidden></p>
+    <p class="form-success" data-garde-target="notice" role="status" aria-live="polite" hidden></p>
+
+    {# ───────── Configuration du rythme ───────── #}
+    <section class="card rhythm" id="sec-custody" style="margin-bottom:1.25rem">
+        <h2 class="settings-section__title">Rythme de garde</h2>
+        <p class="settings-section__sub">Définissez le rythme de résidence des enfants. La modification régénère le planning futur sans écraser les exceptions ni les règles de vacances.</p>
+        <form data-action="submit->garde#savePattern" class="garde-config">
+            {# ── Choix du rythme : cartes-radio ── #}
+            <fieldset class="rhythm-cards">
+                <legend class="sr-only">Type de rythme</legend>
+                {% set kinds = [
+                    {v:'alternating',      t:'Une semaine sur deux',           d:'7 jours chez chaque parent en alternance.'},
+                    {v:'pattern_2_2_3',    t:'Rythme 2-2-3',                    d:'2 jours / 2 jours / 3 jours en rotation.'},
+                    {v:'midweek_weekends', t:'Milieu de semaine + week-ends',   d:'Jours fixes en semaine, week-ends alternés.'},
+                    {v:'custom',           t:'Personnalisé',                    d:'Compose ton propre rythme nuit par nuit.'}
+                ] %}
+                {% for k in kinds %}
+                <label class="rhythm-card">
+                    <input type="radio" name="kind" value="{{ k.v }}" {{ currentKind == k.v ? 'checked' }}
+                           data-garde-target="kind" data-action="change->garde#selectKind">
+                    <span class="rhythm-card__radio" aria-hidden="true"></span>
+                    <span class="rhythm-card__body">
+                        <span class="rhythm-card__title">{{ k.t }}</span>
+                        <span class="rhythm-card__desc">{{ k.d }}</span>
+                    </span>
+                </label>
+                {% endfor %}
+            </fieldset>
+
+            {# ── Panneau : rythme personnalisé, 14 nuits cliquables ── #}
+            <div class="rhythm-panel" data-garde-target="customPanel"{% if currentKind != 'custom' %} hidden{% endif %}>
+                <div class="rhythm-panel__head">
+                    <div>
+                        <strong class="rhythm-panel__title">Rythme personnalisé sur 2 semaines</strong>
+                        <p class="rhythm-panel__hint">Clique sur une nuit pour changer de parent. La transmission se fait le soir.</p>
+                    </div>
+                    <div class="garde-legend rhythm-legend">
+                        <span><i class="garde-dot garde-dot--a"></i> {{ pAName }}</span>
+                        <span><i class="garde-dot garde-dot--b"></i> {{ pBName }}</span>
+                    </div>
+                </div>
+                {% for wk in [0, 1] %}
+                <div class="week-block">
+                    <div class="week-block__label">Semaine {{ wk == 0 ? 'A' : 'B' }}</div>
+                    <div class="nights">
+                        {% for j in 0..6 %}
+                            {% set i = wk * 7 + j %}
+                            {% set v = pattern and pattern.customPattern ? (pattern.customPattern[i] ?? 'A') : (i % 2 == 0 ? 'A' : 'B') %}
+                            {% set w = (anchorW + i) % 7 %}
+                            <button type="button" class="night night--{{ v == 'B' ? 'b' : 'a' }}"
+                                    data-garde-target="night" data-index="{{ i }}"
+                                    data-action="garde#toggleNight">
+                                <input type="hidden" name="custom[]" value="{{ v }}">
+                                <span class="night__dow">{{ dowShort[w]|upper }}</span>
+                                <span class="night__name">{{ v == 'B' ? pBName : pAName }}</span>
+                            </button>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {# ── Panneau : milieu de semaine + week-ends ── #}
+            {% set mw = pattern and pattern.settings ? pattern.settings : {} %}
+            {% set mwWeekend = mw.weekend_days is defined ? mw.weekend_days : [6, 0] %}
+            {% set mwParents = mw.weekday_parents is defined ? mw.weekday_parents : {'1':'A','2':'A','3':'B','4':'B','5':'B'} %}
+            {% set mwStart = mw.weekend_start_parent is defined ? mw.weekend_start_parent : 'A' %}
+            <div class="rhythm-panel" data-garde-target="midweekPanel"{% if currentKind != 'midweek_weekends' %} hidden{% endif %}>
+                <div class="rhythm-panel__head">
+                    <div>
+                        <strong class="rhythm-panel__title">Milieu de semaine + week-ends</strong>
+                        <p class="rhythm-panel__hint">Chaque jour de semaine reste chez le même parent. Clique un jour pour basculer parent A → parent B → week-end alterné.</p>
+                    </div>
+                    <div class="garde-legend rhythm-legend">
+                        <span><i class="garde-dot garde-dot--a"></i> {{ pAName }}</span>
+                        <span><i class="garde-dot garde-dot--b"></i> {{ pBName }}</span>
+                        <span><i class="garde-dot garde-dot--we"></i> Week-end</span>
+                    </div>
+                </div>
+                <div class="nights nights--mw">
+                    {% for w in [1, 2, 3, 4, 5, 6, 0] %}
+                        {% set isWeekend = w in mwWeekend %}
+                        {% set st = isWeekend ? 'WE' : (mwParents[w~''] ?? 'A') %}
+                        <button type="button" class="night night--{{ st == 'WE' ? 'we' : (st == 'B' ? 'b' : 'a') }}"
+                                data-garde-target="mwDay" data-weekday="{{ w }}" data-state="{{ st }}"
+                                data-action="garde#cycleDay">
+                            <span class="night__dow">{{ dowShort[w]|upper }}</span>
+                            <span class="night__name">{{ st == 'WE' ? 'Week-end' : (st == 'B' ? pBName : pAName) }}</span>
+                        </button>
+                    {% endfor %}
+                </div>
+                <div class="mw-start">
+                    <span class="mw-start__label">Le week-end commence chez</span>
+                    <div class="segmented" role="radiogroup" aria-label="Parent qui débute le week-end">
+                        <label class="segmented__opt">
+                            <input type="radio" name="mw_weekend_start" value="A" {{ mwStart != 'B' ? 'checked' }}>
+                            <span>{{ pAName }}</span>
+                        </label>
+                        <label class="segmented__opt">
+                            <input type="radio" name="mw_weekend_start" value="B" {{ mwStart == 'B' ? 'checked' }}>
+                            <span>{{ pBName }}</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            {# ── Réglages de l'échange (ancre + jour/heure de transmission + mapping parents) ── #}
+            <details class="rhythm-details"{% if not pattern %} open{% endif %}>
+                <summary>Réglages de l'échange</summary>
+                <div class="grid-2">
+                    <div class="field">
+                        <label for="g-anchor">Date d'ancrage</label>
+                        <input id="g-anchor" name="anchorDate" type="date" value="{{ pattern ? pattern.anchorDate|date('Y-m-d') }}" data-action="change->garde#relabelNights" required>
+                    </div>
+                    <div class="field">
+                        <label for="g-weekday">Jour d'échange</label>
+                        <select id="g-weekday" name="handoverWeekday">
+                            {% set dows = {0:'Dimanche',1:'Lundi',2:'Mardi',3:'Mercredi',4:'Jeudi',5:'Vendredi',6:'Samedi'} %}
+                            {% for v, label in dows %}<option value="{{ v }}" {{ pattern and pattern.handoverWeekday == v ? 'selected' }}>{{ label }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="g-time">Heure d'échange</label>
+                        <input id="g-time" name="handoverTime" type="time" value="{{ pattern ? pattern.handoverTime : '19:00' }}">
+                    </div>
+                    <div class="field"></div>
+                    <div class="field">
+                        <label for="g-pa">Parent A</label>
+                        <select id="g-pa" name="parentAMembershipId">
+                            {% for m in parents %}<option value="{{ m.id }}" {{ parentAId and m.id == parentAId ? 'selected' }}>{{ m.user.fullName ?: m.user.email }}</option>{% endfor %}
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="g-pb">Parent B</label>
+                        <select id="g-pb" name="parentBMembershipId">
+                            {% for m in parents %}<option value="{{ m.id }}" {{ parentBId and m.id == parentBId ? 'selected' }}>{{ m.user.fullName ?: m.user.email }}</option>{% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </details>
+
+            <button class="btn btn--primary" type="submit">Enregistrer le rythme</button>
+        </form>
+    </section>
+
+    {# ───────── Exceptions ───────── #}
+    <section class="card" id="sec-exceptions" style="margin-bottom:1.25rem">
+        <h2 class="settings-section__title">Exceptions</h2>
+        <p class="settings-section__sub">Attribuez ponctuellement une période à un parent (prioritaire sur le rythme et les vacances).</p>
+        <form data-action="submit->garde#addException" class="garde-exc-form">
+            <input name="startDate" type="date" required aria-label="Date de début">
+            <input name="endDate" type="date" required aria-label="Date de fin">
+            <select name="parentMembershipId" aria-label="Parent">{% for m in parents %}<option value="{{ m.id }}">{{ m.user.fullName ?: m.user.email }}</option>{% endfor %}</select>
+            <input name="reason" placeholder="Motif (optionnel)" maxlength="200" aria-label="Motif (optionnel)">
+            <button class="btn btn--ghost" type="submit">Ajouter</button>
+        </form>
+        {% if custodyExceptions|length %}
+        <ul class="garde-list">
+            {% for e in custodyExceptions %}
+            <li>
+                <span>{{ e.startDate|date('d/m/Y') }} → {{ e.endDate|date('d/m/Y') }} · chez {{ e.parentMembership ? (e.parentMembership.user.fullName ?: e.parentMembership.user.email) : '—' }}{% if e.reason %} · {{ e.reason }}{% endif %}</span>
+                <button class="btn btn--ghost btn--danger" type="button" data-action="garde#deleteException" data-exception-id="{{ e.id }}"
+                        data-exception-label="du {{ e.startDate|date('d/m/Y') }} au {{ e.endDate|date('d/m/Y') }}">Supprimer</button>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </section>
+
+    {# ───────── Vacances ───────── #}
+    <section class="card" id="sec-holidays" style="margin-bottom:1.25rem">
+        <h2 class="settings-section__title">Vacances scolaires</h2>
+        <p class="settings-section__sub">Importez le calendrier officiel ou saisissez une période, puis appliquez-lui une règle de partage.</p>
+        <div class="garde-holidays-actions">
+            <button class="btn btn--ghost" type="button" data-action="garde#importHolidays">Importer les vacances officielles</button>
+        </div>
+        <form data-action="submit->garde#addHoliday" class="garde-exc-form">
+            <input name="label" placeholder="Libellé" required maxlength="160" aria-label="Libellé de la période">
+            <input name="startDate" type="date" required aria-label="Date de début">
+            <input name="endDate" type="date" required aria-label="Date de fin">
+            <button class="btn btn--ghost" type="submit">Ajouter une période</button>
+        </form>
+        {% if holidays|length %}
+        <ul class="garde-list">
+            {% for h in holidays %}
+            <li>
+                <span>{{ h.label }} · {{ h.startDate|date('d/m/Y') }}→{{ h.endDate|date('d/m/Y') }}{% if h.rule %} · {{ holidayRuleLabel[h.rule.kind.value] ?? h.rule.kind.value }}, à partir de {{ h.rule.params.startParent ?? h.rule.params.parent ?? h.rule.params.firstHalf ?? h.rule.params.evenParent == 'B' ? pBName : pAName }}{% endif %}</span>
+                <form data-action="submit->garde#saveRule" data-holiday-id="{{ h.id }}" class="garde-rule-form">
+                    <select name="kind" aria-label="Règle de partage">
+                        {% for k in ['alternating_weeks','split_50_50','fixed_parent','eve_alternating'] %}
+                            <option value="{{ k }}" {{ h.rule and h.rule.kind.value == k ? 'selected' }}>{{ holidayRuleLabel[k] ?? k }}</option>
+                        {% endfor %}
+                    </select>
+                    {% set ruleParent = h.rule ? (h.rule.params.startParent ?? h.rule.params.parent ?? h.rule.params.firstHalf ?? h.rule.params.evenParent ?? 'A') : 'A' %}
+                    <select name="parent" aria-label="Parent chez qui la règle commence">
+                        <option value="A" {{ ruleParent == 'A' ? 'selected' }}>{{ pAName }}</option>
+                        <option value="B" {{ ruleParent == 'B' ? 'selected' }}>{{ pBName }}</option>
+                    </select>
+                    <button class="btn btn--ghost" type="submit">Appliquer</button>
+                </form>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </section>
+</div>
+{% endif %}
+
 {# ───────────── Membres (US-MBR-1/2/3/5) ───────────── #}
 <section class="card" id="sec-members" style="margin-bottom:1.25rem">
     <h2 class="settings-section__title">Membres</h2>
@@ -130,7 +366,7 @@
                     <strong>{{ m.user.fullName ?: m.user.email }}</strong>
                     <small>{{ m.user.email }}{{ m.user.id == activeMembership.user.id ? ' · vous' }}</small>
                 </div>
-                <span class="member-row__badge member-row__badge--{{ m.role.value }}">{{ m.role.value }}{{ m.isAdmin ? ' · admin' }}</span>
+                <span class="member-row__badge member-row__badge--{{ m.role.value }}">{{ roleLabel[m.role.value] ?? m.role.value }}{{ m.isAdmin ? ' · admin' }}</span>
             </div>
 
             <details class="member-row__edit">
@@ -138,7 +374,7 @@
             <div class="member-row__grid">
                 <label>Rôle
                     <select name="role" {{ isAdmin ? '' : 'disabled' }}>
-                        {% for r in ['parent','step_parent','child'] %}<option value="{{ r }}" {{ m.role.value == r ? 'selected' }}>{{ r }}</option>{% endfor %}
+                        {% for r in ['parent','step_parent','child'] %}<option value="{{ r }}" {{ m.role.value == r ? 'selected' }}>{{ roleLabel[r] ?? r }}</option>{% endfor %}
                     </select>
                 </label>
                 <label class="member-row__admin">
@@ -153,9 +389,9 @@
             {% set memberRights = m.effectiveRights %}
             <div class="member-row__rights">
                 {% for domain in editableDomains %}
-                    <label>{{ domain }}
+                    <label>{{ rightDomainLabel[domain] ?? domain }}
                         <select name="rights[{{ domain }}]" {{ isAdmin ? '' : 'disabled' }}>
-                            {% for lvl in levels %}<option value="{{ lvl }}" {{ memberRights[domain] == lvl ? 'selected' }}>{{ lvl }}</option>{% endfor %}
+                            {% for lvl in levels %}<option value="{{ lvl }}" {{ memberRights[domain] == lvl ? 'selected' }}>{{ rightLevelLabel[lvl] ?? lvl }}</option>{% endfor %}
                         </select>
                     </label>
                 {% endfor %}
@@ -164,10 +400,11 @@
             <div class="member-row__actions">
                 {% if isAdmin or m.user.id == activeMembership.user.id %}<button class="btn btn--ghost" type="submit">Enregistrer</button>{% endif %}
                 {% if isAdmin and m.user.id != activeMembership.user.id %}
-                    <button class="btn btn--ghost" type="button" data-action="settings#removeMember" data-membership-id="{{ m.id }}">Retirer</button>
+                    <button class="btn btn--ghost btn--danger" type="button" data-action="settings#removeMember" data-membership-id="{{ m.id }}"
+                            data-member-name="{{ m.user.fullName ?: m.user.email }}">Retirer</button>
                 {% endif %}
                 {% if m.user.id == activeMembership.user.id and not m.isAdmin %}
-                    <button class="btn btn--ghost" type="button" data-action="settings#removeMember" data-membership-id="{{ m.id }}">Quitter</button>
+                    <button class="btn btn--ghost btn--danger" type="button" data-action="settings#removeMember" data-membership-id="{{ m.id }}">Quitter</button>
                 {% endif %}
             </div>
             </details>
@@ -199,9 +436,9 @@
         </div>
         <div class="invite-rights" data-settings-target="inviteRights">
             {% for domain in editableDomains %}
-                <label>{{ domain }}
+                <label>{{ rightDomainLabel[domain] ?? domain }}
                     <select name="rights[{{ domain }}]" data-action="change->settings#refreshSummary">
-                        {% for lvl in levels %}<option value="{{ lvl }}">{{ lvl }}</option>{% endfor %}
+                        {% for lvl in levels %}<option value="{{ lvl }}">{{ rightLevelLabel[lvl] ?? lvl }}</option>{% endfor %}
                     </select>
                 </label>
             {% endfor %}
@@ -216,8 +453,8 @@
     <ul class="invitations">
         {% for inv in invitations %}
         <li>
-            <span>{{ inv.email }} · {{ inv.role.value }} · expire le {{ inv.expiresAt|date('d/m/Y') }}</span>
-            <button class="btn btn--ghost" type="button" data-action="settings#revokeInvitation" data-invitation-id="{{ inv.id }}">Révoquer</button>
+            <span>{{ inv.email }} · {{ roleLabel[inv.role.value] ?? inv.role.value }} · expire le {{ inv.expiresAt|date('d/m/Y') }}</span>
+            <button class="btn btn--ghost btn--danger" type="button" data-action="settings#revokeInvitation" data-invitation-id="{{ inv.id }}" data-invitation-email="{{ inv.email }}">Révoquer</button>
         </li>
         {% endfor %}
     </ul>
@@ -239,7 +476,7 @@
                     <button class="btn btn--ghost" type="button" data-action="settings#activateLink" data-link-id="{{ link.id }}">Activer</button>
                 {% endif %}
                 {% if isAdmin %}
-                    <button class="btn btn--ghost" type="button" data-action="settings#removeLink" data-link-id="{{ link.id }}">Délier</button>
+                    <button class="btn btn--ghost btn--danger" type="button" data-action="settings#removeLink" data-link-id="{{ link.id }}">Délier</button>
                 {% endif %}
             </span>
         </li>

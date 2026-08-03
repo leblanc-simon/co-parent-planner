@@ -1,5 +1,10 @@
 framework:
-    default_locale: en
+    # `default_locale` est défini dans framework.yaml (`fr`) et NE DOIT PAS être redéclaré ici :
+    # les fichiers de config/packages/ sont chargés par ordre alphabétique, translation.yaml gagnait
+    # donc sur framework.yaml et la locale effective de l'application était `en`. Comme aucun
+    # catalogue `*.en.yaml` n'existe (seule fr-FR est livrée, cdc §4.6), tout `|trans` renvoyait sa
+    # clé brute — le bandeau anti-données-de-santé de l'écran Enfants affichait
+    # « child.health_warning », et les erreurs RFC 7807 sortaient en clés (`problem.title.*`).
     translator:
         default_path: '%kernel.project_dir%/translations'
         providers:

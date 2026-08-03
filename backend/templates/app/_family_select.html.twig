@@ -9,7 +9,7 @@
             <button type="button" class="family-select__item {{ m.id == activeMembership.id ? 'is-active' }}"
                     data-action="family-select#select" data-family-id="{{ m.family.id }}">
                 {{ m.family.name }}
-                <small>{{ m.role.value }}{{ m.isAdmin ? ' · admin' }}</small>
+                <small>{{ {'parent':'Parent','step_parent':'Beau-parent','child':'Enfant'}[m.role.value] ?? m.role.value }}{{ m.isAdmin ? ' · admin' }}</small>
             </button>
         {% endfor %}
     </div>

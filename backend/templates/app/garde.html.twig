@@ -8,7 +8,7 @@
     {% if m.id == parentAId %}{% set pAName = m.user.fullName ?: m.user.email %}{% endif %}
     {% if m.id == parentBId %}{% set pBName = m.user.fullName ?: m.user.email %}{% endif %}
 {% endfor %}
-{% set rhythmLabel = {'alternating':'Une semaine sur deux','pattern_2_2_3':'Rythme 2-2-3','custom':'Rythme personnalisé (14 jours)'} %}
+{% set rhythmLabel = {'alternating':'Une semaine sur deux','pattern_2_2_3':'Rythme 2-2-3','midweek_weekends':'Milieu de semaine + week-ends','custom':'Rythme personnalisé (14 jours)'} %}
 
 {% block main %}
 <header class="main__header">
@@ -29,6 +29,7 @@
      data-garde-parent-a-value="{{ parentAId }}"
      data-garde-parent-b-value="{{ parentBId }}">
     <p class="form-error" data-garde-target="error" role="alert" hidden></p>
+    <p class="form-success" data-garde-target="notice" role="status" aria-live="polite" hidden></p>
 
     {# Abonnement temps réel : un changement de garde rafraîchit la page (Turbo Stream). #}
     <turbo-stream-source src="{{ mercureHub }}?topic={{ custodyTopic|url_encode }}"></turbo-stream-source>
@@ -51,7 +52,7 @@
     {% if pattern is null %}
         <section class="card">
             <p class="empty-state">Aucun rythme de garde configuré.</p>
-            {% if canEdit %}<p>Configurez un modèle ci-dessous pour générer le planning.</p>{% endif %}
+            {% if canEdit %}<p>Configurez un rythme dans <a href="{{ path('app_settings') }}#sec-custody">Paramètres › Rythme de garde</a> pour générer le planning.</p>{% endif %}
         </section>
     {% else %}
     <div class="garde-layout">
@@ -78,10 +79,16 @@
                 {% for cell in week %}
                     <div class="garde-day garde-day--{{ cell.slot == 'A' ? 'a' : (cell.slot == 'B' ? 'b' : 'none') }}
                                 {{ cell.source == 'exception' ? 'garde-day--exception' }}
+                                {{ cell.isToday and cell.inMonth ? 'garde-day--today' }}
                                 {{ not cell.inMonth ? 'garde-day--out' }}"
                          {% if canEdit and cell.inMonth and cell.slot %}
                             data-action="click->garde#swapDay keydown.enter->garde#swapDay keydown.space->garde#swapDay"
-                            data-date="{{ cell.date }}" data-slot="{{ cell.slot }}" role="button" tabindex="0" title="Échanger ce jour"
+                            data-date="{{ cell.date }}" data-slot="{{ cell.slot }}"
+                            data-date-label="{{ cell.date|date('d/m/Y') }}"
+                            role="button" tabindex="0" title="Échanger ce jour"
+                            aria-label="{{ cell.date|date('d/m/Y') }} — chez {{ cell.slot == 'A' ? pAName : pBName }}{{ cell.source == 'exception' ? ' (exception)' }}{{ cell.source == 'holiday' ? ' (vacances scolaires)' }}. Échanger ce jour."
+                         {% elseif cell.inMonth and cell.slot %}
+                            aria-label="{{ cell.date|date('d/m/Y') }} — chez {{ cell.slot == 'A' ? pAName : pBName }}{{ cell.source == 'exception' ? ' (exception)' }}{{ cell.source == 'holiday' ? ' (vacances scolaires)' }}"
                          {% endif %}>
                         <span class="garde-day__num">{{ cell.day }}</span>
                         {% if cell.source == 'holiday' %}<span class="garde-day__tag">vac.</span>{% endif %}
@@ -108,28 +115,42 @@
             </div>
         </section>
 
-        {# ───────── Périodes spéciales (résumé lecture seule) ───────── #}
+        {# ───────── Périodes spéciales du mois affiché ─────────
+           Ne liste que les périodes qui CHEVAUCHENT le mois affiché : le panneau jouxte
+           « Statistiques du mois », et lister tout l'historique de la famille y faisait apparaître
+           des vacances déjà passées (l'import ramène l'année scolaire entière).
+           Les dates portent leur année : « 18/10→02/11 » était ambigu à un an près.
+           La barre A/B décorative a été retirée : deux `flex: 1` donnaient TOUJOURS un 50/50, ce qui
+           laissait croire à un partage défini là où aucune règle n'existait, et contredisait une
+           exception attribuée en entier à un seul parent. #}
         {% if exceptions|length or holidays|length %}
         <section class="card">
-            <div class="eyebrow">Périodes spéciales</div>
+            <div class="eyebrow">Périodes spéciales du mois</div>
             <div class="garde-special">
                 {% for e in exceptions %}
                 <div class="garde-special__item">
                     <div class="garde-special__head">
                         <span class="garde-special__title">Exception{% if e.reason %} · {{ e.reason }}{% endif %}</span>
-                        <span class="garde-special__dates">{{ e.startDate|date('d/m') }}→{{ e.endDate|date('d/m') }}</span>
+                        <span class="garde-special__dates">{{ e.startDate|date('d/m/Y') }}→{{ e.endDate|date('d/m/Y') }}</span>
                     </div>
-                    <div class="garde-ab-bar"><span class="garde-ab-bar__a"></span><span class="garde-ab-bar__b"></span></div>
+                    <div class="garde-special__rule">
+                        Chez {{ e.parentMembership ? (e.parentMembership.user.fullName ?: e.parentMembership.user.email) : '—' }}
+                    </div>
                 </div>
                 {% endfor %}
                 {% for h in holidays %}
                 <div class="garde-special__item">
                     <div class="garde-special__head">
                         <span class="garde-special__title">{{ h.label }}</span>
-                        <span class="garde-special__dates">{{ h.startDate|date('d/m') }}→{{ h.endDate|date('d/m') }}</span>
+                        <span class="garde-special__dates">{{ h.startDate|date('d/m/Y') }}→{{ h.endDate|date('d/m/Y') }}</span>
                     </div>
-                    {% if h.rule %}<div class="garde-special__rule">Règle : {{ h.rule.kind.value }}</div>{% endif %}
-                    <div class="garde-ab-bar"><span class="garde-ab-bar__a"></span><span class="garde-ab-bar__b"></span></div>
+                    <div class="garde-special__rule">
+                        {% if h.rule %}
+                            {{ holidayRuleLabel[h.rule.kind.value] ?? h.rule.kind.value }}
+                        {% else %}
+                            <span class="garde-special__norule">Aucune règle de partage — le rythme habituel s'applique</span>
+                        {% endif %}
+                    </div>
                 </div>
                 {% endfor %}
             </div>
@@ -139,115 +160,8 @@
     </div>
     {% endif %}
 
-    {# ───────── Configuration (Paramètres › Garde) ───────── #}
-    {% if canEdit %}
-    <section class="card" style="margin-top:1.25rem">
-        <div class="eyebrow">Configurer le rythme</div>
-        <form data-action="submit->garde#savePattern" class="garde-config">
-            <div class="grid-2">
-                <div class="field">
-                    <label for="g-kind">Modèle</label>
-                    <select id="g-kind" name="kind" data-garde-target="kind" data-action="change->garde#toggleCustom">
-                        <option value="alternating" {{ pattern and pattern.kind.value == 'alternating' ? 'selected' }}>Une semaine sur deux</option>
-                        <option value="pattern_2_2_3" {{ pattern and pattern.kind.value == 'pattern_2_2_3' ? 'selected' }}>2-2-3</option>
-                        <option value="custom" {{ pattern and pattern.kind.value == 'custom' ? 'selected' }}>Personnalisé (14 jours)</option>
-                    </select>
-                </div>
-                <div class="field">
-                    <label for="g-anchor">Date d'ancrage</label>
-                    <input id="g-anchor" name="anchorDate" type="date" value="{{ pattern ? pattern.anchorDate|date('Y-m-d') }}" required>
-                </div>
-                <div class="field">
-                    <label for="g-weekday">Jour d'échange</label>
-                    <select id="g-weekday" name="handoverWeekday">
-                        {% set dows = {0:'Dimanche',1:'Lundi',2:'Mardi',3:'Mercredi',4:'Jeudi',5:'Vendredi',6:'Samedi'} %}
-                        {% for v, label in dows %}<option value="{{ v }}" {{ pattern and pattern.handoverWeekday == v ? 'selected' }}>{{ label }}</option>{% endfor %}
-                    </select>
-                </div>
-                <div class="field">
-                    <label for="g-time">Heure d'échange</label>
-                    <input id="g-time" name="handoverTime" type="time" value="{{ pattern ? pattern.handoverTime : '19:00' }}">
-                </div>
-                <div class="field">
-                    <label for="g-pa">Parent A</label>
-                    <select id="g-pa" name="parentAMembershipId">
-                        {% for m in parents %}<option value="{{ m.id }}" {{ parentAId and m.id == parentAId ? 'selected' }}>{{ m.user.fullName ?: m.user.email }}</option>{% endfor %}
-                    </select>
-                </div>
-                <div class="field">
-                    <label for="g-pb">Parent B</label>
-                    <select id="g-pb" name="parentBMembershipId">
-                        {% for m in parents %}<option value="{{ m.id }}" {{ parentBId and m.id == parentBId ? 'selected' }}>{{ m.user.fullName ?: m.user.email }}</option>{% endfor %}
-                    </select>
-                </div>
-            </div>
-            <div class="garde-custom" data-garde-target="customGrid" hidden>
-                <div class="eyebrow">Motif personnalisé (14 nuits)</div>
-                <div class="garde-custom__grid">
-                    {% for i in 0..13 %}
-                        {% set v = pattern and pattern.customPattern ? (pattern.customPattern[i] ?? 'A') : 'A' %}
-                        <select name="custom[]"><option value="A" {{ v == 'A' ? 'selected' }}>A</option><option value="B" {{ v == 'B' ? 'selected' }}>B</option></select>
-                    {% endfor %}
-                </div>
-            </div>
-            <button class="btn btn--primary" type="submit">Enregistrer le rythme</button>
-        </form>
-    </section>
-
-    {# ───────── Exceptions ───────── #}
-    <section class="card" style="margin-top:1.25rem">
-        <div class="eyebrow">Exceptions</div>
-        <form data-action="submit->garde#addException" class="garde-exc-form">
-            <input name="startDate" type="date" required>
-            <input name="endDate" type="date" required>
-            <select name="parentMembershipId">{% for m in parents %}<option value="{{ m.id }}">{{ m.user.fullName ?: m.user.email }}</option>{% endfor %}</select>
-            <input name="reason" placeholder="Motif (optionnel)" maxlength="200">
-            <button class="btn btn--ghost" type="submit">Ajouter</button>
-        </form>
-        {% if exceptions|length %}
-        <ul class="garde-list">
-            {% for e in exceptions %}
-            <li>
-                <span>{{ e.startDate|date('d/m/Y') }} → {{ e.endDate|date('d/m/Y') }}{% if e.reason %} · {{ e.reason }}{% endif %}</span>
-                <button class="btn btn--ghost" type="button" data-action="garde#deleteException" data-exception-id="{{ e.id }}">Supprimer</button>
-            </li>
-            {% endfor %}
-        </ul>
-        {% endif %}
-    </section>
-
-    {# ───────── Vacances ───────── #}
-    <section class="card" style="margin-top:1.25rem">
-        <div class="eyebrow">Vacances scolaires</div>
-        <div class="garde-holidays-actions">
-            <button class="btn btn--ghost" type="button" data-action="garde#importHolidays">Importer les vacances officielles</button>
-        </div>
-        <form data-action="submit->garde#addHoliday" class="garde-exc-form">
-            <input name="label" placeholder="Libellé" required maxlength="160">
-            <input name="startDate" type="date" required>
-            <input name="endDate" type="date" required>
-            <button class="btn btn--ghost" type="submit">Ajouter une période</button>
-        </form>
-        {% if holidays|length %}
-        <ul class="garde-list">
-            {% for h in holidays %}
-            <li>
-                <span>{{ h.label }} · {{ h.startDate|date('d/m') }}→{{ h.endDate|date('d/m') }}{% if h.rule %} · règle : {{ h.rule.kind.value }}{% endif %}</span>
-                <form data-action="submit->garde#saveRule" data-holiday-id="{{ h.id }}" class="garde-rule-form">
-                    <select name="kind">
-                        {% for k in ['alternating_weeks','split_50_50','fixed_parent','eve_alternating'] %}
-                            <option value="{{ k }}" {{ h.rule and h.rule.kind.value == k ? 'selected' }}>{{ k }}</option>
-                        {% endfor %}
-                    </select>
-                    <select name="parent"><option value="A">A</option><option value="B">B</option></select>
-                    <button class="btn btn--ghost" type="submit">Appliquer</button>
-                </form>
-            </li>
-            {% endfor %}
-        </ul>
-        {% endif %}
-    </section>
-    {% endif %}
+    {# La configuration du rythme, les exceptions et les vacances vivent désormais dans
+       Paramètres › Rythme de garde (édition), pour garder cet écran centré sur la consultation. #}
 </div>
 {% endif %}
 {% endblock %}

@@ -1,50 +1,137 @@
-import { Controller } from '@hotwired/stimulus';
+import { ApiController } from '../api_base.js';
 
 /*
  * Mutations de l'écran Garde (Lot 3) via l'API REST, scopées X-Family-Id. Succès → rechargement
  * (état canonique ; la génération est asynchrone côté serveur, et le temps réel Mercure rafraîchit).
  */
-export default class extends Controller {
-    static targets = ['error', 'kind', 'customGrid'];
-    static values = { familyId: String, parentA: String, parentB: String };
+export default class extends ApiController {
+    static targets = ['kind', 'customPanel', 'midweekPanel', 'night', 'mwDay'];
+    static values = { parentA: String, parentB: String, paName: String, pbName: String };
 
     connect() {
-        this.toggleCustom();
+        super.connect();
+        this.selectKind();
+        this.relabelNights();
     }
 
-    toggleCustom() {
-        if (!this.hasCustomGridTarget || !this.hasKindTarget) return;
-        this.customGridTarget.hidden = this.kindTarget.value !== 'custom';
+    // Affiche le panneau de configuration correspondant au rythme coché.
+    selectKind() {
+        const kind = this._currentKind();
+        if (this.hasCustomPanelTarget) this.customPanelTarget.hidden = kind !== 'custom';
+        if (this.hasMidweekPanelTarget) this.midweekPanelTarget.hidden = kind !== 'midweek_weekends';
+    }
+
+    _currentKind() {
+        const checked = this.kindTargets.find((r) => r.checked);
+        return checked ? checked.value : 'alternating';
+    }
+
+    // Bascule une nuit du motif personnalisé entre parent A et parent B.
+    toggleNight(event) {
+        const btn = event.currentTarget;
+        const input = btn.querySelector('input[name="custom[]"]');
+        const next = input.value === 'A' ? 'B' : 'A';
+        input.value = next;
+        btn.classList.toggle('night--a', next === 'A');
+        btn.classList.toggle('night--b', next === 'B');
+        btn.querySelector('.night__name').textContent = next === 'B' ? this.pbNameValue : this.paNameValue;
+    }
+
+    // Cycle un jour « milieu de semaine » : parent A → parent B → week-end alterné.
+    cycleDay(event) {
+        const btn = event.currentTarget;
+        const next = { A: 'B', B: 'WE', WE: 'A' }[btn.dataset.state] || 'A';
+        btn.dataset.state = next;
+        btn.classList.remove('night--a', 'night--b', 'night--we');
+        btn.classList.add(next === 'WE' ? 'night--we' : next === 'B' ? 'night--b' : 'night--a');
+        btn.querySelector('.night__name').textContent =
+            next === 'WE' ? 'Week-end' : next === 'B' ? this.pbNameValue : this.paNameValue;
+    }
+
+    // Réétiquette les 14 nuits d'après la date d'ancrage (défaut : lundi si vide/invalide).
+    relabelNights() {
+        if (!this.hasNightTarget) return;
+        const dow = ['DIM', 'LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM'];
+        const anchor = this.element.querySelector('[name="anchorDate"]');
+        let start = 1;
+        if (anchor && anchor.value) {
+            const d = new Date(`${anchor.value}T00:00:00`);
+            if (!Number.isNaN(d.getTime())) start = d.getDay();
+        }
+        this.nightTargets.forEach((btn) => {
+            const i = parseInt(btn.dataset.index, 10);
+            const label = btn.querySelector('.night__dow');
+            if (label) label.textContent = dow[(start + i) % 7];
+        });
     }
 
     savePattern(event) {
         event.preventDefault();
         const form = event.currentTarget;
+        const kind = this._currentKind();
         const body = {
-            kind: form.querySelector('[name="kind"]').value,
+            kind,
             anchorDate: form.querySelector('[name="anchorDate"]').value,
             handoverWeekday: parseInt(form.querySelector('[name="handoverWeekday"]').value, 10),
             handoverTime: form.querySelector('[name="handoverTime"]').value,
             parentAMembershipId: form.querySelector('[name="parentAMembershipId"]').value,
             parentBMembershipId: form.querySelector('[name="parentBMembershipId"]').value,
         };
-        if (body.kind === 'custom') {
-            body.customPattern = [...form.querySelectorAll('[name="custom[]"]')].map((s) => s.value);
+        if (kind === 'custom') {
+            body.customPattern = [...form.querySelectorAll('input[name="custom[]"]')].map((s) => s.value);
+        } else if (kind === 'midweek_weekends') {
+            body.settings = this._midweekSettings();
         }
-        this._send('PUT', `/api/families/${this.familyIdValue}/custody/pattern`, body);
+        this._send('PUT', `/api/families/${this.familyIdValue}/custody/pattern`, body, {
+            event,
+            notice: 'Rythme enregistré — le planning à venir est régénéré (exceptions et règles de vacances conservées).',
+        });
     }
 
-    // « Échanger ce jour » : crée une exception d'un jour vers l'autre parent.
+    // Reconstruit l'objet `settings` du rythme milieu-de-semaine depuis les cartes-jour.
+    _midweekSettings() {
+        const weekdayParents = {};
+        const weekendDays = [];
+        this.mwDayTargets.forEach((btn) => {
+            const w = parseInt(btn.dataset.weekday, 10);
+            if (btn.dataset.state === 'WE') weekendDays.push(w);
+            else weekdayParents[String(w)] = btn.dataset.state === 'B' ? 'B' : 'A';
+        });
+        const start = this.element.querySelector('[name="mw_weekend_start"]:checked');
+        return {
+            weekday_parents: weekdayParents,
+            weekend_days: weekendDays,
+            weekend_start_parent: start ? start.value : 'A',
+        };
+    }
+
+    /**
+     * « Échanger ce jour » : crée une exception d'un jour vers l'autre parent.
+     *
+     * Confirmation explicite : un clic (ou Entrée/Espace) sur une case réattribue durablement un jour
+     * de garde, et l'annulation ne se fait que depuis Paramètres › Exceptions.
+     */
     swapDay(event) {
         event.preventDefault(); // évite le défilement sur la touche Espace
-        const date = event.currentTarget.dataset.date;
-        const target = event.currentTarget.dataset.slot === 'A' ? this.parentBValue : this.parentAValue;
+        const cell = event.currentTarget;
+        const date = cell.dataset.date;
+        const fromA = 'A' === cell.dataset.slot;
+        const target = fromA ? this.parentBValue : this.parentAValue;
         if (!date || !target) return;
+
+        const toName = fromA ? this.pbNameValue : this.paNameValue;
+        const label = cell.dataset.dateLabel || date;
+        if (!window.confirm(`Attribuer le ${label} à ${toName || 'l\'autre parent'} ?`)) return;
+
         this._send('POST', `/api/families/${this.familyIdValue}/custody/exceptions`, {
             startDate: date,
             endDate: date,
             parentMembershipId: target,
             reason: 'Échange',
+        }, {
+            event,
+            notice: `Le ${label} est désormais attribué à ${toName || 'l\'autre parent'}.`,
+            idempotent: true,
         });
     }
 
@@ -56,11 +143,17 @@ export default class extends Controller {
             endDate: f.querySelector('[name="endDate"]').value,
             parentMembershipId: f.querySelector('[name="parentMembershipId"]').value,
             reason: f.querySelector('[name="reason"]').value || null,
-        });
+        }, { event, notice: 'Exception ajoutée.', idempotent: true });
     }
 
     deleteException(event) {
-        this._send('DELETE', `/api/families/${this.familyIdValue}/custody/exceptions/${event.currentTarget.dataset.exceptionId}`);
+        const label = event.currentTarget.dataset.exceptionLabel;
+        const what = label ? `l'exception ${label}` : 'cette exception';
+        if (!window.confirm(`Supprimer ${what} ? Les jours concernés reviendront au rythme habituel.`)) return;
+        this._send('DELETE', `/api/families/${this.familyIdValue}/custody/exceptions/${event.currentTarget.dataset.exceptionId}`, null, {
+            event,
+            notice: 'Exception supprimée.',
+        });
     }
 
     addHoliday(event) {
@@ -70,11 +163,14 @@ export default class extends Controller {
             label: f.querySelector('[name="label"]').value,
             startDate: f.querySelector('[name="startDate"]').value,
             endDate: f.querySelector('[name="endDate"]').value,
-        });
+        }, { event, notice: 'Période de vacances ajoutée.', idempotent: true });
     }
 
-    importHolidays() {
-        this._send('POST', `/api/families/${this.familyIdValue}/holidays/import`, null);
+    importHolidays(event) {
+        this._send('POST', `/api/families/${this.familyIdValue}/holidays/import`, null, {
+            event,
+            notice: 'Import lancé — les périodes officielles apparaissent dans quelques instants.',
+        });
     }
 
     saveRule(event) {
@@ -89,7 +185,10 @@ export default class extends Controller {
             fixed_parent: { parent },
             eve_alternating: { evenParent: parent },
         }[kind] || {};
-        this._send('PUT', `/api/holidays/${f.dataset.holidayId}/rule`, { kind, params });
+        this._send('PUT', `/api/holidays/${f.dataset.holidayId}/rule`, { kind, params }, {
+            event,
+            notice: 'Règle de vacances appliquée — le planning de la période est régénéré.',
+        });
     }
 
     // Overlay famille liée (US-CUST-5) : persiste la préférence garde du membre puis recharge.
@@ -99,37 +198,6 @@ export default class extends Controller {
             familyLinkId: el.dataset.linkId,
             view: el.dataset.view || 'custody',
             enabled: el.checked,
-        });
-    }
-
-    async _send(method, url, body) {
-        if (this.hasErrorTarget) this.errorTarget.hidden = true;
-        try {
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': method === 'PUT' ? 'application/json' : 'application/json',
-                    Accept: 'application/json',
-                    'X-Family-Id': this.familyIdValue,
-                },
-                body: body === null ? undefined : JSON.stringify(body),
-                credentials: 'same-origin',
-            });
-            if (response.ok) {
-                window.location.reload();
-                return;
-            }
-            const data = await response.json().catch(() => ({}));
-            this._showError(data.detail || data['hydra:description'] || 'Une erreur est survenue.');
-        } catch (e) {
-            this._showError('Connexion impossible. Réessayez.');
-        }
-    }
-
-    _showError(message) {
-        if (!this.hasErrorTarget) return;
-        this.errorTarget.textContent = message;
-        this.errorTarget.hidden = false;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, { event });
     }
 }

@@ -4,7 +4,10 @@
     <div class="note-item__body">
         <div class="note-item__meta">
             <strong>{{ note.authorName }}</strong>
-            <time datetime="{{ note.noteDate }}">{{ note.noteDate }}</time>
+            {# `noteDate` reste la valeur machine (Y-m-d) ; `noteDateLabel` porte le libellé FR.
+               Sans cette séparation la fiche enfant affichait « 2026-07-26 » quand l'accueil
+               affichait « 26/07 » pour la même note. #}
+            <time datetime="{{ note.noteDate }}">{{ note.noteDateLabel ?? note.noteDate }}</time>
         </div>
         <p class="note-item__text">{{ note.text }}</p>
     </div>

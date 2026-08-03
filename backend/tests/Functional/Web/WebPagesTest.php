@@ -4,20 +4,32 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Web;
 
+use App\Entity\Child;
+use App\Entity\CustodyDay;
+use App\Entity\CustodyPattern;
 use App\Entity\Event;
+use App\Entity\Exchange;
 use App\Entity\Family;
 use App\Entity\FamilyLink;
 use App\Entity\Invitation;
 use App\Entity\Membership;
+use App\Entity\Note;
 use App\Entity\OverlayPreference;
+use App\Entity\Right;
 use App\Entity\User;
+use App\Enum\CustodyDaySource;
+use App\Enum\CustodyPatternKind;
 use App\Enum\EventCategory;
+use App\Enum\ExchangeStatus;
+use App\Enum\ExchangeType;
 use App\Enum\FamilyLinkStatus;
 use App\Enum\FamilyType;
 use App\Enum\InvitationStatus;
 use App\Enum\MembershipRole;
 use App\Enum\MembershipStatus;
 use App\Enum\OverlayView;
+use App\Enum\RightDomain;
+use App\Enum\RightLevel;
 use App\Enum\UserStatus;
 use App\Security\Auth\TokenHasher;
 use App\Security\Encryption\BlindIndexHasher;
@@ -390,6 +402,85 @@ final class WebPagesTest extends WebTestCase
         self::assertStringContainsString('Réglages de la famille', $html);
         self::assertStringContainsString('Inviter une personne', $html);
         self::assertStringContainsString('Familles liées', $html);
+        // L'édition du rythme de garde a été rapatriée ici (famille séparée + parent admin → custody:edit).
+        self::assertStringContainsString('Rythme de garde', $html);
+        self::assertStringContainsString('Enregistrer le rythme', $html);
+        self::assertStringContainsString('data-action="submit->garde#savePattern"', $html);
+    }
+
+    /**
+     * Crée web@example.com dans une famille du type donné, avec rôle/droits précis, et le connecte.
+     *
+     * @param list<Right> $customRights
+     */
+    private function createMemberAndLogin(
+        KernelBrowser $client,
+        FamilyType $type,
+        MembershipRole $role,
+        bool $admin,
+        array $customRights = [],
+    ): void {
+        $container = static::getContainer();
+        $em = $container->get(EntityManagerInterface::class);
+        $hasher = $container->get(UserPasswordHasherInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $em);
+        self::assertInstanceOf(UserPasswordHasherInterface::class, $hasher);
+
+        $user = (new User())
+            ->setEmail('web@example.com')
+            ->setStatus(UserStatus::Active)
+            ->setEmailVerifiedAt(Clock::get()->now());
+        $user->setPasswordHash($hasher->hashPassword($user, self::PASSWORD));
+        $em->persist($user);
+
+        $family = (new Family())->setName('Famille Web')->setType($type);
+        $membership = (new Membership())->setUser($user)->setFamily($family)
+            ->setRole($role)->setIsAdmin($admin)->setStatus(MembershipStatus::Active);
+        foreach ($customRights as $right) {
+            $membership->addRight($right);
+        }
+        $em->persist($family);
+        $em->persist($membership);
+        $em->flush();
+
+        $this->login($client);
+    }
+
+    public function testSettingsHidesCustodyEditingForViewOnlyMember(): void
+    {
+        // Invariant : un membre sans droit custody:edit (ici step_parent en lecture seule) ne doit
+        // jamais voir le builder de rythme — même en famille séparée (garde active).
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createMemberAndLogin(
+            $client,
+            FamilyType::Separated,
+            MembershipRole::StepParent,
+            admin: false,
+            customRights: [new Right(RightDomain::Custody, RightLevel::View)],
+        );
+
+        $client->request('GET', '/settings');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('Compte', $html); // la page rend bien pour ce membre
+        self::assertStringNotContainsString('data-action="submit->garde#savePattern"', $html);
+        self::assertStringNotContainsString('Enregistrer le rythme', $html);
+        self::assertStringNotContainsString('href="#sec-custody"', $html);
+    }
+
+    public function testSettingsHidesCustodyEditingForIntactFamily(): void
+    {
+        // Une famille unie n'a pas de garde : aucune section de rythme, même pour un parent admin.
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createMemberAndLogin($client, FamilyType::Intact, MembershipRole::Parent, admin: true);
+
+        $client->request('GET', '/settings');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringNotContainsString('data-action="submit->garde#savePattern"', $html);
+        self::assertStringNotContainsString('href="#sec-custody"', $html);
     }
 
     public function testSettingsRedirectsToOnboardingWhenNoFamily(): void
@@ -469,6 +560,128 @@ final class WebPagesTest extends WebTestCase
         self::assertStringContainsString('Cours de tennis', (string) $client->getResponse()->getContent());
     }
 
+    public function testHomeShowsOpenExchange(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser($client, withFamily: true);
+        $this->login($client);
+
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $em);
+        [$family, $membership] = $this->activeFamilyOf($em);
+
+        $exchange = (new Exchange())
+            ->setFamily($family)
+            ->setType(ExchangeType::Decision)
+            ->setTitle('Choix école 2026')
+            ->setStatus(ExchangeStatus::Open)
+            ->setAuthorMembership($membership);
+        $em->persist($exchange);
+        $em->flush();
+
+        $client->request('GET', '/');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        // Encart « À décider ensemble » câblé (US-HOME-1) : la décision ouverte figure en carte.
+        self::assertStringContainsString('À décider ensemble', $html);
+        self::assertStringContainsString('Choix école 2026', $html);
+        self::assertStringContainsString('exchange-card', $html);
+    }
+
+    public function testHomeShowsRecentNote(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser($client, withFamily: true);
+        $this->login($client);
+
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $em);
+        [$family, $membership] = $this->activeFamilyOf($em);
+
+        $child = (new Child())->setFamily($family)->setFirstName('Léa')->setColor('#C2643D');
+        $em->persist($child);
+        $note = (new Note())
+            ->setChild($child)
+            ->setAuthorMembership($membership)
+            ->setText('Rendez-vous dentiste jeudi')
+            ->setNoteDate(Clock::get()->now());
+        $em->persist($note);
+        $em->flush();
+
+        $client->request('GET', '/');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        // Encart « Dernières notes » câblé : texte (déchiffré) + enfant concerné.
+        self::assertStringContainsString('Dernières notes', $html);
+        self::assertStringContainsString('Rendez-vous dentiste jeudi', $html);
+        self::assertStringContainsString('sur Léa', $html);
+    }
+
+    public function testHomeShowsCurrentCustodyWeek(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser($client, withFamily: true); // FamilyType::Separated → garde active
+        $this->login($client);
+
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $em);
+        self::assertInstanceOf(UserPasswordHasherInterface::class, $hasher);
+        [$family, $parentA] = $this->activeFamilyOf($em);
+
+        // Un rythme exige deux parents distincts : on ajoute un second membership parent.
+        $user2 = (new User())->setEmail('web2@example.com')->setStatus(UserStatus::Active)->setEmailVerifiedAt(Clock::get()->now());
+        $user2->setPasswordHash($hasher->hashPassword($user2, self::PASSWORD));
+        $parentB = (new Membership())->setUser($user2)->setFamily($family)
+            ->setRole(MembershipRole::Parent)->setIsAdmin(false)->setStatus(MembershipStatus::Active);
+        $em->persist($user2);
+        $em->persist($parentB);
+
+        $pattern = (new CustodyPattern())
+            ->setFamily($family)
+            ->setKind(CustodyPatternKind::Alternating)
+            ->setAnchorDate(Clock::get()->now()->setTime(0, 0))
+            ->setHandoverWeekday(0)
+            ->setHandoverTime('19:00')
+            ->setParentA($parentA)
+            ->setParentB($parentB);
+        $em->persist($pattern);
+
+        // Jour de garde matérialisé pour aujourd'hui, attribué au parent A (slot 'A').
+        $today = Clock::get()->now()->setTimezone(new \DateTimeZone('Europe/Paris'))->setTime(0, 0);
+        $day = (new CustodyDay())->setFamily($family)->setDate($today)
+            ->setParentMembership($parentA)->setSource(CustodyDaySource::Base);
+        $em->persist($day);
+        $em->flush();
+
+        $client->request('GET', '/');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        // Encart « Cette semaine » câblé : mini-semaine colorée, jour du parent A présent.
+        self::assertStringContainsString('Cette semaine', $html);
+        self::assertStringContainsString('home-custody', $html);
+        self::assertStringContainsString('home-custody__day--a', $html);
+        self::assertStringContainsString('web@example.com', $html); // nom (fallback e-mail) du parent A dans la légende
+    }
+
+    /**
+     * Récupère la Family « Famille Web » et son membership actif, créés par {@see self::createUser}.
+     *
+     * @return array{0: Family, 1: Membership}
+     */
+    private function activeFamilyOf(EntityManagerInterface $em): array
+    {
+        $family = $em->getRepository(Family::class)->findOneBy(['name' => 'Famille Web']);
+        self::assertInstanceOf(Family::class, $family);
+        $membership = $em->getRepository(Membership::class)->findOneBy(['family' => $family]);
+        self::assertInstanceOf(Membership::class, $membership);
+
+        return [$family, $membership];
+    }
+
     public function testAgendaShowsLinkedFamilyOverlayWhenEnabled(): void
     {
         $client = static::createClient();
@@ -518,9 +731,12 @@ final class WebPagesTest extends WebTestCase
         $client->request('GET', '/garde');
         self::assertResponseIsSuccessful();
         $html = (string) $client->getResponse()->getContent();
-        // Sans rythme configuré : message + builder de configuration (parent admin → canEdit).
+        // Sans rythme configuré : message + renvoi vers Paramètres (l'édition y a été déplacée).
         self::assertStringContainsString('Aucun rythme de garde configuré', $html);
-        self::assertStringContainsString('Configurer le rythme', $html);
+        self::assertStringContainsString('#sec-custody', $html);
+        // Le builder de rythme ne vit plus sur l'écran Garde (déplacé vers Paramètres).
+        self::assertStringNotContainsString('data-action="submit->garde#savePattern"', $html);
+        self::assertStringNotContainsString('Enregistrer le rythme', $html);
         // L'onglet Garde figure dans la barre latérale d'une famille séparée.
         self::assertStringContainsString('href="/garde"', $html);
         // Abonnement temps réel câblé.
@@ -558,9 +774,9 @@ final class WebPagesTest extends WebTestCase
         $membership = $em->getRepository(Membership::class)->findOneBy(['family' => $family]);
         self::assertInstanceOf(Membership::class, $membership);
 
-        $exchange = (new \App\Entity\Exchange())
+        $exchange = (new Exchange())
             ->setFamily($family)
-            ->setType(\App\Enum\ExchangeType::Discussion)
+            ->setType(ExchangeType::Discussion)
             ->setTitle('Organisation des vacances')
             ->setAuthorMembership($membership);
         $em->persist($exchange);

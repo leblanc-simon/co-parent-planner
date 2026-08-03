@@ -1,15 +1,16 @@
-import { Controller } from '@hotwired/stimulus';
+import { ApiController } from '../api_base.js';
 
 /*
  * Mutations de l'écran Agenda (Lot 4) via l'API REST, scopées X-Family-Id. Succès → rechargement
  * (état canonique ; le temps réel Mercure rafraîchit aussi chez les autres membres).
  * Les datetime-local (heure murale locale) sont convertis en ISO 8601 avec offset via Date.toISOString().
  */
-export default class extends Controller {
-    static targets = ['error', 'wholeFamily', 'children', 'allDay', 'startTimed', 'endTimed', 'startAllDay', 'freq', 'recurrence'];
-    static values = { familyId: String, timezone: String };
+export default class extends ApiController {
+    static targets = ['wholeFamily', 'children', 'allDay', 'startTimed', 'endTimed', 'startAllDay', 'freq', 'recurrence'];
+    static values = { timezone: String };
 
     connect() {
+        super.connect();
         this.toggleAllDay();
         this.toggleRecurrence();
         this.toggleWholeFamily();
@@ -63,7 +64,13 @@ export default class extends Controller {
             else if (until) rec.until = until;
             body.recurrence = rec;
         }
-        this._send('POST', `/api/families/${this.familyIdValue}/events`, body);
+        const description = f.querySelector('[name="description"]');
+        if (description) body.description = description.value || null;
+        this._send('POST', `/api/families/${this.familyIdValue}/events`, body, {
+            event,
+            notice: 'Événement créé.',
+            idempotent: true,
+        });
     }
 
     saveEvent(event) {
@@ -75,6 +82,10 @@ export default class extends Controller {
             category: this._val(f, 'category'),
             location: this._val(f, 'location') || null,
         };
+        // `description` n'est envoyé QUE si le formulaire porte le champ : un PATCH partiel avec une
+        // chaîne vide effacerait le commentaire existant (la saisie du commentaire reste à livrer).
+        const description = f.querySelector('[name="description"]');
+        if (description) body.description = description.value;
         const start = f.querySelector('[name="startsAt"]');
         if (start) {
             body.startsAt = this._iso(start.value);
@@ -86,19 +97,34 @@ export default class extends Controller {
             body.recurrenceDate = f.dataset.recurrenceDate;
             url += `?scope=${f.querySelector('[name="scope"]')?.value || 'occurrence'}`;
         }
-        this._send('PATCH', url, body);
+        this._send('PATCH', url, body, { event, notice: 'Événement enregistré.' });
     }
 
+    /**
+     * Suppression : la portée est rappelée dans la demande de confirmation, car « Toute la série »
+     * détruit l'occurrence pivot ET toutes les suivantes de façon définitive.
+     */
     deleteEvent(event) {
         const f = event.currentTarget.closest('form');
+        const recurring = f.dataset.recurring === '1';
+        const scope = recurring ? (f.querySelector('[name="scope"]')?.value || 'occurrence') : 'occurrence';
+        const title = f.querySelector('[name="title"]')?.value?.trim() || 'cet événement';
+
+        const question = recurring && 'series' === scope
+            ? `Supprimer « ${title} » ET toutes les occurrences suivantes de la série ? Cette action est définitive.`
+            : `Supprimer « ${title} » ? Cette action est définitive.`;
+        if (!window.confirm(question)) return;
+
         let url = `/api/events/${f.dataset.eventId}`;
-        if (f.dataset.recurring === '1') {
-            const scope = f.querySelector('[name="scope"]')?.value || 'occurrence';
+        if (recurring) {
             url += 'occurrence' === scope
                 ? `?scope=occurrence&recurrenceDate=${f.dataset.recurrenceDate}`
                 : `?scope=series&from=${f.dataset.recurrenceDate}`;
         }
-        this._send('DELETE', url, null);
+        this._send('DELETE', url, null, {
+            event,
+            notice: 'series' === scope ? 'Série supprimée à partir de cette date.' : 'Événement supprimé.',
+        });
     }
 
     // Overlay famille liée (US-AG-4) : persiste la préférence du membre puis recharge.
@@ -108,7 +134,7 @@ export default class extends Controller {
             familyLinkId: el.dataset.linkId,
             view: el.dataset.view || 'agenda',
             enabled: el.checked,
-        });
+        }, { event });
     }
 
     _val(form, name) {
@@ -118,36 +144,5 @@ export default class extends Controller {
 
     _iso(localValue) {
         return localValue ? new Date(localValue).toISOString() : null;
-    }
-
-    async _send(method, url, body) {
-        if (this.hasErrorTarget) this.errorTarget.hidden = true;
-        try {
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'PATCH' === method ? 'application/merge-patch+json' : 'application/json',
-                    Accept: 'application/json',
-                    'X-Family-Id': this.familyIdValue,
-                },
-                body: null === body ? undefined : JSON.stringify(body),
-                credentials: 'same-origin',
-            });
-            if (response.ok) {
-                window.location.reload();
-                return;
-            }
-            const data = await response.json().catch(() => ({}));
-            this._showError(data.detail || data['hydra:description'] || 'Une erreur est survenue.');
-        } catch (e) {
-            this._showError('Connexion impossible. Réessayez.');
-        }
-    }
-
-    _showError(message) {
-        if (!this.hasErrorTarget) return;
-        this.errorTarget.textContent = message;
-        this.errorTarget.hidden = false;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 }

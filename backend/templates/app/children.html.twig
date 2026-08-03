@@ -15,6 +15,7 @@
 {% else %}
 <div class="children" data-controller="children" data-children-family-id-value="{{ family.id }}">
     <p class="form-error" data-children-target="error" role="alert" hidden></p>
+    <p class="form-success" data-children-target="notice" role="status" aria-live="polite" hidden></p>
 
     <div class="children__layout">
         {# ---- Master : liste des enfants ---- #}
@@ -91,7 +92,7 @@
                     <button class="btn btn--ghost" type="button" data-action="children#addInfoRow">+ Ligne</button>
                     <div class="child-edit__actions">
                         <button class="btn btn--primary" type="submit">Enregistrer</button>
-                        <button class="btn btn--ghost" type="button" data-action="children#deleteChild" data-child-id="{{ child.id }}">Supprimer le profil</button>
+                        <button class="btn btn--ghost btn--danger" type="button" data-action="children#deleteChild" data-child-id="{{ child.id }}">Supprimer le profil</button>
                     </div>
                 </form>
                 {% else %}
@@ -111,7 +112,7 @@
                     <li>
                         <span class="avatar avatar--34" style="background: {{ entry.displayColor ?: '#C2643D' }}">{{ entry.name|first|upper }}</span>
                         <span class="access-list__name">{{ entry.name }}{{ entry.isOwnProfile ? ' · son profil' }}</span>
-                        <span class="access-list__role">{{ entry.role }}</span>
+                        <span class="access-list__role">{{ roleLabel[entry.role] ?? entry.role }}</span>
                         <span class="access-list__level access-list__level--{{ entry.level == 'edit' ? 'edit' : 'view' }}">{{ entry.level == 'edit' ? 'Édition' : 'Lecture' }}</span>
                     </li>
                     {% endfor %}
@@ -137,6 +138,7 @@
                             authorColor: note.authorMembership.displayColor,
                             authorName: note.authorMembership.user.fullName ?: note.authorMembership.user.email,
                             noteDate: note.noteDate|date('Y-m-d'),
+                            noteDateLabel: note.noteDate|date('d/m/Y'),
                             text: note.text,
                         } }) }}
                     {% endfor %}

@@ -1,5 +1,41 @@
 {% extends 'base.html.twig' %}
 
+{# ───────── Libellés FR partagés par tous les écrans applicatifs ─────────
+   Déclarés ICI, dans le layout, et non dans un fichier inclus : un `{% include %}` évalue ses
+   `{% set %}` dans son propre contexte, les variables ne remontent donc pas au gabarit appelant.
+   Les `set` de niveau racine d'un parent, eux, sont visibles des blocs rendus par les enfants.
+   Objectif : aucune valeur d'enum ni nom technique à l'écran (`alternating_weeks`, `step_parent`,
+   `children_notes`, `none`/`view`/`edit`). #}
+{% set holidayRuleLabel = {
+    'alternating_weeks': 'Une semaine sur deux',
+    'split_50_50':       'Moitié / moitié',
+    'fixed_parent':      'Toujours chez le même parent',
+    'eve_alternating':   'Réveillons en alternance',
+    'custom':            'Répartition personnalisée',
+} %}
+
+{% set roleLabel = {
+    'parent':      'Parent',
+    'step_parent': 'Beau-parent',
+    'child':       'Enfant',
+} %}
+
+{% set rightDomainLabel = {
+    'custody':         'Garde',
+    'agenda':          'Agenda',
+    'children_notes':  'Enfants & notes',
+    'exchanges':       'Échanges',
+    'expenses':        'Dépenses',
+    'family_settings': 'Réglages de la famille',
+} %}
+
+{% set rightLevelLabel = {
+    'none': 'Aucun accès',
+    'view': 'Lecture',
+    'edit': 'Édition',
+} %}
+
+
 {% block body %}
 <div class="app-shell">
     <aside class="sidebar">
@@ -56,7 +92,7 @@
                 <span class="avatar avatar--36" style="background: {{ activeMembership.displayColor ?: '#C2643D' }}">{{ (activeMembership.user.fullName ?: activeMembership.user.email)|first|upper }}</span>
                 <span class="sidebar__profile-id">
                     <span class="sidebar__profile-name">{{ activeMembership.user.fullName ?: activeMembership.user.email }}</span>
-                    <span class="sidebar__profile-role">{{ activeMembership.role.value }}</span>
+                    <span class="sidebar__profile-role">{{ {'parent':'Parent','step_parent':'Beau-parent','child':'Enfant'}[activeMembership.role.value] ?? activeMembership.role.value }}</span>
                 </span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </a>

@@ -34,7 +34,7 @@ final class AccessRightsBuilder
             }
             $entries[] = new AccessEntry(
                 membershipId: (string) $m->getId(),
-                name: $m->getUser()->getFullName() ?? $m->getUser()->getEmail(),
+                name: $m->getUser()->getFullName() ?: $m->getUser()->getEmail(),
                 role: $m->getRole()->value,
                 level: $level->value,
                 isOwnProfile: null !== $m->getChildId() && $m->getChildId()->equals($child->getId()),

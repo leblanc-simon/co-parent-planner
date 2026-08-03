@@ -171,9 +171,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->fullName;
     }
 
+    /**
+     * `full_name` est facultatif : on normalise une chaîne vide (ou blanche) en `null`, à la source.
+     *
+     * Sans cette normalisation, un membre ayant laissé le champ vide à l'inscription était stocké
+     * avec `''`, que les replis en `?? getEmail()` (qui ne testent que `null`) ne rattrapaient pas :
+     * ses messages s'affichaient signés « Membre supprimé » avec un avatar « ? », alors que la barre
+     * latérale de la même page montrait son e-mail.
+     */
     public function setFullName(?string $fullName): static
     {
-        $this->fullName = $fullName;
+        $trimmed = null !== $fullName ? trim($fullName) : null;
+        $this->fullName = ('' === $trimmed) ? null : $trimmed;
 
         return $this;
     }

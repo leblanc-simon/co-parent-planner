@@ -46,7 +46,7 @@ class MessageResource
         $author = $message->getAuthorMembership();
         if (null !== $author) {
             $view->authorMembershipId = (string) $author->getId();
-            $view->authorName = $author->getUser()->getFullName() ?? $author->getUser()->getEmail();
+            $view->authorName = $author->getUser()->getFullName() ?: $author->getUser()->getEmail();
             $view->authorColor = $author->getDisplayColor();
         }
         $view->text = $message->getText();

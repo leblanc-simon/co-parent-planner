@@ -70,25 +70,34 @@ test('Garde avancée : rythme custom 14 jours, vacances manuelle + règle, excep
   request: import('@playwright/test').APIRequestContext;
   browser: Browser;
 }) => {
+  // Les actions destructives demandent désormais confirmation (window.confirm) ; Playwright
+  // rejette les dialogues par défaut, on les accepte donc explicitement.
+  page.on('dialog', (d) => d.accept());
   await setupTwoParentFamily(page, request, browser, Date.now());
-  await page.goto('/garde');
+  // L'édition du rythme, des vacances et des exceptions vit désormais dans Paramètres.
+  await page.goto('/settings');
 
-  // ---- Rythme personnalisé (14 nuits) : la grille custom apparaît et se sauvegarde ----
-  await page.selectOption('#g-kind', 'custom');
+  // ---- Rythme personnalisé (14 nuits) : la grille de nuits cliquables apparaît et se sauvegarde ----
+  await page.locator('.rhythm-card:has(input[value="custom"])').click();
   await page.fill('#g-anchor', '2026-06-21');
   await page.selectOption('#g-pa', { label: 'Alice Adv' });
   await page.selectOption('#g-pb', { label: 'Bob Adv' });
-  const customSelects = page.locator('select[name="custom[]"]');
-  await expect(customSelects).toHaveCount(14);
-  // Motif : 1re semaine A, 2de semaine B → les deux couleurs apparaissent.
-  for (let i = 7; i < 14; i++) {
-    await customSelects.nth(i).selectOption('B');
-  }
+  const nights = page.locator('[data-garde-target="night"]');
+  await expect(nights).toHaveCount(14);
+  // Le motif par défaut alterne A/B ; on bascule une nuit d'un clic pour vérifier l'interaction,
+  // le motif mixte produit les deux couleurs dans le calendrier généré.
+  await nights.first().click();
   await page.locator('.garde-config button[type="submit"]').click();
+  await page.waitForLoadState('networkidle'); // succès → rechargement de /settings
 
+  // ---- Le calendrier généré se consulte sur l'écran Garde ----
+  await page.goto('/garde');
   await expect(page.locator('.garde-cal')).toBeVisible({ timeout: 15_000 });
   await expect(page.locator('.garde-day--a').first()).toBeVisible();
   await expect(page.locator('.garde-day--b').first()).toBeVisible();
+
+  // ---- Retour dans Paramètres pour les vacances et exceptions ----
+  await page.goto('/settings');
 
   // ---- Vacances saisie manuellement (pas d'import réseau) ----
   const holidayForm = page.locator('form:has(input[name="label"])');
@@ -99,11 +108,18 @@ test('Garde avancée : rythme custom 14 jours, vacances manuelle + règle, excep
   await expect(page.locator('.garde-list')).toContainText('Vacances test', { timeout: 15_000 });
 
   // ---- Règle « fixed_parent » (parent A) affectée à cette période ----
+  // L'assertion porte sur le LIBELLÉ affiché, pas sur la valeur d'enum : l'écran exposait
+  // « fixed_parent » tel quel, ce qui n'a aucun sens pour un parent qui lit son planning.
   const ruleForm = page.locator('.garde-rule-form').first();
   await ruleForm.locator('[name="kind"]').selectOption('fixed_parent');
   await ruleForm.locator('[name="parent"]').selectOption('A');
   await ruleForm.locator('button[type="submit"]').click();
-  await expect(page.locator('.garde-list')).toContainText('fixed_parent', { timeout: 15_000 });
+  await expect(page.locator('.garde-list')).toContainText('Toujours chez le même parent', {
+    timeout: 15_000,
+  });
+  // Le parent de départ figure désormais dans le résumé (il était invisible, et « Appliquer »
+  // réinitialisait silencieusement le select sur A en régénérant la garde).
+  await expect(page.locator('.garde-list')).toContainText('à partir de Alice Adv');
 
   // ---- Exception ajoutée puis supprimée via la liste ----
   // Date dynamique dans le futur proche : le moteur fige le passé, une date en dur finit par périmer.

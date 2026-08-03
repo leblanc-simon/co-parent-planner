@@ -7,10 +7,14 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Enum\NotificationCategory;
 use App\Enum\RightDomain;
+use App\Enum\RightLevel;
+use App\Repository\CustodyExceptionRepository;
+use App\Repository\CustodyPatternRepository;
 use App\Repository\FamilyLinkRepository;
 use App\Repository\InvitationRepository;
 use App\Repository\MembershipRepository;
 use App\Repository\NotificationPrefRepository;
+use App\Repository\SchoolHolidayRepository;
 use App\Web\ActiveFamilyResolver;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -33,6 +37,9 @@ final class SettingsController extends AbstractController
         private readonly InvitationRepository $invitations,
         private readonly FamilyLinkRepository $links,
         private readonly NotificationPrefRepository $notifPrefs,
+        private readonly CustodyPatternRepository $patterns,
+        private readonly CustodyExceptionRepository $exceptions,
+        private readonly SchoolHolidayRepository $holidays,
     ) {
     }
 
@@ -58,6 +65,16 @@ final class SettingsController extends AbstractController
             $notifPrefs[$category->value] = $this->notifPrefs->isEmailEnabled($user, $category);
         }
 
+        // Édition du rythme de garde (US-CUST-1/2/9) : rapatriée ici depuis l'écran Garde, qui reste
+        // en consultation seule. N'apparaît que pour une famille séparée et un membre `custody:edit`.
+        $hasCustody = $family->getType()->hasCustody();
+        $canEditCustody = $hasCustody && $active->can(RightDomain::Custody, RightLevel::Edit);
+        $pattern = $canEditCustody ? $this->patterns->findOneByFamily($family) : null;
+        $parents = $canEditCustody ? array_values(array_filter(
+            $this->memberships->findActiveByFamily($family),
+            static fn ($m) => 'parent' === $m->getRole()->value,
+        )) : [];
+
         return $this->render('app/settings.html.twig', [
             'memberships' => $allMemberships,
             'activeMembership' => $active,
@@ -70,6 +87,13 @@ final class SettingsController extends AbstractController
             'notifPrefs' => $notifPrefs,
             'quietHoursStart' => $user->getQuietHoursStart(),
             'quietHoursEnd' => $user->getQuietHoursEnd(),
+            'canEditCustody' => $canEditCustody,
+            'pattern' => $pattern,
+            'parents' => $parents,
+            'parentAId' => $pattern?->getParentA()?->getId(),
+            'parentBId' => $pattern?->getParentB()?->getId(),
+            'custodyExceptions' => $canEditCustody ? $this->exceptions->findByFamily($family) : [],
+            'holidays' => $canEditCustody ? $this->holidays->findByFamily($family) : [],
         ]);
     }
 }

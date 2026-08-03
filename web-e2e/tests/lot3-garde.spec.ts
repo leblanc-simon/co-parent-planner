@@ -41,6 +41,9 @@ test('Garde : configurer un rythme → calendrier coloré → échanger un jour'
   request: import('@playwright/test').APIRequestContext;
   browser: Browser;
 }) => {
+  // Les actions destructives demandent désormais confirmation (window.confirm) ; Playwright
+  // rejette les dialogues par défaut, on les accepte donc explicitement.
+  page.on('dialog', (d) => d.accept());
   const stamp = Date.now();
   const adminEmail = `e2e-garde-a-${stamp}@example.test`;
   const parentBEmail = `e2e-garde-b-${stamp}@example.test`;
@@ -77,15 +80,28 @@ test('Garde : configurer un rythme → calendrier coloré → échanger un jour'
   await expect(page.locator('h1')).toContainText('Planning de garde');
   await expect(page.locator('.empty-state')).toContainText('Aucun rythme de garde configuré');
 
-  // ---- Configurer un rythme « une semaine sur deux » avec deux parents distincts ----
-  await page.selectOption('#g-kind', 'alternating');
+  // ---- Configurer un rythme depuis Paramètres › Rythme de garde (l'édition y a été déplacée) ----
+  await page.goto('/settings');
+  await page.locator('.rhythm-card:has(input[value="alternating"])').click();
   await page.fill('#g-anchor', '2026-06-21');
   await page.selectOption('#g-weekday', '0'); // dimanche
   await page.selectOption('#g-pa', { label: 'Alice Garde' });
   await page.selectOption('#g-pb', { label: 'Bob Garde' });
   await page.locator('.garde-config button[type="submit"]').click();
+  await page.waitForLoadState('networkidle'); // succès → rechargement de /settings
 
-  // La génération est synchrone en E2E (Messenger sync://) → après rechargement, calendrier peuplé.
+  // ---- Retour sur Garde : la génération est synchrone en E2E (Messenger sync://) → calendrier peuplé.
+  // On affiche le MOIS SUIVANT, et non le mois courant : le moteur fige le passé, donc le mois
+  // courant n'est coloré qu'à partir d'aujourd'hui. En fin de mois les jours restants tombent tous
+  // dans la même semaine d'alternance et un seul parent y apparaît — l'assertion A **et** B ne
+  // passait alors que selon le jour d'exécution. Le mois suivant est toujours complet.
+  const nextMonth = (() => {
+    const d = new Date();
+    d.setDate(1);
+    d.setMonth(d.getMonth() + 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  })();
+  await page.goto(`/garde?month=${nextMonth}`);
   await expect(page.locator('.garde-cal')).toBeVisible({ timeout: 15_000 });
   await expect(page.locator('.garde-day--a').first()).toBeVisible();
   await expect(page.locator('.garde-day--b').first()).toBeVisible();
@@ -94,9 +110,10 @@ test('Garde : configurer un rythme → calendrier coloré → échanger un jour'
   await expect(page.locator('.garde-stat--a')).toBeVisible();
   await expect(page.locator('.garde-stat--b')).toBeVisible();
 
-  // ---- Échanger un jour : clic sur une case → exception d'un jour ----
+  // ---- Échanger un jour : clic sur une case → exception d'un jour (interaction restée sur le calendrier) ----
   await page.locator('.garde-day[role="button"]').first().click();
   await expect(page.locator('.garde-day--exception').first()).toBeVisible({ timeout: 15_000 });
-  // L'exception « Échange » apparaît dans la liste.
+  // L'exception « Échange » figure dans la liste des exceptions, désormais sous Paramètres.
+  await page.goto('/settings');
   await expect(page.locator('.garde-list')).toContainText('Échange');
 });

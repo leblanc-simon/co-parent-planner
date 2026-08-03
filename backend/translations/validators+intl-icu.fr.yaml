@@ -1,0 +1,20 @@
+# Catalogue du domaine `validators` (fr-FR).
+#
+# Le composant Validator traduit les messages de contrainte dans le domaine `validators`, et NON
+# dans `messages` : les clés portées par les attributs `#[Assert\...]` doivent donc figurer ici.
+# Sans ce catalogue, l'API renvoyait la clé brute dans ses violations
+# (`{"propertyPath":"firstName","message":"child.error.first_name_required"}`), que l'UI web
+# affichait verbatim et que le client mobile ne sait pas non plus traduire.
+#
+# Les libellés sont volontairement identiques à ceux du domaine `messages` : `ValidatorMessagesTest`
+# échoue si une clé `#[Assert]` manque ici ou si les deux catalogues divergent.
+# Les contraintes dont le `message:` est déjà une phrase française (couleur, heure d'échange) n'ont
+# rien à faire ici : le translator les renvoie inchangées.
+
+child:
+    error:
+        first_name_required: 'Le prénom est requis.'
+
+note:
+    error:
+        text_required: 'Le texte de la note est requis.'

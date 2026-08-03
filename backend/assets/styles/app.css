@@ -64,6 +64,11 @@
 
 * { box-sizing: border-box; }
 
+/* L'attribut `hidden` ne pose qu'un `display:none` de feuille UA : la moindre règle d'auteur
+   (`display:flex` sur `.agenda-recurrence`, par ex.) le défaisait et laissait des champs
+   masqués côté JS pourtant visibles à l'écran. */
+[hidden] { display: none !important; }
+
 html, body {
     margin: 0;
     padding: 0;
@@ -92,6 +97,12 @@ a:hover { text-decoration: underline; }
 .btn--primary:hover { background: var(--accent-strong); text-decoration: none; }
 .btn--ghost { background: transparent; color: var(--ink-2); border-color: var(--border-3); }
 .btn--ghost:hover { background: var(--surface); text-decoration: none; }
+/* Actions destructives : « Supprimer » était rendu par le même `.btn--ghost` que « Enregistrer »,
+   posé juste à côté. Encre et contour sanguins, remplissage au survol — la confirmation reste
+   portée par le JS, ceci en est le signal visuel préalable. */
+.btn--danger { background: transparent; color: var(--cat-health); border-color: #E8C4C4; }
+.btn--danger:hover { background: var(--cat-health-bg); color: #8F3B3B; text-decoration: none; }
+.btn--danger:focus-visible { outline: 2px solid var(--cat-health); outline-offset: 2px; }
 .btn--ink { background: var(--ink); color: #fff; border-radius: var(--radius-nav); height: 42px; padding: 0 16px; }
 .btn--ink:hover { background: #1f1c18; text-decoration: none; }
 .btn--block { width: 100%; }
@@ -131,11 +142,30 @@ a:hover { text-decoration: underline; }
 /* ---------- Formulaires ---------- */
 .field { margin-bottom: 1rem; }
 .field label { display: block; font-weight: 600; font-size: .85rem; color: var(--ink-2); margin-bottom: .35rem; }
-.field input, .field select {
+.field input:not([type='checkbox']):not([type='radio']):not([type='color']), .field select {
     width: 100%; padding: .7rem .85rem; font: inherit; color: var(--ink);
     background: var(--card); border: 1px solid var(--border-3); border-radius: 12px;
 }
+/* Une case à cocher étirée à 100 % centrait son glyphe et renvoyait son libellé à la ligne
+   suivante : dans un `.field`, la case garde sa taille intrinsèque et s'aligne avec son texte. */
+.field label:has(> input[type='checkbox']), .field label:has(> input[type='radio']) {
+    display: flex; align-items: center; gap: .5rem; margin-bottom: 0; font-weight: 500;
+}
+/* Un `input[type=color]` héritait de la largeur pleine et du rembourrage : la pastille était
+   écrasée à quelques pixels de haut et ne montrait plus la couleur choisie. */
+.field input[type='color'] {
+    width: 56px; height: 34px; padding: 2px; cursor: pointer;
+    background: var(--card); border: 1px solid var(--border-3); border-radius: 10px;
+}
 .field input:focus, .field select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft-2); }
+.field input[type='color']:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Confirmation de succès, pendant de `.form-error` (le socle Stimulus l'alimente après rechargement). */
+.form-success {
+    color: var(--positive-strong); background: var(--positive-soft);
+    border: 1px solid #C9E0DA; border-radius: 12px;
+    font-size: .88rem; font-weight: 600; margin: .5rem 0; padding: .6rem .85rem;
+}
 .form-error { color: var(--cat-health); font-size: .85rem; margin: .5rem 0; min-height: 1.2em; }
 .form-note { color: var(--muted); font-size: .85rem; }
 
@@ -149,7 +179,7 @@ a:hover { text-decoration: underline; }
 .auth__alt { text-align: center; margin-top: 1.25rem; color: var(--muted); font-size: .9rem; }
 
 /* ---------- Shell applicatif (desktop) ---------- */
-.app-shell { display: grid; grid-template-columns: var(--sidebar-w) 1fr; min-height: 100vh; }
+.app-shell { display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: 100vh; }
 .sidebar { background: var(--sidebar); color: #EDE7DB; padding: 1.4rem 1rem; display: flex; flex-direction: column; gap: .2rem; }
 .sidebar__brand { font-family: var(--font-title); font-weight: 700; font-size: 17px; color: var(--surface); padding: .4rem .6rem .8rem; display: flex; align-items: center; gap: .5rem; }
 .sidebar__logo { width: 32px; height: 32px; border-radius: 9px; background: var(--accent); object-fit: cover; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
@@ -189,11 +219,13 @@ a:hover { text-decoration: underline; }
 .sidebar__logout { background: none; border: 0; color: #9C9183; font: inherit; font-size: 12.5px; cursor: pointer; padding: .2rem .5rem; text-align: left; }
 .sidebar__logout:hover { color: var(--surface); }
 
-.main { padding: 2rem 2.5rem; max-width: 1320px; background: var(--surface); }
-.main__header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 1.5rem; gap: 1rem; }
+.main { padding: 2rem 2.5rem; max-width: 1320px; margin-inline: auto; width: 100%; background: var(--surface); }
+/* `flex-wrap` : sans lui l'en-tête (eyebrow + titre + CTA) imposait un min-content de 863 px
+   et empêchait la page de tenir sur un écran étroit. */
+.main__header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; margin-bottom: 1.5rem; gap: 1rem; }
 .eyebrow { text-transform: uppercase; letter-spacing: .07em; font-size: .8rem; font-weight: 600; color: var(--muted-2); }
 .main__subtitle { color: var(--muted); font-size: 14px; margin: .3rem 0 0; }
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+.grid-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.25rem; }
 .empty-state { color: var(--muted); font-size: .92rem; padding: .5rem 0; }
 .main__header-actions { display: flex; align-items: center; gap: .75rem; }
 
@@ -202,6 +234,19 @@ a:hover { text-decoration: underline; }
 .home-col { display: flex; flex-direction: column; gap: 1.25rem; }
 .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .6rem; }
 .section-head__link { font-size: .81rem; font-weight: 600; color: var(--accent); }
+
+/* Encarts accueil : mini-semaine de garde, pile d'échanges, notes. */
+.home-stack { display: flex; flex-direction: column; gap: .6rem; }
+.home-custody { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: .3rem 0 .8rem; }
+.home-custody__legend { margin-bottom: .5rem; }
+.home-custody__day { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px; border-radius: 10px; background: var(--card); border: 1px solid var(--border); }
+.home-custody__day--a { background: var(--accent-soft); border-color: var(--accent-soft-2); }
+.home-custody__day--b { background: var(--positive-soft); border-color: #C9E0DA; }
+.home-custody__day--none { opacity: .55; }
+.home-custody__day.is-today { box-shadow: 0 0 0 2px var(--accent); border-color: transparent; }
+.home-custody__dow { font-size: 10px; font-weight: 700; letter-spacing: .05em; color: var(--muted-2); }
+.home-custody__num { font-family: var(--font-title); font-weight: 700; font-size: 15px; color: var(--ink); }
+.note-item__child { color: var(--muted); font-size: .82rem; }
 
 /* ---------- Sélecteur de famille ---------- */
 .family-select { position: relative; }
@@ -221,24 +266,7 @@ a:hover { text-decoration: underline; }
 .family-select__item small { color: var(--muted); display: block; }
 
 /* ---------- Responsive : sidebar repliée sous breakpoint ---------- */
-@media (max-width: 900px) {
-    .app-shell { grid-template-columns: 1fr; }
-    .sidebar { flex-direction: row; align-items: center; overflow-x: auto; padding: .6rem .8rem; gap: .2rem; }
-    .sidebar__brand { padding: .4rem .6rem; }
-    .sidebar__spacer { display: none; }
-    .sidebar__eyebrow { display: none; }
-    .sidebar__switcher { margin-bottom: 0; min-width: 160px; }
-    .sidebar__profile { border-top: none; padding-top: 0; margin-top: 0; }
-    .sidebar__profile-main .sidebar__profile-id { display: none; }
-    .sidebar__nav { display: flex; }
-    .main { padding: 1.25rem 1.1rem; }
-    .grid-2 { grid-template-columns: 1fr; }
-    .home-grid { grid-template-columns: 1fr; }
-    .garde-layout { grid-template-columns: 1fr; }
-    .settings-layout { grid-template-columns: 1fr; }
-    .settings-nav { flex-direction: row; flex-wrap: wrap; border-right: none; border-bottom: 1px solid var(--border-2); position: static; padding: 0 0 .5rem; }
-    .exchanges__layout { grid-template-columns: 1fr; }
-}
+
 
 /* ---------- Lot 1 : Paramètres › Compte & Famille ---------- */
 .settings-layout { display: grid; grid-template-columns: 248px 1fr; gap: 24px; align-items: start; }
@@ -249,12 +277,16 @@ a:hover { text-decoration: underline; }
 .settings-section__title { font-family: var(--font-title); font-size: 26px; font-weight: 700; margin: 0; }
 .settings-section__sub { color: var(--muted); font-size: 14px; margin: .2rem 0 1rem; }
 .settings-profile { display: flex; align-items: center; gap: 1rem; }
+.settings-profile__id { min-width: 0; }
 .settings-profile__name { font-family: var(--font-title); font-size: 20px; font-weight: 700; }
-.settings-profile__mail { color: var(--muted); font-size: .9rem; }
+/* Une adresse e-mail est un mot insécable : sans coupure autorisée elle imposait son min-content
+   au conteneur flex et débordait la page sur écran étroit. */
+.settings-profile__mail { color: var(--muted); font-size: .9rem; overflow-wrap: anywhere; }
 .members { display: flex; flex-direction: column; gap: .75rem; }
 .member-row { border: 1px solid var(--border); border-radius: 16px; padding: 15px 18px; background: var(--card); }
-.member-row__head { display: flex; align-items: center; gap: .6rem; }
-.member-row__head small { display: block; color: var(--muted); }
+.member-row__head { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+.member-row__head > div { min-width: 0; }
+.member-row__head small { display: block; color: var(--muted); overflow-wrap: anywhere; }
 .member-row__badge { margin-left: auto; font-size: 11px; font-weight: 600; padding: 5px 11px; border-radius: var(--radius-pill); background: var(--surface); color: var(--ink-2); white-space: nowrap; }
 .member-row__badge--parent { background: var(--accent-soft); color: var(--accent-strong); }
 .member-row__badge--step_parent { background: var(--positive-soft); color: var(--positive-strong); }
@@ -267,9 +299,9 @@ a:hover { text-decoration: underline; }
 .invite-panel__title { font-family: var(--font-title); font-size: 19px; font-weight: 700; margin: 0; }
 .invite-panel__sub { color: #857E71; font-size: 13px; margin: .2rem 0 1rem; }
 .notif-toggles { display: flex; flex-direction: column; gap: .2rem; }
-.notif-toggle { display: flex; align-items: center; justify-content: space-between; padding: 10px 4px; border-bottom: 1px solid var(--border); }
+.notif-toggle { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem; padding: 10px 4px; border-bottom: 1px solid var(--border); }
 .notif-toggle:last-child { border-bottom: none; }
-.notif-toggle__label { font-weight: 600; }
+.notif-toggle__label { font-weight: 600; min-width: 0; }
 .member-row__grid, .member-row__rights { display: flex; flex-wrap: wrap; gap: .75rem; margin-bottom: .6rem; }
 .member-row__grid label, .member-row__rights label, .invite-rights label {
     font-size: .8rem; font-weight: 600; color: var(--ink-2); display: flex; flex-direction: column; gap: .25rem;
@@ -289,7 +321,7 @@ a:hover { text-decoration: underline; }
 .links em { color: var(--accent); font-style: normal; font-weight: 600; }
 
 /* ---------- Lot 2 : Enfants (master-détail) ---------- */
-.children__layout { display: grid; grid-template-columns: 300px 1fr; gap: 1.25rem; }
+.children__layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 1.25rem; }
 .children__list { display: flex; flex-direction: column; gap: .5rem; border-right: 1px solid var(--border-2); padding-right: 1.25rem; }
 .child-card { display: flex; align-items: center; gap: .6rem; padding: .6rem .7rem; border-radius: 16px; border: 1px solid var(--border); background: var(--card); text-decoration: none; color: var(--ink); }
 .child-card.is-active { border-color: var(--accent); background: var(--accent-soft); }
@@ -302,18 +334,18 @@ a:hover { text-decoration: underline; }
 .child-head { display: flex; align-items: center; gap: 1rem; }
 .child-head__name { font-family: var(--font-title); font-size: 28px; font-weight: 700; margin: 0; }
 .child-head__meta { color: var(--muted); }
-.child-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+.child-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
 .child-detail-col { display: flex; flex-direction: column; gap: 1.25rem; }
 .health-banner { background: #FBE9E2; border: 1px solid var(--accent); color: #7A3A22; padding: .75rem 1rem; border-radius: 12px; font-size: .9rem; }
 .info-row { display: flex; gap: .5rem; margin-bottom: .5rem; }
-.info-row input { flex: 1; padding: .4rem .6rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font: inherit; }
+.info-row input { flex: 1; min-width: 0; padding: .4rem .6rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font: inherit; }
 .info-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; }
 .info-list li { display: flex; justify-content: space-between; gap: 1rem; padding: 13px 16px; border-bottom: 1px solid var(--border); }
 .info-list li:last-child { border-bottom: none; }
 .info-list li strong { color: var(--muted); font-weight: 500; font-size: 14px; }
 .child-edit__actions { display: flex; gap: .5rem; margin-top: 1rem; }
 .note-form { display: flex; gap: .5rem; margin-bottom: 1rem; }
-.note-form textarea { flex: 1; padding: .5rem .7rem; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); font: inherit; resize: vertical; }
+.note-form textarea { flex: 1; min-width: 0; padding: .5rem .7rem; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); font: inherit; resize: vertical; }
 .notes { list-style: none; padding: 0; display: flex; flex-direction: column; gap: .6rem; }
 .note-item { display: flex; gap: .6rem; padding: 15px; background: var(--card); border: 1px solid var(--border); border-radius: 15px; }
 .note-item__meta { display: flex; gap: .6rem; align-items: baseline; }
@@ -325,16 +357,15 @@ a:hover { text-decoration: underline; }
 .access-list__level { margin-left: auto; font-weight: 600; font-size: 11px; padding: 5px 11px; border-radius: var(--radius-pill); }
 .access-list__level--edit { color: var(--accent-strong); background: var(--accent-soft); }
 .access-list__level--view { color: var(--positive-strong); background: var(--positive-soft); }
-@media (max-width: 900px) {
-    .children__layout { grid-template-columns: 1fr; }
-    .children__list { border-right: none; padding-right: 0; }
-    .child-detail-grid { grid-template-columns: 1fr; }
-}
+
 
 /* ---------- Lot 3 : Garde (calendrier) ---------- */
 .garde-layout { display: grid; grid-template-columns: 1fr 320px; gap: 22px; align-items: start; }
 .garde-aside { display: flex; flex-direction: column; gap: 1.25rem; }
 .garde-cal-card { border-radius: 20px; }
+/* Le calendrier ne peut pas descendre sous ~7×60 px : il défile dans sa propre carte, jamais la page. */
+.garde-cal-card, .rhythm-panel { overflow-x: auto; }
+.garde-cal { min-width: 420px; }
 .garde-cal__nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: .8rem; gap: 1rem; }
 .garde-cal__nav-actions { display: flex; align-items: center; gap: 12px; }
 .garde-cal__nav-btn {
@@ -355,6 +386,10 @@ a:hover { text-decoration: underline; }
 .garde-day[role="button"] { cursor: pointer; }
 .garde-day[role="button"]:hover { filter: brightness(0.97); }
 .garde-day__num { display: flex; align-items: center; justify-content: center; width: 27px; height: 27px; border-radius: 14px; font-weight: 600; font-size: 14px; }
+/* Marqueur du jour courant : seul repère d'orientation d'un calendrier navigable mois par mois.
+   La mini-semaine de l'accueil le posait déjà (`.home-custody__day.is-today`), pas le calendrier. */
+.garde-day--today { box-shadow: inset 0 0 0 2px var(--ink); }
+.garde-day--today .garde-day__num { background: var(--ink); color: #fff; }
 .garde-day__tag { position: absolute; bottom: .25rem; right: .35rem; font-size: .65rem; color: var(--muted); }
 /* Pastille d'activité de la famille liée (overlay §3.4), superposée sans masquer la couleur du parent. */
 .garde-day__overlay { position: absolute; top: .25rem; right: .3rem; width: 8px; height: 8px; border-radius: 50%; background: var(--linked); box-shadow: 0 0 0 1.5px var(--card); }
@@ -380,29 +415,131 @@ a:hover { text-decoration: underline; }
 .garde-ab-bar { display: flex; height: 8px; border-radius: 5px; overflow: hidden; margin-top: 10px; }
 .garde-ab-bar__a { flex: 1; background: var(--accent); }
 .garde-ab-bar__b { flex: 1; background: var(--positive); }
-.garde-config .garde-custom { margin: 1rem 0; }
-.garde-custom__grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-.garde-custom__grid select { padding: .3rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
 .garde-exc-form, .garde-rule-form { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: .6rem; }
 .garde-exc-form input, .garde-exc-form select, .garde-rule-form select { padding: .4rem .6rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); font: inherit; }
 .garde-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: .5rem; }
 .garde-list li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; padding: .6rem .8rem; background: var(--surface); border-radius: 12px; }
 .garde-holidays-actions { margin-bottom: .8rem; }
 
+/* ---------- Lot 3 : Garde — sélecteur de rythme (cartes + grille de nuits) ---------- */
+.sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.rhythm__intro { margin-bottom: 1rem; }
+.rhythm__lead { color: var(--muted); font-size: 14px; margin: .3rem 0 0; }
+
+/* Cartes-radio : un rythme = une carte cliquable, l'active se teinte terracotta. */
+.rhythm-cards {
+    border: 0; padding: 0; margin: 0 0 1.25rem;
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px;
+}
+.rhythm-card {
+    display: flex; align-items: flex-start; gap: 12px;
+    border: 1px solid var(--border-3); border-radius: var(--radius-card);
+    background: var(--card); padding: 16px 18px; cursor: pointer;
+    transition: border-color .15s, background .15s, box-shadow .15s;
+}
+.rhythm-card:hover { border-color: var(--muted-2); }
+.rhythm-card input { position: absolute; opacity: 0; width: 0; height: 0; }
+.rhythm-card:has(input:checked) {
+    border-color: var(--accent); background: var(--accent-soft);
+    box-shadow: 0 0 0 3px var(--accent-soft-2);
+}
+.rhythm-card:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rhythm-card__radio {
+    flex: 0 0 auto; width: 20px; height: 20px; margin-top: 2px;
+    border-radius: 50%; border: 2px solid var(--muted-2); background: var(--card);
+    display: grid; place-items: center; transition: border-color .15s;
+}
+.rhythm-card:has(input:checked) .rhythm-card__radio { border-color: var(--accent); }
+.rhythm-card:has(input:checked) .rhythm-card__radio::after {
+    content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--accent);
+}
+.rhythm-card__body { display: flex; flex-direction: column; gap: .2rem; min-width: 0; }
+.rhythm-card__title { font-family: var(--font-title); font-weight: 700; font-size: 16px; color: var(--ink); }
+.rhythm-card__desc { color: var(--muted); font-size: 13px; line-height: 1.35; }
+
+/* Panneau de configuration détaillée (custom / midweek), inséré sous les cartes. */
+.rhythm-panel {
+    background: var(--surface); border: 1px solid var(--border-2);
+    border-radius: var(--radius-card); padding: 18px 20px; margin-bottom: 1.25rem;
+}
+.rhythm-panel__head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1rem; }
+.rhythm-panel__title { font-family: var(--font-title); font-size: 17px; font-weight: 700; color: var(--ink); }
+.rhythm-panel__hint { color: var(--muted); font-size: 13px; margin: .25rem 0 0; max-width: 46ch; }
+.rhythm-legend { flex-wrap: wrap; }
+
+.week-block + .week-block { margin-top: 1rem; }
+.week-block__label { font-size: 12px; font-weight: 700; letter-spacing: .05em; color: var(--muted); text-transform: uppercase; margin-bottom: .5rem; }
+.nights { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+
+/* Une nuit = une carte tappable, colorée par parent (A terracotta, B teal, week-end neutre). */
+.night {
+    font: inherit; cursor: pointer; text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: .3rem;
+    padding: 12px 6px; border-radius: 13px; border: 1px solid var(--border);
+    background: var(--card); min-width: 0;
+    transition: transform .12s, filter .12s, box-shadow .12s;
+}
+.night:hover { transform: translateY(-1px); box-shadow: var(--shadow-soft); }
+.night:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.night--a { background: var(--accent-soft); border-color: var(--accent-soft-2); }
+.night--b { background: var(--positive-soft); border-color: #C9E0DA; }
+.night--we { background: repeating-linear-gradient(135deg, var(--surface), var(--surface) 6px, #ECE7DC 6px, #ECE7DC 12px); border-color: var(--border-3); border-style: dashed; }
+.night__dow { font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--muted-2); }
+.night__name { font-family: var(--font-title); font-weight: 700; font-size: 13.5px; line-height: 1.15; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.night--a .night__name { color: var(--accent-strong); }
+.night--b .night__name { color: var(--positive-strong); }
+.night--we .night__name { color: var(--muted); font-weight: 600; }
+
+/* Segmenté « le week-end commence chez ». */
+.mw-start { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin-top: 1rem; }
+.mw-start__label { color: var(--ink-2); font-size: 13.5px; font-weight: 600; }
+.segmented { display: inline-flex; gap: 2px; padding: 3px; background: var(--card); border: 1px solid var(--border-3); border-radius: var(--radius-pill); }
+.segmented__opt input { position: absolute; opacity: 0; width: 0; height: 0; }
+.segmented__opt span { display: block; padding: .35rem .9rem; border-radius: var(--radius-pill); font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer; transition: background .15s, color .15s; }
+.segmented__opt input:checked + span { background: var(--accent); color: #fff; }
+.segmented__opt input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Réglages techniques repliés par défaut (ancre, échange, mapping parents). */
+.rhythm-details { border-top: 1px dashed var(--border-3); padding-top: 1rem; margin-bottom: 1.25rem; }
+.rhythm-details > summary { cursor: pointer; list-style: none; font-size: .88rem; font-weight: 600; color: var(--accent); }
+.rhythm-details > summary::-webkit-details-marker { display: none; }
+.rhythm-details > summary::before { content: '▸ '; }
+.rhythm-details[open] > summary { margin-bottom: 1rem; }
+.rhythm-details[open] > summary::before { content: '▾ '; }
+
+.garde-dot--we { background: var(--surface); border: 1.5px dashed var(--muted-2); }
+
+@media (prefers-reduced-motion: reduce) {
+    .rhythm-card, .night, .segmented__opt span { transition: none; }
+    .night:hover { transform: none; }
+}
+
 /* ---------- Lot 4 : Agenda ---------- */
 .agenda-filters { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .8rem; }
 .agenda-chip { padding: .3rem .8rem; border-radius: var(--radius-pill); font-size: .82rem; font-weight: 600; border: 1px solid var(--border-3); color: var(--ink-2); background: var(--card); }
 .agenda-chip:hover { text-decoration: none; filter: brightness(.97); }
-.agenda-chip.is-active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft-2); }
 /* Chips teintés par catégorie (WAG-02) — surspécifie .agenda-chip. */
 .agenda-chip.pill--sport { color: var(--cat-sport); background: var(--cat-sport-bg); border-color: transparent; }
 .agenda-chip.pill--music { color: var(--cat-music); background: var(--cat-music-bg); border-color: transparent; }
 .agenda-chip.pill--school { color: var(--cat-school); background: var(--cat-school-bg); border-color: transparent; }
 .agenda-chip.pill--health { color: var(--cat-health); background: var(--cat-health-bg); border-color: transparent; }
 .agenda-chip.pill--other { color: var(--cat-other); background: var(--cat-other-bg); border-color: transparent; }
+/* DÉCLARÉ APRÈS les teintes de catégorie, à dessein : à spécificité égale la dernière règle gagne,
+   et l'état actif était donc écrasé par `border-color: transparent`. Le halo seul ne suffisait pas
+   (1,01:1 de contraste avec le fond du chip) : on ajoute un contour franc et une encre soutenue. */
+.agenda-chip.is-active {
+    border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft-2);
+    font-weight: 700; color: var(--accent-strong);
+}
 
 /* Interrupteur iOS partagé (overlay, réglages) */
 .switch { position: relative; display: inline-block; width: 46px; height: 27px; flex: 0 0 auto; }
+/* La case native est `opacity:0` mais reste focalisable : sans report du focus sur le curseur,
+   l'arrivée du focus clavier ne changeait rien à l'écran (WCAG 2.4.7). */
+.switch input:focus-visible + .switch__slider { outline: 2px solid var(--accent); outline-offset: 2px; }
 .switch input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
 .switch__slider { position: absolute; inset: 0; background: var(--border-2); border-radius: var(--radius-pill); transition: background .15s; }
 .switch__slider::before { content: ''; position: absolute; width: 21px; height: 21px; left: 3px; top: 3px; background: #fff; border-radius: 50%; box-shadow: 0 1px 2px rgba(41, 38, 33, .25); transition: transform .15s; }
@@ -549,3 +686,45 @@ a:hover { text-decoration: underline; }
     border-radius: 999px; color: var(--accent); background: var(--accent-soft); }
 .offline-card h1 { font-family: 'Bricolage Grotesque', system-ui, sans-serif; font-size: 1.5rem; margin: 0 0 .5rem; color: var(--ink); }
 .offline-card p { color: var(--ink-2); margin: 0 0 1.5rem; }
+
+/* =========================================================================
+   Repli responsive — DÉLIBÉRÉMENT EN FIN DE FEUILLE.
+   Ce bloc était placé avant la définition des composants : à spécificité égale la dernière
+   règle gagne, donc `.garde-layout`, `.settings-layout` et `.exchanges__layout` (définis plus
+   bas) n'étaient JAMAIS repliés — la page conservait une largeur plancher d'environ 900 px et
+   débordait horizontalement sur tablette et téléphone. Toute nouvelle règle de repli doit
+   rester ici, après le composant qu'elle surcharge.
+   ========================================================================= */
+@media (max-width: 900px) {
+    /* `minmax(0, …)` et non `1fr` : `1fr` vaut `minmax(auto, 1fr)` et la colonne ne pouvait pas
+       descendre sous le min-content du contenu, ce qui élargissait la page au lieu de la replier. */
+    .app-shell { grid-template-columns: minmax(0, 1fr); }
+    .sidebar { flex-direction: row; align-items: center; overflow-x: auto; padding: .6rem .8rem; gap: .2rem; }
+    .sidebar__brand { padding: .4rem .6rem; }
+    .sidebar__spacer { display: none; }
+    .sidebar__eyebrow { display: none; }
+    .sidebar__switcher { margin-bottom: 0; min-width: 160px; }
+    .sidebar__profile { border-top: none; padding-top: 0; margin-top: 0; }
+    .sidebar__profile-main .sidebar__profile-id { display: none; }
+    .sidebar__nav { display: flex; }
+    .main { padding: 1.25rem 1.1rem; }
+    .grid-2 { grid-template-columns: minmax(0, 1fr); }
+    .home-grid { grid-template-columns: minmax(0, 1fr); }
+    .garde-layout { grid-template-columns: minmax(0, 1fr); }
+    .rhythm-cards { grid-template-columns: minmax(0, 1fr); }
+    .night { padding: 10px 4px; }
+    .night__name { font-size: 12px; }
+    .settings-layout { grid-template-columns: minmax(0, 1fr); }
+    .settings-nav { flex-direction: row; flex-wrap: wrap; border-right: none; border-bottom: 1px solid var(--border-2); position: static; padding: 0 0 .5rem; }
+    .exchanges__layout { grid-template-columns: minmax(0, 1fr); }
+
+    .children__layout { grid-template-columns: minmax(0, 1fr); }
+    .children__list { border-right: none; padding-right: 0; }
+    .child-detail-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* La fiche enfant et ses notes côte à côte ne tiennent plus dès ~1100 px avec la barre latérale
+   de 252 px : on empile avant d'atteindre le point de rupture principal. */
+@media (max-width: 1100px) {
+    .child-detail-grid { grid-template-columns: minmax(0, 1fr); }
+}

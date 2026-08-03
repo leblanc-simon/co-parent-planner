@@ -52,6 +52,8 @@ class NoteResource
     public string $childId = '';
     public string $text = '';
     public ?string $noteDate = null;
+    /** Libellé français de `noteDate` : le gabarit affichait la valeur ISO à l'écran. */
+    public ?string $noteDateLabel = null;
     public string $authorMembershipId = '';
     public string $authorName = '';
     public ?string $authorColor = null;
@@ -66,10 +68,11 @@ class NoteResource
         $dto->childId = (string) $note->getChild()->getId();
         $dto->text = $note->getText();
         $dto->noteDate = $note->getNoteDate()->format('Y-m-d');
+        $dto->noteDateLabel = $note->getNoteDate()->format('d/m/Y');
         // Auteur anonymisé (membre retiré) : fil préservé, identité neutralisée (§4.8).
         if (null !== $author) {
             $dto->authorMembershipId = (string) $author->getId();
-            $dto->authorName = $author->getUser()->getFullName() ?? $author->getUser()->getEmail();
+            $dto->authorName = $author->getUser()->getFullName() ?: $author->getUser()->getEmail();
             $dto->authorColor = $author->getDisplayColor();
         } else {
             $dto->authorName = 'Membre supprimé';

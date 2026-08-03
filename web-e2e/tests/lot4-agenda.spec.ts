@@ -45,6 +45,9 @@ test('Agenda : créer un événement, une série, filtrer, éditer, supprimer, �
   page: Page;
   request: import('@playwright/test').APIRequestContext;
 }) => {
+  // Les actions destructives demandent désormais confirmation (window.confirm) ; Playwright
+  // rejette les dialogues par défaut, on les accepte donc explicitement.
+  page.on('dialog', (d) => d.accept());
   const stamp = Date.now();
   await signUpAndLogin(page, request, `e2e-agenda-${stamp}@example.test`, 'Alice Agenda');
 

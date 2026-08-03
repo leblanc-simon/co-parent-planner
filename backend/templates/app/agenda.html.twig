@@ -20,6 +20,7 @@
      data-agenda-family-id-value="{{ family.id }}"
      data-agenda-timezone-value="{{ timezone }}">
     <p class="form-error" data-agenda-target="error" role="alert" hidden></p>
+    <p class="form-success" data-agenda-target="notice" role="status" aria-live="polite" hidden></p>
 
     {# Abonnement temps réel : une mutation d'agenda rafraîchit la page (Turbo Stream). #}
     <turbo-stream-source src="{{ mercureHub }}?topic={{ agendaTopic|url_encode }}"></turbo-stream-source>
@@ -38,9 +39,12 @@
             </div>
         </div>
         <div class="agenda-filters">
-            <a class="agenda-chip {{ activeCategories is empty ? 'is-active' }}" href="{{ path('app_agenda', { month: monthValue }) }}">Toutes</a>
+            <a class="agenda-chip {{ activeCategories is empty ? 'is-active' }}"
+               {% if activeCategories is empty %}aria-current="page"{% endif %}
+               href="{{ path('app_agenda', { month: monthValue }) }}">Toutes</a>
             {% for c in categories %}
                 <a class="agenda-chip pill--{{ catClass[c.value] }} {{ c.value in activeCategories ? 'is-active' }}"
+                   {% if c.value in activeCategories %}aria-current="page"{% endif %}
                    href="{{ path('app_agenda', { month: monthValue, category: c.value }) }}">{{ catLabel[c.value] }}</a>
             {% endfor %}
         </div>
@@ -165,7 +169,7 @@
                                 {% endif %}
                                 <div class="agenda-edit__actions">
                                     <button class="btn btn--ghost" type="submit">Enregistrer</button>
-                                    <button class="btn btn--ghost" type="button" data-action="agenda#deleteEvent">Supprimer</button>
+                                    <button class="btn btn--ghost btn--danger" type="button" data-action="agenda#deleteEvent">Supprimer</button>
                                 </div>
                             </form>
                             {% endif %}

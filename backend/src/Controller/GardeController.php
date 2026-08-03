@@ -121,8 +121,11 @@ final class GardeController extends AbstractController
             'prevMonth' => $monthStart->modify('-1 month')->format('Y-m'),
             'nextMonth' => $monthStart->modify('+1 month')->format('Y-m'),
             'stats' => $this->stats->compute($family, $monthStart, $monthEnd),
-            'exceptions' => $canEdit ? $this->exceptions->findByFamily($family) : [],
-            'holidays' => $this->holidays->findByFamily($family),
+            // Périodes CHEVAUCHANT le mois affiché seulement : le panneau jouxte « Statistiques du
+            // mois » et listait tout l'historique de la famille, y compris des vacances déjà passées
+            // (l'import ramène l'année scolaire entière).
+            'exceptions' => $this->overlappingMonth($this->exceptions->findByFamily($family), $monthStart, $monthEnd),
+            'holidays' => $this->overlappingMonth($this->holidays->findByFamily($family), $monthStart, $monthEnd),
             'mercureHub' => $this->hub->getPublicUrl(),
             'custodyTopic' => \sprintf('/families/%s/custody', $family->getId()),
         ]);
@@ -140,14 +143,20 @@ final class GardeController extends AbstractController
 
     /**
      * Construit la grille du mois (semaines de 7 cases, lundi→dimanche), chaque case portant le
-     * jour, son parent (slot A/B), sa source et son appartenance au mois.
+     * jour, son parent (slot A/B), sa source, son appartenance au mois et le marquage du jour
+     * courant (seul repère d'orientation d'un calendrier navigable mois par mois — la mini-semaine
+     * de l'accueil le calcule déjà, cf. HomeController::custodyWeek()).
      *
      * @param array<string, \App\Entity\CustodyDay> $daysByDate
      *
-     * @return list<list<array{date: string, day: int, inMonth: bool, slot: ?string, source: ?string}>>
+     * @return list<list<array{date: string, day: int, inMonth: bool, slot: ?string, source: ?string, isToday: bool}>>
      */
     private function buildWeeks(\DateTimeImmutable $monthStart, \DateTimeImmutable $monthEnd, array $daysByDate, ?\Symfony\Component\Uid\Uuid $parentAId): array
     {
+        // Comparaison en dates calendaires Europe/Paris (jamais en instants) — même convention que
+        // le moteur (CustodyDateMath) pour éviter tout décalage de fuseau.
+        $todayKey = $this->clock->now()->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d');
+
         // Démarre au lundi de la semaine du 1er, finit au dimanche de la semaine du dernier jour
         // (N : 1 = lundi … 7 = dimanche).
         $gridStart = $monthStart->modify('-'.((int) $monthStart->format('N') - 1).' days');
@@ -169,6 +178,7 @@ final class GardeController extends AbstractController
                 'inMonth' => $cursor->format('Y-m') === $monthStart->format('Y-m'),
                 'slot' => $slot,
                 'source' => $cd?->getSource()->value,
+                'isToday' => $key === $todayKey,
             ];
             if (7 === \count($week)) {
                 $weeks[] = $week;
@@ -178,6 +188,31 @@ final class GardeController extends AbstractController
         }
 
         return $weeks;
+    }
+
+    /**
+     * Filtre des périodes datées (exceptions, vacances) sur celles qui chevauchent le mois affiché.
+     * Comparaison en dates calendaires (Y-m-d), jamais en instants — même convention que le moteur.
+     *
+     * @template T of \App\Entity\CustodyException|\App\Entity\SchoolHoliday
+     *
+     * @param iterable<T> $periods
+     *
+     * @return list<T>
+     */
+    private function overlappingMonth(iterable $periods, \DateTimeImmutable $monthStart, \DateTimeImmutable $monthEnd): array
+    {
+        $from = $monthStart->format('Y-m-d');
+        $to = $monthEnd->format('Y-m-d');
+
+        $kept = [];
+        foreach ($periods as $period) {
+            if ($period->getStartDate()->format('Y-m-d') <= $to && $period->getEndDate()->format('Y-m-d') >= $from) {
+                $kept[] = $period;
+            }
+        }
+
+        return $kept;
     }
 
     private function frenchMonth(\DateTimeImmutable $d): string

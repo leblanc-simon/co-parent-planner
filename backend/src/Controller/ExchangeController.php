@@ -83,6 +83,10 @@ final class ExchangeController extends AbstractController
             'canEdit' => $active->can(RightDomain::Exchanges, RightLevel::Edit),
             'exchanges' => $list,
             'selected' => $selected,
+            // Le gabarit en a besoin pour formater l'heure des messages : le filtre `date` de Twig
+            // reconvertit une chaîne ATOM vers le fuseau PHP par défaut (UTC), ce qui affichait
+            // 02:21 (Paris) comme « 00:21 ».
+            'timezone' => $family->getTimezone(),
             'statusFilter' => null !== $statusFilter ? $statusFilter->value : '',
             'children' => $this->children->findBy(['family' => $family], ['firstName' => 'ASC']),
             'mercureHub' => $this->hub->getPublicUrl(),

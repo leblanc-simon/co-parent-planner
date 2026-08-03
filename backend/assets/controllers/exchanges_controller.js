@@ -1,14 +1,14 @@
-import { Controller } from '@hotwired/stimulus';
+import { ApiController } from '../api_base.js';
 
 /*
  * Mutations de l'écran Échanges (Lot 6) via l'API REST, scopées X-Family-Id. Succès → rechargement
  * (état canonique ; le temps réel Mercure rafraîchit aussi chez les autres membres).
  */
-export default class extends Controller {
-    static targets = ['error', 'type', 'options', 'optionsRows'];
-    static values = { familyId: String };
+export default class extends ApiController {
+    static targets = ['type', 'options', 'optionsRows'];
 
     connect() {
+        super.connect();
         this.toggleType();
     }
 
@@ -23,8 +23,8 @@ export default class extends Controller {
         const row = document.createElement('div');
         row.className = 'exchange-option-row';
         row.innerHTML =
-            '<input name="optionLabel[]" placeholder="Libellé de l\'option" maxlength="200">' +
-            '<input name="optionSub[]" placeholder="Précision (optionnel)" maxlength="255">';
+            '<input name="optionLabel[]" placeholder="Libellé de l\'option" maxlength="200" aria-label="Libellé de l\'option">' +
+            '<input name="optionSub[]" placeholder="Précision (optionnel)" maxlength="255" aria-label="Précision de l\'option">';
         this.optionsRowsTarget.appendChild(row);
     }
 
@@ -46,58 +46,43 @@ export default class extends Controller {
                 .map((el, i) => ({ label: el.value.trim(), sub: subs[i] ? subs[i].value.trim() || null : null }))
                 .filter((o) => o.label !== '');
         }
-        this._send('POST', `/api/families/${this.familyIdValue}/exchanges`, body);
+        this._send('POST', `/api/families/${this.familyIdValue}/exchanges`, body, {
+            event,
+            notice: 'decision' === type ? 'Décision ouverte.' : 'Discussion ouverte.',
+            idempotent: true,
+        });
     }
 
     postMessage(event) {
         event.preventDefault();
         const f = event.currentTarget;
-        this._send('POST', `/api/exchanges/${f.dataset.exchangeId}/messages`, { text: this._val(f, 'text') });
+        this._send('POST', `/api/exchanges/${f.dataset.exchangeId}/messages`, { text: this._val(f, 'text') }, {
+            event,
+            notice: 'Message envoyé.',
+            idempotent: true,
+        });
     }
 
+    // Voter pour une option : action principale de l'écran, donc sans confirmation (le consensus,
+    // lui, est arbitré côté serveur). L'ambiguïté du libellé est traitée dans le gabarit.
     decide(event) {
         const el = event.currentTarget;
-        this._send('POST', `/api/exchanges/${el.dataset.exchangeId}/decide`, { optionId: el.dataset.optionId });
+        this._send('POST', `/api/exchanges/${el.dataset.exchangeId}/decide`, { optionId: el.dataset.optionId }, {
+            event,
+            notice: 'Votre choix est enregistré.',
+        });
     }
 
     closeExchange(event) {
         if (!window.confirm('Clore cet échange ?')) return;
-        this._send('PATCH', `/api/exchanges/${event.currentTarget.dataset.exchangeId}`, { status: 'decided' });
+        this._send('PATCH', `/api/exchanges/${event.currentTarget.dataset.exchangeId}`, { status: 'decided' }, {
+            event,
+            notice: 'Échange clos.',
+        });
     }
 
     _val(form, name) {
         const el = form.querySelector(`[name="${name}"]`);
         return el ? el.value : '';
-    }
-
-    async _send(method, url, body) {
-        if (this.hasErrorTarget) this.errorTarget.hidden = true;
-        try {
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'PATCH' === method ? 'application/merge-patch+json' : 'application/json',
-                    Accept: 'application/json',
-                    'X-Family-Id': this.familyIdValue,
-                },
-                body: null === body ? undefined : JSON.stringify(body),
-                credentials: 'same-origin',
-            });
-            if (response.ok) {
-                window.location.reload();
-                return;
-            }
-            const data = await response.json().catch(() => ({}));
-            this._showError(data.detail || data['hydra:description'] || 'Une erreur est survenue.');
-        } catch (e) {
-            this._showError('Connexion impossible. Réessayez.');
-        }
-    }
-
-    _showError(message) {
-        if (!this.hasErrorTarget) return;
-        this.errorTarget.textContent = message;
-        this.errorTarget.hidden = false;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 }

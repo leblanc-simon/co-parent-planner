@@ -4,15 +4,23 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\Membership;
 use App\Entity\User;
+use App\Enum\ExchangeStatus;
 use App\Enum\InvitationStatus;
 use App\Enum\RightDomain;
 use App\Enum\RightLevel;
+use App\Repository\CustodyDayRepository;
+use App\Repository\CustodyPatternRepository;
+use App\Repository\ExchangeRepository;
 use App\Repository\InvitationRepository;
+use App\Repository\NoteRepository;
 use App\Repository\UserRepository;
 use App\Security\Auth\TokenHasher;
 use App\Service\Agenda\UpcomingEventsFinder;
+use App\Service\Exchange\ExchangeAssembler;
 use App\Web\ActiveFamilyResolver;
+use Psr\Clock\ClockInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Clock\Clock;
@@ -21,9 +29,10 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * Coquille applicative (US-HOME-1). Au Lot 0 : shell + états vides ; le contenu des encarts
- * (garde, agenda, échanges, notes) est rempli aux lots métier. Onboarding obligatoire si
- * l'utilisateur n'a aucune famille (US-ONB-1 sc.6).
+ * Accueil applicatif (US-HOME-1) : synthèse « d'un coup d'œil » des 4 encarts — garde de la semaine,
+ * agenda à venir, décisions ouvertes, dernières notes — tous scopés à la famille active et masqués
+ * selon les droits du membre connecté. Onboarding obligatoire si l'utilisateur n'a aucune famille
+ * (US-ONB-1 sc.6).
  */
 final class HomeController extends AbstractController
 {
@@ -31,6 +40,12 @@ final class HomeController extends AbstractController
         private readonly Security $security,
         private readonly ActiveFamilyResolver $activeFamily,
         private readonly UpcomingEventsFinder $upcomingEvents,
+        private readonly ExchangeRepository $exchanges,
+        private readonly ExchangeAssembler $exchangeAssembler,
+        private readonly CustodyDayRepository $custodyDays,
+        private readonly CustodyPatternRepository $custodyPatterns,
+        private readonly NoteRepository $notes,
+        private readonly ClockInterface $clock,
         private readonly InvitationRepository $invitations,
         private readonly UserRepository $users,
         private readonly TokenHasher $tokenHasher,
@@ -51,10 +66,20 @@ final class HomeController extends AbstractController
         }
 
         $active = $this->activeFamily->active($memberships);
+        $tz = new \DateTimeZone($active?->getFamily()->getTimezone() ?? 'Europe/Paris');
 
-        // Bloc « À venir » (US-AG-7) : masqué si le membre n'a pas agenda ≥ view.
+        // Chaque encart est masqué (liste vide / null) si le membre n'a pas le droit `view` du domaine —
+        // même garde-fou que le bloc agenda, cohérent avec les Voters de domaine (US-HOME-1).
         $upcoming = (null !== $active && $active->can(RightDomain::Agenda, RightLevel::View))
             ? $this->upcomingEvents->upcoming($active->getFamily(), 4)
+            : [];
+
+        // « À décider ensemble » (US-EX-*) : jusqu'à 4 décisions/discussions ouvertes de la famille.
+        $openExchanges = (null !== $active && $active->can(RightDomain::Exchanges, RightLevel::View))
+            ? $this->exchangeAssembler->list(
+                \array_slice($this->exchanges->listForFamily($active->getFamily(), ExchangeStatus::Open), 0, 4),
+                $tz,
+            )
             : [];
 
         return $this->render('app/home.html.twig', [
@@ -62,8 +87,95 @@ final class HomeController extends AbstractController
             'memberships' => $memberships,
             'activeMembership' => $active,
             'upcoming' => $upcoming,
+            // Nommé `homeExchanges` (et non `openExchanges`) : le shell réutilise `openExchanges`
+            // pour le badge de navigation (`exchanges_open_count()`) et l'écraserait dans ce contexte.
+            'homeExchanges' => $openExchanges,
+            'custody' => null !== $active ? $this->custodyWeek($active) : null,
+            'recentNotes' => null !== $active ? $this->recentNotes($active) : [],
             'timezone' => $active?->getFamily()->getTimezone() ?? 'Europe/Paris',
         ]);
+    }
+
+    /**
+     * Semaine de garde courante (lundi→dimanche, Europe/Paris) mappée en slots A/B, ou `null` si la
+     * famille est unie ou si le membre n'a pas `custody ≥ view`. Miroir de `GardeController::buildWeeks`.
+     *
+     * @return array{cells: list<array{dow: int, day: int, slot: ?string, source: ?string, isToday: bool}>, names: array{A: string, B: string}}|null
+     */
+    private function custodyWeek(Membership $active): ?array
+    {
+        $family = $active->getFamily();
+        if (!$family->hasCustody() || !$active->can(RightDomain::Custody, RightLevel::View)) {
+            return null;
+        }
+
+        $today = $this->clock->now()->setTimezone(new \DateTimeZone('Europe/Paris'))->setTime(0, 0);
+        $weekStart = $today->modify('-'.((int) $today->format('N') - 1).' days'); // lundi
+        $todayKey = $today->format('Y-m-d');
+
+        $pattern = $this->custodyPatterns->findOneByFamily($family);
+        $parentA = $pattern?->getParentA();
+        $parentB = $pattern?->getParentB();
+        $parentAId = $parentA?->getId();
+
+        $byDate = [];
+        foreach ($this->custodyDays->findRange($family, $weekStart, $weekStart->modify('+6 days')) as $d) {
+            $byDate[$d->getDate()->format('Y-m-d')] = $d;
+        }
+
+        $cells = [];
+        $cursor = $weekStart;
+        for ($i = 0; $i < 7; ++$i) {
+            $key = $cursor->format('Y-m-d');
+            $cd = $byDate[$key] ?? null;
+            $slot = null;
+            if (null !== $cd && null !== $cd->getParentMembership()) {
+                $slot = (null !== $parentAId && $cd->getParentMembership()->getId()->equals($parentAId)) ? 'A' : 'B';
+            }
+            $cells[] = [
+                'dow' => (int) $cursor->format('w'),
+                'day' => (int) $cursor->format('j'),
+                'slot' => $slot,
+                'source' => $cd?->getSource()->value,
+                'isToday' => $key === $todayKey,
+            ];
+            $cursor = $cursor->modify('+1 day');
+        }
+
+        $nameOf = static fn (?Membership $m): string => null !== $m ? ($m->getUser()->getFullName() ?: $m->getUser()->getEmail()) : '';
+
+        return [
+            'cells' => $cells,
+            'names' => ['A' => $nameOf($parentA) ?: 'Parent A', 'B' => $nameOf($parentB) ?: 'Parent B'],
+        ];
+    }
+
+    /**
+     * Dernières notes de la famille (tous enfants), ou `[]` si le membre n'a pas `children_notes ≥ view`.
+     * Le texte est déchiffré de façon transparente par Doctrine ; l'auteur peut être `null` (anonymisé).
+     *
+     * @return list<array{childName: string, authorName: string, authorColor: ?string, date: \DateTimeImmutable, text: string}>
+     */
+    private function recentNotes(Membership $active): array
+    {
+        if (!$active->can(RightDomain::ChildrenNotes, RightLevel::View)) {
+            return [];
+        }
+
+        $rows = [];
+        foreach ($this->notes->findRecentByFamily($active->getFamily(), 4) as $note) {
+            $author = $note->getAuthorMembership();
+            $rows[] = [
+                'childName' => $note->getChild()->getFirstName(),
+                'authorName' => null !== $author ? ($author->getUser()->getFullName() ?: $author->getUser()->getEmail()) : 'Membre retiré',
+                'authorColor' => $author?->getDisplayColor(),
+                // Date sémantique (jour concerné), identique à l'écran Enfants ; `date` pur → pas de fuseau.
+                'date' => $note->getNoteDate(),
+                'text' => $note->getText(),
+            ];
+        }
+
+        return $rows;
     }
 
     #[Route('/onboarding', name: 'app_onboarding', methods: ['GET'])]

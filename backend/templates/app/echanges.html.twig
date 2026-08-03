@@ -15,6 +15,7 @@
 {% else %}
 <div data-controller="exchanges" data-exchanges-family-id-value="{{ family.id }}">
     <p class="form-error" data-exchanges-target="error" role="alert" hidden></p>
+    <p class="form-success" data-exchanges-target="notice" role="status" aria-live="polite" hidden></p>
 
     {# Abonnement temps réel : liste (badge) + détail ouvert (fil, options, statut) → refresh Turbo. #}
     <turbo-stream-source src="{{ mercureHub }}?topic={{ listTopic|url_encode }}{% if detailTopic %}&topic={{ detailTopic|url_encode }}{% endif %}"></turbo-stream-source>
@@ -140,7 +141,7 @@
                             <div class="exchange-message__body">
                                 <div class="exchange-message__meta">
                                     <strong>{{ m.authorName ?: 'Membre supprimé' }}</strong>
-                                    <time datetime="{{ m.sentAt }}">{{ m.sentAt|date('d/m H:i') }}</time>
+                                    <time datetime="{{ m.sentAt }}">{{ m.sentAt|date('d/m H:i', timezone) }}</time>
                                 </div>
                                 <p class="exchange-message__text">{{ m.text }}</p>
                             </div>

@@ -8,7 +8,7 @@
 {% block main %}
 <header class="main__header">
     <div>
-        <div class="eyebrow">{{ "now"|date("d/m/Y") }}</div>
+        <div class="eyebrow">{{ "now"|date("d/m/Y", timezone) }}</div>
         <h1>Bonjour {{ user.fullName ?: user.email }}</h1>
     </div>
     <div class="main__header-actions">
@@ -23,10 +23,24 @@
     <div class="home-col">
         <section class="card card--accent">
             <div class="eyebrow">Cette semaine</div>
-            {% if activeMembership.family.hasCustody %}
-                <p class="empty-state">Le planning de garde s'affichera ici.</p>
-            {% else %}
+            {% if not activeMembership.family.hasCustody %}
                 <p>Toute la famille est réunie.</p>
+            {% elseif custody and custody.cells|filter(c => c.slot)|length %}
+                <div class="garde-legend home-custody__legend">
+                    <span><i class="garde-dot garde-dot--a"></i> {{ custody.names.A }}</span>
+                    <span><i class="garde-dot garde-dot--b"></i> {{ custody.names.B }}</span>
+                </div>
+                <div class="home-custody">
+                    {% for cell in custody.cells %}
+                    <div class="home-custody__day home-custody__day--{{ cell.slot == 'A' ? 'a' : (cell.slot == 'B' ? 'b' : 'none') }}{{ cell.isToday ? ' is-today' }}">
+                        <span class="home-custody__dow">{{ dowFr[cell.dow] }}</span>
+                        <span class="home-custody__num">{{ cell.day }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                <a class="section-head__link" href="{{ path('app_garde') }}">Planning complet →</a>
+            {% else %}
+                <p class="empty-state">Le planning de garde s'affichera ici.</p>
             {% endif %}
         </section>
 
@@ -60,12 +74,53 @@
 
     <div class="home-col">
         <section class="card">
-            <div class="eyebrow">À décider ensemble</div>
-            <p class="empty-state">Aucun échange ouvert.</p>
+            <div class="section-head">
+                <div class="eyebrow">À décider ensemble</div>
+                {% if homeExchanges|length %}<a class="section-head__link" href="{{ path('app_echanges') }}">Tous les échanges →</a>{% endif %}
+            </div>
+            {% if homeExchanges|length %}
+                <div class="home-stack">
+                    {% for ex in homeExchanges %}
+                    <a class="exchange-card" href="{{ path('app_echanges', { exchange: ex.id }) }}">
+                        <div class="exchange-card__head">
+                            <span class="exchange-tag exchange-tag--{{ ex.type }}">{{ ex.type == 'decision' ? 'Décision' : 'Discussion' }}</span>
+                            {% if ex.overdue %}<span class="exchange-tag exchange-tag--overdue">En retard</span>{% endif %}
+                        </div>
+                        <strong class="exchange-card__title">{{ ex.title }}</strong>
+                        <div class="exchange-card__meta">
+                            {{ ex.childId ? 'Un enfant' : 'Toute la famille' }} · {{ ex.messageCount }} message{{ ex.messageCount > 1 ? 's' }}{% if ex.deadline %} · échéance {{ ex.deadline|date('d/m/Y') }}{% endif %}
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty-state">Aucun échange ouvert.</p>
+            {% endif %}
         </section>
         <section class="card">
-            <div class="eyebrow">Dernières notes</div>
-            <p class="empty-state">Aucune note pour le moment.</p>
+            <div class="section-head">
+                <div class="eyebrow">Dernières notes</div>
+                {% if recentNotes|length %}<a class="section-head__link" href="{{ path('app_children') }}">Toutes les notes →</a>{% endif %}
+            </div>
+            {% if recentNotes|length %}
+                <ul class="notes">
+                    {% for note in recentNotes %}
+                    <li class="note-item">
+                        <span class="avatar avatar--22" style="background: {{ note.authorColor ?: '#C2643D' }}">{{ note.authorName|first|upper }}</span>
+                        <div class="note-item__body">
+                            <div class="note-item__meta">
+                                <strong>{{ note.authorName }}</strong>
+                                <span class="note-item__child">sur {{ note.childName }}</span>
+                                <time datetime="{{ note.date|date('Y-m-d') }}">{{ note.date|date('d/m') }}</time>
+                            </div>
+                            <p class="note-item__text">{{ note.text }}</p>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="empty-state">Aucune note pour le moment.</p>
+            {% endif %}
         </section>
     </div>
 </div>

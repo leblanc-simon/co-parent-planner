@@ -46,8 +46,11 @@ Deux effets de bord ont été traités dans la foulée, parce que le correctif d
   ou confirmation de succès pour une mutation) — au passage, la suite passe de 4 min 30 à 42 s.
   Un test qui **exerce** réellement une mise à jour poussée reste à écrire.
 
-Un point reste ouvert, hors périmètre d'un correctif : le **point d'attention produit** en fin de
-document (chiffrement de `children.first_name` / `school_label` / `info`) attend un arbitrage PO.
+Le **point d'attention produit** en fin de document est **tranché (PO, 2026-08-27) : ces champs
+seront chiffrés**, dans un second temps. La décision est consignée au contrat (`specs/cdc.md` §5.2,
+les trois champs passent 🔒) et au registre (`backend/docs/registre-donnees.md`, sensibilité « à
+chiffrer » tant que ce n'est pas livré) ; elle **révise la décision §5.4 #4**. Rien n'est chiffré à
+ce jour : la base reste lisible pour ces trois colonnes.
 
 ## Méthode
 
@@ -461,16 +464,22 @@ Impact faible et, en l'état, largement théorique — la déconnexion ne décon
 
 ## Point d'attention produit (arbitrage PO, pas un défaut d'implémentation)
 
-`children.first_name`, `children.school_label` et `children.info` (champ libre) sont stockés **en
-clair** — conforme au cdc §5.2, qui ne les marque pas 🔒. Mais l'objectif énoncé dans `CLAUDE.md`
-(« un dump SQL brut ne doit révéler ni identités ni contenus ») n'est alors pas tenu pour les
-mineurs :
+> **Arbitrage rendu le 2026-08-27 : on chiffre. Implémentation dans un second temps** — le cdc §5.2
+> marque désormais les trois champs 🔒 et le registre porte la mention « à chiffrer ».
+
+`children.first_name`, `children.school_label` et `children.info` (champ libre) étaient stockés **en
+clair** — conforme au cdc §5.2 **d'alors**, qui ne les marquait pas 🔒. Mais l'objectif énoncé dans
+`CLAUDE.md` (« un dump SQL brut ne doit révéler ni identités ni contenus ») n'est alors pas tenu pour
+les mineurs :
 
 ```
 Léa | CM2 - École Jules Ferry | [{"label":"Pointure","value":"34"}]
 ```
 
-À trancher : étendre le chiffrement à ces champs, ou assumer et documenter l'écart.
+Tranché : **étendre le chiffrement à ces champs**. Le travail restant est décrit dans
+`backend/docs/registre-donnees.md` (types Doctrine, migration de chiffrement des lignes existantes,
+`schoolLabel` à ajouter au registre, et le tri SQL sur le prénom qui devra passer côté PHP ou par un
+index aveugle).
 
 ## Hypothèses examinées et écartées
 

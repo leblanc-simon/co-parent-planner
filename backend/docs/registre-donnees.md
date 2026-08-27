@@ -34,13 +34,26 @@ Dernière mise à jour : 2026-07-10 (Lot 8 — RGPD Manager actif).
 
 | Champ | Catégorie | Sensibilité | Base légale | Finalité | Conservation | Destinataires |
 |---|---|---|---|---|---|---|
-| `Child.firstName` | Identité (mineur) | Standard (non chiffré — décision §5.4 #4) | Exécution du contrat | Identifier/afficher l'enfant | Durée de vie du profil ; purge RGPD (Lot 8) | Membres habilités de la famille |
-| `Child.info` | Contenu | Standard (paires libres, **aucune donnée de santé**) | Exécution du contrat | Informations pratiques libres | Durée de vie du profil ; purge RGPD (Lot 8) | Membres habilités de la famille |
+| `Child.firstName` | Identité (mineur) | ⏳ **À chiffrer** (décision PO 2026-08-27 ; en clair tant que non livré) | Exécution du contrat | Identifier/afficher l'enfant | Durée de vie du profil ; purge RGPD (Lot 8) | Membres habilités de la famille |
+| `Child.info` | Contenu | ⏳ **À chiffrer** (paires libres, **aucune donnée de santé** ; décision PO 2026-08-27) | Exécution du contrat | Informations pratiques libres | Durée de vie du profil ; purge RGPD (Lot 8) | Membres habilités de la famille |
 | `Note.text` | Contenu | 🔒 Chiffré | Exécution du contrat | Partage d'informations entre co-parents | Durée de vie de la note ; anonymisation auteur / purge (Lot 8) | Membres habilités (children_notes ≥ view) |
 
 > `Child.birthDate` (date de naissance) : donnée d'un mineur ; portée par l'entité `Child` au même
 > titre que `firstName`/`info` ci-dessus (non marquée `#[PersonalData]` séparément car simple date,
 > couverte par la finalité du profil). Aucun champ médical typé n'est créé (invariant permanent).
+
+> **⏳ Décision PO du 2026-08-27, implémentation différée — chiffrer les informations sur les enfants.**
+> `Child.firstName`, `Child.schoolLabel` et `Child.info` passent en 🔒 (AES-256-GCM applicatif, comme
+> `User.fullName` ou `Note.text`) : ce sont des données de **mineurs**, et elles étaient les dernières
+> à rendre un dump SQL brut lisible. Cela **révise la décision §5.4 #4** (« non chiffré, tri/recherche
+> serveur conservés »). À prévoir au moment de l'implémentation : type Doctrine `encrypted_string`
+> (et variante pour le `jsonb` de `info`), migration de **chiffrement des lignes existantes**,
+> `encrypted: true` dans les attributs `#[PersonalData]`, `schoolLabel` **ajouté au registre** (il n'y
+> figure pas aujourd'hui), et surtout la perte du **tri/filtre SQL sur le prénom** — le tri
+> `['firstName' => 'ASC']` des requêtes enfants devra passer côté PHP ou par un index aveugle
+> (`BlindIndexHasher`, déjà utilisé pour `Invitation.emailHash`). Tant que ce n'est pas livré, la
+> sensibilité affichée ci-dessus est « à chiffrer » et non « chiffré » : le registre ne doit pas
+> promettre une protection qui n'existe pas encore.
 
 ## Champs (Lot 4 — Agenda)
 

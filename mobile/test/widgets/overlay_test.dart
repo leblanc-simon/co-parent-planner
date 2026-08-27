@@ -1,4 +1,5 @@
 import 'package:coparentplanner/core/session/session_scope.dart';
+import 'package:coparentplanner/core/sync/read_cache.dart';
 import 'package:coparentplanner/api/generated/export.dart' as api;
 import 'package:coparentplanner/features/agenda/data/agenda_repository.dart';
 import 'package:coparentplanner/features/agenda/data/overlay_repository.dart';
@@ -68,8 +69,13 @@ void main() {
       membersRepo = MockMembersRepository();
       childrenRepo = MockChildrenRepository();
       when(
-        () => agendaRepo.listEvents('u-test', 'fam-1'),
-      ).thenAnswer((_) async => const []);
+        () => agendaRepo.listEvents(
+          'u-test',
+          'fam-1',
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+        ),
+      ).thenAnswer((_) async => const CachedResult<api.Event>.fresh([]));
       when(
         () => overlayRepo.activeLinks('fam-1'),
       ).thenAnswer((_) async => const [_activeLink]);

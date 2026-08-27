@@ -10,10 +10,13 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Link;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\OpenApi\Model\Operation;
+use ApiPlatform\OpenApi\Model\Parameter;
 use App\Dto\Family\FamilyResource;
 use App\Entity\Child;
 use App\Entity\Event;
 use App\Service\Agenda\Occurrence;
+use App\State\Agenda\AgendaRange;
 use App\State\Agenda\CreateEventProcessor;
 use App\State\Agenda\DeleteEventProcessor;
 use App\State\Agenda\EventsProvider;
@@ -32,6 +35,39 @@ use App\State\Agenda\UpdateEventProcessor;
             uriTemplate: '/families/{familyId}/events',
             uriVariables: ['familyId' => new Link(fromClass: FamilyResource::class, identifiers: ['id'])],
             paginationEnabled: false,
+            // `from`/`to`/`overlay` étaient lus par AgendaRange et EventsProvider sans être
+            // déclarés au contrat : le client mobile généré depuis l'OpenAPI ne pouvait donc
+            // pas les passer, et restait bloqué sur la fenêtre par défaut (le mois courant).
+            // Revue mobile 2026-08, constats C37 et C38/C45.
+            openapi: new Operation(
+                parameters: [
+                    new Parameter(
+                        name: 'from',
+                        in: 'query',
+                        description: 'Début de la fenêtre, date locale `Y-m-d`. Défaut : premier jour du mois courant.',
+                        required: false,
+                        // `type: string` + `pattern` plutôt que `format: date` : le
+                        // générateur du client Dart mappe `format: date` sur `DateTime` et
+                        // sérialise en ISO 8601 complet, que `AgendaRange` refuse en 422.
+                        // Le contrat doit décrire ce qui circule réellement.
+                        schema: ['type' => 'string', 'pattern' => '^\d{4}-\d{2}-\d{2}$'],
+                    ),
+                    new Parameter(
+                        name: 'to',
+                        in: 'query',
+                        description: 'Fin de la fenêtre (incluse), date locale `Y-m-d`. Défaut : dernier jour du mois courant. Fenêtre maximale : '.AgendaRange::MAX_WINDOW_DAYS.' jours.',
+                        required: false,
+                        schema: ['type' => 'string', 'pattern' => '^\d{4}-\d{2}-\d{2}$'],
+                    ),
+                    new Parameter(
+                        name: 'overlay',
+                        in: 'query',
+                        description: 'Fusionne les événements des familles liées activées (Lot 5), en lecture seule.',
+                        required: false,
+                        schema: ['type' => 'boolean'],
+                    ),
+                ],
+            ),
             provider: EventsProvider::class,
         ),
         new Post(

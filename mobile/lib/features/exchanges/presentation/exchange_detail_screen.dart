@@ -134,6 +134,7 @@ class _ExchangeDetailScreenState extends ConsumerState<ExchangeDetailScreen> {
                     );
                   },
                   child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                     children: [
                       _Header(exchange: exchange),

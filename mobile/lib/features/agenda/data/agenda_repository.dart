@@ -1,9 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../../api/generated/export.dart' as api;
 import 'package:uuid/uuid.dart';
 
+import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
 import '../../../core/network/api_clients.dart';
 import '../../../core/session/session_scope.dart';
@@ -11,6 +10,7 @@ import '../../../core/sync/idempotency_scope.dart';
 import '../../../core/sync/outbox_queued_exception.dart';
 import '../../../core/sync/outbox_service.dart';
 import '../../../core/sync/read_cache.dart';
+import '../../../core/util/civil_date.dart';
 import '../../family/application/family_context.dart';
 
 /// Accès à l'agenda de la famille active (Lot 4 + offline Lot 8). Le scope `X-Family-Id`
@@ -24,20 +24,38 @@ class AgendaRepository {
   final ReadCache _cache;
   final OutboxService _outbox;
 
-  /// Occurrences du mois courant. En ligne : réseau + mise en cache ; hors-ligne :
-  /// repli sur le cache local de la famille (US-OFF-1). Liste vide si rien en cache.
-  Future<List<api.Event>> listEvents(String userId, String familyId) async {
-    final result = await _cache.list<api.Event>(
+  /// Occurrences de la fenêtre `[from, to]` (dates civiles du fuseau famille).
+  ///
+  /// La fenêtre est désormais **explicite** : sans `from`/`to`, le serveur retombe
+  /// sur le mois civil courant, si bien qu'un événement créé pour le mois suivant
+  /// n'apparaissait jamais et que le bloc « À venir » de l'accueil se vidait en fin
+  /// de mois (revue mobile 2026-08, constats C37 et C38/C45). Les paramètres
+  /// existaient côté serveur mais n'étaient pas déclarés au contrat, donc absents du
+  /// client généré.
+  ///
+  /// En ligne : réseau + mise en cache ; hors-ligne : repli sur le cache local
+  /// cloisonné compte/famille (US-OFF-1). Le cache est cloisonné **par fenêtre** :
+  /// deux mois différents ne s'écrasent pas l'un l'autre.
+  Future<CachedResult<api.Event>> listEvents(
+    String userId,
+    String familyId, {
+    required DateTime from,
+    required DateTime to,
+  }) {
+    final fromYmd = CivilDate.format(from);
+    final toYmd = CivilDate.format(to);
+    return _cache.list<api.Event>(
       userId: userId,
       familyId: familyId,
-      endpoint: 'events',
+      endpoint: 'events:$fromYmd:$toYmd',
       networkCall: () => _clients.events.apiFamiliesFamilyIdeventsGetCollection(
         familyId: familyId,
+        from: fromYmd,
+        to: toYmd,
       ),
       toJson: (e) => e.toJson(),
       fromJson: api.Event.fromJson,
     );
-    return result.items;
   }
 
   /// US-AG-1 — crée un événement ponctuel. Hors-ligne (§2.2, US-OFF-2) : la mutation
@@ -98,7 +116,8 @@ class AgendaRepository {
     }
   }
 
-  /// US-AG-5 — supprime un événement ponctuel.
+  /// Supprime un événement ponctuel (CRUD d'US-AG-1 ; la suppression **par
+  /// portée** d'une série est US-AG-6, non portée sur mobile).
   Future<void> deleteEvent(String eventId) async {
     try {
       await _clients.events.apiEventsIdDelete(id: eventId);
@@ -116,12 +135,83 @@ final agendaRepositoryProvider = Provider<AgendaRepository>(
   ),
 );
 
-/// Occurrences de la famille active (recalculées à la bascule de famille).
-final familyEventsProvider = FutureProvider<List<api.Event>>((ref) async {
+/// Mois affiché par l'écran Agenda, comme premier jour du mois (date civile).
+///
+/// L'écran était figé sur le mois courant, sans aucun contrôle de période, alors
+/// que le sélecteur de date du formulaire autorisait trois ans : un événement créé
+/// hors du mois affiché disparaissait sans explication (constat C37).
+final agendaMonthProvider = NotifierProvider<AgendaMonthController, DateTime>(
+  AgendaMonthController.new,
+);
+
+class AgendaMonthController extends Notifier<DateTime> {
+  @override
+  DateTime build() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month);
+  }
+
+  void shift(int months) {
+    state = DateTime(state.year, state.month + months);
+  }
+
+  void reset() {
+    final now = DateTime.now();
+    state = DateTime(now.year, now.month);
+  }
+}
+
+/// Occurrences du mois affiché (recalculées à la bascule de famille ou de mois).
+final familyEventsProvider = FutureProvider<CachedResult<api.Event>>((
+  ref,
+) async {
+  final family = ref.watch(familyContextProvider);
+  final userId = ref.watch(currentUserIdProvider);
+  if (family == null || userId == null) {
+    return const CachedResult<api.Event>.fresh([]);
+  }
+  final month = ref.watch(agendaMonthProvider);
+  return ref
+      .watch(agendaRepositoryProvider)
+      .listEvents(
+        userId,
+        family.familyId,
+        from: DateTime(month.year, month.month),
+        // Jour 0 du mois suivant = dernier jour du mois affiché.
+        to: DateTime(month.year, month.month + 1, 0),
+      );
+});
+
+/// Fenêtre du bloc « À venir » de l'accueil : aujourd'hui → +60 jours.
+///
+/// L'accueil réutilisait la liste **mensuelle** de l'agenda, donc affichait
+/// « aucun événement à venir » dès que le prochain événement tombait le mois
+/// suivant (constats C38/C45).
+final upcomingEventsProvider = FutureProvider<List<api.Event>>((ref) async {
   final family = ref.watch(familyContextProvider);
   final userId = ref.watch(currentUserIdProvider);
   if (family == null || userId == null) return const [];
-  return ref
+  final today = DateTime.now();
+  final result = await ref
       .watch(agendaRepositoryProvider)
-      .listEvents(userId, family.familyId);
+      .listEvents(
+        userId,
+        family.familyId,
+        from: DateTime(today.year, today.month, today.day),
+        to: DateTime(today.year, today.month, today.day + 60),
+      );
+  final now = DateTime.now();
+  // Même borne que `UpcomingEventsFinder` côté serveur : un événement **en cours**
+  // (fin ≥ maintenant) reste listé, là où un `isAfter(startsAt)` strict le faisait
+  // disparaître à 15:00 d'un créneau 14:00–18:00 (constat C38).
+  bool stillRelevant(api.Event e) {
+    final start = DateTime.tryParse(e.startsAt);
+    final end = e.endsAt == null ? null : DateTime.tryParse(e.endsAt!);
+    if (start == null) return false;
+    return !start.isBefore(now) || (end != null && !end.isBefore(now));
+  }
+
+  final upcoming = result.items.where(stillRelevant).toList()
+    ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
+  return upcoming.take(4).toList();
 });

@@ -1275,6 +1275,78 @@ abstract class AppL10n {
   /// **'Voir l\'agenda'**
   String get agendaUpcomingSee;
 
+  /// No description provided for @agendaMonthPrevious.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mois précédent'**
+  String get agendaMonthPrevious;
+
+  /// No description provided for @agendaMonthNext.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mois suivant'**
+  String get agendaMonthNext;
+
+  /// No description provided for @agendaMonthToday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aujourd\'hui'**
+  String get agendaMonthToday;
+
+  /// No description provided for @agendaEmptyMonth.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun événement sur {month}.'**
+  String agendaEmptyMonth(String month);
+
+  /// No description provided for @agendaCreatedOtherMonth.
+  ///
+  /// In fr, this message translates to:
+  /// **'Créé le {date} — hors du mois affiché.'**
+  String agendaCreatedOtherMonth(String date);
+
+  /// No description provided for @agendaDelete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get agendaDelete;
+
+  /// No description provided for @agendaDeleteConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer cet événement ?'**
+  String get agendaDeleteConfirmTitle;
+
+  /// No description provided for @agendaDeleteConfirmBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'« {title} » sera supprimé pour tous les membres de la famille.'**
+  String agendaDeleteConfirmBody(String title);
+
+  /// No description provided for @agendaDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événement supprimé.'**
+  String get agendaDeleted;
+
+  /// No description provided for @agendaSeriesReadOnly.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cet événement fait partie d\'une série : sa modification et sa suppression par portée se font depuis le web.'**
+  String get agendaSeriesReadOnly;
+
+  /// No description provided for @agendaLinkedReadOnly.
+  ///
+  /// In fr, this message translates to:
+  /// **'Événement d\'une famille liée : consultation seule.'**
+  String get agendaLinkedReadOnly;
+
+  /// No description provided for @agendaRecurrenceWebOnly.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les événements récurrents se créent depuis le web.'**
+  String get agendaRecurrenceWebOnly;
+
   /// No description provided for @catSport.
   ///
   /// In fr, this message translates to:

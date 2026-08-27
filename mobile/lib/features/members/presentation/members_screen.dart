@@ -48,6 +48,7 @@ class MembersScreen extends ConsumerWidget {
           return RefreshIndicator(
             onRefresh: () async => ref.refresh(familyMembersProvider.future),
             child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
               children: [
                 for (final m in members)

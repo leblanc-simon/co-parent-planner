@@ -643,6 +643,51 @@ class AppL10nFr extends AppL10n {
   String get agendaUpcomingSee => 'Voir l\'agenda';
 
   @override
+  String get agendaMonthPrevious => 'Mois précédent';
+
+  @override
+  String get agendaMonthNext => 'Mois suivant';
+
+  @override
+  String get agendaMonthToday => 'Aujourd\'hui';
+
+  @override
+  String agendaEmptyMonth(String month) {
+    return 'Aucun événement sur $month.';
+  }
+
+  @override
+  String agendaCreatedOtherMonth(String date) {
+    return 'Créé le $date — hors du mois affiché.';
+  }
+
+  @override
+  String get agendaDelete => 'Supprimer';
+
+  @override
+  String get agendaDeleteConfirmTitle => 'Supprimer cet événement ?';
+
+  @override
+  String agendaDeleteConfirmBody(String title) {
+    return '« $title » sera supprimé pour tous les membres de la famille.';
+  }
+
+  @override
+  String get agendaDeleted => 'Événement supprimé.';
+
+  @override
+  String get agendaSeriesReadOnly =>
+      'Cet événement fait partie d\'une série : sa modification et sa suppression par portée se font depuis le web.';
+
+  @override
+  String get agendaLinkedReadOnly =>
+      'Événement d\'une famille liée : consultation seule.';
+
+  @override
+  String get agendaRecurrenceWebOnly =>
+      'Les événements récurrents se créent depuis le web.';
+
+  @override
   String get catSport => 'Sport';
 
   @override

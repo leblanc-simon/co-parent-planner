@@ -235,6 +235,39 @@
   "agendaLocation": "Lieu",
   "agendaAllDayLabel": "Journée",
   "agendaUpcomingSee": "Voir l'agenda",
+  "agendaMonthPrevious": "Mois précédent",
+  "agendaMonthNext": "Mois suivant",
+  "agendaMonthToday": "Aujourd'hui",
+  "agendaEmptyMonth": "Aucun événement sur {month}.",
+  "@agendaEmptyMonth": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "agendaCreatedOtherMonth": "Créé le {date} — hors du mois affiché.",
+  "@agendaCreatedOtherMonth": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "agendaDelete": "Supprimer",
+  "agendaDeleteConfirmTitle": "Supprimer cet événement ?",
+  "agendaDeleteConfirmBody": "« {title} » sera supprimé pour tous les membres de la famille.",
+  "@agendaDeleteConfirmBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "agendaDeleted": "Événement supprimé.",
+  "agendaSeriesReadOnly": "Cet événement fait partie d'une série : sa modification et sa suppression par portée se font depuis le web.",
+  "agendaLinkedReadOnly": "Événement d'une famille liée : consultation seule.",
+  "agendaRecurrenceWebOnly": "Les événements récurrents se créent depuis le web.",
   "catSport": "Sport",
   "catMusic": "Musique",
   "catSchool": "École",

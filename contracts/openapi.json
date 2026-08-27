@@ -1391,6 +1391,44 @@
                 "description": "Retrieves the collection of Event resources.",
                 "parameters": [
                     {
+                        "name": "from",
+                        "in": "query",
+                        "description": "D\u00e9but de la fen\u00eatre, date locale `Y-m-d`. D\u00e9faut : premier jour du mois courant.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "style": "form",
+                        "explode": true
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "description": "Fin de la fen\u00eatre (incluse), date locale `Y-m-d`. D\u00e9faut : dernier jour du mois courant. Fen\u00eatre maximale : 420 jours.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                        },
+                        "style": "form",
+                        "explode": true
+                    },
+                    {
+                        "name": "overlay",
+                        "in": "query",
+                        "description": "Fusionne les \u00e9v\u00e9nements des familles li\u00e9es activ\u00e9es (Lot 5), en lecture seule.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "style": "form",
+                        "explode": true
+                    },
+                    {
                         "name": "familyId",
                         "in": "path",
                         "description": "FamilyResource identifier",
@@ -8797,6 +8835,13 @@
                             "null"
                         ]
                     },
+                    "noteDateLabel": {
+                        "description": "Libell\u00e9 fran\u00e7ais de `noteDate` : le gabarit affichait la valeur ISO \u00e0 l'\u00e9cran.",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "authorMembershipId": {
                         "default": "",
                         "type": "string"
@@ -8882,6 +8927,13 @@
                                 "type": "string"
                             },
                             "noteDate": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "noteDateLabel": {
+                                "description": "Libell\u00e9 fran\u00e7ais de `noteDate` : le gabarit affichait la valeur ISO \u00e0 l'\u00e9cran.",
                                 "type": [
                                     "string",
                                     "null"

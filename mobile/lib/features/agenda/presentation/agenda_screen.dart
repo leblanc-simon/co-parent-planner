@@ -3,8 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
-import '../../../core/sync/outbox_queued_exception.dart';
 import '../../../core/session/session_scope.dart';
+import '../../../core/sync/outbox_queued_exception.dart';
+import '../../../core/util/civil_date.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
@@ -46,6 +47,7 @@ class AgendaScreen extends ConsumerWidget {
     final l = AppL10n.of(context);
     final family = ref.watch(familyContextProvider);
     final eventsAsync = ref.watch(familyEventsProvider);
+    final month = ref.watch(agendaMonthProvider);
     final filter = ref.watch(_agendaFilterProvider);
     // Best-effort : un échec de lecture overlay ne doit pas casser l'agenda propre.
     final overlay = ref
@@ -81,7 +83,8 @@ class AgendaScreen extends ConsumerWidget {
                     e is ApiException ? e.message : e.toString(),
                   ),
                 ),
-                data: (events) {
+                data: (result) {
+                  final events = result.items;
                   final filteredEvents = filter.isEmpty
                       ? events
                       : events.where((e) => e.category == filter).toList();
@@ -98,16 +101,32 @@ class AgendaScreen extends ConsumerWidget {
                       await ref.read(familyEventsProvider.future);
                     },
                     child: ListView(
+                      // Sans cette physique, `RefreshIndicator` ne se déclenche jamais
+                      // sous ClampingScrollPhysics (défaut Android) quand la liste
+                      // n'a rien à défiler — un mois vide ou court était donc
+                      // impossible à rafraîchir (constat C44).
+                      physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
                       children: [
+                        const _MonthNavigator(),
                         const _OverlayToggles(),
                         // U-01 : rangée de filtres par catégorie.
                         const _CategoryFilters(),
                         const SizedBox(height: 8),
-                        if (filteredEvents.isEmpty &&
+                        if (!result.available) ...[
+                          const SizedBox(height: 40),
+                          // État vide **explicite** : hors-ligne sans rien en cache
+                          // pour ce mois. Auparavant indistinguable d'un mois
+                          // réellement vide (constat C14).
+                          Center(child: Text(l.offlineUnavailable)),
+                        ] else if (filteredEvents.isEmpty &&
                             filteredOverlay.isEmpty) ...[
                           const SizedBox(height: 40),
-                          Center(child: Text(l.agendaEmpty)),
+                          Center(
+                            child: Text(
+                              l.agendaEmptyMonth(_frenchMonth(month)),
+                            ),
+                          ),
                         ] else
                           ..._buildDays(
                             context,
@@ -126,25 +145,34 @@ class AgendaScreen extends ConsumerWidget {
     );
   }
 
-  /// Fusionne, par jour local (fuseau famille = substring(0, 10)), les occurrences propres
-  /// et les événements overlay (union des jours). Les événements overlay sont en lecture seule.
+  /// Fusionne, par jour civil du fuseau famille, les occurrences propres et les
+  /// événements overlay, **dans une liste unique triée** par la même clé que le
+  /// serveur : `(jour, journée entière d'abord, heure, titre)`.
+  ///
+  /// Les deux sources étaient rendues l'une après l'autre, donc toutes les
+  /// activités de la famille liée s'empilaient après les activités propres du jour
+  /// — « Tennis 18:00 » avant « Judo 09:00 » (constat C39). Le mobile perd le tri
+  /// du serveur parce qu'il fait deux requêtes distinctes ; il doit donc retrier.
   static List<Widget> _buildDays(
     BuildContext context,
     List<api.Event> events,
     List<OverlayEvent> overlay,
   ) {
-    final ownByDay = <String, List<api.Event>>{};
+    final byDay = <String, List<_AgendaItem>>{};
     for (final e in events) {
-      (ownByDay[e.startsAt.substring(0, 10)] ??= []).add(e);
+      final key = CivilDate.ymd(e.startsAt);
+      if (key.isEmpty) continue;
+      (byDay[key] ??= []).add(_AgendaItem.own(e));
     }
-    final overlayByDay = <String, List<OverlayEvent>>{};
     for (final o in overlay) {
-      if (o.startsAt.length >= 10) {
-        (overlayByDay[o.startsAt.substring(0, 10)] ??= []).add(o);
-      }
+      final key = CivilDate.ymd(o.startsAt);
+      if (key.isEmpty) continue;
+      (byDay[key] ??= []).add(_AgendaItem.linked(o));
     }
-    final keys = <String>{...ownByDay.keys, ...overlayByDay.keys}.toList()
-      ..sort();
+    final keys = byDay.keys.toList()..sort();
+    for (final items in byDay.values) {
+      items.sort(_AgendaItem.compare);
+    }
     final l = AppL10n.of(context);
 
     return [
@@ -159,29 +187,26 @@ class AgendaScreen extends ConsumerWidget {
               const SizedBox(width: 8),
               // U-10 : sous-libellé (nombre d'événements du jour).
               Text(
-                l.agendaDayEvents(
-                  (ownByDay[key]?.length ?? 0) +
-                      (overlayByDay[key]?.length ?? 0),
-                ),
+                l.agendaDayEvents(byDay[key]!.length),
                 style: const TextStyle(fontSize: 13, color: AppColors.muted2),
               ),
             ],
           ),
         ),
         // U-05 : espacement 8px entre tuiles d'un même jour.
-        for (final e in ownByDay[key] ?? const <api.Event>[])
+        for (final item in byDay[key]!)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: _EventTile(event: e),
-          ),
-        for (final o in overlayByDay[key] ?? const <OverlayEvent>[])
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _LinkedEventTile(event: o),
+            child: item.own != null
+                ? _EventTile(event: item.own!)
+                : _LinkedEventTile(event: item.linked!),
           ),
       ],
     ];
   }
+
+  static String _frenchMonth(DateTime month) =>
+      '${_monthNames[month.month]} ${month.year}';
 
   static void _openForm(BuildContext context) {
     showModalBottomSheet<void>(
@@ -202,22 +227,109 @@ class AgendaScreen extends ConsumerWidget {
       'samedi',
       'dimanche',
     ];
-    const months = [
-      '',
-      'janvier',
-      'février',
-      'mars',
-      'avril',
-      'mai',
-      'juin',
-      'juillet',
-      'août',
-      'septembre',
-      'octobre',
-      'novembre',
-      'décembre',
-    ];
-    return '${days[d.weekday - 1]} ${d.day} ${months[d.month]}';
+    return '${days[d.weekday - 1]} ${d.day} ${_monthNames[d.month]}';
+  }
+}
+
+/// Noms de mois en français. Locale unique livrée (fr-FR) : la sortie de ces
+/// libellés vers l'ARB est traitée à l'étape 8 du plan de revue (constats
+/// C40/C61), qui centralise tout le formatage de dates.
+const List<String> _monthNames = [
+  '',
+  'janvier',
+  'février',
+  'mars',
+  'avril',
+  'mai',
+  'juin',
+  'juillet',
+  'août',
+  'septembre',
+  'octobre',
+  'novembre',
+  'décembre',
+];
+
+/// Élément unifié de la liste d'un jour : occurrence propre **ou** événement d'une
+/// famille liée. Exister sous un type commun est ce qui permet de trier les deux
+/// sources ensemble (constat C39).
+class _AgendaItem {
+  _AgendaItem.own(api.Event event)
+    : own = event,
+      linked = null,
+      startsAt = event.startsAt,
+      allDay = event.allDay,
+      title = event.title;
+
+  _AgendaItem.linked(OverlayEvent event)
+    : own = null,
+      linked = event,
+      startsAt = event.startsAt,
+      allDay = event.allDay,
+      title = event.title;
+
+  final api.Event? own;
+  final OverlayEvent? linked;
+  final String startsAt;
+  final bool allDay;
+  final String title;
+
+  /// Même clé de tri que `AgendaReader::occurrences` côté serveur : journée entière
+  /// d'abord, puis heure, puis titre.
+  static int compare(_AgendaItem a, _AgendaItem b) {
+    if (a.allDay != b.allDay) return a.allDay ? -1 : 1;
+    final byStart = a.startsAt.compareTo(b.startsAt);
+    if (byStart != 0) return byStart;
+    return a.title.compareTo(b.title);
+  }
+}
+
+/// Navigation de mois. L'écran était figé sur le mois courant alors que le
+/// formulaire acceptait des dates à trois ans : un événement créé pour un autre
+/// mois devenait invisible (constat C37).
+class _MonthNavigator extends ConsumerWidget {
+  const _MonthNavigator();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppL10n.of(context);
+    final month = ref.watch(agendaMonthProvider);
+    final now = DateTime.now();
+    final isCurrentMonth = month.year == now.year && month.month == now.month;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          IconButton(
+            key: const ValueKey('agenda-month-prev'),
+            icon: const Icon(Icons.chevron_left),
+            tooltip: l.agendaMonthPrevious,
+            onPressed: () => ref.read(agendaMonthProvider.notifier).shift(-1),
+          ),
+          Expanded(
+            child: Text(
+              '${_monthNames[month.month]} ${month.year}',
+              key: const ValueKey('agenda-month-label'),
+              textAlign: TextAlign.center,
+              style: AppTypography.textTheme.titleMedium,
+            ),
+          ),
+          IconButton(
+            key: const ValueKey('agenda-month-next'),
+            icon: const Icon(Icons.chevron_right),
+            tooltip: l.agendaMonthNext,
+            onPressed: () => ref.read(agendaMonthProvider.notifier).shift(1),
+          ),
+          if (!isCurrentMonth)
+            TextButton(
+              key: const ValueKey('agenda-month-today'),
+              onPressed: () => ref.read(agendaMonthProvider.notifier).reset(),
+              child: Text(l.agendaMonthToday),
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -346,23 +458,35 @@ class _LinkedEventTile extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.linkedSoft,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      l.overlayLinkedFamily,
-                      style: const TextStyle(
-                        color: AppColors.linked,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
+                  // La catégorie fait partie de la projection anti-fuite (§3.6) et
+                  // le filtre par catégorie s'applique aux événements liés : ne pas
+                  // l'afficher rendait le résultat du filtre invérifiable, et deux
+                  // activités liées de catégories différentes identiques à l'œil
+                  // (constat C43). Le badge « Famille liée » reste le marqueur
+                  // d'origine, comme dans la maquette.
+                  Row(
+                    children: [
+                      CategoryPill(category: event.category),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.linkedSoft,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          l.overlayLinkedFamily,
+                          style: const TextStyle(
+                            color: AppColors.linked,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -416,112 +540,218 @@ class _EventTile extends ConsumerWidget {
     }
     final hasLocation = event.location != null && event.location!.isNotEmpty;
 
-    return AppCard(
-      radius: 16,
-      padding: const EdgeInsets.all(14),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // U-02 : barre latérale de catégorie, 4px, rayon 3, étirée.
-            Container(
-              width: 4,
-              decoration: BoxDecoration(
-                color: catColor,
-                borderRadius: BorderRadius.circular(3),
+    return InkWell(
+      // Aucun chemin d'édition ni de suppression n'existait sur mobile : une faute
+      // de frappe ou une mauvaise date ne pouvait se corriger qu'en ouvrant le web
+      // (constat C41). `deleteEvent` était déjà écrit, sans aucun appelant.
+      key: ValueKey('agenda-event-${event.id}'),
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => showModalBottomSheet<void>(
+        context: context,
+        builder: (_) => _EventActions(event: event),
+      ),
+      child: AppCard(
+        radius: 16,
+        padding: const EdgeInsets.all(14),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // U-02 : barre latérale de catégorie, 4px, rayon 3, étirée.
+              Container(
+                width: 4,
+                decoration: BoxDecoration(
+                  color: catColor,
+                  borderRadius: BorderRadius.circular(3),
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          event.title,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      if (event.isRecurring) ...[
-                        const Icon(
-                          Icons.repeat,
-                          size: 15,
-                          color: AppColors.muted2,
-                        ),
-                        const SizedBox(width: 8),
-                      ],
-                      // U-04 : heure en trailing.
-                      Text(
-                        time,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF6F685C),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      CategoryPill(category: event.category),
-                      if (childLabel.isNotEmpty) ...[
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            childLabel,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.muted,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  if (hasLocation ||
-                      (responsibleName != null &&
-                          responsibleName.isNotEmpty)) ...[
-                    const SizedBox(height: 4),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     Row(
                       children: [
-                        Icon(
-                          hasLocation
-                              ? Icons.place_outlined
-                              : Icons.person_outline,
-                          size: 13,
-                          color: const Color(0xFFB7AF9F),
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
+                        Expanded(
                           child: Text(
-                            [
-                              if (hasLocation) event.location!,
-                              if (responsibleName != null &&
-                                  responsibleName.isNotEmpty)
-                                responsibleName,
-                            ].join(' · '),
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: AppColors.muted,
-                            ),
+                            event.title,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        if (event.isRecurring) ...[
+                          const Icon(
+                            Icons.repeat,
+                            size: 15,
+                            color: AppColors.muted2,
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        // U-04 : heure en trailing.
+                        Text(
+                          time,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF6F685C),
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        CategoryPill(category: event.category),
+                        if (childLabel.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              childLabel,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.muted,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (hasLocation ||
+                        (responsibleName != null &&
+                            responsibleName.isNotEmpty)) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            hasLocation
+                                ? Icons.place_outlined
+                                : Icons.person_outline,
+                            size: 13,
+                            color: const Color(0xFFB7AF9F),
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              [
+                                if (hasLocation) event.location!,
+                                if (responsibleName != null &&
+                                    responsibleName.isNotEmpty)
+                                  responsibleName,
+                              ].join(' · '),
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.muted,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Actions sur un événement propre : suppression avec confirmation nommée, alignée
+/// sur le garde-fou destructif appliqué côté web.
+///
+/// Une occurrence de **série** n'est pas supprimable ici : la suppression par portée
+/// (US-AG-6) reste web, et le dire explicitement vaut mieux que de ne rien proposer.
+class _EventActions extends ConsumerWidget {
+  const _EventActions({required this.event});
+
+  final api.Event event;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppL10n.of(context);
+    final isSeries = event.isRecurring || event.seriesId != null;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              event.title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
+            const SizedBox(height: 12),
+            if (isSeries)
+              Text(
+                l.agendaSeriesReadOnly,
+                style: const TextStyle(color: AppColors.muted, fontSize: 13),
+              )
+            else
+              ListTile(
+                key: const ValueKey('agenda-delete'),
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(
+                  Icons.delete_outline,
+                  color: AppColors.catHealth,
+                ),
+                title: Text(
+                  l.agendaDelete,
+                  style: const TextStyle(color: AppColors.catHealth),
+                ),
+                onTap: () => _confirmDelete(context, ref, l),
+              ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    AppL10n l,
+  ) async {
+    final sheet = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l.agendaDeleteConfirmTitle),
+        content: Text(l.agendaDeleteConfirmBody(event.title)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l.actionCancel),
+          ),
+          TextButton(
+            key: const ValueKey('agenda-delete-confirm'),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              l.agendaDelete,
+              style: const TextStyle(color: AppColors.catHealth),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(agendaRepositoryProvider).deleteEvent(event.id);
+      ref
+        ..invalidate(familyEventsProvider)
+        ..invalidate(upcomingEventsProvider);
+      if (sheet.canPop()) sheet.pop();
+      messenger.showSnackBar(SnackBar(content: Text(l.agendaDeleted)));
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    }
   }
 }
 

@@ -95,6 +95,10 @@ class ExchangesScreen extends ConsumerWidget {
                       await ref.read(familyExchangesProvider.future);
                     },
                     child: ListView(
+                      // Sans `AlwaysScrollableScrollPhysics`, le RefreshIndicator est
+                      // inerte sous ClampingScrollPhysics (Android) dès que la liste
+                      // n'a rien à défiler (constat C44).
+                      physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
                       children: [
                         const _StatusFilters(),

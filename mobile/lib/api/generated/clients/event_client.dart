@@ -40,10 +40,19 @@ abstract class EventClient {
   ///
   /// Retrieves the collection of Event resources.
   ///
+  /// [from] - Début de la fenêtre, date locale `Y-m-d`. Défaut : premier jour du mois courant.
+  ///
+  /// [to] - Fin de la fenêtre (incluse), date locale `Y-m-d`. Défaut : dernier jour du mois courant. Fenêtre maximale : 420 jours.
+  ///
+  /// [overlay] - Fusionne les événements des familles liées activées (Lot 5), en lecture seule.
+  ///
   /// [familyId] - FamilyResource identifier.
   @GET('/api/families/{familyId}/events')
   Future<List<Event>> apiFamiliesFamilyIdeventsGetCollection({
     @Path('familyId') required String familyId,
+    @Query('from') String? from,
+    @Query('to') String? to,
+    @Query('overlay') bool? overlay,
   });
 
   /// Creates a Event resource.

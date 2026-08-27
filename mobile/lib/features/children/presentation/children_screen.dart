@@ -45,6 +45,10 @@ class ChildrenScreen extends ConsumerWidget {
                     onRefresh: () async =>
                         ref.refresh(familyChildrenProvider.future),
                     child: ListView.builder(
+                      // Sans `AlwaysScrollableScrollPhysics`, le RefreshIndicator est
+                      // inerte sous ClampingScrollPhysics (Android) dès que la liste
+                      // n'a rien à défiler (constat C44).
+                      physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
                       itemCount: children.length,
                       itemBuilder: (context, i) => Padding(

@@ -72,9 +72,17 @@ class _EventClient implements EventClient {
   @override
   Future<List<Event>> apiFamiliesFamilyIdeventsGetCollection({
     required String familyId,
+    String? from,
+    String? to,
+    bool? overlay,
   }) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'from': from,
+      r'to': to,
+      r'overlay': overlay,
+    };
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<List<Event>>(

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../api/generated/export.dart' as api;
 import '../../../core/theme/app_colors.dart';
+import '../../../core/util/civil_date.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/large_title_header.dart';
@@ -421,18 +422,12 @@ class _UpcomingSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppL10n.of(context);
+    // Fenêtre dédiée (aujourd'hui → +60 jours), et non la liste **mensuelle** de
+    // l'agenda : le 28 du mois, l'accueil annonçait « aucun événement à venir »
+    // alors que le suivant tombait la semaine d'après (constats C38/C45).
     final upcoming = ref
-        .watch(familyEventsProvider)
-        .maybeWhen(
-          data: (events) {
-            final now = DateTime.now();
-            return events
-                .where((e) => DateTime.parse(e.startsAt).isAfter(now))
-                .take(4)
-                .toList();
-          },
-          orElse: () => const <api.Event>[],
-        );
+        .watch(upcomingEventsProvider)
+        .maybeWhen(data: (e) => e, orElse: () => const <api.Event>[]);
 
     if (upcoming.isEmpty) {
       return _EmptyCard(
@@ -490,10 +485,15 @@ class _UpcomingTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppL10n.of(context);
-    final start = DateTime.parse(event.startsAt);
+    // Date **civile du fuseau famille**, dérivée de la chaîne : `DateTime.parse`
+    // d'un horodatage à offset renvoie un instant UTC, et en tirer `.day` /
+    // `.weekday` affichait la veille — « MAR 30 » à côté de « 00:30 » pour un
+    // événement du mercredi 1er, et pour **tout** événement journée entière
+    // (constats C20/C36).
+    final start = CivilDate.of(event.startsAt) ?? DateTime.now();
     final meta = event.allDay
         ? l.agendaAllDayLabel
-        : event.startsAt.substring(11, 16);
+        : CivilDate.hm(event.startsAt);
 
     return AppCard(
       radius: 16,

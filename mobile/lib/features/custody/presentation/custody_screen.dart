@@ -6,6 +6,7 @@ import '../../../core/error/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/util/civil_date.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../core/widgets/large_title_header.dart';
 import '../../../l10n/app_localizations.dart';
@@ -95,6 +96,7 @@ class _NoPattern extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppL10n.of(context);
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(24),
       children: [
         const SizedBox(height: 40),
@@ -136,14 +138,18 @@ class _CustodyBody extends ConsumerWidget {
     final activityDates = ref
         .watch(familyEventsProvider)
         .maybeWhen(
-          data: (events) => {
-            for (final e in events)
-              if (e.startsAt.length >= 10) e.startsAt.substring(0, 10),
+          data: (result) => {
+            for (final e in result.items)
+              if (CivilDate.ymd(e.startsAt).isNotEmpty)
+                CivilDate.ymd(e.startsAt),
           },
           orElse: () => const <String>{},
         );
 
     return ListView(
+      // Même défaut que l'agenda : sans cette physique le pull-to-refresh est
+      // inerte sous Android quand le contenu tient dans l'écran (constat C44).
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
         const _OverlayGardeToggles(),

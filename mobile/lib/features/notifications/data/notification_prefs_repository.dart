@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
 import '../../../core/network/api_clients.dart';
+import '../../../core/session/session_scope.dart';
 
 /// US-SET-1 (Lot 7) — préférences de notification du compte courant.
 ///
@@ -52,6 +53,7 @@ final notificationPrefsRepositoryProvider =
     );
 
 /// Préférences de notification de l'utilisateur courant (chargement GET).
-final notificationPrefsProvider = FutureProvider<api.NotificationPrefs>(
-  (ref) => ref.watch(notificationPrefsRepositoryProvider).load(),
-);
+final notificationPrefsProvider = FutureProvider<api.NotificationPrefs>((ref) {
+  ref.watch(currentUserIdProvider); // recalcul à la bascule de compte (C22)
+  return ref.watch(notificationPrefsRepositoryProvider).load();
+});

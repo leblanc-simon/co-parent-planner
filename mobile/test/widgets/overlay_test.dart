@@ -1,3 +1,4 @@
+import 'package:coparentplanner/core/session/session_scope.dart';
 import 'package:coparentplanner/api/generated/export.dart' as api;
 import 'package:coparentplanner/features/agenda/data/agenda_repository.dart';
 import 'package:coparentplanner/features/agenda/data/overlay_repository.dart';
@@ -67,7 +68,7 @@ void main() {
       membersRepo = MockMembersRepository();
       childrenRepo = MockChildrenRepository();
       when(
-        () => agendaRepo.listEvents('fam-1'),
+        () => agendaRepo.listEvents('u-test', 'fam-1'),
       ).thenAnswer((_) async => const []);
       when(
         () => overlayRepo.activeLinks('fam-1'),
@@ -79,6 +80,7 @@ void main() {
       overlayRepositoryProvider.overrideWithValue(overlayRepo),
       membersRepositoryProvider.overrideWithValue(membersRepo),
       childrenRepositoryProvider.overrideWithValue(childrenRepo),
+      currentUserIdProvider.overrideWithValue('u-test'),
       familyContextProvider.overrideWith(_FixedFamilyContext.new),
     ];
 

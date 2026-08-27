@@ -1,3 +1,4 @@
+import 'package:coparentplanner/core/session/session_scope.dart';
 import 'package:coparentplanner/api/generated/export.dart' as api;
 import 'package:coparentplanner/features/children/data/children_repository.dart';
 import 'package:coparentplanner/features/exchanges/data/exchanges_repository.dart';
@@ -29,18 +30,19 @@ void main() {
     repo = MockExchangesRepository();
     childrenRepo = MockChildrenRepository();
     when(
-      () => childrenRepo.listChildren('fam-1'),
+      () => childrenRepo.listChildren('u-test', 'fam-1'),
     ).thenAnswer((_) async => const []);
   });
 
   List<Override> overrides() => [
     exchangesRepositoryProvider.overrideWithValue(repo),
     childrenRepositoryProvider.overrideWithValue(childrenRepo),
+    currentUserIdProvider.overrideWithValue('u-test'),
     familyContextProvider.overrideWith(_FixedFamilyContext.new),
   ];
 
   testWidgets('liste vide → état vide + FAB', (tester) async {
-    when(() => repo.list('fam-1')).thenAnswer((_) async => const []);
+    when(() => repo.list('u-test', 'fam-1')).thenAnswer((_) async => const []);
 
     await pumpScreen(tester, const ExchangesScreen(), overrides: overrides());
     await tester.pumpAndSettle();
@@ -50,7 +52,7 @@ void main() {
   });
 
   testWidgets('carte de décision en retard : marqueur + type', (tester) async {
-    when(() => repo.list('fam-1')).thenAnswer(
+    when(() => repo.list('u-test', 'fam-1')).thenAnswer(
       (_) async => const [
         api.Exchange(
           id: 'x1',
@@ -78,7 +80,7 @@ void main() {
   });
 
   testWidgets('filtre Décidés masque les échanges ouverts', (tester) async {
-    when(() => repo.list('fam-1')).thenAnswer(
+    when(() => repo.list('u-test', 'fam-1')).thenAnswer(
       (_) async => const [
         api.Exchange(id: 'open', title: 'Ouvert A', status: 'open'),
         api.Exchange(id: 'done', title: 'Décidé B', status: 'decided'),

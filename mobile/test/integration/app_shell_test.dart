@@ -1,3 +1,4 @@
+import 'package:coparentplanner/core/session/session_scope.dart';
 import 'package:coparentplanner/core/network/network_providers.dart';
 import 'package:coparentplanner/core/storage/storage_providers.dart';
 import 'package:coparentplanner/features/auth/application/auth_controller.dart';
@@ -48,6 +49,7 @@ void main() {
             authControllerProvider.overrideWith(
               () => _AuthStub(const AuthAuthenticated(_user)),
             ),
+            currentUserIdProvider.overrideWithValue('u-test'),
             familyContextProvider.overrideWith(
               () => _FamilyStub(
                 const FamilyContext(

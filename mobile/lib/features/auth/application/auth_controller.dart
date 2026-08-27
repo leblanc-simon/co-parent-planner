@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/api_exception.dart';
 import '../../../core/i18n/locale_controller.dart';
+import '../../../core/storage/local_data_purger.dart';
 import '../../family/application/family_context.dart';
 import '../data/auth_repository.dart';
 import 'auth_state.dart';
@@ -11,11 +12,17 @@ import 'auth_state.dart';
 /// ecrans (qui gerent leur propre loading/banniere).
 class AuthController extends Notifier<AuthState> {
   @override
-  AuthState build() => const AuthUnauthenticated();
+  AuthState build() => const AuthRestoring();
 
   AuthRepository get _repo => ref.read(authRepositoryProvider);
 
   /// Au demarrage : si un access token existe, tente de restaurer la session.
+  ///
+  /// Un **échec réseau** ne vaut pas jeton invalide : purger les jetons parce que
+  /// le serveur est injoignable déconnectait l'utilisateur au démarrage hors-ligne
+  /// et lui fermait l'accès à son propre cache, ce qui annulait tout l'offline du
+  /// Lot 8 au cold start (revue mobile 2026-08, constat C1). On garde donc la
+  /// session ; la première requête réussie ou un 401 tranchera.
   Future<void> restoreSession() async {
     if (!await _repo.hasAccessToken()) {
       state = const AuthUnauthenticated();
@@ -25,8 +32,20 @@ class AuthController extends Notifier<AuthState> {
       final user = await _repo.fetchMe();
       ref.read(localeProvider.notifier).setFromTag(user.locale);
       state = AuthAuthenticated(user);
-    } on ApiException {
-      // Token invalide/expire et refresh impossible -> repartir propre.
+      await ref.read(familyContextProvider.notifier).resolveActive();
+    } on ApiException catch (e) {
+      if (e.isNetworkFailure) {
+        // Serveur injoignable : on repart du dernier profil connu, pour que l'app
+        // s'ouvre sur le cache du compte au lieu de le déconnecter. Sans profil
+        // en cache, l'identité est inconnue : on reste déconnecté **sans** purger
+        // les jetons, un démarrage en ligne ultérieur restaurera la session.
+        final cached = await _repo.cachedProfile();
+        state = cached != null
+            ? AuthAuthenticated(cached)
+            : const AuthUnauthenticated();
+        return;
+      }
+      // Jeton invalide/expire et refresh impossible -> repartir propre.
       await _repo.clearTokens();
       state = const AuthUnauthenticated();
     }
@@ -59,19 +78,27 @@ class AuthController extends Notifier<AuthState> {
       final user = await _repo.fetchMe();
       ref.read(localeProvider.notifier).setFromTag(user.locale);
       state = AuthAuthenticated(user);
+      // Sans cette résolution, l'utilisateur qui possède déjà une famille était
+      // renvoyé vers l'onboarding à chaque reconnexion (constat C21).
+      await ref.read(familyContextProvider.notifier).resolveActive();
     } on ApiException catch (e) {
       if (e.type == ProblemType.emailNotVerified) {
         state = AuthPendingVerification(email);
         return;
       }
+      // Échec d'identification : l'état doit refléter « non connecté », y compris
+      // si la tentative venait de l'état initial `AuthRestoring`.
+      state = const AuthUnauthenticated();
       rethrow;
     }
   }
 
   /// US-AUTH-1 sc.5 : verification d'e-mail. Aucun token delivre -> l'utilisateur
-  /// est invite a se connecter.
+  /// est invite a se connecter. Les jetons éventuellement présents sont purgés,
+  /// sinon la session précédente revenait au redémarrage (constat C25).
   Future<void> verifyEmail(String token) async {
     await _repo.verifyEmail(token);
+    await _repo.clearTokens();
     state = const AuthUnauthenticated();
   }
 
@@ -80,11 +107,16 @@ class AuthController extends Notifier<AuthState> {
 
   /// US-AUTH-2 sc.9 : reset effectif. Le serveur revoque tous les refresh ->
   /// re-login requis.
+  ///
+  /// Le local doit suivre : sans purge, l'access token encore valide rouvrait la
+  /// session au redémarrage, juste après un « toutes vos sessions ont été
+  /// révoquées » (constat C5).
   Future<void> resetPassword({
     required String token,
     required String password,
   }) async {
     await _repo.resetPassword(token: token, password: password);
+    await _clearLocalSession(purgeDeviceData: true);
     state = const AuthUnauthenticated();
   }
 
@@ -104,19 +136,48 @@ class AuthController extends Notifier<AuthState> {
     state = AuthAuthenticated(user);
   }
 
-  /// US-AUTH-2 sc.7 : deconnexion volontaire.
+  /// US-AUTH-2 sc.7 : deconnexion volontaire. Efface aussi l'etat local du compte
+  /// (file de mutations + cache de lecture) : c'est une intention explicite de ne
+  /// plus rien laisser sur l'appareil.
   Future<void> logout() async {
     await _repo.logout();
-    await ref.read(familyContextProvider.notifier).clear();
+    await _clearLocalSession(purgeDeviceData: true);
     state = const AuthUnauthenticated();
   }
 
   /// Deconnexion forcee (session perdue : refresh revoque/expire, §3.3/§4.7).
   /// Appelee par l'AuthInterceptor ; ne doit jamais lever.
+  ///
+  /// **Ne purge pas** les données locales : elles appartiennent toujours au même
+  /// compte, sont cloisonnées par son identifiant et seront rejouées à la
+  /// reconnexion. Les effacer ferait perdre du travail hors-ligne légitime.
   Future<void> forceLogout() async {
     await _repo.clearTokens();
-    await ref.read(familyContextProvider.notifier).clear();
+    await _clearLocalSession(purgeDeviceData: false);
     state = const AuthUnauthenticated();
+  }
+
+  /// Suppression de compte (US-SET-4b) : plus rien ne doit rester sur l'appareil.
+  Future<void> onAccountDeleted() async {
+    await _repo.clearTokens();
+    await _clearLocalSession(purgeDeviceData: true);
+    state = const AuthUnauthenticated();
+  }
+
+  Future<void> _clearLocalSession({required bool purgeDeviceData}) async {
+    if (purgeDeviceData) {
+      final current = state;
+      final purger = ref.read(localDataPurgerProvider);
+      if (current is AuthAuthenticated) {
+        await purger.purgeUser(current.user.id);
+      } else {
+        // Identité inconnue (reset de mot de passe hors session) : on n'a aucun
+        // moyen de cibler le compte, et laisser des données orphelines sur
+        // l'appareil est précisément le défaut corrigé.
+        await purger.purgeEverything();
+      }
+    }
+    await ref.read(familyContextProvider.notifier).clear();
   }
 }
 

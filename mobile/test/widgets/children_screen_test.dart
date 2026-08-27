@@ -1,3 +1,4 @@
+import 'package:coparentplanner/core/session/session_scope.dart';
 import 'package:coparentplanner/api/generated/export.dart' as api;
 import 'package:coparentplanner/features/children/data/children_repository.dart';
 import 'package:coparentplanner/features/children/presentation/child_detail_screen.dart';
@@ -27,11 +28,12 @@ void main() {
 
   List<Override> overrides() => [
     childrenRepositoryProvider.overrideWithValue(repo),
+    currentUserIdProvider.overrideWithValue('u-test'),
     familyContextProvider.overrideWith(_FixedFamilyContext.new),
   ];
 
   testWidgets('liste les enfants de la famille active', (tester) async {
-    when(() => repo.listChildren('fam-1')).thenAnswer(
+    when(() => repo.listChildren('u-test', 'fam-1')).thenAnswer(
       (_) async => const [
         api.Child(
           id: 'c1',

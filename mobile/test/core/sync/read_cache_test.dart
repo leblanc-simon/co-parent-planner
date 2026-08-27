@@ -26,8 +26,10 @@ void main() {
 
   Future<CachedResult<Map<String, dynamic>>> read(
     String familyId,
-    Future<List<Map<String, dynamic>>> Function() call,
-  ) => cache.list<Map<String, dynamic>>(
+    Future<List<Map<String, dynamic>>> Function() call, {
+    String userId = 'u-1',
+  }) => cache.list<Map<String, dynamic>>(
+    userId: userId,
     familyId: familyId,
     endpoint: 'events',
     networkCall: call,
@@ -92,4 +94,49 @@ void main() {
       );
     },
   );
+
+  test(
+    'cloisonnement par compte : le cache de u-1 n\'est jamais servi à u-2 (C3/C8)',
+    () async {
+      await read(
+        'A',
+        () async => [
+          {'id': '1'},
+        ],
+      );
+      final r = await read('A', () async => throw network(), userId: 'u-2');
+      expect(
+        r.available,
+        false,
+        reason:
+            "le cloisonnement famille seul laissait le cache d'un compte lisible "
+            'par le compte suivant connecté sur le même appareil',
+      );
+      expect(r.items, isEmpty);
+    },
+  );
+
+  test('purgeUser efface le cache d\'un seul compte', () async {
+    await read(
+      'A',
+      () async => [
+        {'id': '1'},
+      ],
+    );
+    await read(
+      'A',
+      () async => [
+        {'id': '2'},
+      ],
+      userId: 'u-2',
+    );
+
+    await db.cacheDao.purgeUser('u-1');
+
+    expect((await read('A', () async => throw network())).available, false);
+    expect(
+      (await read('A', () async => throw network(), userId: 'u-2')).available,
+      true,
+    );
+  });
 }

@@ -387,6 +387,18 @@ abstract class AppL10n {
   /// **'Rejoindre via une invitation'**
   String get onboardingJoin;
 
+  /// No description provided for @onboardingPickExisting.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reprendre une famille existante'**
+  String get onboardingPickExisting;
+
+  /// No description provided for @onboardingSubtitleWithFamilies.
+  ///
+  /// In fr, this message translates to:
+  /// **'Choisissez la famille à ouvrir, ou créez-en une nouvelle.'**
+  String get onboardingSubtitleWithFamilies;
+
   /// No description provided for @createFamilyTitle.
   ///
   /// In fr, this message translates to:
@@ -1616,6 +1628,42 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'{count, plural, =0{} =1{1 modification refusée} other{{count} modifications refusées}}'**
   String syncRejected(int count);
+
+  /// No description provided for @syncRejectedTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifications refusées'**
+  String get syncRejectedTitle;
+
+  /// No description provided for @syncRejectedHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le serveur a refusé ces modifications enregistrées hors-ligne. Relancez-les ou abandonnez-les.'**
+  String get syncRejectedHelp;
+
+  /// No description provided for @syncRejectedReason.
+  ///
+  /// In fr, this message translates to:
+  /// **'{reason, select, conflict{Conflit : la donnée a changé entre-temps} forbidden{Droits insuffisants} invalid{Contenu refusé par le serveur} gone{Lélément nexiste plus} other{Refusé par le serveur}}'**
+  String syncRejectedReason(String reason);
+
+  /// No description provided for @syncRejectedAction.
+  ///
+  /// In fr, this message translates to:
+  /// **'Voir'**
+  String get syncRejectedAction;
+
+  /// No description provided for @actionDiscard.
+  ///
+  /// In fr, this message translates to:
+  /// **'Abandonner'**
+  String get actionDiscard;
+
+  /// No description provided for @syncRejectedEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune modification refusée.'**
+  String get syncRejectedEmpty;
 
   /// No description provided for @privacyTitle.
   ///

@@ -2,8 +2,12 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart' as api;
+import 'package:uuid/uuid.dart';
+
 import '../../../core/error/api_exception.dart';
 import '../../../core/network/api_clients.dart';
+import '../../../core/session/session_scope.dart';
+import '../../../core/sync/idempotency_scope.dart';
 import '../../../core/sync/outbox_queued_exception.dart';
 import '../../../core/sync/outbox_service.dart';
 import '../../../core/sync/read_cache.dart';
@@ -22,8 +26,9 @@ class AgendaRepository {
 
   /// Occurrences du mois courant. En ligne : réseau + mise en cache ; hors-ligne :
   /// repli sur le cache local de la famille (US-OFF-1). Liste vide si rien en cache.
-  Future<List<api.Event>> listEvents(String familyId) async {
+  Future<List<api.Event>> listEvents(String userId, String familyId) async {
     final result = await _cache.list<api.Event>(
+      userId: userId,
       familyId: familyId,
       endpoint: 'events',
       networkCall: () => _clients.events.apiFamiliesFamilyIdeventsGetCollection(
@@ -39,6 +44,7 @@ class AgendaRepository {
   /// est mise en file dans l'outbox (Idempotency-Key + X-Family-Id figés) et rejouée au
   /// retour réseau ; l'appelant reçoit [OutboxQueuedException] (succès différé).
   Future<api.Event> createEvent(
+    String userId,
     String familyId, {
     required String title,
     required String category,
@@ -61,10 +67,17 @@ class AgendaRepository {
       endsAt: endsAt,
       location: location,
     );
+    // La clé est tirée AVANT la tentative en ligne et réutilisée par l'entrée
+    // outbox : si la requête expire après traitement serveur, le rejeu est
+    // dédoublonné (§6.3) au lieu de créer un second événement (constat C13).
+    final idempotencyKey = const Uuid().v4();
     try {
-      return await _clients.events.apiFamiliesFamilyIdeventsPost(
-        familyId: familyId,
-        body: request,
+      return await IdempotencyScope.run(
+        idempotencyKey,
+        () => _clients.events.apiFamiliesFamilyIdeventsPost(
+          familyId: familyId,
+          body: request,
+        ),
       );
     } on DioException catch (e) {
       if (e.response != null) {
@@ -72,12 +85,14 @@ class AgendaRepository {
           e,
         ); // erreur métier en ligne → remontée normale
       }
-      // Hors-ligne : mise en file (le rejeu réutilisera la même Idempotency-Key).
+      // Hors-ligne ou timeout : mise en file avec la MÊME Idempotency-Key.
       await _outbox.enqueue(
+        userId: userId,
         method: 'POST',
         path: '/api/families/$familyId/events',
         body: request.toJson(),
         xFamilyId: familyId,
+        idempotencyKey: idempotencyKey,
       );
       throw const OutboxQueuedException();
     }
@@ -104,6 +119,9 @@ final agendaRepositoryProvider = Provider<AgendaRepository>(
 /// Occurrences de la famille active (recalculées à la bascule de famille).
 final familyEventsProvider = FutureProvider<List<api.Event>>((ref) async {
   final family = ref.watch(familyContextProvider);
-  if (family == null) return const [];
-  return ref.watch(agendaRepositoryProvider).listEvents(family.familyId);
+  final userId = ref.watch(currentUserIdProvider);
+  if (family == null || userId == null) return const [];
+  return ref
+      .watch(agendaRepositoryProvider)
+      .listEvents(userId, family.familyId);
 });

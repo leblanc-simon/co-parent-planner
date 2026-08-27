@@ -1,3 +1,4 @@
+import 'package:coparentplanner/core/session/session_scope.dart';
 import 'package:coparentplanner/api/generated/export.dart' as api;
 import 'package:coparentplanner/features/family/application/family_context.dart';
 import 'package:coparentplanner/features/members/data/members_repository.dart';
@@ -32,6 +33,7 @@ void main() {
 
   List<Override> overrides() => [
     membersRepositoryProvider.overrideWithValue(repo),
+    currentUserIdProvider.overrideWithValue('u-test'),
     familyContextProvider.overrideWith(_FixedFamilyContext.new),
   ];
 

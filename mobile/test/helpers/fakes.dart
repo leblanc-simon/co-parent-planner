@@ -6,6 +6,7 @@ class FakeSecureStorage implements SecureStorage {
   String? access;
   String? refresh;
   String? family;
+  String? profile;
   String? locale;
 
   @override
@@ -27,6 +28,7 @@ class FakeSecureStorage implements SecureStorage {
   Future<void> clearTokens() async {
     access = null;
     refresh = null;
+    profile = null;
   }
 
   @override
@@ -34,6 +36,12 @@ class FakeSecureStorage implements SecureStorage {
 
   @override
   Future<void> writeActiveFamily(String? json) async => family = json;
+
+  @override
+  Future<String?> readUserProfile() async => profile;
+
+  @override
+  Future<void> writeUserProfile(String? json) async => profile = json;
 
   @override
   Future<String?> readLocale() async => locale;

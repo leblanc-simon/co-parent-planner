@@ -1,3 +1,4 @@
+import 'package:coparentplanner/core/session/session_scope.dart';
 import 'package:coparentplanner/api/generated/export.dart' as api;
 import 'package:coparentplanner/features/agenda/data/agenda_repository.dart';
 import 'package:coparentplanner/features/agenda/data/overlay_repository.dart';
@@ -38,11 +39,14 @@ void main() {
     overlayRepositoryProvider.overrideWithValue(emptyOverlayRepository()),
     membersRepositoryProvider.overrideWithValue(membersRepo),
     childrenRepositoryProvider.overrideWithValue(childrenRepo),
+    currentUserIdProvider.overrideWithValue('u-test'),
     familyContextProvider.overrideWith(_FixedFamilyContext.new),
   ];
 
   testWidgets('liste vide → état vide', (tester) async {
-    when(() => repo.listEvents('fam-1')).thenAnswer((_) async => const []);
+    when(
+      () => repo.listEvents('u-test', 'fam-1'),
+    ).thenAnswer((_) async => const []);
 
     await pumpScreen(tester, const AgendaScreen(), overrides: overrides());
     await tester.pumpAndSettle();
@@ -59,9 +63,9 @@ void main() {
       () => membersRepo.listMembers('fam-1'),
     ).thenAnswer((_) async => const []);
     when(
-      () => childrenRepo.listChildren('fam-1'),
+      () => childrenRepo.listChildren('u-test', 'fam-1'),
     ).thenAnswer((_) async => const []);
-    when(() => repo.listEvents('fam-1')).thenAnswer(
+    when(() => repo.listEvents('u-test', 'fam-1')).thenAnswer(
       (_) async => const [
         api.Event(
           id: 'e1',
@@ -92,7 +96,9 @@ void main() {
   });
 
   testWidgets('formulaire → crée un événement ponctuel', (tester) async {
-    when(() => repo.listEvents('fam-1')).thenAnswer((_) async => const []);
+    when(
+      () => repo.listEvents('u-test', 'fam-1'),
+    ).thenAnswer((_) async => const []);
     when(() => membersRepo.listMembers('fam-1')).thenAnswer(
       (_) async => const [
         api.Member(id: 'mA', role: 'parent', fullName: 'Alice'),
@@ -100,10 +106,11 @@ void main() {
       ],
     );
     when(
-      () => childrenRepo.listChildren('fam-1'),
+      () => childrenRepo.listChildren('u-test', 'fam-1'),
     ).thenAnswer((_) async => const []);
     when(
       () => repo.createEvent(
+        any(),
         any(),
         title: any(named: 'title'),
         category: any(named: 'category'),
@@ -134,6 +141,7 @@ void main() {
 
     verify(
       () => repo.createEvent(
+        'u-test',
         'fam-1',
         title: 'Rendez-vous',
         category: 'sport',

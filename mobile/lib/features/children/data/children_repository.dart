@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
 import '../../../core/network/api_clients.dart';
+import '../../../core/session/session_scope.dart';
 import '../../../core/sync/read_cache.dart';
 import '../../family/application/family_context.dart';
 
@@ -15,8 +16,9 @@ class ChildrenRepository {
   final ApiClients _clients;
   final ReadCache _cache;
 
-  Future<List<api.Child>> listChildren(String familyId) async {
+  Future<List<api.Child>> listChildren(String userId, String familyId) async {
     final result = await _cache.list<api.Child>(
+      userId: userId,
       familyId: familyId,
       endpoint: 'children',
       networkCall: () => _clients.children
@@ -60,8 +62,11 @@ final childrenRepositoryProvider = Provider<ChildrenRepository>(
 /// Enfants de la famille active (recalculé à la bascule de famille).
 final familyChildrenProvider = FutureProvider<List<api.Child>>((ref) async {
   final family = ref.watch(familyContextProvider);
-  if (family == null) return const [];
-  return ref.watch(childrenRepositoryProvider).listChildren(family.familyId);
+  final userId = ref.watch(currentUserIdProvider);
+  if (family == null || userId == null) return const [];
+  return ref
+      .watch(childrenRepositoryProvider)
+      .listChildren(userId, family.familyId);
 });
 
 /// Notes d'un enfant donné.
@@ -69,5 +74,6 @@ final childNotesProvider = FutureProvider.family<List<api.Note>, String>((
   ref,
   childId,
 ) {
+  ref.watch(currentUserIdProvider); // recalcul à la bascule de compte (C22)
   return ref.watch(childrenRepositoryProvider).listNotes(childId);
 });

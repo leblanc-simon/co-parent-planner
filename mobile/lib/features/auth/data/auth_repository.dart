@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -67,9 +69,23 @@ class AuthRepository {
   Future<UserProfile> fetchMe() async {
     try {
       final me = await _clients.me.apiMeGet();
-      return UserProfile.fromMe(me);
+      final profile = UserProfile.fromMe(me);
+      // Mémorisé pour rouvrir l'app hors-ligne sur le cache du bon compte (C1).
+      await _storage.writeUserProfile(jsonEncode(profile.toJson()));
+      return profile;
     } on DioException catch (e) {
       throw ApiException.fromDio(e);
+    }
+  }
+
+  /// Dernier profil connu, ou `null` si aucun n'a encore été mémorisé.
+  Future<UserProfile?> cachedProfile() async {
+    final raw = await _storage.readUserProfile();
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      return UserProfile.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) {
+      return null;
     }
   }
 
@@ -87,7 +103,9 @@ class AuthRepository {
           phone: phone,
         ),
       );
-      return UserProfile.fromMe(me);
+      final profile = UserProfile.fromMe(me);
+      await _storage.writeUserProfile(jsonEncode(profile.toJson()));
+      return profile;
     } on DioException catch (e) {
       throw ApiException.fromDio(e);
     }

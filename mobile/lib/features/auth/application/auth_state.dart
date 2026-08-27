@@ -33,6 +33,30 @@ class UserProfile {
     avatarUrl: me.avatarUrl,
   );
 
+  /// Sérialisation du dernier profil connu (stockage sécurisé), pour ouvrir
+  /// l'app hors-ligne sur le cache du bon compte (constat C1).
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'email': email,
+    'emailVerified': emailVerified,
+    'status': status,
+    'locale': locale,
+    'fullName': fullName,
+    'phone': phone,
+    'avatarUrl': avatarUrl,
+  };
+
+  factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
+    id: (json['id'] ?? '').toString(),
+    email: (json['email'] ?? '').toString(),
+    emailVerified: json['emailVerified'] == true,
+    status: (json['status'] ?? '').toString(),
+    locale: json['locale'] as String?,
+    fullName: json['fullName'] as String?,
+    phone: json['phone'] as String?,
+    avatarUrl: json['avatarUrl'] as String?,
+  );
+
   UserProfile copyWith({String? locale, String? fullName, String? phone}) =>
       UserProfile(
         id: id,
@@ -49,6 +73,17 @@ class UserProfile {
 /// Etat d'authentification (D1 : aucun token avant verification d'e-mail).
 sealed class AuthState {
   const AuthState();
+}
+
+/// Etat initial : la session est en cours de restauration (`GET /api/me`).
+///
+/// Distinct de « deconnecte » : attendre la reponse avant `runApp()` laissait un
+/// ecran vide tant que le reseau etait lent, et demarrer directement en
+/// `AuthUnauthenticated` ferait clignoter l'ecran de connexion sous les yeux d'un
+/// utilisateur deja connecte (revue mobile 2026-08, constat C24). Le routeur
+/// affiche un ecran d'attente le temps que l'etat se decide.
+class AuthRestoring extends AuthState {
+  const AuthRestoring();
 }
 
 /// Non connecte : ecran d'auth.

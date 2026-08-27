@@ -94,7 +94,7 @@ void main() {
         computeRedirect(
           auth: const AuthAuthenticated(_user),
           family: _family,
-          location: Routes.settings,
+          location: Routes.children,
         ),
         isNull,
       );
@@ -116,6 +116,43 @@ void main() {
           location: Routes.resetPassword,
         ),
         isNull,
+      );
+    });
+  });
+
+  // ---- Régressions de la revue mobile 2026-08 ----
+
+  group('restauration de session (C24)', () {
+    test('AuthRestoring -> écran d\'attente, jamais l\'écran de connexion', () {
+      expect(
+        computeRedirect(
+          auth: const AuthRestoring(),
+          family: null,
+          location: Routes.home,
+        ),
+        Routes.splash,
+      );
+    });
+
+    test('AuthRestoring sur le splash -> reste (pas de boucle)', () {
+      expect(
+        computeRedirect(
+          auth: const AuthRestoring(),
+          family: null,
+          location: Routes.splash,
+        ),
+        isNull,
+      );
+    });
+
+    test('une fois connecté, le splash renvoie vers l\'accueil', () {
+      expect(
+        computeRedirect(
+          auth: const AuthAuthenticated(_user),
+          family: _family,
+          location: Routes.splash,
+        ),
+        Routes.home,
       );
     });
   });

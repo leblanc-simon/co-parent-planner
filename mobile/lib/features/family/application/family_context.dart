@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/storage/storage_providers.dart';
+import '../data/family_repository.dart';
 
 /// Famille active (perspective `X-Family-Id`). `null` tant qu'aucune famille
 /// n'est choisie -> l'utilisateur est dirige vers l'onboarding (US-ONB-1 sc.6).
@@ -46,6 +47,31 @@ class FamilyContextController extends Notifier<FamilyContext?> {
       state = FamilyContext.fromJson(jsonDecode(raw) as Map<String, dynamic>);
     } catch (_) {
       state = null;
+    }
+  }
+
+  /// Choisit une famille active après connexion, si aucune n'est déjà retenue.
+  ///
+  /// Une famille est sélectionnée automatiquement quand l'utilisateur n'en a
+  /// qu'une — le cas courant. Avec plusieurs familles, l'état reste `null` et
+  /// l'écran d'onboarding propose la liste (il ne proposait que « créer » ou
+  /// « rejoindre », ce qui piégeait dans l'onboarding tout utilisateur possédant
+  /// déjà une famille après une déconnexion — revue mobile 2026-08, constat C21).
+  ///
+  /// Best-effort : un échec réseau laisse l'état inchangé plutôt que de bloquer
+  /// la connexion.
+  Future<void> resolveActive() async {
+    if (state != null) return;
+    try {
+      final families = await ref.read(myFamiliesProvider.future);
+      if (families.length == 1) {
+        final f = families.single;
+        await setActive(
+          FamilyContext(familyId: f.id, familyName: f.name, type: f.type),
+        );
+      }
+    } catch (_) {
+      // Hors-ligne ou erreur serveur : l'écran d'onboarding prendra le relais.
     }
   }
 

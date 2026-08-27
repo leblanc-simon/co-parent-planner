@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
 import '../../../core/network/api_clients.dart';
+import '../../../core/session/session_scope.dart';
 import '../../../core/sync/read_cache.dart';
 import '../../family/application/family_context.dart';
 
@@ -25,8 +26,9 @@ class ExchangesRepository {
 
   /// US-EX-4 — liste des échanges de la famille (résumés, sans fil). Repli **cache local**
   /// cloisonné famille hors-ligne (Lot 8 §2.2, US-OFF-1).
-  Future<List<api.Exchange>> list(String familyId) async {
+  Future<List<api.Exchange>> list(String userId, String familyId) async {
     final result = await _cache.list<api.Exchange>(
+      userId: userId,
       familyId: familyId,
       endpoint: 'exchanges',
       networkCall: () => _clients.exchanges
@@ -175,8 +177,9 @@ final exchangesRepositoryProvider = Provider<ExchangesRepository>(
 /// Échanges de la famille active (recalculés à la bascule de famille).
 final familyExchangesProvider = FutureProvider<List<api.Exchange>>((ref) async {
   final family = ref.watch(familyContextProvider);
-  if (family == null) return const [];
-  return ref.watch(exchangesRepositoryProvider).list(family.familyId);
+  final userId = ref.watch(currentUserIdProvider);
+  if (family == null || userId == null) return const [];
+  return ref.watch(exchangesRepositoryProvider).list(userId, family.familyId);
 });
 
 /// Détail d'un échange (fil + options), rechargé après chaque action.
@@ -184,5 +187,6 @@ final exchangeDetailProvider = FutureProvider.family<api.Exchange, String>((
   ref,
   exchangeId,
 ) async {
+  ref.watch(currentUserIdProvider); // recalcul à la bascule de compte (C22)
   return ref.watch(exchangesRepositoryProvider).detail(exchangeId);
 });

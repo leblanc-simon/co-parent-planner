@@ -8,6 +8,7 @@ import '../features/auth/presentation/check_email_screen.dart';
 import '../features/auth/presentation/forgot_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
+import '../features/auth/presentation/splash_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/presentation/verify_email_screen.dart';
 import '../features/children/presentation/children_screen.dart';
@@ -36,6 +37,11 @@ String? computeRedirect({
   }
 
   switch (auth) {
+    case AuthRestoring():
+      // Session en cours de restauration : ecran d'attente, aucune redirection.
+      // Traiter cet etat comme « deconnecte » ferait clignoter l'ecran de
+      // connexion devant un utilisateur deja connecte (constat C24).
+      return location == Routes.splash ? null : Routes.splash;
     case AuthUnauthenticated():
       return isPublic ? null : Routes.login;
     case AuthPendingVerification():
@@ -70,6 +76,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       location: state.matchedLocation,
     ),
     routes: [
+      GoRoute(path: Routes.splash, builder: (_, _) => const SplashScreen()),
       GoRoute(path: Routes.login, builder: (_, _) => const LoginScreen()),
       GoRoute(path: Routes.register, builder: (_, _) => const RegisterScreen()),
       GoRoute(

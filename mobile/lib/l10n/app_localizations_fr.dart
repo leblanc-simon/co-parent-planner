@@ -166,6 +166,13 @@ class AppL10nFr extends AppL10n {
   String get onboardingJoin => 'Rejoindre via une invitation';
 
   @override
+  String get onboardingPickExisting => 'Reprendre une famille existante';
+
+  @override
+  String get onboardingSubtitleWithFamilies =>
+      'Choisissez la famille à ouvrir, ou créez-en une nouvelle.';
+
+  @override
   String get createFamilyTitle => 'Creer une famille';
 
   @override
@@ -855,6 +862,34 @@ class AppL10nFr extends AppL10n {
     );
     return '$_temp0';
   }
+
+  @override
+  String get syncRejectedTitle => 'Modifications refusées';
+
+  @override
+  String get syncRejectedHelp =>
+      'Le serveur a refusé ces modifications enregistrées hors-ligne. Relancez-les ou abandonnez-les.';
+
+  @override
+  String syncRejectedReason(String reason) {
+    String _temp0 = intl.Intl.selectLogic(reason, {
+      'conflict': 'Conflit : la donnée a changé entre-temps',
+      'forbidden': 'Droits insuffisants',
+      'invalid': 'Contenu refusé par le serveur',
+      'gone': 'Lélément nexiste plus',
+      'other': 'Refusé par le serveur',
+    });
+    return '$_temp0';
+  }
+
+  @override
+  String get syncRejectedAction => 'Voir';
+
+  @override
+  String get actionDiscard => 'Abandonner';
+
+  @override
+  String get syncRejectedEmpty => 'Aucune modification refusée.';
 
   @override
   String get privacyTitle => 'Confidentialité & données';

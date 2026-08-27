@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
 import '../../../core/network/api_clients.dart';
+import '../../../core/session/session_scope.dart';
 
 /// Acces aux familles (US-ONB-1, US-HOME-1).
 class FamilyRepository {
@@ -61,6 +62,7 @@ final familyRepositoryProvider = Provider<FamilyRepository>(
 );
 
 /// Liste de mes familles (pour le selecteur de famille).
-final myFamiliesProvider = FutureProvider<List<api.Family>>(
-  (ref) => ref.watch(familyRepositoryProvider).listMyFamilies(),
-);
+final myFamiliesProvider = FutureProvider<List<api.Family>>((ref) {
+  ref.watch(currentUserIdProvider); // recalcul à la bascule de compte (C22)
+  return ref.watch(familyRepositoryProvider).listMyFamilies();
+});

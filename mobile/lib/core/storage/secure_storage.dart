@@ -17,6 +17,11 @@ abstract interface class SecureStorage {
   Future<String?> readActiveFamily();
   Future<void> writeActiveFamily(String? json);
 
+  /// Dernier profil `GET /api/me` connu, sérialisé en JSON. Sert à ouvrir l'app
+  /// hors-ligne sur le cache du bon compte (revue mobile 2026-08, constat C1).
+  Future<String?> readUserProfile();
+  Future<void> writeUserProfile(String? json);
+
   Future<String?> readLocale();
   Future<void> writeLocale(String locale);
 }
@@ -34,6 +39,7 @@ class FlutterSecureStorageAdapter implements SecureStorage {
   static const _kAccess = 'access_token';
   static const _kRefresh = 'refresh_token';
   static const _kFamily = 'active_family';
+  static const _kProfile = 'user_profile';
   static const _kLocale = 'locale';
 
   @override
@@ -55,6 +61,7 @@ class FlutterSecureStorageAdapter implements SecureStorage {
   Future<void> clearTokens() async {
     await _storage.delete(key: _kAccess);
     await _storage.delete(key: _kRefresh);
+    await _storage.delete(key: _kProfile);
   }
 
   @override
@@ -66,6 +73,18 @@ class FlutterSecureStorageAdapter implements SecureStorage {
       await _storage.delete(key: _kFamily);
     } else {
       await _storage.write(key: _kFamily, value: json);
+    }
+  }
+
+  @override
+  Future<String?> readUserProfile() => _storage.read(key: _kProfile);
+
+  @override
+  Future<void> writeUserProfile(String? json) async {
+    if (json == null) {
+      await _storage.delete(key: _kProfile);
+    } else {
+      await _storage.write(key: _kProfile, value: json);
     }
   }
 

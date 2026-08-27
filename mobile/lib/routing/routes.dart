@@ -1,5 +1,7 @@
 /// Chemins de navigation (go_router).
 abstract final class Routes {
+  /// Ecran d'attente le temps de restaurer la session (`AuthRestoring`).
+  static const String splash = '/';
   static const String login = '/login';
   static const String register = '/register';
   static const String checkEmail = '/check-email';
@@ -16,11 +18,9 @@ abstract final class Routes {
   static const String agenda = '/agenda';
   static const String children = '/children';
 
-  /// Écran Paramètres : atteint par push (engrenage d'en-tête), plus un onglet.
-  static const String settings = '/settings';
-
   /// Routes publiques (accessibles non connecte).
   static const Set<String> public = {
+    splash,
     login,
     register,
     checkEmail,

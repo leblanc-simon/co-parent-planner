@@ -119,6 +119,8 @@ void main() {
 
     testWidgets('token valide -> banniere de succes', (tester) async {
       when(() => repo.verifyEmail(any())).thenAnswer((_) async {});
+      // La vérification purge désormais les jetons résiduels (constat C25).
+      when(() => repo.clearTokens()).thenAnswer((_) async {});
 
       await pumpScreen(
         tester,

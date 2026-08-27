@@ -48,6 +48,13 @@ class ApiException implements Exception {
   bool get isUnauthorized => statusCode == 401;
   bool get isRateLimited => statusCode == 429;
 
+  /// Aucune réponse HTTP reçue : serveur injoignable, DNS, timeout, mode avion.
+  ///
+  /// À distinguer d'un refus du serveur : traiter les deux de la même façon
+  /// déconnectait l'utilisateur au démarrage hors-ligne (revue mobile 2026-08,
+  /// constat C1).
+  bool get isNetworkFailure => statusCode == null;
+
   /// Message a afficher par defaut (detail serveur, sinon repli generique).
   String get message =>
       detail ?? title ?? 'Une erreur est survenue. Veuillez reessayer.';

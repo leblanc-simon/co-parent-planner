@@ -1,7 +1,6 @@
 {
   "@@locale": "fr",
   "appTitle": "CoParentPlanner",
-
   "actionContinue": "Continuer",
   "actionCancel": "Annuler",
   "actionRetry": "Reessayer",
@@ -11,14 +10,12 @@
   "emailLabel": "Adresse e-mail",
   "passwordLabel": "Mot de passe",
   "invalidEmail": "Adresse e-mail invalide.",
-
   "loginTitle": "Connexion",
   "loginSubtitle": "Accedez a l'espace de votre famille.",
   "loginAction": "Se connecter",
   "loginForgot": "Mot de passe oublie ?",
   "loginNoAccount": "Pas encore de compte ?",
   "loginRegisterLink": "Creer un compte",
-
   "registerTitle": "Creer un compte",
   "registerSubtitle": "Quelques informations pour demarrer.",
   "registerFullName": "Nom complet (optionnel)",
@@ -28,19 +25,20 @@
   "registerLoginLink": "Se connecter",
   "passwordPolicyHint": "Au moins 12 caracteres.",
   "passwordTooShort": "Le mot de passe doit comporter au moins 12 caracteres.",
-
   "checkEmailTitle": "Verifiez votre e-mail",
   "checkEmailBody": "Un e-mail de verification a ete envoye a {email}. Ouvrez le lien qu'il contient pour activer votre compte.",
   "@checkEmailBody": {
-    "placeholders": { "email": { "type": "String" } }
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
   },
   "checkEmailBackToLogin": "Revenir a la connexion",
-
   "forgotTitle": "Mot de passe oublie",
   "forgotSubtitle": "Saisissez votre e-mail pour recevoir un lien de reinitialisation.",
   "forgotAction": "Envoyer le lien",
   "forgotGenericSuccess": "Si un compte existe pour cette adresse, un e-mail de reinitialisation vient d'etre envoye.",
-
   "resetTitle": "Nouveau mot de passe",
   "resetSubtitle": "Choisissez un nouveau mot de passe.",
   "resetNewPassword": "Nouveau mot de passe",
@@ -48,38 +46,33 @@
   "resetAction": "Reinitialiser",
   "resetPasswordsMismatch": "Les mots de passe ne correspondent pas.",
   "resetSuccess": "Votre mot de passe a ete reinitialise. Vous pouvez vous connecter.",
-
   "verifyInProgress": "Verification en cours...",
   "verifySuccess": "Votre adresse e-mail est verifiee. Vous pouvez vous connecter.",
   "verifyError": "Lien invalide ou expire.",
   "verifyGoToLogin": "Aller a la connexion",
-
   "emailNotVerified": "Veuillez verifier votre adresse e-mail avant de vous connecter.",
   "sessionExpired": "Session expiree, veuillez vous reconnecter.",
-
   "onboardingTitle": "Bienvenue",
   "onboardingSubtitle": "Creez votre premiere famille ou rejoignez-en une via une invitation.",
   "onboardingCreate": "Creer une famille",
   "onboardingJoin": "Rejoindre via une invitation",
-
+  "onboardingPickExisting": "Reprendre une famille existante",
+  "onboardingSubtitleWithFamilies": "Choisissez la famille à ouvrir, ou créez-en une nouvelle.",
   "createFamilyTitle": "Creer une famille",
   "familyNameLabel": "Nom de la famille",
   "familyTypeLabel": "Type de famille",
   "familyTypeSeparated": "Parents separes",
   "familyTypeIntact": "Famille unie",
   "createFamilyAction": "Creer la famille",
-
   "joinFamilyTitle": "Rejoindre une famille",
   "joinFamilySubtitle": "Saisissez le code d'invitation recu.",
   "invitationTokenLabel": "Code d'invitation",
   "joinFamilyAction": "Rejoindre",
-
   "tabHome": "Accueil",
   "tabCustody": "Garde",
   "tabAgenda": "Agenda",
   "tabNotes": "Enfants",
   "tabSettings": "Reglages",
-
   "homeGreeting": "Bonjour",
   "homeAllAgenda": "Tout l'agenda",
   "homeUpcomingTitle": "A venir",
@@ -91,7 +84,6 @@
   "homeCustodyTitle": "Garde de la semaine",
   "homeCustodyEmpty": "Aucun planning de garde pour le moment.",
   "homeFamilyIntact": "Toute la famille reunie.",
-
   "settingsTitle": "Reglages",
   "settingsProfile": "Profil",
   "settingsFullName": "Nom complet",
@@ -102,7 +94,6 @@
   "settingsActiveFamily": "Famille active",
   "settingsSwitchFamily": "Changer de famille",
   "settingsMembers": "Membres de la famille",
-
   "membersTitle": "Membres",
   "membersEmpty": "Aucun membre.",
   "membersRoleParent": "Parent",
@@ -125,12 +116,17 @@
   "rightNone": "Aucun",
   "rightView": "Lecture",
   "rightEdit": "Edition",
-
   "settingsChildren": "Enfants",
   "childrenTitle": "Enfants",
   "childrenEmpty": "Aucun enfant pour le moment.",
   "childAge": "{count, plural, =0{Moins d'un an} one{{count} an} other{{count} ans}}",
-  "@childAge": { "placeholders": { "count": { "type": "num" } } },
+  "@childAge": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
   "childInfoTitle": "Informations",
   "childSchool": "Scolarité",
   "childNotesTitle": "Notes",
@@ -139,14 +135,17 @@
   "childNotePlaceholder": "Saisir une note…",
   "childNoteSend": "Publier",
   "childHealthWarning": "Ne saisissez pas de données de santé (allergies, traitements, diagnostics). Informations pratiques générales uniquement.",
-
   "custodyTitle": "Garde",
   "custodyScreenTitle": "Planning de garde",
   "custodyRuleHandover": "Échange le {weekday} à {time}",
   "@custodyRuleHandover": {
     "placeholders": {
-      "weekday": { "type": "String" },
-      "time": { "type": "String" }
+      "weekday": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
     }
   },
   "custodyActivity": "Activité",
@@ -160,7 +159,13 @@
   "custodyHoliday": "Vacances",
   "custodyStatsTitle": "Statistiques du mois",
   "custodyStatsDays": "{count, plural, =0{aucun jour} one{{count} jour} other{{count} jours}}",
-  "@custodyStatsDays": { "placeholders": { "count": { "type": "num" } } },
+  "@custodyStatsDays": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
   "custodyDayDetailTitle": "Détail du jour",
   "custodySource": "Origine",
   "custodySourceBase": "Rythme de base",
@@ -209,7 +214,13 @@
   "agendaEmpty": "Aucun événement ce mois-ci.",
   "agendaFilterAll": "Tout",
   "agendaDayEvents": "{count, plural, =0{Aucun événement} one{{count} événement} other{{count} événements}}",
-  "@agendaDayEvents": { "placeholders": { "count": { "type": "num" } } },
+  "@agendaDayEvents": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
   "agendaNew": "Nouvel événement",
   "agendaCreate": "Créer",
   "agendaCreated": "Événement créé.",
@@ -234,18 +245,25 @@
   "overlayToggle": "Overlay famille liée · {name}",
   "@overlayToggle": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "overlayEmpty": "Aucune activité de la famille liée sur cette période.",
-
   "exchangesTitle": "Échanges",
   "exchangesEmpty": "Aucun échange pour le moment.",
   "exchangesNew": "Nouvel échange",
   "exchangesFilterOpen": "Ouverts",
   "exchangesFilterDecided": "Décidés",
   "exchangesOpenCount": "{count, plural, =0{Aucun échange ouvert} one{{count} échange ouvert} other{{count} échanges ouverts}}",
-  "@exchangesOpenCount": { "placeholders": { "count": { "type": "num" } } },
+  "@exchangesOpenCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
   "exchangeTypeDiscussion": "Discussion",
   "exchangeTypeDecision": "Décision",
   "exchangeWholeFamily": "Toute la famille",
@@ -253,14 +271,26 @@
   "exchangeDecided": "Décidé",
   "exchangeAnonymous": "Membre supprimé",
   "exchangeDeadlineLabel": "Échéance : {date}",
-  "@exchangeDeadlineLabel": { "placeholders": { "date": { "type": "String" } } },
+  "@exchangeDeadlineLabel": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "exchangeThread": "Fil de discussion",
   "exchangeThreadEmpty": "Aucun message pour l'instant.",
   "exchangeMessagePlaceholder": "Écrire un message…",
   "exchangeDecidedBanner": "Décision tranchée",
   "exchangeValidateOption": "Valider cette option",
   "exchangeVotesCount": "{count, plural, =0{Aucune validation} one{{count} validation} other{{count} validations}}",
-  "@exchangeVotesCount": { "placeholders": { "count": { "type": "num" } } },
+  "@exchangeVotesCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
   "exchangeConflict": "Cette décision est déjà tranchée.",
   "exchangeClose": "Clôturer",
   "exchangeClosed": "Échange clôturé.",
@@ -275,7 +305,6 @@
   "exchangeOptionLabel": "Option",
   "exchangeAddOption": "Ajouter une option",
   "exchangeOptionsHint": "Une décision requiert au moins deux options.",
-
   "notificationsTitle": "Notifications",
   "notificationsEmailSection": "Notifications e-mail",
   "notifCategoryCustody": "Garde",
@@ -288,19 +317,38 @@
   "notificationsQuietEnd": "Fin",
   "notificationsQuietUnset": "Non définie",
   "notificationsSaved": "Préférences enregistrées.",
-
   "offlineBanner": "Hors-ligne — affichage des données mises en cache",
   "offlineUnavailable": "Données non disponibles hors-ligne",
   "offlineQueued": "Enregistré — en attente de synchro",
   "syncPending": "{count, plural, =0{Tout est synchronisé} =1{1 modification en attente de synchro} other{{count} modifications en attente de synchro}}",
   "@syncPending": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "syncRejected": "{count, plural, =0{} =1{1 modification refusée} other{{count} modifications refusées}}",
   "@syncRejected": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
-
+  "syncRejectedTitle": "Modifications refusées",
+  "syncRejectedHelp": "Le serveur a refusé ces modifications enregistrées hors-ligne. Relancez-les ou abandonnez-les.",
+  "syncRejectedReason": "{reason, select, conflict{Conflit : la donnée a changé entre-temps} forbidden{Droits insuffisants} invalid{Contenu refusé par le serveur} gone{Lélément nexiste plus} other{Refusé par le serveur}}",
+  "@syncRejectedReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "syncRejectedAction": "Voir",
+  "actionDiscard": "Abandonner",
+  "syncRejectedEmpty": "Aucune modification refusée.",
   "privacyTitle": "Confidentialité & données",
   "privacyExportSection": "Exporter mes données",
   "privacyExportHint": "Recevez une archive de vos données personnelles (droit d'accès et de portabilité).",

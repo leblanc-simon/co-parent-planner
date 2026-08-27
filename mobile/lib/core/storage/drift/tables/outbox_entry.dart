@@ -10,6 +10,10 @@ import '../../../sync/outbox_status.dart';
 /// re-scoping silencieux). Le rejeu se fait dans l'ordre `createdAt` (FIFO).
 class OutboxEntries extends Table {
   TextColumn get id => text()(); // UUID v4
+  /// Compte propriétaire de la mutation. Le rejeu est **filtré** sur cette
+  /// colonne : sur un appareil partagé, les mutations de A ne partent jamais
+  /// sous l'identité de B (revue mobile 2026-08, constats C2/C9).
+  TextColumn get userId => text().withDefault(const Constant(''))();
   TextColumn get method => text()(); // POST / PATCH / DELETE
   TextColumn get path => text()(); // ex. /api/families
   TextColumn get body => text().nullable()(); // JSON serialise

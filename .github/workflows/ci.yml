@@ -160,7 +160,10 @@ jobs:
       - name: Format (hors code généré)
         run: dart format --output=none --set-exit-if-changed lib/core lib/features lib/routing lib/app.dart lib/main.dart test
       - name: Analyse statique
-        run: dart analyze
+        # --fatal-infos : sans ce drapeau, `dart analyze` sort 0 sur les
+        # diagnostics `info`, donc AUCUNE des règles de analysis_options.yaml
+        # n'était réellement appliquée (revue mobile 2026-08, constat C66).
+        run: dart analyze --fatal-infos --fatal-warnings
       - name: Tests + couverture
         run: flutter test --coverage
       - name: Seuil de couverture (>= 70 %, D8)

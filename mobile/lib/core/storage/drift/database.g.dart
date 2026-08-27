@@ -18,6 +18,16 @@ class $OutboxEntriesTable extends OutboxEntries
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _methodMeta = const VerificationMeta('method');
   @override
   late final GeneratedColumn<String> method = GeneratedColumn<String>(
@@ -113,6 +123,7 @@ class $OutboxEntriesTable extends OutboxEntries
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    userId,
     method,
     path,
     body,
@@ -139,6 +150,12 @@ class $OutboxEntriesTable extends OutboxEntries
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
       context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
     }
     if (data.containsKey('method')) {
       context.handle(
@@ -212,6 +229,10 @@ class $OutboxEntriesTable extends OutboxEntries
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
       method: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}method'],
@@ -264,6 +285,11 @@ class $OutboxEntriesTable extends OutboxEntries
 
 class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
   final String id;
+
+  /// Compte propriétaire de la mutation. Le rejeu est **filtré** sur cette
+  /// colonne : sur un appareil partagé, les mutations de A ne partent jamais
+  /// sous l'identité de B (revue mobile 2026-08, constats C2/C9).
+  final String userId;
   final String method;
   final String path;
   final String? body;
@@ -275,6 +301,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
   final String? lastError;
   const OutboxEntry({
     required this.id,
+    required this.userId,
     required this.method,
     required this.path,
     this.body,
@@ -289,6 +316,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
     map['method'] = Variable<String>(method);
     map['path'] = Variable<String>(path);
     if (!nullToAbsent || body != null) {
@@ -314,6 +342,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
   OutboxEntriesCompanion toCompanion(bool nullToAbsent) {
     return OutboxEntriesCompanion(
       id: Value(id),
+      userId: Value(userId),
       method: Value(method),
       path: Value(path),
       body: body == null && nullToAbsent ? const Value.absent() : Value(body),
@@ -337,6 +366,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return OutboxEntry(
       id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
       method: serializer.fromJson<String>(json['method']),
       path: serializer.fromJson<String>(json['path']),
       body: serializer.fromJson<String?>(json['body']),
@@ -355,6 +385,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
       'method': serializer.toJson<String>(method),
       'path': serializer.toJson<String>(path),
       'body': serializer.toJson<String?>(body),
@@ -371,6 +402,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
 
   OutboxEntry copyWith({
     String? id,
+    String? userId,
     String? method,
     String? path,
     Value<String?> body = const Value.absent(),
@@ -382,6 +414,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
     Value<String?> lastError = const Value.absent(),
   }) => OutboxEntry(
     id: id ?? this.id,
+    userId: userId ?? this.userId,
     method: method ?? this.method,
     path: path ?? this.path,
     body: body.present ? body.value : this.body,
@@ -395,6 +428,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
   OutboxEntry copyWithCompanion(OutboxEntriesCompanion data) {
     return OutboxEntry(
       id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
       method: data.method.present ? data.method.value : this.method,
       path: data.path.present ? data.path.value : this.path,
       body: data.body.present ? data.body.value : this.body,
@@ -413,6 +447,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
   String toString() {
     return (StringBuffer('OutboxEntry(')
           ..write('id: $id, ')
+          ..write('userId: $userId, ')
           ..write('method: $method, ')
           ..write('path: $path, ')
           ..write('body: $body, ')
@@ -429,6 +464,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
   @override
   int get hashCode => Object.hash(
     id,
+    userId,
     method,
     path,
     body,
@@ -444,6 +480,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
       identical(this, other) ||
       (other is OutboxEntry &&
           other.id == this.id &&
+          other.userId == this.userId &&
           other.method == this.method &&
           other.path == this.path &&
           other.body == this.body &&
@@ -457,6 +494,7 @@ class OutboxEntry extends DataClass implements Insertable<OutboxEntry> {
 
 class OutboxEntriesCompanion extends UpdateCompanion<OutboxEntry> {
   final Value<String> id;
+  final Value<String> userId;
   final Value<String> method;
   final Value<String> path;
   final Value<String?> body;
@@ -469,6 +507,7 @@ class OutboxEntriesCompanion extends UpdateCompanion<OutboxEntry> {
   final Value<int> rowid;
   const OutboxEntriesCompanion({
     this.id = const Value.absent(),
+    this.userId = const Value.absent(),
     this.method = const Value.absent(),
     this.path = const Value.absent(),
     this.body = const Value.absent(),
@@ -482,6 +521,7 @@ class OutboxEntriesCompanion extends UpdateCompanion<OutboxEntry> {
   });
   OutboxEntriesCompanion.insert({
     required String id,
+    this.userId = const Value.absent(),
     required String method,
     required String path,
     this.body = const Value.absent(),
@@ -500,6 +540,7 @@ class OutboxEntriesCompanion extends UpdateCompanion<OutboxEntry> {
        status = Value(status);
   static Insertable<OutboxEntry> custom({
     Expression<String>? id,
+    Expression<String>? userId,
     Expression<String>? method,
     Expression<String>? path,
     Expression<String>? body,
@@ -513,6 +554,7 @@ class OutboxEntriesCompanion extends UpdateCompanion<OutboxEntry> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
       if (method != null) 'method': method,
       if (path != null) 'path': path,
       if (body != null) 'body': body,
@@ -528,6 +570,7 @@ class OutboxEntriesCompanion extends UpdateCompanion<OutboxEntry> {
 
   OutboxEntriesCompanion copyWith({
     Value<String>? id,
+    Value<String>? userId,
     Value<String>? method,
     Value<String>? path,
     Value<String?>? body,
@@ -541,6 +584,7 @@ class OutboxEntriesCompanion extends UpdateCompanion<OutboxEntry> {
   }) {
     return OutboxEntriesCompanion(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       method: method ?? this.method,
       path: path ?? this.path,
       body: body ?? this.body,
@@ -559,6 +603,9 @@ class OutboxEntriesCompanion extends UpdateCompanion<OutboxEntry> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
     }
     if (method.present) {
       map['method'] = Variable<String>(method.value);
@@ -599,6 +646,7 @@ class OutboxEntriesCompanion extends UpdateCompanion<OutboxEntry> {
   String toString() {
     return (StringBuffer('OutboxEntriesCompanion(')
           ..write('id: $id, ')
+          ..write('userId: $userId, ')
           ..write('method: $method, ')
           ..write('path: $path, ')
           ..write('body: $body, ')
@@ -628,6 +676,16 @@ class $CacheEntriesTable extends CacheEntries
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
   );
   static const VerificationMeta _familyIdMeta = const VerificationMeta(
     'familyId',
@@ -663,7 +721,13 @@ class $CacheEntriesTable extends CacheEntries
     requiredDuringInsert: true,
   );
   @override
-  List<GeneratedColumn> get $columns => [key, familyId, payloadJson, cachedAt];
+  List<GeneratedColumn> get $columns => [
+    key,
+    userId,
+    familyId,
+    payloadJson,
+    cachedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -683,6 +747,12 @@ class $CacheEntriesTable extends CacheEntries
       );
     } else if (isInserting) {
       context.missing(_keyMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
     }
     if (data.containsKey('family_id')) {
       context.handle(
@@ -724,6 +794,10 @@ class $CacheEntriesTable extends CacheEntries
         DriftSqlType.string,
         data['${effectivePrefix}key'],
       )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
       familyId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}family_id'],
@@ -746,13 +820,15 @@ class $CacheEntriesTable extends CacheEntries
 }
 
 class CacheEntry extends DataClass implements Insertable<CacheEntry> {
-  /// Clé = "$familyId::$endpoint" (ex. "uuid::events").
+  /// Clé = `userId::familyId::endpoint` (ex. `u-1::f-1::events`).
   final String key;
+  final String userId;
   final String familyId;
   final String payloadJson;
   final DateTime cachedAt;
   const CacheEntry({
     required this.key,
+    required this.userId,
     required this.familyId,
     required this.payloadJson,
     required this.cachedAt,
@@ -761,6 +837,7 @@ class CacheEntry extends DataClass implements Insertable<CacheEntry> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['key'] = Variable<String>(key);
+    map['user_id'] = Variable<String>(userId);
     map['family_id'] = Variable<String>(familyId);
     map['payload_json'] = Variable<String>(payloadJson);
     map['cached_at'] = Variable<DateTime>(cachedAt);
@@ -770,6 +847,7 @@ class CacheEntry extends DataClass implements Insertable<CacheEntry> {
   CacheEntriesCompanion toCompanion(bool nullToAbsent) {
     return CacheEntriesCompanion(
       key: Value(key),
+      userId: Value(userId),
       familyId: Value(familyId),
       payloadJson: Value(payloadJson),
       cachedAt: Value(cachedAt),
@@ -783,6 +861,7 @@ class CacheEntry extends DataClass implements Insertable<CacheEntry> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return CacheEntry(
       key: serializer.fromJson<String>(json['key']),
+      userId: serializer.fromJson<String>(json['userId']),
       familyId: serializer.fromJson<String>(json['familyId']),
       payloadJson: serializer.fromJson<String>(json['payloadJson']),
       cachedAt: serializer.fromJson<DateTime>(json['cachedAt']),
@@ -793,6 +872,7 @@ class CacheEntry extends DataClass implements Insertable<CacheEntry> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'key': serializer.toJson<String>(key),
+      'userId': serializer.toJson<String>(userId),
       'familyId': serializer.toJson<String>(familyId),
       'payloadJson': serializer.toJson<String>(payloadJson),
       'cachedAt': serializer.toJson<DateTime>(cachedAt),
@@ -801,11 +881,13 @@ class CacheEntry extends DataClass implements Insertable<CacheEntry> {
 
   CacheEntry copyWith({
     String? key,
+    String? userId,
     String? familyId,
     String? payloadJson,
     DateTime? cachedAt,
   }) => CacheEntry(
     key: key ?? this.key,
+    userId: userId ?? this.userId,
     familyId: familyId ?? this.familyId,
     payloadJson: payloadJson ?? this.payloadJson,
     cachedAt: cachedAt ?? this.cachedAt,
@@ -813,6 +895,7 @@ class CacheEntry extends DataClass implements Insertable<CacheEntry> {
   CacheEntry copyWithCompanion(CacheEntriesCompanion data) {
     return CacheEntry(
       key: data.key.present ? data.key.value : this.key,
+      userId: data.userId.present ? data.userId.value : this.userId,
       familyId: data.familyId.present ? data.familyId.value : this.familyId,
       payloadJson: data.payloadJson.present
           ? data.payloadJson.value
@@ -825,6 +908,7 @@ class CacheEntry extends DataClass implements Insertable<CacheEntry> {
   String toString() {
     return (StringBuffer('CacheEntry(')
           ..write('key: $key, ')
+          ..write('userId: $userId, ')
           ..write('familyId: $familyId, ')
           ..write('payloadJson: $payloadJson, ')
           ..write('cachedAt: $cachedAt')
@@ -833,12 +917,13 @@ class CacheEntry extends DataClass implements Insertable<CacheEntry> {
   }
 
   @override
-  int get hashCode => Object.hash(key, familyId, payloadJson, cachedAt);
+  int get hashCode => Object.hash(key, userId, familyId, payloadJson, cachedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is CacheEntry &&
           other.key == this.key &&
+          other.userId == this.userId &&
           other.familyId == this.familyId &&
           other.payloadJson == this.payloadJson &&
           other.cachedAt == this.cachedAt);
@@ -846,12 +931,14 @@ class CacheEntry extends DataClass implements Insertable<CacheEntry> {
 
 class CacheEntriesCompanion extends UpdateCompanion<CacheEntry> {
   final Value<String> key;
+  final Value<String> userId;
   final Value<String> familyId;
   final Value<String> payloadJson;
   final Value<DateTime> cachedAt;
   final Value<int> rowid;
   const CacheEntriesCompanion({
     this.key = const Value.absent(),
+    this.userId = const Value.absent(),
     this.familyId = const Value.absent(),
     this.payloadJson = const Value.absent(),
     this.cachedAt = const Value.absent(),
@@ -859,6 +946,7 @@ class CacheEntriesCompanion extends UpdateCompanion<CacheEntry> {
   });
   CacheEntriesCompanion.insert({
     required String key,
+    this.userId = const Value.absent(),
     required String familyId,
     required String payloadJson,
     required DateTime cachedAt,
@@ -869,6 +957,7 @@ class CacheEntriesCompanion extends UpdateCompanion<CacheEntry> {
        cachedAt = Value(cachedAt);
   static Insertable<CacheEntry> custom({
     Expression<String>? key,
+    Expression<String>? userId,
     Expression<String>? familyId,
     Expression<String>? payloadJson,
     Expression<DateTime>? cachedAt,
@@ -876,6 +965,7 @@ class CacheEntriesCompanion extends UpdateCompanion<CacheEntry> {
   }) {
     return RawValuesInsertable({
       if (key != null) 'key': key,
+      if (userId != null) 'user_id': userId,
       if (familyId != null) 'family_id': familyId,
       if (payloadJson != null) 'payload_json': payloadJson,
       if (cachedAt != null) 'cached_at': cachedAt,
@@ -885,6 +975,7 @@ class CacheEntriesCompanion extends UpdateCompanion<CacheEntry> {
 
   CacheEntriesCompanion copyWith({
     Value<String>? key,
+    Value<String>? userId,
     Value<String>? familyId,
     Value<String>? payloadJson,
     Value<DateTime>? cachedAt,
@@ -892,6 +983,7 @@ class CacheEntriesCompanion extends UpdateCompanion<CacheEntry> {
   }) {
     return CacheEntriesCompanion(
       key: key ?? this.key,
+      userId: userId ?? this.userId,
       familyId: familyId ?? this.familyId,
       payloadJson: payloadJson ?? this.payloadJson,
       cachedAt: cachedAt ?? this.cachedAt,
@@ -904,6 +996,9 @@ class CacheEntriesCompanion extends UpdateCompanion<CacheEntry> {
     final map = <String, Expression>{};
     if (key.present) {
       map['key'] = Variable<String>(key.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
     }
     if (familyId.present) {
       map['family_id'] = Variable<String>(familyId.value);
@@ -924,6 +1019,7 @@ class CacheEntriesCompanion extends UpdateCompanion<CacheEntry> {
   String toString() {
     return (StringBuffer('CacheEntriesCompanion(')
           ..write('key: $key, ')
+          ..write('userId: $userId, ')
           ..write('familyId: $familyId, ')
           ..write('payloadJson: $payloadJson, ')
           ..write('cachedAt: $cachedAt, ')
@@ -953,6 +1049,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 typedef $$OutboxEntriesTableCreateCompanionBuilder =
     OutboxEntriesCompanion Function({
       required String id,
+      Value<String> userId,
       required String method,
       required String path,
       Value<String?> body,
@@ -967,6 +1064,7 @@ typedef $$OutboxEntriesTableCreateCompanionBuilder =
 typedef $$OutboxEntriesTableUpdateCompanionBuilder =
     OutboxEntriesCompanion Function({
       Value<String> id,
+      Value<String> userId,
       Value<String> method,
       Value<String> path,
       Value<String?> body,
@@ -990,6 +1088,11 @@ class $$OutboxEntriesTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1054,6 +1157,11 @@ class $$OutboxEntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get method => $composableBuilder(
     column: $table.method,
     builder: (column) => ColumnOrderings(column),
@@ -1111,6 +1219,9 @@ class $$OutboxEntriesTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
 
   GeneratedColumn<String> get method =>
       $composableBuilder(column: $table.method, builder: (column) => column);
@@ -1174,6 +1285,7 @@ class $$OutboxEntriesTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
                 Value<String> method = const Value.absent(),
                 Value<String> path = const Value.absent(),
                 Value<String?> body = const Value.absent(),
@@ -1186,6 +1298,7 @@ class $$OutboxEntriesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => OutboxEntriesCompanion(
                 id: id,
+                userId: userId,
                 method: method,
                 path: path,
                 body: body,
@@ -1200,6 +1313,7 @@ class $$OutboxEntriesTableTableManager
           createCompanionCallback:
               ({
                 required String id,
+                Value<String> userId = const Value.absent(),
                 required String method,
                 required String path,
                 Value<String?> body = const Value.absent(),
@@ -1212,6 +1326,7 @@ class $$OutboxEntriesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => OutboxEntriesCompanion.insert(
                 id: id,
+                userId: userId,
                 method: method,
                 path: path,
                 body: body,
@@ -1251,6 +1366,7 @@ typedef $$OutboxEntriesTableProcessedTableManager =
 typedef $$CacheEntriesTableCreateCompanionBuilder =
     CacheEntriesCompanion Function({
       required String key,
+      Value<String> userId,
       required String familyId,
       required String payloadJson,
       required DateTime cachedAt,
@@ -1259,6 +1375,7 @@ typedef $$CacheEntriesTableCreateCompanionBuilder =
 typedef $$CacheEntriesTableUpdateCompanionBuilder =
     CacheEntriesCompanion Function({
       Value<String> key,
+      Value<String> userId,
       Value<String> familyId,
       Value<String> payloadJson,
       Value<DateTime> cachedAt,
@@ -1276,6 +1393,11 @@ class $$CacheEntriesTableFilterComposer
   });
   ColumnFilters<String> get key => $composableBuilder(
     column: $table.key,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1309,6 +1431,11 @@ class $$CacheEntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get familyId => $composableBuilder(
     column: $table.familyId,
     builder: (column) => ColumnOrderings(column),
@@ -1336,6 +1463,9 @@ class $$CacheEntriesTableAnnotationComposer
   });
   GeneratedColumn<String> get key =>
       $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
 
   GeneratedColumn<String> get familyId =>
       $composableBuilder(column: $table.familyId, builder: (column) => column);
@@ -1381,12 +1511,14 @@ class $$CacheEntriesTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> key = const Value.absent(),
+                Value<String> userId = const Value.absent(),
                 Value<String> familyId = const Value.absent(),
                 Value<String> payloadJson = const Value.absent(),
                 Value<DateTime> cachedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CacheEntriesCompanion(
                 key: key,
+                userId: userId,
                 familyId: familyId,
                 payloadJson: payloadJson,
                 cachedAt: cachedAt,
@@ -1395,12 +1527,14 @@ class $$CacheEntriesTableTableManager
           createCompanionCallback:
               ({
                 required String key,
+                Value<String> userId = const Value.absent(),
                 required String familyId,
                 required String payloadJson,
                 required DateTime cachedAt,
                 Value<int> rowid = const Value.absent(),
               }) => CacheEntriesCompanion.insert(
                 key: key,
+                userId: userId,
                 familyId: familyId,
                 payloadJson: payloadJson,
                 cachedAt: cachedAt,

@@ -1,3 +1,4 @@
+import 'package:coparentplanner/core/session/session_scope.dart';
 import 'package:coparentplanner/api/generated/export.dart' as api;
 import 'package:coparentplanner/features/agenda/data/agenda_repository.dart';
 import 'package:coparentplanner/features/exchanges/data/exchanges_repository.dart';
@@ -41,6 +42,7 @@ List<Override> _overrides(
   List<api.Exchange> exchanges = const [],
 }) => [
   authControllerProvider.overrideWith(() => _AuthStub(auth)),
+  currentUserIdProvider.overrideWithValue('u-test'),
   familyContextProvider.overrideWith(() => _FamilyStub(family)),
   // Neutralise l'appel réseau du bloc « À venir » (familyEventsProvider).
   familyEventsProvider.overrideWith((ref) => events),

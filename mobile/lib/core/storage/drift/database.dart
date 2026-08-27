@@ -26,7 +26,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -36,6 +36,22 @@ class AppDatabase extends _$AppDatabase {
       // de sémantique mais l'app n'est pas publiée (aucune donnée locale à préserver).
       if (from < 2) {
         await m.createTable(cacheEntries);
+      }
+      // v2 → v3 (revue mobile 2026-08, constats C2/C9 et C3/C8) : cloisonnement du
+      // stockage local **par compte**. Les entrées antérieures n'ont pas de
+      // propriétaire connu : les rejouer ou les servir sous l'identité du compte
+      // suivant serait précisément le défaut corrigé — on les supprime donc au lieu
+      // de les migrer avec un `userId` vide.
+      if (from < 3) {
+        // Le cache de lecture est de la donnée dérivée : on le recrée à vide
+        // plutôt que d'inventer un propriétaire aux entrées existantes.
+        await m.deleteTable(cacheEntries.actualTableName);
+        await m.createTable(cacheEntries);
+        // L'outbox garde sa structure (l'historique d'erreurs a de la valeur pour
+        // l'écran de synchro) mais perd ses entrées sans propriétaire : les
+        // rejouer sous l'identité du compte suivant est le défaut corrigé.
+        await m.addColumn(outboxEntries, outboxEntries.userId);
+        await delete(outboxEntries).go();
       }
     },
   );

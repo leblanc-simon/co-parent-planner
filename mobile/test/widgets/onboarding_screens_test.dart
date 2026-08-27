@@ -21,7 +21,12 @@ void main() {
     registerFallbackValue(api.FamilyCreateFamilyRequestType.separated);
   });
 
-  setUp(() => repo = MockFamilyRepository());
+  setUp(() {
+    repo = MockFamilyRepository();
+    // L'écran d'onboarding propose désormais les familles existantes (C21) :
+    // sans ce stub il partirait en réseau.
+    when(() => repo.listMyFamilies()).thenAnswer((_) async => const []);
+  });
 
   List<Override> overrides() => [
     familyRepositoryProvider.overrideWithValue(repo),
@@ -149,6 +154,51 @@ void main() {
 
       expect(find.byKey(const ValueKey('onboarding-create')), findsOneWidget);
       expect(find.byKey(const ValueKey('onboarding-join')), findsOneWidget);
+    });
+  });
+
+  group('OnboardingScreen — reprendre une famille existante (C21)', () {
+    testWidgets('liste les familles du compte et permet d\'en activer une', (
+      tester,
+    ) async {
+      when(() => repo.listMyFamilies()).thenAnswer(
+        (_) async => const [
+          api.Family(id: 'f1', name: 'Famille Moreau', type: 'separated'),
+          api.Family(id: 'f2', name: 'Famille Duval', type: 'separated'),
+        ],
+      );
+
+      await pumpScreen(
+        tester,
+        const OnboardingScreen(),
+        overrides: overrides(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Famille Moreau'), findsOneWidget);
+      expect(find.text('Famille Duval'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('onboarding-family-f1')),
+        findsOneWidget,
+        reason:
+            'sans ce chemin, un utilisateur possédant déjà une famille restait '
+            "piégé dans l'onboarding après une déconnexion",
+      );
+    });
+
+    testWidgets('aucune famille -> seuls créer et rejoindre sont proposés', (
+      tester,
+    ) async {
+      await pumpScreen(
+        tester,
+        const OnboardingScreen(),
+        overrides: overrides(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('onboarding-create')), findsOneWidget);
+      expect(find.byKey(const ValueKey('onboarding-join')), findsOneWidget);
+      expect(find.textContaining('Reprendre'), findsNothing);
     });
   });
 }

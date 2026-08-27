@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
 import '../../../core/sync/outbox_queued_exception.dart';
+import '../../../core/session/session_scope.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
@@ -694,6 +695,7 @@ class _EventFormState extends ConsumerState<_EventForm> {
       await ref
           .read(agendaRepositoryProvider)
           .createEvent(
+            ref.read(currentUserIdProvider) ?? '',
             family.familyId,
             title: _title.text.trim(),
             category: _category,

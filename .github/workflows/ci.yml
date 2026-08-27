@@ -87,6 +87,17 @@ jobs:
       mailpit:
         image: axllent/mailpit
         ports: ['8025:8025', '1025:1025']
+      # Hub Mercure : les écrans temps réel ouvrent un abonnement dès leur chargement. Sans hub
+      # joignable, l'abonnement échoue et le front affiche son bandeau « Mises à jour en direct
+      # indisponibles » — la suite testait donc un front dégradé (revue 2026-08 C2/C11).
+      mercure:
+        image: dunglas/mercure
+        env:
+          SERVER_NAME: ':80'
+          MERCURE_PUBLISHER_JWT_KEY: '!ChangeThisMercureHubJWTSecretKey!'
+          MERCURE_SUBSCRIBER_JWT_KEY: '!ChangeThisMercureHubJWTSecretKey!'
+          MERCURE_EXTRA_DIRECTIVES: 'cors_origins http://127.0.0.1:8000'
+        ports: ['3000:80']
     env:
       APP_ENV: dev
       DATABASE_URL: 'postgresql://app:app@127.0.0.1:5432/app?serverVersion=16&charset=utf8'
@@ -99,6 +110,9 @@ jobs:
       MAILER_DSN: 'smtp://127.0.0.1:1025'
       MAILER_FROM: 'no-reply@coparentplanner.test'
       APP_WEB_BASE_URL: 'http://127.0.0.1:8000'
+      MERCURE_URL: 'http://127.0.0.1:3000/.well-known/mercure'
+      MERCURE_PUBLIC_URL: 'http://127.0.0.1:3000/.well-known/mercure'
+      MERCURE_JWT_SECRET: '!ChangeThisMercureHubJWTSecretKey!'
       E2E_BASE_URL: 'http://127.0.0.1:8000'
       MAILPIT_API: 'http://127.0.0.1:8025'
     steps:

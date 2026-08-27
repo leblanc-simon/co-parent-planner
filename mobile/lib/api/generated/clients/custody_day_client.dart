@@ -18,8 +18,14 @@ abstract class CustodyDayClient {
   /// Retrieves the collection of CustodyDay resources.
   ///
   /// [familyId] - FamilyResource identifier.
+  ///
+  /// [from] - Début de la fenêtre (date locale, AAAA-MM-JJ). Défaut : 1er du mois courant.
+  ///
+  /// [to] - Fin de la fenêtre, incluse (AAAA-MM-JJ). Défaut : dernier jour du mois courant.
   @GET('/api/families/{familyId}/custody/days')
   Future<List<CustodyDay>> apiFamiliesFamilyIdcustodydaysGetCollection({
     @Path('familyId') required String familyId,
+    @Query('from') DateTime? from,
+    @Query('to') DateTime? to,
   });
 }

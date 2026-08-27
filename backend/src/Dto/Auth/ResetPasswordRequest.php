@@ -25,11 +25,20 @@ use Symfony\Component\Validator\Constraints as Assert;
 )]
 final class ResetPasswordRequest
 {
-    #[Assert\NotBlank]
-    #[Assert\Length(max: 512)]
+    #[Assert\Sequentially([
+        new Assert\NotBlank(message: 'auth.error.link_incomplete'),
+        new Assert\Length(max: 512, maxMessage: 'auth.error.link_incomplete'),
+    ])]
     public string $token = '';
 
-    #[Assert\NotBlank]
-    #[Assert\Length(min: PasswordPolicy::MIN_LENGTH, max: PasswordPolicy::MAX_LENGTH)]
+    #[Assert\Sequentially([
+        new Assert\NotBlank(message: 'auth.error.password_required'),
+        new Assert\Length(
+            min: PasswordPolicy::MIN_LENGTH,
+            max: PasswordPolicy::MAX_LENGTH,
+            minMessage: 'auth.error.password_too_short',
+            maxMessage: 'auth.error.password_too_long',
+        ),
+    ])]
     public string $password = '';
 }

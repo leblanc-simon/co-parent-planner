@@ -4,6 +4,7 @@ import {
   waitForInvitationToken,
   waitForVerificationToken,
 } from '../helpers/mailpit';
+import { waitForSaved } from '../helpers/page';
 
 const PASSWORD = 'MotDePasseTresLong123';
 
@@ -59,7 +60,7 @@ test('créer une famille → inviter → accepter → vérifier accès → ajust
   await expect(page.locator('h1')).toContainText('Compte');
   await page.selectOption('#f-zone', 'C');
   await page.locator('[data-settings-target="familyForm"] button[type="submit"]').click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
   await page.goto('/settings');
   await expect(page.locator('#f-zone')).toHaveValue('C');
 
@@ -70,7 +71,7 @@ test('créer une famille → inviter → accepter → vérifier accès → ajust
     .locator('[data-settings-target="inviteRights"] select[name="rights[agenda]"]')
     .selectOption('view');
   await page.locator('[data-settings-target="inviteForm"] button[type="submit"]').click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
   await expect(page.locator('.invitations')).toContainText(inviteeEmail);
 
   // ---- Parent B : accepte l'invitation reçue par e-mail (US-INV-3) ----
@@ -98,7 +99,7 @@ test('créer une famille → inviter → accepter → vérifier accès → ajust
   });
   await memberForm.locator('select[name="rights[agenda]"]').selectOption('edit');
   await memberForm.locator('button[type="submit"]').click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
   await page.goto('/settings');
   const memberFormReloaded = page.locator('.member-row', { hasText: inviteeEmail });
   await expect(
@@ -133,7 +134,7 @@ test('lien d\'invitation (non connecté) → création de compte contextualisée
   await page.fill('#i-email', inviteeEmail);
   await page.selectOption('#i-role', 'step_parent');
   await page.locator('[data-settings-target="inviteForm"] button[type="submit"]').click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
   await expect(page.locator('.invitations')).toContainText(inviteeEmail);
 
   // ---- Parent B : ouvre le lien SANS être connecté → formulaire de création de compte ----

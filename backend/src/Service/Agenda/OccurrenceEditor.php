@@ -108,17 +108,10 @@ final class OccurrenceEditor
         return $instant;
     }
 
+    /** Date d'occurrence : `Y-m-d` **ou** instant ISO renvoyé par l'API (revue C9). */
     private function parseRecurrenceDate(?string $raw, \DateTimeZone $tz): \DateTimeImmutable
     {
-        if (null === $raw || '' === $raw) {
-            throw new AgendaInputException('agenda.error.occurrence_invalid');
-        }
-        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $raw, $tz);
-        if (false === $date || $date->format('Y-m-d') !== $raw) {
-            throw new AgendaInputException('agenda.error.occurrence_invalid');
-        }
-
-        return $date;
+        return OccurrenceDate::parse($raw, $tz);
     }
 
     private function seriesId(Event $master): \Symfony\Component\Uid\Uuid

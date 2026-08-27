@@ -62,6 +62,9 @@ injecte l'env (port DB auto). **Le conteneur DB doit tourner pour les tests fonc
 ```bash
 # Base de dev (rapide) :
 cd backend && docker compose up -d database      # PostgreSQL (port hôte auto)
+# Temps réel (Turbo Streams over Mercure) — hub HTTP sur le port hôte 3000, requis pour exercer
+# les écrans temps réel en dev ; `symfony serve` injecte MERCURE_URL/MERCURE_PUBLIC_URL :
+docker compose up -d mercure
 # Tests (DB requise) — via symfony pour injecter l'env Docker :
 symfony php bin/phpunit                            # unitaire + fonctionnel/API
 php bin/phpunit tests/Unit tests/Rgpd              # sous-ensemble sans DB

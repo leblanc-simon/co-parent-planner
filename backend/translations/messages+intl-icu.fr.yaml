@@ -69,6 +69,15 @@ auth:
         refresh_reuse: 'Session invalidée pour raison de sécurité, veuillez vous reconnecter.'
         invalid_token: 'Lien invalide ou expiré.'
         too_many_attempts: 'Trop de tentatives. Veuillez réessayer plus tard.'
+        # Messages de contrainte des écrans d'auth (revue 2026-08 C12) — voir aussi le domaine
+        # `validators`, seul consulté par le composant Validator.
+        email_required: "L'adresse e-mail est requise."
+        email_invalid: "Cette adresse e-mail n'est pas valide."
+        email_too_long: "Cette adresse e-mail est trop longue."
+        password_required: "Le mot de passe est requis."
+        password_too_short: "Le mot de passe doit contenir au moins 12 caractères."
+        password_too_long: "Le mot de passe ne peut pas dépasser 128 caractères."
+        link_incomplete: "Ce lien est incomplet. Ouvrez à nouveau le lien reçu par e-mail."
     registered: 'Si cette adresse est disponible, un e-mail de vérification vient de vous être envoyé.'
     forgot_sent: "Si un compte existe pour cette adresse, un e-mail de réinitialisation vient d'être envoyé."
     password_reset_done: 'Votre mot de passe a été réinitialisé. Vous pouvez vous connecter.'
@@ -109,7 +118,15 @@ family:
         scope_mismatch: "L'identifiant de famille du chemin ne correspond pas au header X-Family-Id."
         forbidden: 'Famille non autorisée.'
         last_admin_protected: "Impossible de retirer ou rétrograder le dernier administrateur de la famille."
-        right_required: "Droit '{right}' requis."
+        # En ICU, une apostrophe simple ÉCHAPPE ce qu'elle entoure : `'{right}'` était rendu
+        # littéralement « {right} » dans tous les 403 d'autorisation de l'API (revue 2026-08 C8).
+        # Guillemets français : pas d'échappement possible, et c'est la typographie du reste du
+        # catalogue.
+        right_required: "Droit « {right} » requis."
+        name_required: "Le nom de la famille est requis."
+        name_too_long: "Le nom de la famille est trop long (120 caractères maximum)."
+    members:
+        count: '{count, plural, =0 {Aucune personne} one {# personne} other {# personnes}} dans la famille.'
 
 familylink:
     error:
@@ -174,6 +191,10 @@ agenda:
         scope_required: 'La portée (occurrence ou série) est requise pour un événement récurrent.'
         scope_invalid: 'Portée invalide (attendu : occurrence ou series).'
         occurrence_invalid: "La date ne correspond à aucune occurrence de la série."
+        # Distingué d'`occurrence_invalid` : affirmer que l'occurrence n'existe pas alors que seul le
+        # format était en cause menait le client dans une impasse (revue 2026-08 C9).
+        occurrence_date_required: "La date de l'occurrence ciblée est requise."
+        occurrence_date_invalid: "Date d'occurrence invalide : attendu AAAA-MM-JJ ou un instant ISO 8601."
         occurrence_cancelled: 'Cette occurrence est déjà supprimée.'
 
 overlay:
@@ -202,10 +223,14 @@ exchange:
         already_decided: 'Cette décision est déjà tranchée.'
         reopen_forbidden: 'Un échange tranché ne peut être rouvert.'
         title_required: 'Le titre est obligatoire.'
+        title_too_long: 'Le titre est trop long (200 caractères maximum).'
+        body_too_long: 'Le message est trop long (5000 caractères maximum).'
         type_invalid: "Type d'échange invalide (attendu : discussion ou decision)."
         status_invalid: 'Statut invalide (attendu : open ou decided).'
         options_min: 'Une décision requiert au moins deux options.'
         option_label_required: "Chaque option doit avoir un libellé."
+        option_label_too_long: "Le libellé d'une option est trop long (200 caractères maximum)."
+        option_sub_too_long: "La précision d'une option est trop longue (255 caractères maximum)."
         option_invalid: "Cette option n'appartient pas à la décision."
         not_a_decision: "Cet échange n'est pas une décision."
         decided_option_required: "Précisez l'option retenue pour clore la décision."
@@ -233,6 +258,7 @@ notification:
         quiet_hours_invalid: "Les heures de silence doivent être au format HH:MM (00:00 à 23:59)."
         quiet_hours_incomplete: 'Renseignez les deux bornes des heures de silence, ou aucune.'
         quiet_hours_too_long: 'La plage de silence ne peut pas couvrir 23 h ou plus.'
+        locale_invalid: "La langue demandée n'est pas dans un format valide (par exemple « fr-FR »)."
     category:
         custody: 'Garde'
         agenda: 'Agenda'

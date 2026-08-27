@@ -48,7 +48,7 @@ final class NotificationPrefsProcessor implements ProcessorInterface
         $this->applyEmailPrefs($user, $data->email);
         $this->applyQuietHours($user, $data->quietHoursStart, $data->quietHoursEnd);
         if ('' !== $data->locale) {
-            $user->setLocale($data->locale);
+            $user->setLocale($this->validLocale($data->locale));
         }
 
         $this->audit->log(AuditAction::NotificationPrefsUpdated, $user); // flush (commit)
@@ -96,6 +96,20 @@ final class NotificationPrefsProcessor implements ProcessorInterface
         }
 
         $user->setQuietHoursStart($start)->setQuietHoursEnd($end);
+    }
+
+    /**
+     * Locale au format BCP 47 court (`fr`, `fr-FR`) : la valeur atterrissait telle quelle dans une
+     * colonne `varchar(16)` et toute saisie plus longue remontait en 500 depuis PostgreSQL, en
+     * révélant le type de la colonne (revue 2026-08 C6).
+     */
+    private function validLocale(string $locale): string
+    {
+        if (1 !== preg_match('/^[a-zA-Z]{2,3}(-[a-zA-Z]{4})?(-([a-zA-Z]{2}|[0-9]{3}))?$/', $locale)) {
+            throw new NotificationInputException('notification.error.locale_invalid');
+        }
+
+        return $locale;
     }
 
     private function parseHhmm(string $value): int

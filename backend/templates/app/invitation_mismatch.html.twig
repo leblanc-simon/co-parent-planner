@@ -12,6 +12,7 @@
         <p class="auth__sub">Vous êtes connecté·e en tant que <strong>{{ currentEmail }}</strong>, mais cette invitation à rejoindre « {{ familyName }} » est destinée à <strong>{{ invitationEmail }}</strong>.</p>
 
         <form action="{{ path('app_logout') }}" method="post">
+            <input type="hidden" name="_csrf_token" data-controller="csrf-protection" value="{{ csrf_token('logout') }}">
             <input type="hidden" name="next" value="{{ path('app_accept_invitation', {token: token}) }}">
             <button class="btn btn--primary btn--block" type="submit">Se déconnecter et continuer</button>
         </form>

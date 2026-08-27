@@ -34,8 +34,10 @@ use Symfony\Component\Uid\Uuid;
 // Au plus un override / un EXDATE par (série, date d'origine) — index uniques partiels (§5.3).
 #[ORM\UniqueConstraint(name: 'uniq_event_override', columns: ['series_id', 'recurrence_date'], options: ['where' => '(is_override = true)'])]
 #[ORM\UniqueConstraint(name: 'uniq_event_cancelled', columns: ['series_id', 'recurrence_date'], options: ['where' => '(cancelled = true)'])]
-// Idempotence de création (Idempotency-Key outbox mobile §4.3) : au plus un événement par (famille, clé).
-#[ORM\UniqueConstraint(name: 'uniq_event_idempotency', columns: ['family_id', 'idempotency_key'], options: ['where' => '(idempotency_key IS NOT NULL)'])]
+// Idempotence de création (Idempotency-Key outbox mobile §4.3) : au plus un événement par
+// (famille, AUTEUR, clé). L'auteur fait partie du périmètre : sans lui, deux membres employant la
+// même valeur de clé se voyaient renvoyer la ressource l'un de l'autre (revue 2026-08 C10).
+#[ORM\UniqueConstraint(name: 'uniq_event_idempotency', columns: ['family_id', 'created_by_membership_id', 'idempotency_key'], options: ['where' => '(idempotency_key IS NOT NULL)'])]
 #[ORM\HasLifecycleCallbacks]
 class Event
 {

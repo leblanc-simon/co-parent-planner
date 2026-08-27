@@ -78,10 +78,11 @@ final class CreateMessageProcessor implements ProcessorInterface
         return $this->em->wrapInTransaction(function () use ($exchange, $author, $data, $key): Message {
             $this->em->getConnection()->executeStatement(
                 'SELECT pg_advisory_xact_lock(hashtext(:k))',
-                ['k' => 'message_idem:'.$exchange->getId().':'.$key],
+                // Verrou par (auteur, clé) — cf. C10 : deux auteurs, deux mutations distinctes.
+                ['k' => 'message_idem:'.$exchange->getId().':'.$author->getId().':'.$key],
             );
 
-            $existing = $this->messages->findOneByIdempotencyKey($exchange, $key);
+            $existing = $this->messages->findOneByIdempotencyKey($exchange, $author, $key);
             if ($existing instanceof Message) {
                 return $existing; // rejeu : aucun doublon
             }

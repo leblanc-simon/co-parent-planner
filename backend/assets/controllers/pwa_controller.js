@@ -13,7 +13,9 @@ export default class extends Controller {
         onlineMessage: String,
         mutationMessage: String,
         updateMessage: String,
+        realtimeMessage: String,
         family: String,
+        user: String,
     };
 
     connect() {
@@ -26,9 +28,18 @@ export default class extends Controller {
             this.deferredPrompt = e;
             if (this.hasInstallTarget) this.installTarget.hidden = false;
         };
+        // Temps réel indisponible (hub injoignable / abonnement refusé) : le bandeau est le seul
+        // signal que l'écran ne se mettra pas à jour tout seul (revue C11).
+        this.onRealtimeDown = () => this.setBanner(this.realtimeMessageValue || 'Mises à jour en direct indisponibles — rechargez la page pour voir les derniers changements.', 'pwa-banner--warn', true);
+        this.onRealtimeUp = () => {
+            if (this.hasBannerTarget) this.bannerTarget.dataset.persistent = 'false';
+            this.hideBanner();
+        };
         window.addEventListener('online', this.onOnline);
         window.addEventListener('offline', this.onOffline);
         window.addEventListener('beforeinstallprompt', this.onBeforeInstall);
+        window.addEventListener('cpp:realtime-down', this.onRealtimeDown);
+        window.addEventListener('cpp:realtime-up', this.onRealtimeUp);
 
         if (!navigator.onLine) this.showOffline();
         this.registerServiceWorker();
@@ -38,6 +49,8 @@ export default class extends Controller {
         window.removeEventListener('online', this.onOnline);
         window.removeEventListener('offline', this.onOffline);
         window.removeEventListener('beforeinstallprompt', this.onBeforeInstall);
+        window.removeEventListener('cpp:realtime-down', this.onRealtimeDown);
+        window.removeEventListener('cpp:realtime-up', this.onRealtimeUp);
     }
 
     showOffline() {
@@ -77,7 +90,7 @@ export default class extends Controller {
         if (!('serviceWorker' in navigator)) return;
         try {
             const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-            this.postFamily();
+            this.postScope();
 
             registration.addEventListener('updatefound', () => {
                 const worker = registration.installing;
@@ -110,9 +123,19 @@ export default class extends Controller {
         }
     }
 
-    postFamily() {
+    /**
+     * Transmet au service worker le périmètre du cache : famille active **et utilisateur**. Le SW
+     * cloisonnait ses pages par famille seulement ; après un changement de compte sur le même
+     * appareil, le porteur suivant récupérait hors ligne les écrans du compte précédent, notes
+     * comprises (revue C4). Un changement d'utilisateur purge le cache de pages.
+     */
+    postScope() {
         if (navigator.serviceWorker.controller) {
-            navigator.serviceWorker.controller.postMessage({ type: 'family', family: this.familyValue || '' });
+            navigator.serviceWorker.controller.postMessage({
+                type: 'scope',
+                family: this.familyValue || '',
+                user: this.userValue || '',
+            });
         }
     }
 

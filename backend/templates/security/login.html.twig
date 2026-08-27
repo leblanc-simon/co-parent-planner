@@ -7,6 +7,13 @@
         <h1 class="auth__title">Connexion</h1>
         <p class="auth__sub">Accédez à votre espace familial.</p>
 
+        {# Session expirée : le socle Stimulus redirige ici (`/login?expired=1`) quand l'API répond
+           401 après échec du rafraîchissement. Sans ce message, l'utilisateur perdait sa saisie
+           sans explication (revue C1, conséquence 3). #}
+        {% if expired|default(false) %}
+        <p class="form-note" role="status">Votre session a expiré. Reconnectez-vous pour continuer.</p>
+        {% endif %}
+
         <form data-controller="auth-form" data-auth-form-redirect-value="{{ path('app_home') }}"
               data-action="submit->auth-form#submit" action="/api/auth/login" novalidate>
             <div class="field">

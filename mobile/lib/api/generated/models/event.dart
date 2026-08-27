@@ -29,6 +29,7 @@ class Event {
     this.allDay = false,
     this.isRecurring = false,
     this.isOverride = false,
+    this.version = 1,
   });
   
   factory Event.fromJson(Map<String, Object?> json) => _$EventFromJson(json);
@@ -48,6 +49,9 @@ class Event {
   final String? recurrenceDate;
   final bool isRecurring;
   final bool isOverride;
+
+  /// Version de la ligne à renvoyer dans `expectedVersion` d'un PATCH (verrou optimiste, §4.3).
+  final int version;
   final Map<String, dynamic>? recurrence;
 
   Map<String, Object?> toJson() => _$EventToJson(this);

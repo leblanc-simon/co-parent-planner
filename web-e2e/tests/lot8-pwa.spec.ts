@@ -1,6 +1,7 @@
 import { Page, expect, test } from '@playwright/test';
 
 import { waitForVerificationToken } from '../helpers/mailpit';
+import { waitForScreen } from '../helpers/page';
 
 const PASSWORD = 'MotDePasseTresLong123';
 
@@ -77,7 +78,7 @@ test('PWA : hors-ligne — écran RO depuis le cache + bannière, mutation bloqu
     timeout: 20_000,
   });
   await page.goto('/agenda');
-  await page.waitForLoadState('networkidle');
+  await waitForScreen(page);
   await expect(page.locator('h1')).toContainText('Agenda');
 
   // ---- Hors-ligne ----
@@ -101,6 +102,6 @@ test('PWA : hors-ligne — écran RO depuis le cache + bannière, mutation bloqu
   // ---- Reconnexion ----
   await context.setOffline(false);
   await page.goto('/agenda');
-  await page.waitForLoadState('networkidle');
+  await waitForScreen(page);
   await expect(page.locator('.pwa-banner').first()).toBeHidden();
 });

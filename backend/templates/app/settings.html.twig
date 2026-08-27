@@ -31,8 +31,13 @@
     <a href="#sec-family">Famille</a>
     {% if canEditCustody %}
     <a href="#sec-custody">Rythme de garde</a>
+    {# « Exceptions » et « Vacances » ne sont rendues qu'avec deux parents (elles désignent toutes un
+       parent bénéficiaire) : les proposer avant menait à des ancres inexistantes, où cliquer ne
+       produisait rien (revue 2026-08 C17). Même condition que les sections elles-mêmes. #}
+    {% if parents|length >= 2 %}
     <a href="#sec-exceptions">Exceptions</a>
     <a href="#sec-holidays">Vacances</a>
+    {% endif %}
     {% endif %}
     <a href="#sec-members">Membres</a>
     {% if isAdmin %}<a href="#sec-invite">Inviter</a>{% endif %}
@@ -287,16 +292,22 @@
                         <input id="g-time" name="handoverTime" type="time" value="{{ pattern ? pattern.handoverTime : '19:00' }}">
                     </div>
                     <div class="field"></div>
+                    {# Sans rythme existant, `parentAId`/`parentBId` sont nuls : aucun `selected`
+                       n'était posé et les deux sélecteurs retombaient sur la PREMIÈRE option, donc
+                       sur le même membre. L'enregistrement ne pouvait alors qu'échouer (l'API exige
+                       deux parents distincts) — revue 2026-08 C13. On pré-sélectionne donc deux
+                       membres distincts par défaut, et `garde#syncParents` neutralise en B l'option
+                       retenue en A (et réciproquement). #}
                     <div class="field">
                         <label for="g-pa">Parent A</label>
-                        <select id="g-pa" name="parentAMembershipId">
-                            {% for m in parents %}<option value="{{ m.id }}" {{ parentAId and m.id == parentAId ? 'selected' }}>{{ m.user.fullName ?: m.user.email }}</option>{% endfor %}
+                        <select id="g-pa" name="parentAMembershipId" data-garde-target="parentA" data-action="change->garde#syncParents">
+                            {% for m in parents %}<option value="{{ m.id }}" {{ parentAId ? (m.id == parentAId ? 'selected') : (loop.first ? 'selected') }}>{{ m.user.fullName ?: m.user.email }}</option>{% endfor %}
                         </select>
                     </div>
                     <div class="field">
                         <label for="g-pb">Parent B</label>
-                        <select id="g-pb" name="parentBMembershipId">
-                            {% for m in parents %}<option value="{{ m.id }}" {{ parentBId and m.id == parentBId ? 'selected' }}>{{ m.user.fullName ?: m.user.email }}</option>{% endfor %}
+                        <select id="g-pb" name="parentBMembershipId" data-garde-target="parentB" data-action="change->garde#syncParents">
+                            {% for m in parents %}<option value="{{ m.id }}" {{ parentBId ? (m.id == parentBId ? 'selected') : (loop.index == 2 ? 'selected') }}>{{ m.user.fullName ?: m.user.email }}</option>{% endfor %}
                         </select>
                     </div>
                 </div>
@@ -372,7 +383,8 @@
 {# ───────────── Membres (US-MBR-1/2/3/5) ───────────── #}
 <section class="card" id="sec-members" style="margin-bottom:1.25rem">
     <h2 class="settings-section__title">Membres</h2>
-    <p class="settings-section__sub">{{ members|length }} personne(s) dans la famille.</p>
+    {# Pluriel ICU (invariant i18n du projet) — « 1 personne(s) » était un pluriel bricolé (C21). #}
+    <p class="settings-section__sub">{{ 'family.members.count'|trans({'count': members|length}) }}</p>
     <div class="members">
         {% for m in members %}
         <form class="member-row" data-action="submit->settings#saveMember" data-membership-id="{{ m.id }}">

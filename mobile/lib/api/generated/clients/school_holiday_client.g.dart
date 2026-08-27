@@ -84,9 +84,11 @@ class _SchoolHolidayClient implements SchoolHolidayClient {
   @override
   Future<void> apiFamiliesFamilyIdholidaysimportPost({
     required String familyId,
+    String? schoolYear,
   }) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{r'schoolYear': schoolYear};
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<void>(

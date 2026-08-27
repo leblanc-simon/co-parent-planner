@@ -8,6 +8,7 @@ part of 'note.dart';
 
 Note _$NoteFromJson(Map<String, dynamic> json) => Note(
   noteDate: json['noteDate'] as String?,
+  noteDateLabel: json['noteDateLabel'] as String?,
   authorColor: json['authorColor'] as String?,
   createdAt: json['createdAt'] as String?,
   id: json['id'] as String? ?? '',
@@ -22,6 +23,7 @@ Map<String, dynamic> _$NoteToJson(Note instance) => <String, dynamic>{
   'childId': instance.childId,
   'text': instance.text,
   'noteDate': instance.noteDate,
+  'noteDateLabel': instance.noteDateLabel,
   'authorMembershipId': instance.authorMembershipId,
   'authorName': instance.authorName,
   'authorColor': instance.authorColor,

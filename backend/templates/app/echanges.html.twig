@@ -17,8 +17,10 @@
     <p class="form-error" data-exchanges-target="error" role="alert" hidden></p>
     <p class="form-success" data-exchanges-target="notice" role="status" aria-live="polite" hidden></p>
 
-    {# Abonnement temps réel : liste (badge) + détail ouvert (fil, options, statut) → refresh Turbo. #}
-    <turbo-stream-source src="{{ mercureHub }}?topic={{ listTopic|url_encode }}{% if detailTopic %}&topic={{ detailTopic|url_encode }}{% endif %}"></turbo-stream-source>
+    {# Abonnement temps réel : liste (badge) + détail ouvert (fil, options, statut) → refresh Turbo.
+       `<turbo-mercure-stream-source>` (UX Turbo) est le seul élément qui honore `private` et
+       transmet le cookie d'abonnement au hub — cf. `garde.html.twig` (revue 2026-08 C2). #}
+    <turbo-mercure-stream-source private data-controller="realtime" src="{{ mercureHub }}?topic={{ listTopic|url_encode }}{% if detailTopic %}&topic={{ detailTopic|url_encode }}{% endif %}"></turbo-mercure-stream-source>
 
     <div class="exchanges__layout">
         {# ---- Master : liste ---- #}

@@ -93,12 +93,22 @@ php bin/console --env=test doctrine:database:create
 php bin/console --env=test doctrine:migrations:migrate -n
 ```
 
-**Mercure** (optionnel, temps réel) — lancer le binaire avec le secret `MERCURE_JWT_SECRET` :
+**Mercure** (temps réel) — lancer le binaire avec le secret `MERCURE_JWT_SECRET`. `SERVER_NAME=':80'`
+est **nécessaire en local** : sans lui, le hub force HTTPS et redirige vers un port fermé, ce qui rend
+le temps réel inexerçable en développement (revue 2026-08, constat C11). Les origines du front doivent
+être listées explicitement — l'abonnement web est **authentifié par cookie**, un `*` interdirait donc
+l'envoi des identifiants :
 ```bash
+SERVER_NAME=':3000' \
 MERCURE_PUBLISHER_JWT_KEY='!ChangeThisMercureHubJWTSecretKey!' \
 MERCURE_SUBSCRIBER_JWT_KEY='!ChangeThisMercureHubJWTSecretKey!' \
+MERCURE_EXTRA_DIRECTIVES='cors_origins http://127.0.0.1:8000 http://localhost:8000' \
 ./mercure run --config Caddyfile.dev
 ```
+> Avec Docker, `backend/compose.yaml` fournit le même réglage et **publie le port hôte 3000**
+> (identique à la stack `infra/`), ce qui rend `MERCURE_URL`/`MERCURE_PUBLIC_URL` prévisibles.
+> Les valeurs par défaut de `backend/.env` pointent sur ce hub local : elles ne doivent **jamais**
+> désigner un domaine tiers, l'URL du topic contenant l'identifiant de la famille (C11).
 
 **Lancer l'application** :
 ```bash

@@ -10,6 +10,7 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Link;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\QueryParameter;
 use App\Dto\Family\FamilyResource;
 use App\Entity\Child;
 use App\Entity\Event;
@@ -32,6 +33,27 @@ use App\State\Agenda\UpdateEventProcessor;
             uriTemplate: '/families/{familyId}/events',
             uriVariables: ['familyId' => new Link(fromClass: FamilyResource::class, identifiers: ['id'])],
             paginationEnabled: false,
+            // Paramètres de requête DÉCLARÉS : le contrat est la source du client Dart mobile, et
+            // aucune opération n'exposait les siens — l'agenda n'était pas affichable depuis le seul
+            // contrat, et `?overlay=` avait déjà imposé un appel dio brut côté mobile (revue C3).
+            parameters: [
+                'from' => new QueryParameter(
+                    description: 'Début de la fenêtre (date locale famille, AAAA-MM-JJ). Défaut : 1er du mois courant.',
+                    schema: ['type' => 'string', 'format' => 'date'],
+                ),
+                'to' => new QueryParameter(
+                    description: 'Fin de la fenêtre, incluse (AAAA-MM-JJ). Défaut : dernier jour du mois courant. Fenêtre maximale : 420 jours.',
+                    schema: ['type' => 'string', 'format' => 'date'],
+                ),
+                'category' => new QueryParameter(
+                    description: 'Filtre de catégories, séparées par des virgules (ex. `school,health`). Absent = toutes.',
+                    schema: ['type' => 'string'],
+                ),
+                'overlay' => new QueryParameter(
+                    description: 'Identifiant de la famille liée dont projeter les événements en overlay (US-AG-4). Absent = aucun overlay.',
+                    schema: ['type' => 'string', 'format' => 'uuid'],
+                ),
+            ],
             provider: EventsProvider::class,
         ),
         new Post(
@@ -45,12 +67,34 @@ use App\State\Agenda\UpdateEventProcessor;
         new Patch(
             uriTemplate: '/events/{id}',
             input: UpdateEventRequest::class,
+            // `scope` est la SEULE façon de distinguer « cette occurrence » de « toute la série » :
+            // l'omettre du contrat rendait l'édition d'une série indevinable (revue C3).
+            parameters: [
+                'scope' => new QueryParameter(
+                    description: "Portée de l'édition d'une série : `occurrence` (override de la seule occurrence `recurrenceDate`) ou `series` (cette occurrence et les suivantes, avec scission). Requis pour un événement récurrent, ignoré pour un ponctuel.",
+                    schema: ['type' => 'string', 'enum' => ['occurrence', 'series']],
+                ),
+            ],
             read: false,
             processor: UpdateEventProcessor::class,
         ),
         new Delete(
             uriTemplate: '/events/{id}',
             output: false,
+            parameters: [
+                'scope' => new QueryParameter(
+                    description: 'Portée de la suppression : `occurrence` (exclusion de la seule occurrence) ou `series`. Requis pour un événement récurrent.',
+                    schema: ['type' => 'string', 'enum' => ['occurrence', 'series']],
+                ),
+                'recurrenceDate' => new QueryParameter(
+                    description: "Occurrence visée par `scope=occurrence` : date d'origine (AAAA-MM-JJ) ou instant ISO 8601 renvoyé par l'API.",
+                    schema: ['type' => 'string'],
+                ),
+                'from' => new QueryParameter(
+                    description: 'Pivot de `scope=series` : supprime cette occurrence et les suivantes. Absent = toute la série.',
+                    schema: ['type' => 'string'],
+                ),
+            ],
             read: false,
             processor: DeleteEventProcessor::class,
         ),
@@ -74,6 +118,12 @@ class EventResource
     public ?string $recurrenceDate = null;
     public bool $isRecurring = false;
     public bool $isOverride = false;
+    /**
+     * Version de la ligne à renvoyer dans `expectedVersion` d'un PATCH (verrou optimiste, §4.3).
+     * `PATCH /events/{id}` l'acceptait déjà, mais aucune lecture ne l'exposait : la protection
+     * contre l'écriture concurrente était donc hors de portée de tout client (revue 2026-08 C20).
+     */
+    public int $version = 1;
     /** @var array{freq: string, until?: string|null, count?: int|null, excludeHolidays?: bool}|null */
     public ?array $recurrence = null;
 
@@ -95,6 +145,7 @@ class EventResource
         $dto->recurrenceDate = $o->recurrenceDate->format('Y-m-d');
         $dto->isRecurring = $o->isRecurring;
         $dto->isOverride = $o->isOverride;
+        $dto->version = $o->version;
 
         return $dto;
     }
@@ -118,6 +169,7 @@ class EventResource
         $dto->isRecurring = $e->isSeriesMaster() || $e->isOverride();
         $dto->isOverride = $e->isOverride();
         $dto->recurrence = $e->getRecurrence();
+        $dto->version = $e->getVersion();
 
         return $dto;
     }

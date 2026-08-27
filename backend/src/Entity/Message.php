@@ -21,8 +21,9 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Entity(repositoryClass: MessageRepository::class)]
 #[ORM\Table(name: 'messages')]
 #[ORM\Index(name: 'idx_message_exchange_sent', columns: ['exchange_id', 'sent_at', 'id'])]
-// Idempotence de pose (Idempotency-Key outbox mobile §4.2) : au plus un message par (échange, clé).
-#[ORM\UniqueConstraint(name: 'uniq_message_idempotency', columns: ['exchange_id', 'idempotency_key'], options: ['where' => '(idempotency_key IS NOT NULL)'])]
+// Idempotence de pose (Idempotency-Key outbox mobile §4.2) : au plus un message par
+// (échange, AUTEUR, clé) — l'auteur fait partie du périmètre (revue 2026-08 C10).
+#[ORM\UniqueConstraint(name: 'uniq_message_idempotency', columns: ['exchange_id', 'author_membership_id', 'idempotency_key'], options: ['where' => '(idempotency_key IS NOT NULL)'])]
 #[ORM\HasLifecycleCallbacks]
 class Message
 {

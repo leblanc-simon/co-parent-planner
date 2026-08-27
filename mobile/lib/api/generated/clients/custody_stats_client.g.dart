@@ -22,9 +22,15 @@ class _CustodyStatsClient implements CustodyStatsClient {
   @override
   Future<CustodyStats> apiFamiliesFamilyIdcustodystatsGet({
     required String familyId,
+    DateTime? from,
+    DateTime? to,
   }) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'from': from?.toIso8601String(),
+      r'to': to?.toIso8601String(),
+    };
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<CustodyStats>(

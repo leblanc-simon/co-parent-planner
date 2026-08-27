@@ -9,6 +9,7 @@ import '../models/exchange.dart';
 import '../models/exchange_create_exchange_request.dart';
 import '../models/exchange_decide_request.dart';
 import '../models/exchange_update_exchange_request_json_merge_patch.dart';
+import '../models/status.dart';
 
 part 'exchange_client.g.dart';
 
@@ -53,9 +54,12 @@ abstract class ExchangeClient {
   /// Retrieves the collection of Exchange resources.
   ///
   /// [familyId] - FamilyResource identifier.
+  ///
+  /// [status] - Filtre de statut : `open` ou `decided`. Absent = tous les échanges de la famille.
   @GET('/api/families/{familyId}/exchanges')
   Future<List<Exchange>> apiFamiliesFamilyIdexchangesGetCollection({
     @Path('familyId') required String familyId,
+    @Query('status') Status? status,
   });
 
   /// Creates a Exchange resource.

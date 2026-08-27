@@ -17,6 +17,7 @@ class CustodyStats {
     this.parentBCount = 0,
     this.otherCount = 0,
     this.total = 0,
+    this.daysInWindow = 0,
     this.pctA = 0,
     this.pctB = 0,
   });
@@ -28,6 +29,9 @@ class CustodyStats {
   final int parentBCount;
   final int otherCount;
   final int total;
+
+  /// Jours calendaires de la fenêtre ; `total` < `daysInWindow` = fenêtre partiellement générée.
+  final int daysInWindow;
   final num pctA;
   final num pctB;
   final String? from;

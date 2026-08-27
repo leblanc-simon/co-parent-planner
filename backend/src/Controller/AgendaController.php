@@ -20,10 +20,10 @@ use App\Service\Agenda\AgendaReader;
 use App\Service\Agenda\Occurrence;
 use App\Service\Agenda\OverlayReader;
 use App\Web\ActiveFamilyResolver;
+use App\Web\MercureSubscription;
 use Psr\Clock\ClockInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
-use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mercure\HubInterface;
@@ -47,6 +47,7 @@ final class AgendaController extends AbstractController
         private readonly ChildRepository $children,
         private readonly ClockInterface $clock,
         private readonly HubInterface $hub,
+        private readonly MercureSubscription $mercure,
     ) {
     }
 
@@ -121,13 +122,9 @@ final class AgendaController extends AbstractController
             'agendaTopic' => \sprintf('/families/%s/agenda', $family->getId()),
         ]);
 
-        // Cookie d'abonnement Mercure scopé au seul topic agenda de la famille active.
-        $factory = $this->hub->getFactory();
-        if (null !== $factory) {
-            $jwt = $factory->create([\sprintf('/families/%s/agenda', $family->getId())], []);
-            $response->headers->setCookie(Cookie::create('mercureAuthorization', $jwt)
-                ->withHttpOnly(true)->withSameSite(Cookie::SAMESITE_LAX)->withPath('/.well-known/mercure'));
-        }
+        // Cookie d'abonnement Mercure scopé au seul topic agenda de la famille active — borné dans
+        // le temps et renouvelé à chaque rendu, donc révocable (revue C16).
+        $this->mercure->attach($response, [\sprintf('/families/%s/agenda', $family->getId())]);
 
         return $response;
     }

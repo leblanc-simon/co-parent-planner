@@ -22,8 +22,9 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Entity(repositoryClass: ExchangeRepository::class)]
 #[ORM\Table(name: 'exchanges')]
 #[ORM\Index(name: 'idx_exchange_family_status', columns: ['family_id', 'status'])]
-// Idempotence de création (Idempotency-Key outbox mobile §4.2) : au plus un échange par (famille, clé).
-#[ORM\UniqueConstraint(name: 'uniq_exchange_idempotency', columns: ['family_id', 'idempotency_key'], options: ['where' => '(idempotency_key IS NOT NULL)'])]
+// Idempotence de création (Idempotency-Key outbox mobile §4.2) : au plus un échange par
+// (famille, AUTEUR, clé) — l'auteur fait partie du périmètre (revue 2026-08 C10).
+#[ORM\UniqueConstraint(name: 'uniq_exchange_idempotency', columns: ['family_id', 'author_membership_id', 'idempotency_key'], options: ['where' => '(idempotency_key IS NOT NULL)'])]
 #[ORM\HasLifecycleCallbacks]
 class Exchange
 {

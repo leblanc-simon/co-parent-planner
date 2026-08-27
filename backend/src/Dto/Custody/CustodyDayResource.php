@@ -7,6 +7,7 @@ namespace App\Dto\Custody;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Link;
+use ApiPlatform\Metadata\QueryParameter;
 use App\Dto\Family\FamilyResource;
 use App\Entity\CustodyDay;
 use App\State\Custody\CustodyDaysProvider;
@@ -19,6 +20,18 @@ use App\State\Custody\CustodyDaysProvider;
             uriTemplate: '/families/{familyId}/custody/days',
             uriVariables: ['familyId' => new Link(fromClass: FamilyResource::class, identifiers: ['id'])],
             paginationEnabled: false,
+            // Fenêtre déclarée au contrat (revue C3) : sans elle, aucun client généré ne pouvait
+            // demander autre chose que le mois courant.
+            parameters: [
+                'from' => new QueryParameter(
+                    description: 'Début de la fenêtre (date locale, AAAA-MM-JJ). Défaut : 1er du mois courant.',
+                    schema: ['type' => 'string', 'format' => 'date'],
+                ),
+                'to' => new QueryParameter(
+                    description: 'Fin de la fenêtre, incluse (AAAA-MM-JJ). Défaut : dernier jour du mois courant.',
+                    schema: ['type' => 'string', 'format' => 'date'],
+                ),
+            ],
             provider: CustodyDaysProvider::class,
         ),
     ],

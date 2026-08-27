@@ -22,8 +22,10 @@
     <p class="form-error" data-agenda-target="error" role="alert" hidden></p>
     <p class="form-success" data-agenda-target="notice" role="status" aria-live="polite" hidden></p>
 
-    {# Abonnement temps réel : une mutation d'agenda rafraîchit la page (Turbo Stream). #}
-    <turbo-stream-source src="{{ mercureHub }}?topic={{ agendaTopic|url_encode }}"></turbo-stream-source>
+    {# Abonnement temps réel (Turbo Stream over Mercure). `<turbo-mercure-stream-source>` de UX Turbo,
+       seul élément qui honore `private` et transmet donc le cookie d'abonnement au hub — voir le
+       commentaire détaillé dans `garde.html.twig` (revue 2026-08 C2). #}
+    <turbo-mercure-stream-source private data-controller="realtime" src="{{ mercureHub }}?topic={{ agendaTopic|url_encode }}"></turbo-mercure-stream-source>
 
     {# ───────── Navigation mois + filtres catégorie ───────── #}
     <section class="card">

@@ -1,6 +1,7 @@
 import { Page, expect, test } from '@playwright/test';
 
 import { waitForVerificationToken } from '../helpers/mailpit';
+import { waitForSaved } from '../helpers/page';
 
 const PASSWORD = 'MotDePasseTresLong123';
 
@@ -65,16 +66,16 @@ test('Échanges : discussion + message, décision + bascule, marqueur « en reta
   await page.selectOption('#e-type', 'discussion');
   await page.fill('#e-title', 'Organisation vacances');
   await page.locator('.exchange-form button[type="submit"]').click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
   const disc = page.locator('.exchange-card').filter({ hasText: 'Organisation vacances' });
   await expect(disc).toHaveCount(1);
 
   // ---- Ouvrir + poster un message ----
   await disc.first().click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
   await page.fill('.note-form textarea', 'On part en juillet ?');
   await page.locator('.note-form button[type="submit"]').click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
   await expect(page.locator('.exchange-thread')).toContainText('On part en juillet ?');
 
   // ---- Créer une décision puis valider (électorat = 1 → bascule immédiate) ----
@@ -86,12 +87,12 @@ test('Échanges : discussion + message, décision + bascule, marqueur « en reta
   await labels.nth(0).fill('Centre A');
   await labels.nth(1).fill('Centre B');
   await page.locator('.exchange-form button[type="submit"]').click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
 
   await page.locator('.exchange-card').filter({ hasText: 'Choix du centre aéré' }).first().click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
   await page.locator('button[data-action="exchanges#decide"]').first().click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
   await expect(page.locator('.exchange-decided-banner')).toBeVisible();
 
   // ---- Marqueur « en retard » : discussion ouverte à échéance passée ----
@@ -101,7 +102,7 @@ test('Échanges : discussion + message, décision + bascule, marqueur « en reta
   await page.fill('#e-title', 'Sujet en retard');
   await page.fill('#e-deadline', pastDate(5));
   await page.locator('.exchange-form button[type="submit"]').click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
   const late = page.locator('.exchange-card').filter({ hasText: 'Sujet en retard' });
   await expect(late.locator('.exchange-tag--overdue')).toBeVisible();
 });

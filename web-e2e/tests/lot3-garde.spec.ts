@@ -4,6 +4,7 @@ import {
   waitForInvitationToken,
   waitForVerificationToken,
 } from '../helpers/mailpit';
+import { waitForSaved } from '../helpers/page';
 
 const PASSWORD = 'MotDePasseTresLong123';
 
@@ -62,7 +63,7 @@ test('Garde : configurer un rythme → calendrier coloré → échanger un jour'
   await page.fill('#i-email', parentBEmail);
   await page.selectOption('#i-role', 'parent');
   await page.locator('[data-settings-target="inviteForm"] button[type="submit"]').click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
   await expect(page.locator('.invitations')).toContainText(parentBEmail);
 
   // ---- Parent B accepte l'invitation ----
@@ -88,7 +89,7 @@ test('Garde : configurer un rythme → calendrier coloré → échanger un jour'
   await page.selectOption('#g-pa', { label: 'Alice Garde' });
   await page.selectOption('#g-pb', { label: 'Bob Garde' });
   await page.locator('.garde-config button[type="submit"]').click();
-  await page.waitForLoadState('networkidle'); // succès → rechargement de /settings
+  await waitForSaved(page); // succès → rechargement de /settings
 
   // ---- Retour sur Garde : la génération est synchrone en E2E (Messenger sync://) → calendrier peuplé.
   // On affiche le MOIS SUIVANT, et non le mois courant : le moteur fige le passé, donc le mois

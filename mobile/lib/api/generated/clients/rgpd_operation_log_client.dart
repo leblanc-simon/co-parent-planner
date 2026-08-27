@@ -16,6 +16,19 @@ abstract class RgpdOperationLogClient {
   /// Retrieves the collection of RgpdOperationLog resources.
   ///
   /// Retrieves the collection of RgpdOperationLog resources.
+  ///
+  /// [type] - Filtre de type d'opération RGPD.
+  ///
+  /// [status] - Filtre de statut.
+  ///
+  /// [page] - Page (1 par défaut).
+  ///
+  /// [itemsPerPage] - Taille de page (50 par défaut, 200 maximum).
   @GET('/api/admin/rgpd/operations')
-  Future<List<RgpdOperationLog>> apiAdminrgpdoperationsGetCollection();
+  Future<List<RgpdOperationLog>> apiAdminrgpdoperationsGetCollection({
+    @Query('page') int? page = 1,
+    @Query('itemsPerPage') int? itemsPerPage = 50,
+    @Query('type') String? type,
+    @Query('status') String? status,
+  });
 }

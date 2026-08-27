@@ -26,7 +26,7 @@ final class SecurityController extends AbstractController
     }
 
     #[Route('/login', name: 'app_login', methods: ['GET'])]
-    public function login(): Response
+    public function login(#[MapQueryParameter] bool $expired = false): Response
     {
         if (null !== $this->security->getUser()) {
             return $this->redirectToRoute('app_home');
@@ -34,7 +34,10 @@ final class SecurityController extends AbstractController
 
         // Le flux d'invitation ne transite plus par le login générique : un invité anonyme atterrit
         // directement sur l'écran contextualisé « se connecter et rejoindre » (US-INV-3, §3.3).
-        return $this->render('security/login.html.twig');
+        // `?expired=1` : le socle Stimulus (`ApiController._send`) redirige ici quand l'API répond
+        // 401 après échec du rafraîchissement. Sans explication, l'utilisateur était simplement
+        // ramené à l'écran de connexion sans savoir pourquoi sa saisie avait disparu (revue C1).
+        return $this->render('security/login.html.twig', ['expired' => $expired]);
     }
 
     #[Route('/register', name: 'app_register', methods: ['GET'])]
@@ -68,6 +71,12 @@ final class SecurityController extends AbstractController
     #[Route('/logout', name: 'app_logout', methods: ['POST'])]
     public function logout(Request $request, RefreshTokenManager $refreshTokens, EntityManagerInterface $em): Response
     {
+        // CSRF sans session (`csrf.yaml` : stateless_token_ids, double-submit cookie) : un site tiers
+        // ne peut plus forcer la déconnexion par un simple formulaire auto-posté (revue C22).
+        if (!$this->isCsrfTokenValid('logout', (string) $request->request->get('_csrf_token'))) {
+            return $this->redirectToRoute('app_home');
+        }
+
         $refresh = $request->cookies->get('refresh_token');
         if (\is_string($refresh) && '' !== $refresh) {
             $refreshTokens->revoke($refresh);
@@ -83,6 +92,13 @@ final class SecurityController extends AbstractController
         $secure = $request->isSecure();
         $response->headers->clearCookie('access_token', '/', null, $secure, true, Cookie::SAMESITE_LAX);
         $response->headers->clearCookie('refresh_token', '/api/auth/refresh', null, $secure, true, Cookie::SAMESITE_LAX);
+
+        // Le pare-feu web est désormais `stateless` (plus de token en session), mais un navigateur
+        // peut encore porter un `PHPSESSID` antérieur au correctif, ou une session ouverte par un
+        // futur usage : on l'invalide explicitement — ceinture et bretelles du même défaut (C1).
+        if ($request->hasPreviousSession() || ($request->hasSession() && $request->getSession()->isStarted())) {
+            $request->getSession()->invalidate();
+        }
 
         return $response;
     }

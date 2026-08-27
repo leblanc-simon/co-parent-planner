@@ -13,9 +13,9 @@ use App\Repository\ExchangeRepository;
 use App\Security\Exchanges\ExchangeAccess;
 use App\Service\Exchange\ExchangeAssembler;
 use App\Web\ActiveFamilyResolver;
+use App\Web\MercureSubscription;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
-use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mercure\HubInterface;
@@ -36,6 +36,7 @@ final class ExchangeController extends AbstractController
         private readonly ExchangeAccess $access,
         private readonly ChildRepository $children,
         private readonly HubInterface $hub,
+        private readonly MercureSubscription $mercure,
     ) {
     }
 
@@ -94,13 +95,9 @@ final class ExchangeController extends AbstractController
             'detailTopic' => $topics[1] ?? null,
         ]);
 
-        // Cookie d'abonnement Mercure scopé aux seuls topics échanges pertinents (liste + détail ouvert).
-        $factory = $this->hub->getFactory();
-        if (null !== $factory) {
-            $jwt = $factory->create($topics, []);
-            $response->headers->setCookie(Cookie::create('mercureAuthorization', $jwt)
-                ->withHttpOnly(true)->withSameSite(Cookie::SAMESITE_LAX)->withPath('/.well-known/mercure'));
-        }
+        // Cookie d'abonnement Mercure scopé aux seuls topics échanges pertinents (liste + détail
+        // ouvert), borné dans le temps et renouvelé à chaque rendu, donc révocable (revue C16).
+        $this->mercure->attach($response, $topics);
 
         return $response;
     }

@@ -41,9 +41,12 @@ abstract class SchoolHolidayClient {
   /// Creates a SchoolHoliday resource.
   ///
   /// [familyId] - FamilyResource identifier.
+  ///
+  /// [schoolYear] - Année scolaire à importer (format du dataset officiel, ex. `2026-2027`). Absent = année scolaire courante.
   @POST('/api/families/{familyId}/holidays/import')
   Future<void> apiFamiliesFamilyIdholidaysimportPost({
     @Path('familyId') required String familyId,
+    @Query('schoolYear') String? schoolYear,
   });
 
   /// Replaces the SchoolHoliday resource.

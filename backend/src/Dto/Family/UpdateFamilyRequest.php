@@ -15,8 +15,10 @@ use Symfony\Component\Validator\Constraints as Assert;
  */
 final class UpdateFamilyRequest
 {
-    #[Assert\NotBlank(allowNull: true)]
-    #[Assert\Length(min: 1, max: 120)]
+    #[Assert\Sequentially([
+        new Assert\NotBlank(allowNull: true, message: 'family.error.name_required'),
+        new Assert\Length(max: 120, maxMessage: 'family.error.name_too_long'),
+    ])]
     public ?string $name = null;
 
     #[Assert\Choice(callback: [self::class, 'validTypes'])]

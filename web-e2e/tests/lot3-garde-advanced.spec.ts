@@ -4,6 +4,7 @@ import {
   waitForInvitationToken,
   waitForVerificationToken,
 } from '../helpers/mailpit';
+import { waitForSaved } from '../helpers/page';
 
 const PASSWORD = 'MotDePasseTresLong123';
 
@@ -49,7 +50,7 @@ async function setupTwoParentFamily(
   await page.fill('#i-email', parentBEmail);
   await page.selectOption('#i-role', 'parent');
   await page.locator('[data-settings-target="inviteForm"] button[type="submit"]').click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
 
   const inviteToken = await waitForInvitationToken(request, parentBEmail);
   const contextB = await browser.newContext();
@@ -88,7 +89,7 @@ test('Garde avancée : rythme custom 14 jours, vacances manuelle + règle, excep
   // le motif mixte produit les deux couleurs dans le calendrier généré.
   await nights.first().click();
   await page.locator('.garde-config button[type="submit"]').click();
-  await page.waitForLoadState('networkidle'); // succès → rechargement de /settings
+  await waitForSaved(page); // succès → rechargement de /settings
 
   // ---- Le calendrier généré se consulte sur l'écran Garde ----
   await page.goto('/garde');

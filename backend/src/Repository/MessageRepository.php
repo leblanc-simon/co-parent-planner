@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Exchange;
+use App\Entity\Membership;
 use App\Entity\Message;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -33,9 +34,10 @@ class MessageRepository extends ServiceEntityRepository
         return $result;
     }
 
-    public function findOneByIdempotencyKey(Exchange $exchange, string $key): ?Message
+    /** Rejeu scopé à l'**auteur** du message, jamais au seul échange (revue 2026-08 C10). */
+    public function findOneByIdempotencyKey(Exchange $exchange, Membership $author, string $key): ?Message
     {
-        return $this->findOneBy(['exchange' => $exchange, 'idempotencyKey' => $key]);
+        return $this->findOneBy(['exchange' => $exchange, 'authorMembership' => $author, 'idempotencyKey' => $key]);
     }
 
     /**

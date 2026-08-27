@@ -8,6 +8,47 @@
 > **Tout constat listé ci-dessous a été reproduit**, commande ou manipulation à l'appui. Les
 > hypothèses non confirmées sont regroupées en fin de document.
 
+## État des corrections — 2026-08-27
+
+**Les 22 constats (C1 → C22) sont corrigés**, chacun couvert par un test de non-régression
+(`backend/tests/Functional/Web/WebReviewFixesTest.php` pour le front, `ApiReviewFixesTest.php` pour
+l'API) et revérifié dans Chrome sur la stack locale. Portes : backend **371 tests / 3074 assertions**,
+PHPStan niveau 8 à 0, cs-fixer 0, Twig 35 ; mobile **180 tests**, `dart analyze` 0 ; OpenAPI ré-exporté
+et client Dart régénéré. Migration fournie (`Version20260827204815`, périmètre des index d'idempotence).
+
+Deux corrections **diffèrent de celle proposée par la revue** :
+
+- **C2** — ajouter l'attribut `private` à `<turbo-stream-source>` **ne suffisait pas** : cet élément est
+  celui de Turbo, pas de UX Turbo, et il ouvre son flux par `new EventSource(src)` — sans
+  `withCredentials`, en ignorant purement `private`. Le correctif réel est de rendre l'élément
+  `<turbo-mercure-stream-source private>` de UX Turbo (déjà chargé via `assets/controllers.json`).
+  Vérifié en direct : une mise à jour publiée en `private` sur le topic `custody` est désormais reçue
+  et rendue par la page (`turbo:before-stream-render` déclenché), là où elle n'arrivait jamais.
+- **C1** — le pare-feu `main` passe en `stateless: true` (première option de la revue), l'invalidation
+  explicite de session étant conservée en ceinture-bretelles pour les navigateurs porteurs d'un
+  `PHPSESSID` antérieur au correctif. La protection CSRF du projet étant déjà sans session
+  (`csrf.yaml` : `stateless_token_ids`), ce passage n'a coûté aucune fonctionnalité.
+
+Corrections notables au-delà du strict énoncé, parce que le même défaut existait ailleurs :
+**C6** (bornes également posées sur le corps d'un échange et les libellés d'options),
+**C10** (les trois périmètres fautifs — `events`, `exchanges`, `messages`),
+**C12** (`Sequentially` sur tous les champs concernés + messages métier au catalogue, verrouillés par
+`TranslationCatalogTest`), **C20** (`version` exposée aussi sur les échanges),
+**C11** (indicateur d'échec du temps réel : bandeau « Mises à jour en direct indisponibles »,
+`assets/controllers/realtime_controller.js`).
+
+Deux effets de bord ont été traités dans la foulée, parce que le correctif de C2 les a révélés :
+
+- la suite **E2E ne démarrait aucun hub Mercure** : elle validait donc un front dégradé (abonnement
+  en échec). Le hub est maintenant lancé par `web-e2e/scripts/e2e-local.sh` **et** par le job CI ;
+- les **31 `waitForLoadState('networkidle')`** de la suite ne peuvent pas aboutir face à un flux SSE
+  permanent. Remplacés par des attentes déterministes (`web-e2e/helpers/page.ts` : fin de chargement,
+  ou confirmation de succès pour une mutation) — au passage, la suite passe de 4 min 30 à 42 s.
+  Un test qui **exerce** réellement une mise à jour poussée reste à écrire.
+
+Un point reste ouvert, hors périmètre d'un correctif : le **point d'attention produit** en fin de
+document (chiffrement de `children.first_name` / `school_label` / `info`) attend un arbitrage PO.
+
 ## Méthode
 
 Jeu d'essai créé de bout en bout par l'interface : compte `revue.a@…` (Alice Dupont, admin), famille

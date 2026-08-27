@@ -16,8 +16,11 @@ abstract class RgpdPurgeClient {
   /// Creates a RgpdPurge resource.
   ///
   /// Creates a RgpdPurge resource.
+  ///
+  /// [dryRun] - Simulation : `true` (défaut) n'écrit rien et renvoie le rapport ; `false` exécute réellement la purge.
   @POST('/api/admin/rgpd/purge')
   Future<RgpdPurge> apiAdminrgpdpurgePost({
     @Body() required RgpdPurge body,
+    @Query('dryRun') bool? dryRun = true,
   });
 }

@@ -23,6 +23,7 @@ class EventJsonld {
     this.allDay = false,
     this.isRecurring = false,
     this.isOverride = false,
+    this.version = 1,
     this.object5,
     this.seriesId,
     this.responsibleMembershipId,
@@ -63,6 +64,9 @@ class EventJsonld {
   final String? recurrenceDate;
   final bool isRecurring;
   final bool isOverride;
+
+  /// Version de la ligne à renvoyer dans `expectedVersion` d'un PATCH (verrou optimiste, §4.3).
+  final int version;
   final Map<String, dynamic>? recurrence;
 
   Map<String, Object?> toJson() => _$EventJsonldToJson(this);

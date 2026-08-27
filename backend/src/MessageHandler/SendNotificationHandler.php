@@ -118,6 +118,8 @@ final class SendNotificationHandler
             ->to($to)
             ->subject($subject)
             ->htmlTemplate('emails/notification.html.twig')
+            // Partie texte explicite : le lien d'action doit rester lisible en texte seul (C18).
+            ->textTemplate('emails/notification.txt.twig')
             ->locale($locale)
             ->context([
                 'locale' => $locale,

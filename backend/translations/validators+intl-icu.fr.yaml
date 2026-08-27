@@ -18,3 +18,20 @@ child:
 note:
     error:
         text_required: 'Le texte de la note est requis.'
+
+# Écrans d'auth et création de famille (revue 2026-08 C12) : libellés identiques au domaine
+# `messages` — `TranslationCatalogTest` échoue en cas de divergence.
+auth:
+    error:
+        email_required: "L'adresse e-mail est requise."
+        email_invalid: "Cette adresse e-mail n'est pas valide."
+        email_too_long: "Cette adresse e-mail est trop longue."
+        password_required: "Le mot de passe est requis."
+        password_too_short: "Le mot de passe doit contenir au moins 12 caractères."
+        password_too_long: "Le mot de passe ne peut pas dépasser 128 caractères."
+        link_incomplete: "Ce lien est incomplet. Ouvrez à nouveau le lien reçu par e-mail."
+
+family:
+    error:
+        name_required: "Le nom de la famille est requis."
+        name_too_long: "Le nom de la famille est trop long (120 caractères maximum)."

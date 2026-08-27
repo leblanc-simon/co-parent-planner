@@ -12,11 +12,13 @@ BACKEND="$ROOT/backend"
 E2E="$ROOT/web-e2e"
 APP_PORT="${APP_PORT:-8000}"
 MAILPIT_NAME="cpp-e2e-mailpit"
+MERCURE_NAME="cpp-e2e-mercure"
 
 cleanup() {
   echo "== nettoyage =="
   (cd "$BACKEND" && symfony server:stop >/dev/null 2>&1) || true
   docker rm -f "$MAILPIT_NAME" >/dev/null 2>&1 || true
+  docker rm -f "$MERCURE_NAME" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
@@ -26,6 +28,18 @@ echo "== PostgreSQL (conteneur backend) =="
 echo "== Mailpit (18025 API, 11025 SMTP) =="
 docker rm -f "$MAILPIT_NAME" >/dev/null 2>&1 || true
 docker run -d --name "$MAILPIT_NAME" -p 18025:8025 -p 11025:1025 axllent/mailpit >/dev/null
+
+# Hub Mercure : les écrans temps réel ouvrent un abonnement dès leur chargement. Sans hub joignable,
+# le front affiche son bandeau « Mises à jour en direct indisponibles » et la suite testerait un front
+# dégradé (revue 2026-08 C2/C11). `SERVER_NAME=':80'` : sans lui le hub force HTTPS vers un port fermé.
+echo "== Mercure (13000) =="
+docker rm -f "$MERCURE_NAME" >/dev/null 2>&1 || true
+docker run -d --name "$MERCURE_NAME" -p 13000:80 \
+  -e SERVER_NAME=':80' \
+  -e MERCURE_PUBLISHER_JWT_KEY='!ChangeThisMercureHubJWTSecretKey!' \
+  -e MERCURE_SUBSCRIBER_JWT_KEY='!ChangeThisMercureHubJWTSecretKey!' \
+  -e MERCURE_EXTRA_DIRECTIVES="cors_origins http://127.0.0.1:$APP_PORT" \
+  dunglas/mercure >/dev/null
 
 echo "== Migrations (base dev) =="
 (cd "$BACKEND" && symfony console doctrine:database:create --if-not-exists >/dev/null 2>&1 || true)
@@ -43,6 +57,9 @@ export RL_LOGIN_LIMIT=10000
 export RL_REGISTER_LIMIT=10000
 export RL_FORGOT_LIMIT=10000
 export MAILER_DSN="smtp://127.0.0.1:11025"
+export MERCURE_URL="http://127.0.0.1:13000/.well-known/mercure"
+export MERCURE_PUBLIC_URL="http://127.0.0.1:13000/.well-known/mercure"
+export MERCURE_JWT_SECRET='!ChangeThisMercureHubJWTSecretKey!'
 export MAILER_FROM="no-reply@coparentplanner.test"
 export APP_WEB_BASE_URL="http://127.0.0.1:$APP_PORT"
 symfony server:stop >/dev/null 2>&1 || true

@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Event;
 use App\Entity\Family;
+use App\Entity\Membership;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Uid\Uuid;
@@ -72,9 +73,15 @@ class EventRepository extends ServiceEntityRepository
     }
 
     /** Événement déjà créé pour une clé d'idempotence donnée dans la famille (rejeu d'outbox §4.3). */
-    public function findOneByIdempotencyKey(Family $family, string $key): ?Event
+    /**
+     * Rejeu d'une création idempotente : la clé est propre à **l'auteur**. Scopée à la seule famille,
+     * deux membres réutilisant la même valeur (une constante d'outbox, un UUID rejoué) recevaient
+     * 201 + la ressource de l'autre, leur propre création étant silencieusement perdue
+     * (revue 2026-08 C10).
+     */
+    public function findOneByIdempotencyKey(Family $family, Membership $author, string $key): ?Event
     {
-        return $this->findOneBy(['family' => $family, 'idempotencyKey' => $key]);
+        return $this->findOneBy(['family' => $family, 'createdByMembership' => $author, 'idempotencyKey' => $key]);
     }
 
     /**

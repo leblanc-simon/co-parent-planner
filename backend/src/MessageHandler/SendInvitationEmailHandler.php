@@ -41,6 +41,8 @@ final class SendInvitationEmailHandler
             ->to($message->toEmail)
             ->subject($this->translator->trans('email.invitation.subject', ['family' => $message->familyName], 'messages', $message->locale))
             ->htmlTemplate('emails/invitation.html.twig')
+            // Partie texte explicite : le lien d'acceptation doit rester lisible en texte seul (C18).
+            ->textTemplate('emails/invitation.txt.twig')
             ->locale($message->locale)
             ->context([
                 'link' => $link,

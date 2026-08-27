@@ -21,7 +21,12 @@ final class CustodyStatsCalculator
     }
 
     /**
-     * @return array{parentACount:int, parentBCount:int, otherCount:int, total:int, pctA:float, pctB:float}
+     * `daysInWindow` = nombre de jours calendaires de [from, to] ; `total` = jours **matérialisés**
+     * sur cette fenêtre. Les deux diffèrent quand le moteur n'a pas généré toute la fenêtre (rythme
+     * ancré en cours de mois, horizon glissant) : les pourcentages portent alors sur une partie du
+     * mois seulement, ce qu'un affichage « Statistiques du mois » doit dire (revue 2026-08 C19).
+     *
+     * @return array{parentACount:int, parentBCount:int, otherCount:int, total:int, daysInWindow:int, pctA:float, pctB:float}
      */
     public function compute(Family $family, \DateTimeImmutable $from, \DateTimeImmutable $to): array
     {
@@ -47,6 +52,7 @@ final class CustodyStatsCalculator
             'parentBCount' => $b,
             'otherCount' => $other,
             'total' => $total,
+            'daysInWindow' => 1 + (int) $from->setTime(0, 0)->diff($to->setTime(0, 0))->days,
             'pctA' => $total > 0 ? round($a / $total * 100, 1) : 0.0,
             'pctB' => $total > 0 ? round($b / $total * 100, 1) : 0.0,
         ];

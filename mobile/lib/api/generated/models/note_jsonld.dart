@@ -19,6 +19,7 @@ class NoteJsonld {
     this.authorName = '',
     this.object5,
     this.noteDate,
+    this.noteDateLabel,
     this.authorColor,
     this.createdAt,
   });
@@ -41,6 +42,9 @@ class NoteJsonld {
   final String childId;
   final String text;
   final String? noteDate;
+
+  /// Libellé français de `noteDate` : le gabarit affichait la valeur ISO à l'écran.
+  final String? noteDateLabel;
   final String authorMembershipId;
   final String authorName;
   final String? authorColor;

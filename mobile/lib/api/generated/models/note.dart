@@ -11,6 +11,7 @@ part 'note.g.dart';
 class Note {
   const Note({
     this.noteDate,
+    this.noteDateLabel,
     this.authorColor,
     this.createdAt,
     this.id = '',
@@ -26,6 +27,9 @@ class Note {
   final String childId;
   final String text;
   final String? noteDate;
+
+  /// Libellé français de `noteDate` : le gabarit affichait la valeur ISO à l'écran.
+  final String? noteDateLabel;
   final String authorMembershipId;
   final String authorName;
   final String? authorColor;

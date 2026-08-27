@@ -16,6 +16,7 @@ NoteJsonld _$NoteJsonldFromJson(Map<String, dynamic> json) => NoteJsonld(
   authorName: json['authorName'] as String? ?? '',
   object5: json['@context'],
   noteDate: json['noteDate'] as String?,
+  noteDateLabel: json['noteDateLabel'] as String?,
   authorColor: json['authorColor'] as String?,
   createdAt: json['createdAt'] as String?,
 );
@@ -29,6 +30,7 @@ Map<String, dynamic> _$NoteJsonldToJson(NoteJsonld instance) =>
       'childId': instance.childId,
       'text': instance.text,
       'noteDate': instance.noteDate,
+      'noteDateLabel': instance.noteDateLabel,
       'authorMembershipId': instance.authorMembershipId,
       'authorName': instance.authorName,
       'authorColor': instance.authorColor,

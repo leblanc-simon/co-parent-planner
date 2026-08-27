@@ -14,6 +14,7 @@ CustodyStats _$CustodyStatsFromJson(Map<String, dynamic> json) => CustodyStats(
   parentBCount: (json['parentBCount'] as num?)?.toInt() ?? 0,
   otherCount: (json['otherCount'] as num?)?.toInt() ?? 0,
   total: (json['total'] as num?)?.toInt() ?? 0,
+  daysInWindow: (json['daysInWindow'] as num?)?.toInt() ?? 0,
   pctA: json['pctA'] as num? ?? 0,
   pctB: json['pctB'] as num? ?? 0,
 );
@@ -25,6 +26,7 @@ Map<String, dynamic> _$CustodyStatsToJson(CustodyStats instance) =>
       'parentBCount': instance.parentBCount,
       'otherCount': instance.otherCount,
       'total': instance.total,
+      'daysInWindow': instance.daysInWindow,
       'pctA': instance.pctA,
       'pctB': instance.pctB,
       'from': instance.from,

@@ -13,7 +13,7 @@
         <form data-auth-form-target="form" data-action="submit->auth-form#submit"
               action="/api/auth/verify-email" novalidate>
             <input type="hidden" name="token" value="{{ token }}">
-            <p class="auth__sub">Validation de votre adresse en cours…</p>
+            <p class="auth__sub" data-auth-form-target="pending">Validation de votre adresse en cours…</p>
             <p class="form-error" data-auth-form-target="error" role="alert"></p>
             <button class="btn btn--primary btn--block" type="submit" data-auth-form-target="submit">Vérifier mon e-mail</button>
         </form>

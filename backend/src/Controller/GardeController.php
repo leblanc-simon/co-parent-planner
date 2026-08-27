@@ -20,11 +20,11 @@ use App\Repository\SchoolHolidayRepository;
 use App\Service\Agenda\OverlayReader;
 use App\Service\Custody\CustodyStatsCalculator;
 use App\Web\ActiveFamilyResolver;
+use App\Web\MercureSubscription;
 use App\Web\ParentInitials;
 use Psr\Clock\ClockInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
-use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mercure\HubInterface;
@@ -51,6 +51,7 @@ final class GardeController extends AbstractController
         private readonly OverlayPreferenceRepository $overlayPreferences,
         private readonly ClockInterface $clock,
         private readonly HubInterface $hub,
+        private readonly MercureSubscription $mercure,
         private readonly ParentInitials $parentInitials,
     ) {
     }
@@ -78,6 +79,22 @@ final class GardeController extends AbstractController
 
         $canView = $active->can(RightDomain::Custody, RightLevel::View);
         $canEdit = $active->can(RightDomain::Custody, RightLevel::Edit);
+
+        // Sans droit `custody`, on s'arrête ICI : le rendu continuait et le `<header>` affichait le
+        // rythme et l'heure d'échange **avant** le branchement sur le droit, si bien que le web était
+        // plus permissif que l'API — qui répond 403 sur le même domaine (revue 2026-08 C7). Aucune
+        // donnée de garde n'est donc plus calculée ni transmise au gabarit, et aucun cookie
+        // d'abonnement Mercure n'est posé (C15).
+        if (!$canView) {
+            return $this->render('app/garde.html.twig', [
+                'memberships' => $memberships,
+                'activeMembership' => $active,
+                'family' => $family,
+                'intact' => false,
+                'canView' => false,
+                'canEdit' => false,
+            ]);
+        }
 
         // Mois affiché (?month=YYYY-MM, défaut mois courant Europe/Paris). createFromFormat étant
         // permissif (2026-13 → 2027-01), on rejette tout mois qui ne se re-formate pas à l'identique.
@@ -141,13 +158,9 @@ final class GardeController extends AbstractController
             'custodyTopic' => \sprintf('/families/%s/custody', $family->getId()),
         ]);
 
-        // Cookie d'abonnement Mercure scopé au seul topic garde de la famille active.
-        $factory = $this->hub->getFactory();
-        if (null !== $factory) {
-            $jwt = $factory->create([\sprintf('/families/%s/custody', $family->getId())], []);
-            $response->headers->setCookie(Cookie::create('mercureAuthorization', $jwt)
-                ->withHttpOnly(true)->withSameSite(Cookie::SAMESITE_LAX)->withPath('/.well-known/mercure'));
-        }
+        // Cookie d'abonnement Mercure scopé au seul topic garde de la famille active — atteint
+        // uniquement avec le droit `custody` ≥ view (early-return ci-dessus).
+        $this->mercure->attach($response, [\sprintf('/families/%s/custody', $family->getId())]);
 
         return $response;
     }

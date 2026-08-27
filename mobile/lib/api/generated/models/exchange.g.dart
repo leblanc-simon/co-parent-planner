@@ -28,6 +28,7 @@ Exchange _$ExchangeFromJson(Map<String, dynamic> json) => Exchange(
   overdue: json['overdue'] as bool? ?? false,
   createdAt: json['createdAt'] as String? ?? '',
   messageCount: (json['messageCount'] as num?)?.toInt() ?? 0,
+  version: (json['version'] as num?)?.toInt() ?? 1,
 );
 
 Map<String, dynamic> _$ExchangeToJson(Exchange instance) => <String, dynamic>{
@@ -46,6 +47,7 @@ Map<String, dynamic> _$ExchangeToJson(Exchange instance) => <String, dynamic>{
   'createdAt': instance.createdAt,
   'messageCount': instance.messageCount,
   'lastMessageAt': instance.lastMessageAt,
+  'version': instance.version,
   'options': instance.options,
   'messages': instance.messages,
 };

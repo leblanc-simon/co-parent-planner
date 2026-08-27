@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Exchange;
 use App\Entity\Family;
+use App\Entity\Membership;
 use App\Enum\ExchangeStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -47,9 +48,10 @@ class ExchangeRepository extends ServiceEntityRepository
         return $result;
     }
 
-    public function findOneByIdempotencyKey(Family $family, string $key): ?Exchange
+    /** Rejeu scopé à l'**auteur** de l'échange, jamais à la seule famille (revue 2026-08 C10). */
+    public function findOneByIdempotencyKey(Family $family, Membership $author, string $key): ?Exchange
     {
-        return $this->findOneBy(['family' => $family, 'idempotencyKey' => $key]);
+        return $this->findOneBy(['family' => $family, 'authorMembership' => $author, 'idempotencyKey' => $key]);
     }
 
     /**

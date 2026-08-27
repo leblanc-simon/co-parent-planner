@@ -20,9 +20,13 @@ class _RgpdPurgeClient implements RgpdPurgeClient {
   final ParseErrorLogger? errorLogger;
 
   @override
-  Future<RgpdPurge> apiAdminrgpdpurgePost({required RgpdPurge body}) async {
+  Future<RgpdPurge> apiAdminrgpdpurgePost({
+    required RgpdPurge body,
+    bool? dryRun = true,
+  }) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{r'dryRun': dryRun};
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
     _data.addAll(body.toJson());

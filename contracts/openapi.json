@@ -701,6 +701,32 @@
                         },
                         "style": "simple",
                         "explode": false
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "description": "D\u00e9but de la fen\u00eatre (date locale, AAAA-MM-JJ). D\u00e9faut : 1er du mois courant.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        "style": "form",
+                        "explode": true
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "description": "Fin de la fen\u00eatre, incluse (AAAA-MM-JJ). D\u00e9faut : dernier jour du mois courant.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        "style": "form",
+                        "explode": true
                     }
                 ]
             }
@@ -1168,6 +1194,32 @@
                         },
                         "style": "simple",
                         "explode": false
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "description": "D\u00e9but de la fen\u00eatre (date locale, AAAA-MM-JJ). D\u00e9faut : 1er du mois courant.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        "style": "form",
+                        "explode": true
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "description": "Fin de la fen\u00eatre, incluse (AAAA-MM-JJ). D\u00e9faut : dernier jour du mois courant.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        "style": "form",
+                        "explode": true
                     }
                 ]
             }
@@ -1218,6 +1270,46 @@
                         },
                         "style": "simple",
                         "explode": false
+                    },
+                    {
+                        "name": "scope",
+                        "in": "query",
+                        "description": "Port\u00e9e de la suppression : `occurrence` (exclusion de la seule occurrence) ou `series`. Requis pour un \u00e9v\u00e9nement r\u00e9current.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "occurrence",
+                                "series"
+                            ]
+                        },
+                        "style": "form",
+                        "explode": true
+                    },
+                    {
+                        "name": "recurrenceDate",
+                        "in": "query",
+                        "description": "Occurrence vis\u00e9e par `scope=occurrence` : date d'origine (AAAA-MM-JJ) ou instant ISO 8601 renvoy\u00e9 par l'API.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "form",
+                        "explode": true
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "description": "Pivot de `scope=series` : supprime cette occurrence et les suivantes. Absent = toute la s\u00e9rie.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "form",
+                        "explode": true
                     }
                 ]
             },
@@ -1321,6 +1413,22 @@
                         },
                         "style": "simple",
                         "explode": false
+                    },
+                    {
+                        "name": "scope",
+                        "in": "query",
+                        "description": "Port\u00e9e de l'\u00e9dition d'une s\u00e9rie : `occurrence` (override de la seule occurrence `recurrenceDate`) ou `series` (cette occurrence et les suivantes, avec scission). Requis pour un \u00e9v\u00e9nement r\u00e9current, ignor\u00e9 pour un ponctuel.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "occurrence",
+                                "series"
+                            ]
+                        },
+                        "style": "form",
+                        "explode": true
                     }
                 ],
                 "requestBody": {
@@ -1401,6 +1509,57 @@
                         },
                         "style": "simple",
                         "explode": false
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "description": "D\u00e9but de la fen\u00eatre (date locale famille, AAAA-MM-JJ). D\u00e9faut : 1er du mois courant.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        "style": "form",
+                        "explode": true
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "description": "Fin de la fen\u00eatre, incluse (AAAA-MM-JJ). D\u00e9faut : dernier jour du mois courant. Fen\u00eatre maximale : 420 jours.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        },
+                        "style": "form",
+                        "explode": true
+                    },
+                    {
+                        "name": "category",
+                        "in": "query",
+                        "description": "Filtre de cat\u00e9gories, s\u00e9par\u00e9es par des virgules (ex. `school,health`). Absent = toutes.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "form",
+                        "explode": true
+                    },
+                    {
+                        "name": "overlay",
+                        "in": "query",
+                        "description": "Identifiant de la famille li\u00e9e dont projeter les \u00e9v\u00e9nements en overlay (US-AG-4). Absent = aucun overlay.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "style": "form",
+                        "explode": true
                     }
                 ]
             },
@@ -1844,6 +2003,22 @@
                         },
                         "style": "simple",
                         "explode": false
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filtre de statut : `open` ou `decided`. Absent = tous les \u00e9changes de la famille.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "open",
+                                "decided"
+                            ]
+                        },
+                        "style": "form",
+                        "explode": true
                     }
                 ]
             },
@@ -4994,7 +5169,61 @@
                 },
                 "summary": "Retrieves the collection of RgpdOperationLog resources.",
                 "description": "Retrieves the collection of RgpdOperationLog resources.",
-                "parameters": []
+                "parameters": [
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "description": "Filtre de type d'op\u00e9ration RGPD.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "form",
+                        "explode": true
+                    },
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "description": "Filtre de statut.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "form",
+                        "explode": true
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page (1 par d\u00e9faut).",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "default": 1
+                        },
+                        "style": "form",
+                        "explode": true
+                    },
+                    {
+                        "name": "itemsPerPage",
+                        "in": "query",
+                        "description": "Taille de page (50 par d\u00e9faut, 200 maximum).",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 200,
+                            "default": 50
+                        },
+                        "style": "form",
+                        "explode": true
+                    }
+                ]
             }
         },
         "/api/admin/rgpd/purge": {
@@ -5065,7 +5294,21 @@
                 },
                 "summary": "Creates a RgpdPurge resource.",
                 "description": "Creates a RgpdPurge resource.",
-                "parameters": [],
+                "parameters": [
+                    {
+                        "name": "dryRun",
+                        "in": "query",
+                        "description": "Simulation : `true` (d\u00e9faut) n'\u00e9crit rien et renvoie le rapport ; `false` ex\u00e9cute r\u00e9ellement la purge.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true
+                        },
+                        "style": "form",
+                        "explode": true
+                    }
+                ],
                 "requestBody": {
                     "description": "The new RgpdPurge resource",
                     "content": {
@@ -5365,6 +5608,18 @@
                         },
                         "style": "simple",
                         "explode": false
+                    },
+                    {
+                        "name": "schoolYear",
+                        "in": "query",
+                        "description": "Ann\u00e9e scolaire \u00e0 importer (format du dataset officiel, ex. `2026-2027`). Absent = ann\u00e9e scolaire courante.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "form",
+                        "explode": true
                     }
                 ]
             }
@@ -6573,6 +6828,11 @@
                         "default": 0,
                         "type": "integer"
                     },
+                    "daysInWindow": {
+                        "description": "Jours calendaires de la fen\u00eatre ; `total` < `daysInWindow` = fen\u00eatre partiellement g\u00e9n\u00e9r\u00e9e.",
+                        "default": 0,
+                        "type": "integer"
+                    },
                     "pctA": {
                         "default": 0,
                         "type": "number"
@@ -6620,6 +6880,11 @@
                                 "type": "integer"
                             },
                             "total": {
+                                "default": 0,
+                                "type": "integer"
+                            },
+                            "daysInWindow": {
+                                "description": "Jours calendaires de la fen\u00eatre ; `total` < `daysInWindow` = fen\u00eatre partiellement g\u00e9n\u00e9r\u00e9e.",
                                 "default": 0,
                                 "type": "integer"
                             },
@@ -6829,6 +7094,11 @@
                     "isOverride": {
                         "default": false,
                         "type": "boolean"
+                    },
+                    "version": {
+                        "description": "Version de la ligne \u00e0 renvoyer dans `expectedVersion` d'un PATCH (verrou optimiste, \u00a74.3).",
+                        "default": 1,
+                        "type": "integer"
                     },
                     "recurrence": {
                         "type": [
@@ -7118,6 +7388,11 @@
                                 "default": false,
                                 "type": "boolean"
                             },
+                            "version": {
+                                "description": "Version de la ligne \u00e0 renvoyer dans `expectedVersion` d'un PATCH (verrou optimiste, \u00a74.3).",
+                                "default": 1,
+                                "type": "integer"
+                            },
                             "recurrence": {
                                 "type": [
                                     "object",
@@ -7224,6 +7499,11 @@
                             "string",
                             "null"
                         ]
+                    },
+                    "version": {
+                        "description": "Version de l'\u00e9change \u00e0 renvoyer dans `expectedVersion` d'un PATCH (verrou optimiste, \u00a74.2) \u2014\nm\u00eame d\u00e9faut que l'agenda : la contrainte existait c\u00f4t\u00e9 serveur sans \u00eatre lisible (C20).",
+                        "default": 1,
+                        "type": "integer"
                     },
                     "options": {
                         "type": "array",
@@ -7423,6 +7703,11 @@
                                     "null"
                                 ]
                             },
+                            "version": {
+                                "description": "Version de l'\u00e9change \u00e0 renvoyer dans `expectedVersion` d'un PATCH (verrou optimiste, \u00a74.2) \u2014\nm\u00eame d\u00e9faut que l'agenda : la contrainte existait c\u00f4t\u00e9 serveur sans \u00eatre lisible (C20).",
+                                "default": 1,
+                                "type": "integer"
+                            },
                             "options": {
                                 "type": "array",
                                 "items": {
@@ -7511,7 +7796,6 @@
                 ],
                 "properties": {
                     "name": {
-                        "minLength": 1,
                         "maxLength": 120,
                         "type": [
                             "string",
@@ -7535,7 +7819,6 @@
                 "description": "Repr\u00e9sentation d'une famille du point de vue du membre courant (US-ONB-1, US-HOME-1).\n`role`/`isAdmin` refl\u00e8tent la perspective de l'utilisateur connect\u00e9 dans cette famille.",
                 "properties": {
                     "name": {
-                        "minLength": 1,
                         "maxLength": 120,
                         "type": [
                             "string",
@@ -8797,6 +9080,13 @@
                             "null"
                         ]
                     },
+                    "noteDateLabel": {
+                        "description": "Libell\u00e9 fran\u00e7ais de `noteDate` : le gabarit affichait la valeur ISO \u00e0 l'\u00e9cran.",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
                     "authorMembershipId": {
                         "default": "",
                         "type": "string"
@@ -8882,6 +9172,13 @@
                                 "type": "string"
                             },
                             "noteDate": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "noteDateLabel": {
+                                "description": "Libell\u00e9 fran\u00e7ais de `noteDate` : le gabarit affichait la valeur ISO \u00e0 l'\u00e9cran.",
                                 "type": [
                                     "string",
                                     "null"
@@ -9289,8 +9586,8 @@
                 ],
                 "properties": {
                     "email": {
-                        "format": "email",
                         "maxLength": 255,
+                        "format": "email",
                         "externalDocs": {
                             "url": "https://schema.org/email"
                         },

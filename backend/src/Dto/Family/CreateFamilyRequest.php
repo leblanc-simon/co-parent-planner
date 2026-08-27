@@ -14,8 +14,13 @@ final class CreateFamilyRequest
     // dans l'OpenAPI (invalide pour l'enum `type`, contradictoire avec minLength
     // pour `name`) et casse la generation du client mobile. Nullable + NotBlank
     // = pattern d'entree API Platform : presence imposee a la validation (422).
-    #[Assert\NotBlank]
-    #[Assert\Length(min: 1, max: 120)]
+    // `min: 1` faisait doublon avec `NotBlank` : un nom vide produisait DEUX messages, dont un
+    // « au minimum 1 caractère » incompréhensible (revue 2026-08 C12). `Sequentially` s'arrête au
+    // premier problème rencontré.
+    #[Assert\Sequentially([
+        new Assert\NotBlank(message: 'family.error.name_required'),
+        new Assert\Length(max: 120, maxMessage: 'family.error.name_too_long'),
+    ])]
     public ?string $name = null;
 
     #[Assert\NotBlank]

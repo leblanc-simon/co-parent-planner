@@ -156,6 +156,8 @@ export 'models/violations2.dart';
 export 'models/view.dart';
 export 'models/mapping.dart';
 export 'models/search.dart';
+export 'models/scope.dart';
+export 'models/status.dart';
 export 'models/family_create_family_request_type.dart';
 export 'models/family_update_family_request_json_merge_patch_type.dart';
 export 'models/family_update_family_request_json_merge_patch_school_zone.dart';

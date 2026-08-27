@@ -23,9 +23,15 @@ security:
             provider: app_user_provider
             jwt: ~
 
-        # Front web server-rendered (écrans/coquille) — étoffé au Lot 11. JWT en cookie également.
+        # Front web server-rendered (écrans/coquille). JWT en cookie également, et **sans état** :
+        # l'unique preuve d'authentification est le cookie `access_token`. Sans `stateless`, Symfony
+        # recopiait le token dans la session PHP ; `PHPSESSID` survivait alors au logout (qui n'efface
+        # que les cookies JWT) et continuait d'authentifier tout le front — sur un appareil partagé,
+        # la personne suivante gardait l'accès aux écrans, notes comprises (revue 2026-08 C1). La
+        # protection CSRF du projet est déjà sans session (`csrf.yaml` : stateless_token_ids).
         main:
             lazy: true
+            stateless: true
             provider: app_user_provider
             jwt:
                 authenticator: lexik_jwt_authentication.security.jwt_authenticator

@@ -1,6 +1,7 @@
 import { Page, expect, test } from '@playwright/test';
 
 import { waitForVerificationToken } from '../helpers/mailpit';
+import { waitForSaved } from '../helpers/page';
 
 const PASSWORD = 'MotDePasseTresLong123';
 
@@ -77,7 +78,7 @@ test('Agenda : créer un événement, une série, filtrer, éditer, supprimer, �
   // formulaire ne permettait de le saisir — l'information n'avait aucun moyen d'entrer.
   await page.fill('#a-desc', 'Prévoir la raquette et une bouteille');
   await page.locator('.agenda-form button[type="submit"]').click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
 
   await page.goto(`/agenda?month=${soon.month}`);
   await expect(page.locator('.agenda-events')).toContainText('Cours de tennis');
@@ -106,7 +107,7 @@ test('Agenda : créer un événement, une série, filtrer, éditer, supprimer, �
     .locator('textarea[name="description"]')
     .fill('Raquette déjà dans le sac');
   await tennis.locator('form.agenda-edit').dispatchEvent('submit');
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
   await page.goto(`/agenda?month=${soon.month}`);
   await expect(page.locator('.agenda-events')).toContainText('Tennis modifié');
   await expect(page.locator('.agenda-event__desc').first()).toContainText(
@@ -124,7 +125,7 @@ test('Agenda : créer un événement, une série, filtrer, éditer, supprimer, �
   await page.selectOption('#a-freq', 'weekly');
   await page.fill('#a-count', '4');
   await page.locator('.agenda-form button[type="submit"]').click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
 
   await page.goto(`/agenda?month=${soon.month}`);
   // Au moins une occurrence de la série dans le mois d'ancrage (la série peut couvrir plusieurs jours).
@@ -139,7 +140,7 @@ test('Agenda : créer un événement, une série, filtrer, éditer, supprimer, �
   const toDelete = page.locator('.agenda-event').filter({ hasText: 'Tennis modifié' }).first();
   // Locator CSS (résout même dans un <details> replié) + dispatchEvent (déclenche deleteEvent Stimulus).
   await toDelete.locator('button', { hasText: 'Supprimer' }).dispatchEvent('click');
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
   await page.goto(`/agenda?month=${soon.month}`);
   await expect(page.locator('.agenda-event').filter({ hasText: 'Tennis modifié' })).toHaveCount(0);
 });

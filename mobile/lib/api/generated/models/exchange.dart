@@ -33,6 +33,7 @@ class Exchange {
     this.overdue = false,
     this.createdAt = '',
     this.messageCount = 0,
+    this.version = 1,
   });
   
   factory Exchange.fromJson(Map<String, Object?> json) => _$ExchangeFromJson(json);
@@ -52,6 +53,10 @@ class Exchange {
   final String createdAt;
   final int messageCount;
   final String? lastMessageAt;
+
+  /// Version de l'échange à renvoyer dans `expectedVersion` d'un PATCH (verrou optimiste, §4.2) —.
+  /// même défaut que l'agenda : la contrainte existait côté serveur sans être lisible (C20).
+  final int version;
   final List<OptionView>? options;
   final List<MessageView>? messages;
 

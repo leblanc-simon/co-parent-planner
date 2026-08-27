@@ -37,6 +37,8 @@ final class Occurrence
         public readonly array $children,
         public readonly bool $isRecurring,
         public readonly bool $isOverride,
+        /** Version de la ligne éditable par un PATCH sur cette occurrence (verrou optimiste, §4.3). */
+        public readonly int $version = 1,
     ) {
     }
 
@@ -59,6 +61,7 @@ final class Occurrence
             self::childrenOf($event),
             $isRecurring,
             $isOverride,
+            $event->getVersion(),
         );
     }
 
@@ -81,6 +84,9 @@ final class Occurrence
             self::childrenOf($master),
             true,
             false,
+            // Une occurrence virtuelle n'a pas de ligne propre : un PATCH sur elle édite le maître,
+            // c'est donc SA version qui arme le verrou optimiste.
+            $master->getVersion(),
         );
     }
 

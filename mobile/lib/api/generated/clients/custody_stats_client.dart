@@ -18,8 +18,14 @@ abstract class CustodyStatsClient {
   /// Retrieves a CustodyStats resource.
   ///
   /// [familyId] - FamilyResource identifier.
+  ///
+  /// [from] - Début de la fenêtre (date locale, AAAA-MM-JJ). Défaut : 1er du mois courant.
+  ///
+  /// [to] - Fin de la fenêtre, incluse (AAAA-MM-JJ). Défaut : dernier jour du mois courant.
   @GET('/api/families/{familyId}/custody/stats')
   Future<CustodyStats> apiFamiliesFamilyIdcustodystatsGet({
     @Path('familyId') required String familyId,
+    @Query('from') String? from,
+    @Query('to') String? to,
   });
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional;
 
+use App\Security\Auth\PasswordPolicy;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -30,6 +31,16 @@ final class TranslationCatalogTest extends KernelTestCase
     private const array CONSTRAINT_KEYS = [
         'child.error.first_name_required',
         'note.error.text_required',
+        // Écrans d'auth et création de famille (revue 2026-08 C12).
+        'auth.error.email_required',
+        'auth.error.email_invalid',
+        'auth.error.email_too_long',
+        'auth.error.password_required',
+        'auth.error.password_too_short',
+        'auth.error.password_too_long',
+        'auth.error.link_incomplete',
+        'family.error.name_required',
+        'family.error.name_too_long',
     ];
 
     public function testFrenchCatalogParsesAndResolvesKeys(): void
@@ -108,6 +119,28 @@ final class TranslationCatalogTest extends KernelTestCase
             $translator->trans($key, [], 'messages', 'fr'),
             $inValidators,
             "Le libellé de {$key} diverge entre les domaines `messages` et `validators`.",
+        );
+    }
+
+    /**
+     * Le message « mot de passe trop court » cite la longueur minimale : elle doit rester alignée sur
+     * {@see PasswordPolicy::MIN_LENGTH}, sans quoi l'écran annoncerait une règle que l'API n'applique
+     * pas. (Un placeholder du validateur n'est pas utilisable ici : le catalogue est au format ICU,
+     * qui ne connaît pas la syntaxe `{{ limit }}` des contraintes.).
+     */
+    public function testPasswordMessageMatchesPolicy(): void
+    {
+        self::bootKernel();
+        $translator = self::getContainer()->get(TranslatorInterface::class);
+        self::assertInstanceOf(TranslatorInterface::class, $translator);
+
+        self::assertStringContainsString(
+            (string) PasswordPolicy::MIN_LENGTH,
+            $translator->trans('auth.error.password_too_short', [], 'validators', 'fr'),
+        );
+        self::assertStringContainsString(
+            (string) PasswordPolicy::MAX_LENGTH,
+            $translator->trans('auth.error.password_too_long', [], 'validators', 'fr'),
         );
     }
 

@@ -36,6 +36,9 @@
              data-pwa-online-message-value="Connexion rétablie."
              data-pwa-mutation-message-value="Action impossible hors-ligne — reconnectez-vous pour enregistrer."
              data-pwa-update-message-value="Nouvelle version disponible."
+             data-pwa-realtime-message-value="Mises à jour en direct indisponibles — rechargez la page pour voir les derniers changements."
+             {# Identifiant opaque du compte : cloisonne le cache hors-ligne par utilisateur (C4). #}
+             data-pwa-user-value="{{ app.user ? app.user.id : '' }}"
              data-pwa-family-value="{{ app.request.cookies.get('cpp_family')|default('') }}">
             <div class="pwa-banner" role="status" aria-live="polite" data-pwa-target="banner" hidden></div>
             <button type="button" class="pwa-install" data-pwa-target="install" data-action="pwa#install" hidden>

@@ -111,9 +111,11 @@ class _ExchangeClient implements ExchangeClient {
   @override
   Future<List<Exchange>> apiFamiliesFamilyIdexchangesGetCollection({
     required String familyId,
+    Status? status,
   }) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{r'status': status?.toJson()};
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<List<Exchange>>(

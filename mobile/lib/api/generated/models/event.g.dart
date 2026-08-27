@@ -25,6 +25,7 @@ Event _$EventFromJson(Map<String, dynamic> json) => Event(
   allDay: json['allDay'] as bool? ?? false,
   isRecurring: json['isRecurring'] as bool? ?? false,
   isOverride: json['isOverride'] as bool? ?? false,
+  version: (json['version'] as num?)?.toInt() ?? 1,
 );
 
 Map<String, dynamic> _$EventToJson(Event instance) => <String, dynamic>{
@@ -43,5 +44,6 @@ Map<String, dynamic> _$EventToJson(Event instance) => <String, dynamic>{
   'recurrenceDate': instance.recurrenceDate,
   'isRecurring': instance.isRecurring,
   'isOverride': instance.isOverride,
+  'version': instance.version,
   'recurrence': instance.recurrence,
 };

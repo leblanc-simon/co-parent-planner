@@ -16,7 +16,11 @@
     <div>
         <div class="eyebrow">Planning</div>
         <h1>Planning de garde</h1>
-        {% if pattern %}<p class="main__subtitle">{{ rhythmLabel[pattern.kind.value] ?? '' }}{% if pattern.handoverTime %} · échange à {{ pattern.handoverTime }}{% endif %}</p>{% endif %}
+        {# Le sous-titre décrit le planning : il ne doit apparaître qu'avec le droit `custody`. Rendu
+           dans le header, il était affiché AVANT le branchement sur le droit, divulguant rythme et
+           heure d'échange à un membre que l'API refuse (revue 2026-08 C7). Le contrôleur ne
+           transmet plus non plus le pattern dans ce cas — double garde. #}
+        {% if pattern|default(false) %}<p class="main__subtitle">{{ rhythmLabel[pattern.kind.value] ?? '' }}{% if pattern.handoverTime %} · échange à {{ pattern.handoverTime }}{% endif %}</p>{% endif %}
     </div>
 </header>
 
@@ -32,8 +36,18 @@
     <p class="form-error" data-garde-target="error" role="alert" hidden></p>
     <p class="form-success" data-garde-target="notice" role="status" aria-live="polite" hidden></p>
 
-    {# Abonnement temps réel : un changement de garde rafraîchit la page (Turbo Stream). #}
-    <turbo-stream-source src="{{ mercureHub }}?topic={{ custodyTopic|url_encode }}"></turbo-stream-source>
+    {# Abonnement temps réel : un changement de garde rafraîchit la page (Turbo Stream).
+
+       L'élément est celui de **UX Turbo** (`<turbo-mercure-stream-source>`), et non le
+       `<turbo-stream-source>` natif de Turbo qui était employé jusqu'ici : ce dernier ouvre son flux
+       par `new EventSource(src)`, sans `withCredentials`, et ignore purement l'attribut `private`.
+       Le cookie `mercureAuthorization` n'était donc jamais transmis au hub, l'abonnement restait
+       anonyme et — les quatre publishers publiant en privé — **aucun écran ne recevait jamais rien**
+       (revue 2026-08 C2 ; ajouter `private` à l'élément natif, comme la revue le proposait, n'y
+       change rien). Le composant est déjà chargé par `assets/controllers.json` (`turbo-core` +
+       autoimport). Le cookie, lui, est posé par `App\Web\MercureSubscription` — borné dans le
+       temps, et seulement si le droit du domaine est accordé (C15, C16). #}
+    <turbo-mercure-stream-source private data-controller="realtime" src="{{ mercureHub }}?topic={{ custodyTopic|url_encode }}"></turbo-mercure-stream-source>
 
     {# ───────── Overlay familles liées : pastilles d'activité (US-CUST-5) ───────── #}
     {% if overlayLinks is defined and overlayLinks is not empty %}
@@ -132,6 +146,12 @@
                     <span>{{ pBName }} · {{ stats.pctB }} %</span>
                 </div>
             </div>
+            {# Le moteur ne génère pas le passé (ni au-delà de l'horizon glissant) : un mois peut
+               n'être couvert qu'en partie. Les pourcentages étaient alors présentés comme ceux du
+               mois entier — « 66,7 % / 33,3 % » sur 6 jours matérialisés sur 31 (revue C19). #}
+            {% if stats.total < stats.daysInWindow %}
+            <p class="form-note">Calculé sur les {{ stats.total }} jour{{ stats.total > 1 ? 's' : '' }} déjà planifiés de ce mois (sur {{ stats.daysInWindow }}).</p>
+            {% endif %}
         </section>
 
         {# ───────── Périodes spéciales du mois affiché ─────────

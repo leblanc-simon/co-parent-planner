@@ -1,0 +1,9 @@
+{# Partie text/plain — voir templates/emails/verification.txt.twig (revue C18). #}
+{{ 'email.invitation.title'|trans({}, 'messages', locale) }}
+
+{{ 'email.invitation.intro'|trans({ family: familyName }, 'messages', locale) }}
+
+{{ 'email.invitation.cta'|trans({}, 'messages', locale) }} :
+{{ link }}
+
+{{ 'email.invitation.ignore'|trans({}, 'messages', locale) }}

@@ -19,6 +19,9 @@ services:
 
 ###> symfony/mercure-bundle ###
   mercure:
+    # Port hôte **fixe** (comme la stack `infra/`) : avec un port aléatoire, `MERCURE_PUBLIC_URL`
+    # changeait à chaque recréation du conteneur et les valeurs par défaut de `.env` ne pouvaient
+    # pas être justes (revue C11).
     ports:
-      - "80"
+      - "3000:80"
 ###< symfony/mercure-bundle ###

@@ -31,6 +31,15 @@ final class ExchangeWriter
     /** Format d'échéance : date pure `Y-m-d`. */
     private const string DATE_FORMAT = 'Y-m-d';
 
+    /* Bornes alignées sur les colonnes (`exchanges.title`, `exchange_options.label`/`sub`) et, pour
+     * le corps libre, sur celle des notes. Sans elles, une saisie trop longue traversait toute
+     * l'application et remontait en 500 depuis PostgreSQL — « value too long for type character
+     * varying(200) » —, exposant au passage les types et longueurs des colonnes (revue 2026-08 C6). */
+    private const int MAX_TITLE = 200;
+    private const int MAX_BODY = 5000;
+    private const int MAX_OPTION_LABEL = 200;
+    private const int MAX_OPTION_SUB = 255;
+
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly ChildRepository $children,
@@ -44,6 +53,9 @@ final class ExchangeWriter
         if ('' === $title) {
             throw new ExchangeInputException('exchange.error.title_required');
         }
+        if (mb_strlen($title) > self::MAX_TITLE) {
+            throw new ExchangeInputException('exchange.error.title_too_long');
+        }
 
         $type = ExchangeType::tryFrom((string) $data->type);
         if (null === $type) {
@@ -52,6 +64,9 @@ final class ExchangeWriter
 
         $body = null !== $data->body ? trim($data->body) : null;
         $body = '' === $body ? null : $body;
+        if (null !== $body && mb_strlen($body) > self::MAX_BODY) {
+            throw new ExchangeInputException('exchange.error.body_too_long');
+        }
 
         $exchange = (new Exchange())
             ->setFamily($family)
@@ -124,7 +139,13 @@ final class ExchangeWriter
             if ('' === $label) {
                 throw new ExchangeInputException('exchange.error.option_label_required');
             }
+            if (mb_strlen($label) > self::MAX_OPTION_LABEL) {
+                throw new ExchangeInputException('exchange.error.option_label_too_long');
+            }
             $sub = isset($raw['sub']) ? trim((string) $raw['sub']) : null;
+            if (null !== $sub && mb_strlen($sub) > self::MAX_OPTION_SUB) {
+                throw new ExchangeInputException('exchange.error.option_sub_too_long');
+            }
             $option = (new ExchangeOption())
                 ->setExchange($exchange)
                 ->setLabel($label)

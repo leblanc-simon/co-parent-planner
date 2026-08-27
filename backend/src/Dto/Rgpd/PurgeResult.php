@@ -6,6 +6,7 @@ namespace App\Dto\Rgpd;
 
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\QueryParameter;
 use App\State\Rgpd\PurgeProcessor;
 
 /**
@@ -20,6 +21,12 @@ use App\State\Rgpd\PurgeProcessor;
             status: 200,
             read: false,
             deserialize: false,
+            parameters: [
+                'dryRun' => new QueryParameter(
+                    description: "Simulation : `true` (défaut) n'écrit rien et renvoie le rapport ; `false` exécute réellement la purge.",
+                    schema: ['type' => 'boolean', 'default' => true],
+                ),
+            ],
             processor: PurgeProcessor::class,
         ),
     ],

@@ -1,6 +1,7 @@
 import { Page, expect, test } from '@playwright/test';
 
 import { waitForVerificationToken } from '../helpers/mailpit';
+import { waitForSaved } from '../helpers/page';
 
 const PASSWORD = 'MotDePasseTresLong123';
 
@@ -47,7 +48,7 @@ test('Enfants : créer un profil, bandeau anti-santé, ajouter une note', async 
   await page.fill('#nc-name', 'Léa');
   await page.fill('#nc-birth', '2016-09-12');
   await page.locator('.child-create__form button[type="submit"]').click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
 
   // La fiche est sélectionnée : bandeau anti-données-de-santé visible.
   await expect(page.locator('.health-banner')).toBeVisible();
@@ -56,7 +57,7 @@ test('Enfants : créer un profil, bandeau anti-santé, ajouter une note', async 
   // Ajouter une note → elle apparaît dans la liste.
   await page.fill('.note-form textarea', 'RDV de rentrée pris');
   await page.locator('.note-form button[type="submit"]').click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
   await expect(page.locator('.notes')).toContainText('RDV de rentrée pris');
 
   // Bloc Accès & droits : le parent admin y figure en Édition.

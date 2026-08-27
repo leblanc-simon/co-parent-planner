@@ -92,10 +92,12 @@ final class CreateEventProcessor implements ProcessorInterface
         return $this->em->wrapInTransaction(function () use ($ctx, $data, $key): Event {
             $this->em->getConnection()->executeStatement(
                 'SELECT pg_advisory_xact_lock(hashtext(:k))',
-                ['k' => 'agenda_idem:'.$ctx->family->getId().':'.$key],
+                // Verrou par (auteur, clé) : deux membres qui emploient la même valeur de clé sont
+                // deux mutations distinctes, elles n'ont pas à se sérialiser l'une l'autre (C10).
+                ['k' => 'agenda_idem:'.$ctx->membership->getId().':'.$key],
             );
 
-            $existing = $this->events->findOneByIdempotencyKey($ctx->family, $key);
+            $existing = $this->events->findOneByIdempotencyKey($ctx->family, $ctx->membership, $key);
             if ($existing instanceof Event) {
                 return $existing; // rejeu : aucun doublon
             }

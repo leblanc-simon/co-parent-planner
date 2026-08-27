@@ -17,7 +17,12 @@ use Symfony\Component\Uid\Uuid;
 /**
  * Profil d'un enfant (cdc §2.3, Lot 2). Informations pratiques **libres** (paires label/valeur) —
  * **aucun champ médical typé** (invariant « pas de données de santé »). `first_name` est inscrit au
- * registre (identité d'un mineur) mais **non chiffré** (décision verrouillée §5.4 #4).
+ * registre (identité d'un mineur).
+ *
+ * ⏳ **Décision PO du 2026-08-27, non encore implémentée** : `firstName`, `schoolLabel` et `info`
+ * doivent passer **chiffrés au repos** (🔒, cdc §5.2), ce qui révise la décision §5.4 #4 qui les
+ * laissait en clair. Voir `docs/registre-donnees.md` pour le périmètre exact et le point d'attention
+ * du tri SQL sur le prénom. En l'état, ces champs sont **en clair** en base.
  */
 #[ORM\Entity(repositoryClass: ChildRepository::class)]
 #[ORM\Table(name: 'children')]

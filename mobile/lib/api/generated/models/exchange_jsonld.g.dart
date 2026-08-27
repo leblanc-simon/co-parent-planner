@@ -17,6 +17,7 @@ ExchangeJsonld _$ExchangeJsonldFromJson(Map<String, dynamic> json) =>
       overdue: json['overdue'] as bool? ?? false,
       createdAt: json['createdAt'] as String? ?? '',
       messageCount: (json['messageCount'] as num?)?.toInt() ?? 0,
+      version: (json['version'] as num?)?.toInt() ?? 1,
       object5: json['@context'],
       body: json['body'] as String?,
       childId: json['childId'] as String?,
@@ -54,6 +55,7 @@ Map<String, dynamic> _$ExchangeJsonldToJson(ExchangeJsonld instance) =>
       'createdAt': instance.createdAt,
       'messageCount': instance.messageCount,
       'lastMessageAt': instance.lastMessageAt,
+      'version': instance.version,
       'options': instance.options,
       'messages': instance.messages,
     };

@@ -24,7 +24,7 @@ use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * US-EX-1 — crée une discussion ou une décision (exchanges:edit). Idempotent sur `Idempotency-Key`
- * (outbox mobile §4.2), sérialisé par `pg_advisory_xact_lock` sur (famille, clé) : un rejeu renvoie
+ * (outbox mobile §4.2), sérialisé par `pg_advisory_xact_lock` sur (auteur, clé) : un rejeu renvoie
  * l'échange déjà créé. Fan-out temps réel **liste** après commit (badge). Émet `ExchangeOpened`.
  *
  * @implements ProcessorInterface<CreateExchangeRequest, ExchangeResource>
@@ -86,10 +86,11 @@ final class CreateExchangeProcessor implements ProcessorInterface
         return $this->em->wrapInTransaction(function () use ($ctx, $data, $key): Exchange {
             $this->em->getConnection()->executeStatement(
                 'SELECT pg_advisory_xact_lock(hashtext(:k))',
-                ['k' => 'exchange_idem:'.$ctx->family->getId().':'.$key],
+                // Verrou par (auteur, clé) — cf. C10 : la clé appartient à l'auteur, pas à la famille.
+                ['k' => 'exchange_idem:'.$ctx->membership->getId().':'.$key],
             );
 
-            $existing = $this->exchanges->findOneByIdempotencyKey($ctx->family, $key);
+            $existing = $this->exchanges->findOneByIdempotencyKey($ctx->family, $ctx->membership, $key);
             if ($existing instanceof Exchange) {
                 return $existing; // rejeu : aucun doublon
             }

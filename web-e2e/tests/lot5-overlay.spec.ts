@@ -1,8 +1,17 @@
 import { Page, expect, test } from '@playwright/test';
 
 import { waitForVerificationToken } from '../helpers/mailpit';
+import { waitForSaved } from '../helpers/page';
 
 const PASSWORD = 'MotDePasseTresLong123';
+
+/** Réponse de la mutation « préférence d'overlay » (la seule du web sans message de confirmation). */
+function waitForOverlaySaved(page: Page) {
+  return page.waitForResponse(
+    (r) => r.url().includes('/overlay-preferences') && r.request().method() === 'PUT' && r.ok(),
+    { timeout: 15_000 },
+  );
+}
 
 /** Inscrit, vérifie (Mailpit) et connecte un utilisateur ; laisse la page sur /onboarding. */
 async function signUpAndLogin(
@@ -94,7 +103,7 @@ test('Overlay familles liées : activation → événement lié en lecture seule
   await page.selectOption('#a-cat', 'sport');
   await page.fill('#a-start', `${soon.date}T18:00`);
   await page.locator('.agenda-form button[type="submit"]').click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
 
   // ---- B propose le lien vers A (initiateur = B, destinataire = A) ----
   const createRes = await page.request.post(`/api/families/${famB}/links`, {
@@ -124,11 +133,13 @@ test('Overlay familles liées : activation → événement lié en lecture seule
 
   // ---- Activer l'overlay : l'événement de B apparaît en lecture seule ----
   // On force checked + change : le reload Stimulus détacherait un clic natif (leçon Lot 4).
+  // Cette mutation-ci n'affiche aucune confirmation : on attend sa réponse, seul signal disponible.
+  const overlayEnabled = waitForOverlaySaved(page);
   await toggle.evaluate((el) => {
     (el as HTMLInputElement).checked = true;
     el.dispatchEvent(new Event('change', { bubbles: true }));
   });
-  await page.waitForLoadState('networkidle');
+  await overlayEnabled;
   await page.goto(`/agenda?month=${soon.month}`);
 
   const linked = page.locator('.agenda-event--linked').filter({ hasText: 'Judo du second foyer' });
@@ -140,11 +151,12 @@ test('Overlay familles liées : activation → événement lié en lecture seule
 
   // ---- Désactiver l'overlay : l'événement lié disparaît ----
   const toggleOff = page.locator('.overlay-card input[type="checkbox"]').first();
+  const overlayDisabled = waitForOverlaySaved(page);
   await toggleOff.evaluate((el) => {
     (el as HTMLInputElement).checked = false;
     el.dispatchEvent(new Event('change', { bubbles: true }));
   });
-  await page.waitForLoadState('networkidle');
+  await overlayDisabled;
   await page.goto(`/agenda?month=${soon.month}`);
   await expect(page.locator('.agenda-event--linked')).toHaveCount(0);
 });

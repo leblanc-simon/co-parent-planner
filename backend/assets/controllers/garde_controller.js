@@ -5,13 +5,46 @@ import { ApiController } from '../api_base.js';
  * (état canonique ; la génération est asynchrone côté serveur, et le temps réel Mercure rafraîchit).
  */
 export default class extends ApiController {
-    static targets = ['kind', 'customPanel', 'midweekPanel', 'night', 'mwDay'];
+    static targets = ['kind', 'customPanel', 'midweekPanel', 'night', 'mwDay', 'parentA', 'parentB'];
     static values = { parentA: String, parentB: String, paName: String, pbName: String };
 
     connect() {
         super.connect();
         this.selectKind();
         this.relabelNights();
+        this.syncParents();
+    }
+
+    /**
+     * Maintient « Parent A » et « Parent B » sur deux membres distincts.
+     *
+     * Sans rythme enregistré, les deux sélecteurs retombaient sur la même première option et
+     * l'enregistrement échouait forcément (l'API exige deux parents distincts) — revue 2026-08 C13.
+     * Le gabarit pré-sélectionne désormais deux membres différents ; ici on empêche l'utilisateur de
+     * les faire converger : l'option retenue d'un côté est désactivée de l'autre, et si les deux
+     * pointent le même membre, le second bascule sur le premier choix encore libre.
+     */
+    syncParents(event) {
+        if (!this.hasParentATarget || !this.hasParentBTarget) return;
+        const changed = event?.currentTarget;
+        // Celui qu'on vient de changer garde son choix ; c'est l'autre qui cède.
+        const [fixed, other] = changed === this.parentBTarget
+            ? [this.parentBTarget, this.parentATarget]
+            : [this.parentATarget, this.parentBTarget];
+
+        if (fixed.value && other.value === fixed.value) {
+            const free = [...other.options].find((o) => o.value !== fixed.value);
+            if (free) other.value = free.value;
+        }
+
+        this._disableTaken(this.parentATarget, this.parentBTarget.value);
+        this._disableTaken(this.parentBTarget, this.parentATarget.value);
+    }
+
+    _disableTaken(select, takenValue) {
+        [...select.options].forEach((option) => {
+            option.disabled = Boolean(takenValue) && option.value === takenValue;
+        });
     }
 
     // Affiche le panneau de configuration correspondant au rythme coché.

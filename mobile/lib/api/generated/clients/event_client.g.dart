@@ -20,9 +20,19 @@ class _EventClient implements EventClient {
   final ParseErrorLogger? errorLogger;
 
   @override
-  Future<void> apiEventsIdDelete({required String id}) async {
+  Future<void> apiEventsIdDelete({
+    required String id,
+    Scope? scope,
+    String? recurrenceDate,
+    String? from,
+  }) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'scope': scope?.toJson(),
+      r'recurrenceDate': recurrenceDate,
+      r'from': from,
+    };
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<void>(
@@ -42,9 +52,11 @@ class _EventClient implements EventClient {
   Future<Event> apiEventsIdPatch({
     required String id,
     required EventUpdateEventRequestJsonMergePatch body,
+    Scope? scope,
   }) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{r'scope': scope?.toJson()};
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
     _data.addAll(body.toJson());
@@ -74,12 +86,14 @@ class _EventClient implements EventClient {
     required String familyId,
     String? from,
     String? to,
-    bool? overlay,
+    String? category,
+    String? overlay,
   }) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{
       r'from': from,
       r'to': to,
+      r'category': category,
       r'overlay': overlay,
     };
     queryParameters.removeWhere((k, v) => v == null);

@@ -142,7 +142,55 @@ export default class extends ApiController {
         return el ? el.value : '';
     }
 
+    /**
+     * Convertit une heure murale saisie (`datetime-local`, sans fuseau) en instant ISO 8601.
+     *
+     * L'heure est interprétée dans le fuseau **de la famille** (`data-agenda-timezone-value`), et
+     * non dans celui du navigateur : `new Date('2026-09-07T10:00')` prenait le fuseau courant du
+     * poste, si bien qu'un parent en déplacement hors d'Europe/Paris saisissant « 10:00 »
+     * enregistrait une autre heure pour la famille (revue 2026-08 C14). Les valeurs pré-remplies à
+     * l'édition sont d'ailleurs déjà rendues par le serveur dans le fuseau famille : les lire
+     * autrement décalait l'événement à chaque simple modification de titre.
+     */
     _iso(localValue) {
-        return localValue ? new Date(localValue).toISOString() : null;
+        if (!localValue) return null;
+        const tz = this.timezoneValue;
+        if (!tz) return new Date(localValue).toISOString();
+
+        const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(localValue);
+        if (!m) return new Date(localValue).toISOString();
+
+        const wall = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6] || 0);
+        try {
+            // Deux passes : la première estime l'offset à l'instant supposé, la seconde le corrige
+            // lorsque la saisie tombe près d'un changement d'heure.
+            let ts = wall - this._offsetAt(wall, tz);
+            ts = wall - this._offsetAt(ts, tz);
+
+            return new Date(ts).toISOString();
+        } catch (e) {
+            // Fuseau inconnu du navigateur : mieux vaut l'heure locale du poste qu'un échec.
+            return new Date(localValue).toISOString();
+        }
+    }
+
+    /** Décalage (ms) du fuseau `tz` à l'instant `utcMs` — positif à l'est de Greenwich. */
+    _offsetAt(utcMs, tz) {
+        const parts = new Intl.DateTimeFormat('en-US', {
+            timeZone: tz,
+            hour12: false,
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+        }).formatToParts(new Date(utcMs)).reduce((acc, p) => {
+            acc[p.type] = p.value;
+            return acc;
+        }, {});
+
+        const asIfUtc = Date.UTC(
+            +parts.year, +parts.month - 1, +parts.day,
+            +parts.hour % 24, +parts.minute, +parts.second,
+        );
+
+        return asIfUtc - utcMs;
     }
 }

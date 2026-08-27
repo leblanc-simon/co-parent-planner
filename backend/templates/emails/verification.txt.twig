@@ -1,0 +1,11 @@
+{# Partie text/plain (revue 2026-08 C18). Sans elle, Symfony dérivait le texte du HTML : le bouton
+   disparaissait sans laisser d'URL et les entités restaient encodées, rendant l'e-mail inutilisable
+   pour un client en mode texte seul. L'URL d'action figure donc ici en clair. #}
+{{ 'email.verification.title'|trans({}, 'messages', locale) }}
+
+{{ 'email.verification.intro'|trans({}, 'messages', locale) }}
+
+{{ 'email.verification.cta'|trans({}, 'messages', locale) }} :
+{{ link }}
+
+{{ 'email.verification.ignore'|trans({}, 'messages', locale) }}

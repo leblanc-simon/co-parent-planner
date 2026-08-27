@@ -25,6 +25,7 @@ class ExchangeJsonld {
     this.overdue = false,
     this.createdAt = '',
     this.messageCount = 0,
+    this.version = 1,
     this.object5,
     this.body,
     this.childId,
@@ -67,6 +68,10 @@ class ExchangeJsonld {
   final String createdAt;
   final int messageCount;
   final String? lastMessageAt;
+
+  /// Version de l'échange à renvoyer dans `expectedVersion` d'un PATCH (verrou optimiste, §4.2) —.
+  /// même défaut que l'agenda : la contrainte existait côté serveur sans être lisible (C20).
+  final int version;
   final List<OptionViewJsonld>? options;
   final List<MessageViewJsonld>? messages;
 

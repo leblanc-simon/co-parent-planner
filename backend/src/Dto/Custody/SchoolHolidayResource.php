@@ -9,6 +9,7 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Link;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\QueryParameter;
 use App\Dto\Family\FamilyResource;
 use App\Entity\SchoolHoliday;
 use App\State\Custody\CreateHolidayProcessor;
@@ -42,6 +43,12 @@ use App\State\Custody\UpdateRuleProcessor;
             output: false,
             read: false,
             deserialize: false,
+            parameters: [
+                'schoolYear' => new QueryParameter(
+                    description: 'Année scolaire à importer (format du dataset officiel, ex. `2026-2027`). Absent = année scolaire courante.',
+                    schema: ['type' => 'string'],
+                ),
+            ],
             processor: ImportHolidaysProcessor::class,
         ),
         new Put(

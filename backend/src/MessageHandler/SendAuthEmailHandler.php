@@ -34,10 +34,13 @@ final class SendAuthEmailHandler
 
     public function __invoke(SendAuthEmail $message): void
     {
+        // Un gabarit `.txt.twig` accompagne chaque `.html.twig` : sans partie texte explicite,
+        // Symfony la dérivait du HTML — le bouton disparaissait sans laisser son URL et les entités
+        // restaient encodées, rendant l'e-mail inutilisable en mode texte seul (revue 2026-08 C18).
         [$template, $subjectKey, $path] = match ($message->type) {
-            AuthEmailType::Verification => ['emails/verification.html.twig', 'email.verification.subject', '/verify-email'],
-            AuthEmailType::PasswordReset => ['emails/reset.html.twig', 'email.reset.subject', '/reset-password'],
-            AuthEmailType::PasswordChanged => ['emails/password_changed.html.twig', 'email.password_changed.subject', null],
+            AuthEmailType::Verification => ['emails/verification', 'email.verification.subject', '/verify-email'],
+            AuthEmailType::PasswordReset => ['emails/reset', 'email.reset.subject', '/reset-password'],
+            AuthEmailType::PasswordChanged => ['emails/password_changed', 'email.password_changed.subject', null],
         };
 
         $link = null;
@@ -50,7 +53,8 @@ final class SendAuthEmailHandler
             ->from(new Address($this->fromAddress, 'CoParentPlanner'))
             ->to($message->toEmail)
             ->subject($this->translator->trans($subjectKey, [], 'messages', $message->locale))
-            ->htmlTemplate($template)
+            ->htmlTemplate($template.'.html.twig')
+            ->textTemplate($template.'.txt.twig')
             ->locale($message->locale)
             ->context([
                 'link' => $link,

@@ -75,7 +75,13 @@ final class SeriesSplitter
         // Fermer le maître la veille du pivot (until, count effacé).
         $this->closeAt($master, $originalRule, $pivot);
 
-        // Overrides/EXDATE ≥ pivot : réaffectés à la nouvelle série, ou supprimés si la série est dissoute.
+        // Overrides/EXDATE ≥ pivot : réaffectés à la nouvelle série, ou supprimés si la série est
+        // dissoute. Les overrides reçoivent en plus les champs édités : « toute la série (à partir de
+        // cette date) » laissait intacte toute occurrence déjà personnalisée — y compris celle que
+        // l'utilisateur avait sous les yeux en lançant l'édition, qui gardait donc son ancien titre
+        // (revue 2026-08 C5). Seuls les champs descriptifs sont propagés : l'heure propre d'une
+        // occurrence déplacée est une modification voulue, la réécrire déplacerait tout au même
+        // instant. Les EXDATE (occurrences annulées) restent annulées.
         $pivotKey = $pivot->format('Y-m-d');
         foreach ($this->events->findBySeriesId($seriesId) as $row) {
             if ($row === $master) {
@@ -87,8 +93,12 @@ final class SeriesSplitter
             }
             if ($dissolved) {
                 $this->em->remove($row);
-            } else {
-                $row->setSeriesId($newSeriesId);
+
+                continue;
+            }
+            $row->setSeriesId($newSeriesId);
+            if ($row->isOverride()) {
+                $writer->applyDescriptiveFields($row, $data, $family);
             }
         }
 
@@ -173,14 +183,10 @@ final class SeriesSplitter
         return \count($this->expander->expand($original, $master->getStartsAt(), $master->getEndsAt(), $tz, $master->getStartsAt(), $dayBeforeEnd));
     }
 
+    /** Pivot de scission : `Y-m-d` **ou** instant ISO renvoyé par l'API (revue C9). */
     private function parseDate(string $raw, \DateTimeZone $tz): \DateTimeImmutable
     {
-        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $raw, $tz);
-        if (false === $date || $date->format('Y-m-d') !== $raw) {
-            throw new AgendaInputException('agenda.error.occurrence_invalid');
-        }
-
-        return $date;
+        return OccurrenceDate::parse($raw, $tz);
     }
 
     private function seriesId(Event $master): Uuid

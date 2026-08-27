@@ -10,6 +10,7 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Link;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\QueryParameter;
 use App\Dto\Family\FamilyResource;
 use App\Entity\Exchange;
 use App\State\Exchange\CreateExchangeProcessor;
@@ -31,6 +32,12 @@ use App\State\Exchange\UpdateExchangeProcessor;
             uriTemplate: '/families/{familyId}/exchanges',
             uriVariables: ['familyId' => new Link(fromClass: FamilyResource::class, identifiers: ['id'])],
             paginationEnabled: false,
+            parameters: [
+                'status' => new QueryParameter(
+                    description: 'Filtre de statut : `open` ou `decided`. Absent = tous les échanges de la famille.',
+                    schema: ['type' => 'string', 'enum' => ['open', 'decided']],
+                ),
+            ],
             provider: ExchangesProvider::class,
         ),
         new Post(
@@ -76,6 +83,11 @@ class ExchangeResource
     public string $createdAt = '';
     public int $messageCount = 0;
     public ?string $lastMessageAt = null;
+    /**
+     * Version de l'échange à renvoyer dans `expectedVersion` d'un PATCH (verrou optimiste, §4.2) —
+     * même défaut que l'agenda : la contrainte existait côté serveur sans être lisible (C20).
+     */
+    public int $version = 1;
 
     /** @var list<OptionView> */
     public array $options = [];
@@ -102,6 +114,7 @@ class ExchangeResource
         $view->decidedOptionId = null !== $exchange->getDecidedOption() ? (string) $exchange->getDecidedOption()->getId() : null;
         $view->overdue = $overdue;
         $view->createdAt = $exchange->getCreatedAt()->format(\DateTimeInterface::ATOM);
+        $view->version = $exchange->getVersion();
 
         return $view;
     }

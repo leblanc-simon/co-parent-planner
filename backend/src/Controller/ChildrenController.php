@@ -12,9 +12,9 @@ use App\Security\Child\ChildNotesPolicy;
 use App\Service\Child\AccessRightsBuilder;
 use App\Service\Child\AgeCalculator;
 use App\Web\ActiveFamilyResolver;
+use App\Web\MercureSubscription;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
-use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mercure\HubInterface;
@@ -37,6 +37,7 @@ final class ChildrenController extends AbstractController
         private readonly AccessRightsBuilder $accessBuilder,
         private readonly ChildNotesPolicy $policy,
         private readonly HubInterface $hub,
+        private readonly MercureSubscription $mercure,
     ) {
     }
 
@@ -110,15 +111,9 @@ final class ChildrenController extends AbstractController
             'notesTopic' => \sprintf('/families/%s/notes', $family->getId()),
         ]);
 
-        // Cookie d'abonnement Mercure scopé au seul topic des notes de la famille active (US-CH-3).
-        $factory = $this->hub->getFactory();
-        if (null !== $factory) {
-            $jwt = $factory->create([\sprintf('/families/%s/notes', $family->getId())], []);
-            $response->headers->setCookie(Cookie::create('mercureAuthorization', $jwt)
-                ->withHttpOnly(true)
-                ->withSameSite(Cookie::SAMESITE_LAX)
-                ->withPath('/.well-known/mercure'));
-        }
+        // Cookie d'abonnement Mercure scopé au seul topic des notes de la famille active (US-CH-3),
+        // borné dans le temps et renouvelé à chaque rendu, donc révocable (revue C16).
+        $this->mercure->attach($response, [\sprintf('/families/%s/notes', $family->getId())]);
 
         return $response;
     }

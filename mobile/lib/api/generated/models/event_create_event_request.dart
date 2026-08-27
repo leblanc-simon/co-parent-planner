@@ -9,7 +9,8 @@ part 'event_create_event_request.g.dart';
 /// Événement / occurrence d'agenda exposé (Lot 4 §6.1). `GET /families/{id}/events` renvoie les.
 /// **occurrences** sur [from, to] (une par occurrence de série) ; `POST` crée un événement ou une.
 /// série et renvoie l'événement maître. `startsAt`/`endsAt` sont formatés en ISO 8601 avec offset du.
-/// fuseau famille. Le paramètre `overlay=` est **réservé** (Lot 5, ignoré ici).
+/// fuseau famille. Le paramètre `overlay=` fusionne en lecture seule les événements des.
+/// familles liées activées (Lot 5).
 @JsonSerializable()
 class EventCreateEventRequest {
   const EventCreateEventRequest({

@@ -35,6 +35,7 @@ final class CustodyStatsProvider implements ProviderInterface
         $dto->parentBCount = $stats['parentBCount'];
         $dto->otherCount = $stats['otherCount'];
         $dto->total = $stats['total'];
+        $dto->daysInWindow = $stats['daysInWindow'];
         $dto->pctA = $stats['pctA'];
         $dto->pctB = $stats['pctB'];
         $dto->from = $from->format('Y-m-d');

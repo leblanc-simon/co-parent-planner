@@ -20,9 +20,20 @@ class _RgpdOperationLogClient implements RgpdOperationLogClient {
   final ParseErrorLogger? errorLogger;
 
   @override
-  Future<List<RgpdOperationLog>> apiAdminrgpdoperationsGetCollection() async {
+  Future<List<RgpdOperationLog>> apiAdminrgpdoperationsGetCollection({
+    int? page = 1,
+    int? itemsPerPage = 50,
+    String? type,
+    String? status,
+  }) async {
     final _extra = <String, dynamic>{};
-    final queryParameters = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{
+      r'page': page,
+      r'itemsPerPage': itemsPerPage,
+      r'type': type,
+      r'status': status,
+    };
+    queryParameters.removeWhere((k, v) => v == null);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
     final _options = _setStreamType<List<RgpdOperationLog>>(

@@ -24,17 +24,22 @@ services:
     image: dunglas/mercure
     restart: unless-stopped
     environment:
-      # Uncomment the following line to disable HTTPS,
-      #SERVER_NAME: ':80'
+      # HTTPS **désactivé** en développement : avec le SERVER_NAME par défaut, le hub répondait
+      # `308 → https://127.0.0.1/.well-known/mercure` alors que rien n'écoute en 443, rendant le
+      # temps réel inexerçable hors stack Docker complète (revue 2026-08 C11). Même réglage que
+      # `infra/docker-compose.yml`, seule configuration où le temps réel fonctionnait.
+      SERVER_NAME: ':80'
       MERCURE_PUBLISHER_JWT_KEY: '!ChangeThisMercureHubJWTSecretKey!'
       MERCURE_SUBSCRIBER_JWT_KEY: '!ChangeThisMercureHubJWTSecretKey!'
-      # Set the URL of your Symfony project (without trailing slash!) as value of the cors_origins directive
+      # Origines du front `symfony serve` : les deux hôtes servis par le serveur local. L'abonnement
+      # est **authentifié par cookie** (`<turbo-stream-source private>`), donc l'origine doit être
+      # listée explicitement — un `*` interdirait l'envoi des identifiants.
       MERCURE_EXTRA_DIRECTIVES: |
-        cors_origins http://127.0.0.1:8000
+        cors_origins http://127.0.0.1:8000 http://localhost:8000
     # Comment the following line to disable the development mode
     command: /usr/bin/caddy run --config /etc/caddy/dev.Caddyfile
     healthcheck:
-      test: ["CMD", "curl", "-f", "https://localhost/healthz"]
+      test: ["CMD", "curl", "-fsS", "http://localhost/healthz"]
       timeout: 5s
       retries: 5
       start_period: 60s

@@ -90,6 +90,39 @@ final class EventWriter
         $utc = new \DateTimeZone('UTC');
         $tz = new \DateTimeZone($family->getTimezone());
 
+        $this->applyDescriptiveFields($event, $data, $family);
+
+        $allDay = $data->allDay ?? $event->isAllDay();
+        if ($allDay) {
+            $dayStart = null !== $data->startsAt
+                ? $this->parseLocalDay($data->startsAt, $tz)
+                : $event->getStartsAt()->setTimezone($tz)->setTime(0, 0);
+            $start = $dayStart;
+            $end = $dayStart->setTime(23, 59, 59);
+        } else {
+            $start = null !== $data->startsAt ? $this->parseInstant($data->startsAt) : $event->getStartsAt();
+            if (null !== $data->endsAt) {
+                $end = '' === $data->endsAt ? null : $this->parseInstant($data->endsAt);
+            } else {
+                $end = $event->getEndsAt();
+            }
+            if (null !== $end && $end < $start) {
+                throw new AgendaInputException('agenda.error.interval_invalid');
+            }
+        }
+        $event->setAllDay($allDay)->setStartsAt($start->setTimezone($utc))->setEndsAt($end?->setTimezone($utc));
+    }
+
+    /**
+     * Champs **descriptifs** fournis (titre, catégorie, responsable, lieu, description, cible) —
+     * sans jamais toucher aux dates ni au marqueur journée entière.
+     *
+     * Extrait de {@see self::applyFields} pour la scission de série : « toute la série à partir de
+     * cette date » doit propager le nouveau titre aux occurrences déjà personnalisées, mais surtout
+     * pas leur horaire propre, qui est une modification voulue (revue 2026-08 C5).
+     */
+    public function applyDescriptiveFields(Event $event, UpdateEventRequest $data, Family $family): void
+    {
         if (null !== $data->title) {
             $title = trim($data->title);
             if ('' === $title) {
@@ -124,26 +157,6 @@ final class EventWriter
                 $event->addChild($child);
             }
         }
-
-        $allDay = $data->allDay ?? $event->isAllDay();
-        if ($allDay) {
-            $dayStart = null !== $data->startsAt
-                ? $this->parseLocalDay($data->startsAt, $tz)
-                : $event->getStartsAt()->setTimezone($tz)->setTime(0, 0);
-            $start = $dayStart;
-            $end = $dayStart->setTime(23, 59, 59);
-        } else {
-            $start = null !== $data->startsAt ? $this->parseInstant($data->startsAt) : $event->getStartsAt();
-            if (null !== $data->endsAt) {
-                $end = '' === $data->endsAt ? null : $this->parseInstant($data->endsAt);
-            } else {
-                $end = $event->getEndsAt();
-            }
-            if (null !== $end && $end < $start) {
-                throw new AgendaInputException('agenda.error.interval_invalid');
-            }
-        }
-        $event->setAllDay($allDay)->setStartsAt($start->setTimezone($utc))->setEndsAt($end?->setTimezone($utc));
     }
 
     /**

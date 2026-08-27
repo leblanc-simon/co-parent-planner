@@ -26,6 +26,7 @@
 
         <p class="auth__alt">Vous avez reçu une invitation ? Ouvrez le lien reçu par e-mail.</p>
         <form action="{{ path('app_logout') }}" method="post" class="auth__alt">
+            <input type="hidden" name="_csrf_token" data-controller="csrf-protection" value="{{ csrf_token('logout') }}">
             <button class="btn btn--ghost" type="submit">Se déconnecter</button>
         </form>
     </div>

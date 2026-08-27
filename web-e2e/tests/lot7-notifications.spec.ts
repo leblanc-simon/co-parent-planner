@@ -1,6 +1,7 @@
 import { Page, expect, test } from '@playwright/test';
 
 import { waitForVerificationToken } from '../helpers/mailpit';
+import { waitForSaved } from '../helpers/page';
 
 const PASSWORD = 'MotDePasseTresLong123';
 
@@ -58,7 +59,7 @@ test('Notifications : désactiver une catégorie et régler les quiet-hours (per
   await section.locator('#qh-start').fill('22:00');
   await section.locator('#qh-end').fill('07:00');
   await section.locator('button[type="submit"]').click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
 
   // Après rechargement : la préférence et les quiet-hours sont persistées.
   await page.goto('/settings');

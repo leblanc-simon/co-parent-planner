@@ -10,8 +10,7 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Link;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
-use ApiPlatform\OpenApi\Model\Operation;
-use ApiPlatform\OpenApi\Model\Parameter;
+use ApiPlatform\Metadata\QueryParameter;
 use App\Dto\Family\FamilyResource;
 use App\Entity\Child;
 use App\Entity\Event;
@@ -26,7 +25,8 @@ use App\State\Agenda\UpdateEventProcessor;
  * Événement / occurrence d'agenda exposé (Lot 4 §6.1). `GET /families/{id}/events` renvoie les
  * **occurrences** sur [from, to] (une par occurrence de série) ; `POST` crée un événement ou une
  * série et renvoie l'événement maître. `startsAt`/`endsAt` sont formatés en ISO 8601 avec offset du
- * fuseau famille. Le paramètre `overlay=` est **réservé** (Lot 5, ignoré ici).
+ * fuseau famille. Le paramètre `overlay=` fusionne en lecture seule les événements des
+ * familles liées activées (Lot 5).
  */
 #[ApiResource(
     shortName: 'Event',
@@ -35,39 +35,32 @@ use App\State\Agenda\UpdateEventProcessor;
             uriTemplate: '/families/{familyId}/events',
             uriVariables: ['familyId' => new Link(fromClass: FamilyResource::class, identifiers: ['id'])],
             paginationEnabled: false,
-            // `from`/`to`/`overlay` étaient lus par AgendaRange et EventsProvider sans être
-            // déclarés au contrat : le client mobile généré depuis l'OpenAPI ne pouvait donc
-            // pas les passer, et restait bloqué sur la fenêtre par défaut (le mois courant).
-            // Revue mobile 2026-08, constats C37 et C38/C45.
-            openapi: new Operation(
-                parameters: [
-                    new Parameter(
-                        name: 'from',
-                        in: 'query',
-                        description: 'Début de la fenêtre, date locale `Y-m-d`. Défaut : premier jour du mois courant.',
-                        required: false,
-                        // `type: string` + `pattern` plutôt que `format: date` : le
-                        // générateur du client Dart mappe `format: date` sur `DateTime` et
-                        // sérialise en ISO 8601 complet, que `AgendaRange` refuse en 422.
-                        // Le contrat doit décrire ce qui circule réellement.
-                        schema: ['type' => 'string', 'pattern' => '^\d{4}-\d{2}-\d{2}$'],
-                    ),
-                    new Parameter(
-                        name: 'to',
-                        in: 'query',
-                        description: 'Fin de la fenêtre (incluse), date locale `Y-m-d`. Défaut : dernier jour du mois courant. Fenêtre maximale : '.AgendaRange::MAX_WINDOW_DAYS.' jours.',
-                        required: false,
-                        schema: ['type' => 'string', 'pattern' => '^\d{4}-\d{2}-\d{2}$'],
-                    ),
-                    new Parameter(
-                        name: 'overlay',
-                        in: 'query',
-                        description: 'Fusionne les événements des familles liées activées (Lot 5), en lecture seule.',
-                        required: false,
-                        schema: ['type' => 'boolean'],
-                    ),
-                ],
-            ),
+            // Paramètres de requête DÉCLARÉS : le contrat est la source du client Dart mobile, et
+            // aucune opération n'exposait les siens — l'agenda n'était pas affichable depuis le seul
+            // contrat (revue web C3, revue mobile C37 et C38/C45).
+            parameters: [
+                'from' => new QueryParameter(
+                    description: 'Début de la fenêtre (date locale famille, AAAA-MM-JJ). Défaut : 1er du mois courant.',
+                    // `type: string` + `pattern` plutôt que `format: date` : le générateur du
+                    // client Dart mappe `format: date` sur `DateTime` et sérialise en ISO 8601
+                    // complet, que `AgendaRange` refuse en 422. Le contrat doit décrire ce qui
+                    // circule réellement.
+                    schema: ['type' => 'string', 'pattern' => '^\d{4}-\d{2}-\d{2}$'],
+                ),
+                'to' => new QueryParameter(
+                    description: 'Fin de la fenêtre, incluse (AAAA-MM-JJ). Défaut : dernier jour du mois courant. Fenêtre maximale : '.AgendaRange::MAX_WINDOW_DAYS.' jours.',
+                    schema: ['type' => 'string', 'pattern' => '^\d{4}-\d{2}-\d{2}$'],
+                ),
+                'category' => new QueryParameter(
+                    description: 'Filtre de catégories, séparées par des virgules (ex. `school,health`). Absent = toutes.',
+                    schema: ['type' => 'string'],
+                ),
+                'overlay' => new QueryParameter(
+                    // CSV d'identifiants (EventsProvider), pas un booléen ni un uuid unique.
+                    description: 'Identifiants des familles liées dont projeter les événements en overlay, séparés par des virgules (US-AG-4, lecture seule). Absent = aucun overlay.',
+                    schema: ['type' => 'string'],
+                ),
+            ],
             provider: EventsProvider::class,
         ),
         new Post(
@@ -81,12 +74,34 @@ use App\State\Agenda\UpdateEventProcessor;
         new Patch(
             uriTemplate: '/events/{id}',
             input: UpdateEventRequest::class,
+            // `scope` est la SEULE façon de distinguer « cette occurrence » de « toute la série » :
+            // l'omettre du contrat rendait l'édition d'une série indevinable (revue C3).
+            parameters: [
+                'scope' => new QueryParameter(
+                    description: "Portée de l'édition d'une série : `occurrence` (override de la seule occurrence `recurrenceDate`) ou `series` (cette occurrence et les suivantes, avec scission). Requis pour un événement récurrent, ignoré pour un ponctuel.",
+                    schema: ['type' => 'string', 'enum' => ['occurrence', 'series']],
+                ),
+            ],
             read: false,
             processor: UpdateEventProcessor::class,
         ),
         new Delete(
             uriTemplate: '/events/{id}',
             output: false,
+            parameters: [
+                'scope' => new QueryParameter(
+                    description: 'Portée de la suppression : `occurrence` (exclusion de la seule occurrence) ou `series`. Requis pour un événement récurrent.',
+                    schema: ['type' => 'string', 'enum' => ['occurrence', 'series']],
+                ),
+                'recurrenceDate' => new QueryParameter(
+                    description: "Occurrence visée par `scope=occurrence` : date d'origine (AAAA-MM-JJ) ou instant ISO 8601 renvoyé par l'API.",
+                    schema: ['type' => 'string'],
+                ),
+                'from' => new QueryParameter(
+                    description: 'Pivot de `scope=series` : supprime cette occurrence et les suivantes. Absent = toute la série.',
+                    schema: ['type' => 'string'],
+                ),
+            ],
             read: false,
             processor: DeleteEventProcessor::class,
         ),
@@ -110,6 +125,12 @@ class EventResource
     public ?string $recurrenceDate = null;
     public bool $isRecurring = false;
     public bool $isOverride = false;
+    /**
+     * Version de la ligne à renvoyer dans `expectedVersion` d'un PATCH (verrou optimiste, §4.3).
+     * `PATCH /events/{id}` l'acceptait déjà, mais aucune lecture ne l'exposait : la protection
+     * contre l'écriture concurrente était donc hors de portée de tout client (revue 2026-08 C20).
+     */
+    public int $version = 1;
     /** @var array{freq: string, until?: string|null, count?: int|null, excludeHolidays?: bool}|null */
     public ?array $recurrence = null;
 
@@ -131,6 +152,7 @@ class EventResource
         $dto->recurrenceDate = $o->recurrenceDate->format('Y-m-d');
         $dto->isRecurring = $o->isRecurring;
         $dto->isOverride = $o->isOverride;
+        $dto->version = $o->version;
 
         return $dto;
     }
@@ -154,6 +176,7 @@ class EventResource
         $dto->isRecurring = $e->isSeriesMaster() || $e->isOverride();
         $dto->isOverride = $e->isOverride();
         $dto->recurrence = $e->getRecurrence();
+        $dto->version = $e->getVersion();
 
         return $dto;
     }

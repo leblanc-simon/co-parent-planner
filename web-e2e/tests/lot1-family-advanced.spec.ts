@@ -4,6 +4,7 @@ import {
   waitForInvitationToken,
   waitForVerificationToken,
 } from '../helpers/mailpit';
+import { waitForSaved } from '../helpers/page';
 
 const PASSWORD = 'MotDePasseTresLong123';
 
@@ -58,7 +59,7 @@ test('membre : inviter → accepter → retirer de la famille', async ({
   await page.fill('#i-email', inviteeEmail);
   await page.selectOption('#i-role', 'step_parent');
   await page.locator('[data-settings-target="inviteForm"] button[type="submit"]').click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
 
   const inviteToken = await waitForInvitationToken(request, inviteeEmail);
   const contextB = await browser.newContext();
@@ -79,7 +80,7 @@ test('membre : inviter → accepter → retirer de la famille', async ({
     (d as HTMLDetailsElement).open = true;
   });
   await removableRow.locator('button', { hasText: 'Retirer' }).click();
-  await page.waitForLoadState('networkidle');
+  await waitForSaved(page);
 
   await page.goto('/settings');
   await expect(page.locator('.members')).not.toContainText(inviteeEmail);
@@ -136,7 +137,7 @@ test('bascule de famille active : X-Family-Id suit la famille choisie', async ({
   await pageB.fill('#i-email', aEmail);
   await pageB.selectOption('#i-role', 'parent');
   await pageB.locator('[data-settings-target="inviteForm"] button[type="submit"]').click();
-  await pageB.waitForLoadState('networkidle');
+  await waitForSaved(pageB);
   const inviteToken = await waitForInvitationToken(request, aEmail);
   await contextB.close();
 
@@ -148,8 +149,9 @@ test('bascule de famille active : X-Family-Id suit la famille choisie', async ({
   // A bascule sur Beta via le sélecteur de famille (depuis l'app, l'écran de bienvenue n'a pas le shell).
   await page.goto('/settings');
   await page.locator('.family-select__button').click();
+  // La bascule ne passe pas par l'API (cookie `cpp_family` + rechargement) : aucune confirmation à
+  // attendre, les assertions ci-dessous réessaient jusqu'à ce que la page rechargée soit à l'écran.
   await page.locator('.family-select__item', { hasText: 'Beta E2E' }).click();
-  await page.waitForLoadState('networkidle');
 
   // La famille active est bien Beta (en-tête + champ nom de la famille).
   await expect(page.locator('.family-select__button')).toContainText('Beta E2E');

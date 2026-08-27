@@ -619,7 +619,8 @@ final class WebPagesTest extends WebTestCase
         self::assertStringContainsString('Agenda', $html);
         self::assertStringContainsString('agenda-create__cta', $html); // parent admin → agenda:edit (CTA compact « Ajouter »)
         self::assertStringContainsString('Aucun événement ce mois-ci', $html);
-        self::assertStringContainsString('turbo-stream-source', $html);
+        // Élément de UX Turbo, seul à honorer `private` (abonnement authentifié — revue 2026-08 C2).
+        self::assertStringContainsString('turbo-mercure-stream-source private', $html);
         self::assertStringContainsString('href="/agenda"', $html); // onglet dans la barre latérale
     }
 
@@ -844,7 +845,8 @@ final class WebPagesTest extends WebTestCase
         // L'onglet Garde figure dans la barre latérale d'une famille séparée.
         self::assertStringContainsString('href="/garde"', $html);
         // Abonnement temps réel câblé.
-        self::assertStringContainsString('turbo-stream-source', $html);
+        // Élément de UX Turbo, seul à honorer `private` (abonnement authentifié — revue 2026-08 C2).
+        self::assertStringContainsString('turbo-mercure-stream-source private', $html);
     }
 
     /**
@@ -962,7 +964,8 @@ final class WebPagesTest extends WebTestCase
         self::assertStringContainsString('Échanges', $html);
         self::assertStringContainsString('Aucun échange pour le moment', $html);
         self::assertStringContainsString('Nouvel échange', $html); // parent admin → exchanges:edit
-        self::assertStringContainsString('turbo-stream-source', $html);
+        // Élément de UX Turbo, seul à honorer `private` (abonnement authentifié — revue 2026-08 C2).
+        self::assertStringContainsString('turbo-mercure-stream-source private', $html);
         self::assertStringContainsString('href="/echanges"', $html); // onglet dans la barre latérale
     }
 

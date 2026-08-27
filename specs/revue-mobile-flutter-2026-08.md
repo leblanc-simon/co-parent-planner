@@ -67,7 +67,7 @@ grep -c INTERNET mobile/android/app/src/{debug,main,profile}/AndroidManifest.xml
 L'ordre suit le rapport « constats fermés / effort », puis la gravité. Les étapes 1 et 2 sont des
 correctifs d'une dizaine de lignes qui débloquent l'application entière ; elles passent avant tout.
 
-### Étape 1 — `ApiRoutes` : une classification par `contains` casse tout le scope famille  ⬅ le P0
+### Étape 1 — ✅ LIVRÉE le 2026-08-27 — `ApiRoutes` : classification par `contains`  ⬅ le P0
 
 Une fonction de huit lignes décide quelles requêtes portent `X-Family-Id`. Elle raisonne par
 sous-chaîne, donc dé-scope l'inverse de ce qu'elle prétend.
@@ -86,7 +86,7 @@ jamais par `contains`.
 une **table de cas dérivée de `contracts/openapi.json`** : chaque chemin du contrat, avec son attendu
 scopé / non scopé. Toute divergence future entre contrat et intercepteur casse alors la CI.
 
-### Étape 2 — Build Android : l'application release est inerte
+### Étape 2 — ✅ LIVRÉE le 2026-08-27 — Build Android : l'application release était inerte
 
 | # | Constat | Gravité |
 |---|---|---|
@@ -94,7 +94,7 @@ scopé / non scopé. Toute divergence future entre contrat et intercepteur casse
 | C6 | `android:allowBackup` non désactivé : la base SQLite locale (en clair) et le magasin de jetons partent dans la sauvegarde Google Drive de l'utilisateur | P2 |
 | C73 | `buildTypes.release` signe avec `signingConfigs.debug` — le TODO du template Flutter n'a jamais été traité, alors que le Lot 9 a livré toute la chaîne de signature iOS | P3 |
 
-### Étape 3 — Cloisonnement des données locales entre comptes
+### Étape 3 — ✅ LIVRÉE le 2026-08-27 — Cloisonnement des données locales entre comptes
 
 Cause racine unique : **rien n'est purgé au changement de compte**. La déconnexion efface les jetons
 et la famille active, mais laisse sur l'appareil la file de mutations, le cache de lecture et les
@@ -111,7 +111,7 @@ préférences du compte précédent.
 **Tests à écrire** : un test de bascule de compte (compte A enfile une mutation + remplit le cache →
 déconnexion → compte B) asserte que la base locale ne contient plus **rien** de A.
 
-### Étape 4 — Démarrage et session
+### Étape 4 — ✅ LIVRÉE le 2026-08-27 — Démarrage et session
 
 | # | Constat | Gravité |
 |---|---|---|
@@ -122,7 +122,7 @@ déconnexion → compte B) asserte que la base locale ne contient plus **rien** 
 **Correction** : distinguer « jeton refusé » (401/403 → purge) de « serveur injoignable » (→ conserver
 la session et servir le cache). Réhydrater la famille active après la connexion.
 
-### Étape 5 — Machine d'état de l'outbox
+### Étape 5 — ✅ LIVRÉE le 2026-08-27 (sauf C14, C11) — Machine d'état de l'outbox
 
 | # | Constat | Gravité |
 |---|---|---|
@@ -244,6 +244,53 @@ Cinq sur 73, chacun réfuté code en main :
 ---
 
 ## Journal
+
+### 2026-08-27 — Étapes 1 à 5 livrées
+
+**Étape 1 — le P0.** `ApiRoutes.isFamilyScoped()` classait les chemins par `contains`, donc
+dé-scopait `/api/families/{familyId}/…` — c'est-à-dire **toutes** les ressources métier. La règle est
+désormais **scopé par défaut** (on n'énumère plus les routes scopées, qui grandissent à chaque lot,
+mais les rares exceptions), avec comparaison par **segment complet** et normalisation du chemin (URL
+absolue, requête, fragment, slash final). `/api/me` ne capture plus `/api/memberships` (C18).
+Le test précédent interrogeait `/api/custody`, chemin **absent du contrat** : remplacé par une table
+fixant l'attendu pour chacun des **49 chemins** de `contracts/openapi.json`, avec contrôle de
+recouvrement exact — ajouter un endpoint sans décider s'il est scopé rend la CI rouge.
+
+**Étape 2 — build Android.** Permission `INTERNET` ajoutée au manifeste `main` (C4/C63) ;
+`allowBackup="false"` (C6) ; la signature release ne passe plus par la clé de debug (C73) — keystore
+hors dépôt via `android/key.properties` ou variables `ANDROID_KEYSTORE_*`, artefact **non signé**
+(échec visible) en l'absence de configuration, procédure dans `infra/INSTALL.md §F`.
+`android_release_test.dart` verrouille les trois points, plus l'absence de clé committée.
+
+**Étape 3 — cloisonnement par compte.** Schéma Drift **v3** : colonne `userId` sur `OutboxEntries` et
+`CacheEntries`, clé de cache `userId::familyId::endpoint`. Toutes les lectures de l'outbox sont
+filtrées par compte (C2/C9, C3/C8). `LocalDataPurger` purge à la déconnexion volontaire, après
+réinitialisation de mot de passe (C5) et après suppression de compte ; la déconnexion **forcée** ne
+purge **pas** — les données appartiennent au même compte, sont cloisonnées par son identifiant et
+seront rejouées à la reconnexion, les effacer ferait perdre du travail hors-ligne légitime.
+`currentUserIdProvider` invalide le cache Riverpod des providers de compte à la bascule (C22).
+
+**Étape 4 — démarrage et session.** `restoreSession()` distingue « jeton refusé » de « serveur
+injoignable » : une erreur réseau ne purge plus les jetons et repart du dernier profil connu, persisté
+au stockage sécurisé — démarrer hors-ligne ne déconnecte plus (C1). `resolveActive()` choisit la
+famille après connexion (automatique s'il n'y en a qu'une) et l'onboarding propose désormais les
+familles existantes (C21). `main()` ne bloque plus l'affichage derrière `GET /api/me` : nouvel état
+`AuthRestoring` + écran d'attente, ni fenêtre vide ni clignotement de l'écran de connexion (C24).
+
+**Étape 5 — outbox.** Reprise des entrées `inFlight` orphelines (C7) ; statut `rejected` enfin branché
+sur l'UI, avec relance et abandon (C10/C64) ; `flush()` sérialisé (C12) ; `IdempotencyScope` pour que
+la tentative en ligne et son rejeu partagent la même clé, le client généré n'acceptant ni en-tête ni
+`extra` par appel (C13) ; `purgeSynced()` appelée par `flush()` (C16/C65).
+**Restent de l'étape 5** : `C14` (drapeau `available` jeté par les dépôts) et `C11` (effet optimiste
+local), qui demandent de faire remonter `CachedResult` jusqu'aux écrans.
+
+**Étape 11 (partiel).** `dart analyze --fatal-infos --fatal-warnings` en CI (C66) : sans ce drapeau,
+aucune règle de `analysis_options.yaml` n'était appliquée. Le code était déjà propre à ce niveau.
+
+**Portes** : `dart analyze --fatal-infos` 0 issue, format 0, **262 tests verts** (180 au départ),
+couverture **75,3 %** (seuil 70 %), client OpenAPI **sans drift** (attention : ne jamais passer
+`dart format` sur `lib/api/generated`, le générateur produit un style différent — c'est ce que la
+porte de drift de la CI compare).
 
 ### 2026-08-27 — Revue conduite, plan établi
 

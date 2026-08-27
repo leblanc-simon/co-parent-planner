@@ -43,3 +43,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Signature release Android : jamais de clé ni de mot de passe au dépôt
+# (revue mobile 2026-08, constat C73 — cf. infra/INSTALL.md §E).
+/android/key.properties
+*.jks
+*.keystore

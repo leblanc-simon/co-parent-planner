@@ -319,3 +319,68 @@ CI ne font que l'appeler. Donc :
 > complètement la résolution). `pod install` n'est **pas** une étape CI séparée : le `Fastfile` le
 > déclenche via `flutter build ios --no-codesign` (le projet ne committe pas de `Podfile`, généré par
 > le tool Flutter au 1er build). La version **Flutter est figée à `3.38.9`**, identique au Lot 0.
+
+---
+
+## F. Signature release Android
+
+> Ajouté par la **revue mobile 2026-08** (constat C73). Le projet signait ses builds release avec la
+> clé de **debug** — clé publiquement connue, donc n'importe qui pouvait produire une mise à jour
+> acceptée par l'appareil. Le `buildTypes.release` ne référence plus cette clé : sans configuration,
+> l'APK/AAB sort **non signé** (échec visible) plutôt que faussement signé.
+
+Même principe que Fastlane match côté iOS (§E) : **aucune clé, aucun mot de passe au dépôt**
+(`android/key.properties`, `*.jks` et `*.keystore` sont git-ignorés).
+
+### F.1 Créer le keystore (une fois, mainteneur)
+
+```bash
+keytool -genkey -v -keystore ~/coparentplanner-release.jks \
+  -keyalg RSA -keysize 4096 -validity 10000 -alias coparentplanner
+```
+
+Le sauvegarder **hors du dépôt** et hors de la machine de dev (perdre ce fichier interdit toute mise
+à jour de l'app publiée ; il n'existe aucun recours côté Google Play hors procédure Play App Signing).
+
+### F.2 Build local
+
+Créer `mobile/android/key.properties` :
+
+```properties
+storeFile=/chemin/absolu/vers/coparentplanner-release.jks
+storePassword=…
+keyAlias=coparentplanner
+keyPassword=…
+```
+
+```bash
+cd mobile
+flutter build appbundle --release --dart-define=API_BASE_URL=https://api.example.tld
+```
+
+L'URL d'API **doit** être passée en `--dart-define` : la valeur par défaut
+(`http://10.0.2.2:8000`, alias de la machine de dev depuis l'émulateur) est en clair et sera de
+toute façon bloquée par la politique de trafic Android en release.
+
+### F.3 Build en CI
+
+Le `build.gradle.kts` accepte les mêmes valeurs par variables d'environnement, ce qui évite d'écrire
+un fichier de secrets sur le runner :
+
+| Variable | Contenu |
+|---|---|
+| `ANDROID_KEYSTORE_PATH` | chemin du `.jks` décodé sur le runner |
+| `ANDROID_KEYSTORE_PASSWORD` | mot de passe du keystore |
+| `ANDROID_KEY_ALIAS` | alias de la clé |
+| `ANDROID_KEY_PASSWORD` | mot de passe de la clé |
+
+Le keystore lui-même se transporte en secret **base64** (`base64 -w0 coparentplanner-release.jks`),
+décodé au début du job vers un chemin temporaire — jamais committé, jamais loggué.
+
+### F.4 Ce que le manifeste garantit désormais
+
+- `<uses-permission android:name="android.permission.INTERNET"/>` est déclarée dans
+  `src/main/AndroidManifest.xml` — les manifestes `debug`/`profile` générés par Flutter ne sont
+  **pas** fusionnés en release, d'où une app release sans réseau avant ce correctif (C4/C63).
+- `android:allowBackup="false"` — la base locale (outbox + cache de lecture, en clair) et le magasin
+  de jetons ne partent plus dans la sauvegarde cloud de l'utilisateur (C6).

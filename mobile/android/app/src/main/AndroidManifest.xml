@@ -1,8 +1,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Obligatoire dans le manifeste `main` : les manifestes `debug` et `profile`
+         générés par Flutter la déclarent aussi, mais ils ne sont pas fusionnés dans
+         un build release — sans cette ligne, un APK/AAB release n'émet aucune requête
+         réseau (revue mobile 2026-08, constats C4/C63). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- `allowBackup="false"` : la base locale (outbox + cache de lecture, en clair)
+         et le magasin de jetons ne doivent pas partir dans la sauvegarde cloud de
+         l'utilisateur, qui exposerait des données de la famille hors de l'appareil
+         (revue mobile 2026-08, constat C6). -->
     <application
         android:label="coparentplanner"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false">
         <activity
             android:name=".MainActivity"
             android:exported="true"

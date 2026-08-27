@@ -28,7 +28,7 @@ void main() {
       final adapter = ScriptedAdapter((_) => (200, null));
       final dio = _dio(adapter)
         ..interceptors.add(FamilyScopeInterceptor(() => 'fam-1'));
-      await dio.get<dynamic>('/api/custody');
+      await dio.get<dynamic>('/api/families/fam-1/custody/days');
       expect(adapter.requests.single.headers['X-Family-Id'], 'fam-1');
     });
 

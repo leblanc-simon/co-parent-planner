@@ -122,7 +122,7 @@ déconnexion → compte B) asserte que la base locale ne contient plus **rien** 
 **Correction** : distinguer « jeton refusé » (401/403 → purge) de « serveur injoignable » (→ conserver
 la session et servir le cache). Réhydrater la famille active après la connexion.
 
-### Étape 5 — ✅ LIVRÉE le 2026-08-27 (sauf C14, C11) — Machine d'état de l'outbox
+### Étape 5 — ✅ LIVRÉE le 2026-08-27 (C14 avec l'étape 6 ; reste **C11**) — Machine d'état de l'outbox
 
 | # | Constat | Gravité |
 |---|---|---|
@@ -134,7 +134,7 @@ la session et servir le cache). Réhydrater la famille active après la connexio
 | C11 | Aucun effet optimiste local : l'entité créée hors-ligne n'apparaît sur aucun écran, ce qui pousse à la ressaisir → doublons à la resynchro *(écart de périmètre Lot 8, pas un simple défaut)* | P2 |
 | C16 · C65 | `purgeSynced()` n'est appelée que par son propre test : la base locale grossit indéfiniment | P3 |
 
-### Étape 6 — Agenda : fenêtre de lecture et fuseau horaire
+### Étape 6 — ✅ LIVRÉE le 2026-08-27 — Agenda : fenêtre de lecture et fuseau horaire
 
 | # | Constat | Gravité |
 |---|---|---|
@@ -244,6 +244,38 @@ Cinq sur 73, chacun réfuté code en main :
 ---
 
 ## Journal
+
+### 2026-08-27 — Étape 6 livrée (agenda) + C14
+
+**Cause racine commune à C37 et C38/C45** : le contrat ne déclarait pas les paramètres `from`/`to`
+que `AgendaRange` lisait déjà. Le client mobile, **généré depuis l'OpenAPI**, ne pouvait donc pas les
+passer et restait bloqué sur la fenêtre par défaut du serveur — le mois civil courant. Le correctif
+part donc du contrat : `GET /api/families/{familyId}/events` déclare `from`, `to` et `overlay`, en
+`type: string` + `pattern` plutôt que `format: date` (le générateur Dart mappe `format: date` sur
+`DateTime` et sérialise en ISO 8601 complet, que `AgendaRange` refuse en 422 — le contrat doit décrire
+ce qui circule réellement).
+
+**Drift trouvé au passage** : `contracts/openapi.json` avait dérivé du backend depuis `0bc6f6d`
+(`noteDateLabel` ajouté sans ré-export) — la porte de drift du job CI **backend** était donc rouge.
+Contrat ré-exporté, client Dart régénéré (génération vérifiée idempotente).
+
+| Constat | Correctif |
+|---|---|
+| C37 | Fenêtre explicite + **navigation de mois** (`agendaMonthProvider`, précédent/suivant/aujourd'hui). Un événement créé pour un autre mois était invisible, ce qui poussait à le recréer. |
+| C38·C45 | `upcomingEventsProvider` : fenêtre dédiée aujourd'hui → +60 j et borne `startsAt >= now \|\| endsAt >= now` reprise de `UpcomingEventsFinder`, au lieu de la liste mensuelle avec un `isAfter` strict. |
+| C20·C36 | `CivilDate` : la date vient des composants **textuels** de l'horodatage. `DateTime.parse` d'une chaîne à offset renvoie un instant UTC → la veille s'affichait pour tout événement de nuit **et pour tous les événements journée entière** (`T00:00:00+02:00`). `.toLocal()` ne corrige rien, le fuseau appareil n'étant pas celui de la famille. |
+| C39 | Fusion des deux sources dans une liste unique triée par la clé du serveur (jour, journée entière, heure, titre). |
+| C41 | Tuile actionnable → feuille d'actions avec suppression et confirmation nommée. Une occurrence de série dit explicitement que la portée reste web (US-AG-6). |
+| C43 | Pastille de catégorie sur la tuile d'un événement lié. |
+| C44 | `AlwaysScrollableScrollPhysics` sur les **six** écrans à `RefreshIndicator`. |
+| C14 | `CachedResult` remonte jusqu'aux écrans : « Données non disponibles hors-ligne » au lieu d'un faux mois vide ; la clé de cache inclut la fenêtre. |
+
+**21 nouveaux tests.** Portes mobile : analyze `--fatal-infos` 0, format 0, **283 tests verts**,
+couverture **76,0 %**. Portes backend : **341 tests / 2778 assertions**, PHPStan niv.8 0, cs-fixer 0.
+
+> Note d'environnement : les clés JWT (`backend/config/jwt/*.pem`, non committées) doivent être
+> générées dans chaque worktree neuf — `php bin/console lexik:jwt:generate-keypair` — sinon 156 tests
+> fonctionnels échouent sur « error while trying to encode the JWT token ».
 
 ### 2026-08-27 — Étapes 1 à 5 livrées
 

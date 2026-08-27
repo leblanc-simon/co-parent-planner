@@ -10,7 +10,9 @@
 > Détail intégral (preuve, scénario de panne, correction, verdict du vérificateur) :
 > **`specs/revue-mobile-flutter-2026-08-annexes.md`**.
 >
-> **État d'avancement : voir §Journal en fin de document.**
+> **Avancement au 2026-08-27 : 34 constats corrigés sur 68** — étapes 1 à 6 livrées, plus `C14` et
+> `C66`. Restent 34 constats : `C11` (fin de l'étape 5) et les étapes 7 à 11.
+> Détail par étape : voir §Journal en fin de document.
 
 ## Conditions d'observation
 

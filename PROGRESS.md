@@ -16,7 +16,7 @@ Antérieur : **Lot 6 (Échanges temps réel) TERMINÉ** : backend (entités Exch
 **Deux chantiers de revue sont ouverts en parallèle.**
 
 **A. Revue de code de l'application mobile Flutter** (`specs/revue-mobile-flutter-2026-08.md`,
-détail : `...-annexes.md`) — **ouverte le 2026-08-27, 68 constats confirmés, 26 corrigés (étapes 1 à 6 + C66)**. Plan en
+détail : `...-annexes.md`) — **ouverte le 2026-08-27, 68 constats confirmés, 34 corrigés (étapes 1 à 6 + C14 + C66), 34 restants**. Plan en
 11 étapes. L'ordre était imposé par le constat structurant — l'app mobile ne fonctionnait **ni en
 ligne** (P0 `C17`, scope famille jamais posé sur `/api/families/{familyId}/…`) **ni en release**
 (`C4`/`C63`, permission `INTERNET` absente du manifeste `main`), et son démarrage hors-ligne

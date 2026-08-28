@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/api_exception.dart';
+import '../../../core/error/error_text.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../auth/presentation/widgets/auth_scaffold.dart';
@@ -43,7 +44,7 @@ class _JoinFamilyScreenState extends ConsumerState<JoinFamilyScreen> {
           .acceptInvitation(_token.text.trim());
       // Famille active definie : le routeur redirige vers /home.
     } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.message);
+      if (mounted) setState(() => _error = errorText(context, e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

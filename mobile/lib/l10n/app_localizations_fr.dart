@@ -18,13 +18,17 @@ class AppL10nFr extends AppL10n {
   String get actionCancel => 'Annuler';
 
   @override
-  String get actionRetry => 'Reessayer';
+  String get actionRetry => 'Réessayer';
 
   @override
   String get actionSave => 'Enregistrer';
 
   @override
-  String get genericError => 'Une erreur est survenue. Veuillez reessayer.';
+  String get genericError => 'Une erreur est survenue. Veuillez réessayer.';
+
+  @override
+  String get networkUnreachable =>
+      'Connexion impossible. Vérifiez votre réseau.';
 
   @override
   String get fieldRequired => 'Ce champ est requis.';
@@ -42,72 +46,72 @@ class AppL10nFr extends AppL10n {
   String get loginTitle => 'Connexion';
 
   @override
-  String get loginSubtitle => 'Accedez a l\'espace de votre famille.';
+  String get loginSubtitle => 'Accédez à l\'espace de votre famille.';
 
   @override
   String get loginAction => 'Se connecter';
 
   @override
-  String get loginForgot => 'Mot de passe oublie ?';
+  String get loginForgot => 'Mot de passe oublié ?';
 
   @override
   String get loginNoAccount => 'Pas encore de compte ?';
 
   @override
-  String get loginRegisterLink => 'Creer un compte';
+  String get loginRegisterLink => 'Créer un compte';
 
   @override
-  String get registerTitle => 'Creer un compte';
+  String get registerTitle => 'Créer un compte';
 
   @override
-  String get registerSubtitle => 'Quelques informations pour demarrer.';
+  String get registerSubtitle => 'Quelques informations pour démarrer.';
 
   @override
   String get registerFullName => 'Nom complet (optionnel)';
 
   @override
-  String get registerPhone => 'Telephone (optionnel)';
+  String get registerPhone => 'Téléphone (optionnel)';
 
   @override
-  String get registerAction => 'Creer mon compte';
+  String get registerAction => 'Créer mon compte';
 
   @override
-  String get registerHasAccount => 'Deja un compte ?';
+  String get registerHasAccount => 'Déjà un compte ?';
 
   @override
   String get registerLoginLink => 'Se connecter';
 
   @override
-  String get passwordPolicyHint => 'Au moins 12 caracteres.';
+  String get passwordPolicyHint => 'Au moins 12 caractères.';
 
   @override
   String get passwordTooShort =>
-      'Le mot de passe doit comporter au moins 12 caracteres.';
+      'Le mot de passe doit comporter au moins 12 caractères.';
 
   @override
-  String get checkEmailTitle => 'Verifiez votre e-mail';
+  String get checkEmailTitle => 'Vérifiez votre e-mail';
 
   @override
   String checkEmailBody(String email) {
-    return 'Un e-mail de verification a ete envoye a $email. Ouvrez le lien qu\'il contient pour activer votre compte.';
+    return 'Un e-mail de vérification a été envoyé à $email. Ouvrez le lien qu\'il contient pour activer votre compte.';
   }
 
   @override
-  String get checkEmailBackToLogin => 'Revenir a la connexion';
+  String get checkEmailBackToLogin => 'Revenir à la connexion';
 
   @override
-  String get forgotTitle => 'Mot de passe oublie';
+  String get forgotTitle => 'Mot de passe oublié';
 
   @override
   String get forgotSubtitle =>
-      'Saisissez votre e-mail pour recevoir un lien de reinitialisation.';
+      'Saisissez votre e-mail pour recevoir un lien de réinitialisation.';
 
   @override
   String get forgotAction => 'Envoyer le lien';
 
   @override
   String get forgotGenericSuccess =>
-      'Si un compte existe pour cette adresse, un e-mail de reinitialisation vient d\'etre envoye.';
+      'Si un compte existe pour cette adresse, un e-mail de réinitialisation vient d\'être envoyé.';
 
   @override
   String get resetTitle => 'Nouveau mot de passe';
@@ -122,7 +126,7 @@ class AppL10nFr extends AppL10n {
   String get resetConfirmPassword => 'Confirmer le mot de passe';
 
   @override
-  String get resetAction => 'Reinitialiser';
+  String get resetAction => 'Réinitialiser';
 
   @override
   String get resetPasswordsMismatch =>
@@ -130,37 +134,37 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get resetSuccess =>
-      'Votre mot de passe a ete reinitialise. Vous pouvez vous connecter.';
+      'Votre mot de passe a été réinitialisé. Vous pouvez vous connecter.';
 
   @override
-  String get verifyInProgress => 'Verification en cours...';
+  String get verifyInProgress => 'Vérification en cours…';
 
   @override
   String get verifySuccess =>
-      'Votre adresse e-mail est verifiee. Vous pouvez vous connecter.';
+      'Votre adresse e-mail est vérifiée. Vous pouvez vous connecter.';
 
   @override
-  String get verifyError => 'Lien invalide ou expire.';
+  String get verifyError => 'Lien invalide ou expiré.';
 
   @override
-  String get verifyGoToLogin => 'Aller a la connexion';
+  String get verifyGoToLogin => 'Aller à la connexion';
 
   @override
   String get emailNotVerified =>
-      'Veuillez verifier votre adresse e-mail avant de vous connecter.';
+      'Veuillez vérifier votre adresse e-mail avant de vous connecter.';
 
   @override
-  String get sessionExpired => 'Session expiree, veuillez vous reconnecter.';
+  String get sessionExpired => 'Session expirée, veuillez vous reconnecter.';
 
   @override
   String get onboardingTitle => 'Bienvenue';
 
   @override
   String get onboardingSubtitle =>
-      'Creez votre premiere famille ou rejoignez-en une via une invitation.';
+      'Créez votre première famille ou rejoignez-en une via une invitation.';
 
   @override
-  String get onboardingCreate => 'Creer une famille';
+  String get onboardingCreate => 'Créer une famille';
 
   @override
   String get onboardingJoin => 'Rejoindre via une invitation';
@@ -173,7 +177,7 @@ class AppL10nFr extends AppL10n {
       'Choisissez la famille à ouvrir, ou créez-en une nouvelle.';
 
   @override
-  String get createFamilyTitle => 'Creer une famille';
+  String get createFamilyTitle => 'Créer une famille';
 
   @override
   String get familyNameLabel => 'Nom de la famille';
@@ -182,19 +186,19 @@ class AppL10nFr extends AppL10n {
   String get familyTypeLabel => 'Type de famille';
 
   @override
-  String get familyTypeSeparated => 'Parents separes';
+  String get familyTypeSeparated => 'Parents séparés';
 
   @override
   String get familyTypeIntact => 'Famille unie';
 
   @override
-  String get createFamilyAction => 'Creer la famille';
+  String get createFamilyAction => 'Créer la famille';
 
   @override
   String get joinFamilyTitle => 'Rejoindre une famille';
 
   @override
-  String get joinFamilySubtitle => 'Saisissez le code d\'invitation recu.';
+  String get joinFamilySubtitle => 'Saisissez le code d\'invitation reçu.';
 
   @override
   String get invitationTokenLabel => 'Code d\'invitation';
@@ -215,7 +219,7 @@ class AppL10nFr extends AppL10n {
   String get tabNotes => 'Enfants';
 
   @override
-  String get tabSettings => 'Reglages';
+  String get tabSettings => 'Réglages';
 
   @override
   String get homeGreeting => 'Bonjour';
@@ -224,19 +228,19 @@ class AppL10nFr extends AppL10n {
   String get homeAllAgenda => 'Tout l\'agenda';
 
   @override
-  String get homeUpcomingTitle => 'A venir';
+  String get homeUpcomingTitle => 'À venir';
 
   @override
-  String get homeUpcomingEmpty => 'Aucun evenement a venir.';
+  String get homeUpcomingEmpty => 'Aucun événement à venir.';
 
   @override
-  String get homeDecisionsTitle => 'A decider';
+  String get homeDecisionsTitle => 'À décider';
 
   @override
-  String get homeDecisionsEmpty => 'Rien a decider pour le moment.';
+  String get homeDecisionsEmpty => 'Rien à décider pour le moment.';
 
   @override
-  String get homeNotesTitle => 'Dernieres notes';
+  String get homeNotesTitle => 'Dernières notes';
 
   @override
   String get homeNotesEmpty => 'Aucune note pour le moment.';
@@ -248,10 +252,10 @@ class AppL10nFr extends AppL10n {
   String get homeCustodyEmpty => 'Aucun planning de garde pour le moment.';
 
   @override
-  String get homeFamilyIntact => 'Toute la famille reunie.';
+  String get homeFamilyIntact => 'Toute la famille réunie.';
 
   @override
-  String get settingsTitle => 'Reglages';
+  String get settingsTitle => 'Réglages';
 
   @override
   String get settingsProfile => 'Profil';
@@ -260,16 +264,19 @@ class AppL10nFr extends AppL10n {
   String get settingsFullName => 'Nom complet';
 
   @override
-  String get settingsPhone => 'Telephone';
+  String get settingsPhone => 'Téléphone';
 
   @override
   String get settingsLanguage => 'Langue';
 
   @override
-  String get settingsLogout => 'Se deconnecter';
+  String get settingsLanguageValue => 'Français (fr-FR)';
 
   @override
-  String get settingsProfileUpdated => 'Profil mis a jour.';
+  String get settingsLogout => 'Se déconnecter';
+
+  @override
+  String get settingsProfileUpdated => 'Profil mis à jour.';
 
   @override
   String get settingsActiveFamily => 'Famille active';
@@ -305,13 +312,13 @@ class AppL10nFr extends AppL10n {
   String get membersPending => 'Invitations en attente';
 
   @override
-  String get membersRevoke => 'Revoquer';
+  String get membersRevoke => 'Révoquer';
 
   @override
-  String get membersInvited => 'Invitation envoyee.';
+  String get membersInvited => 'Invitation envoyée.';
 
   @override
-  String get membersRevoked => 'Invitation revoquee.';
+  String get membersRevoked => 'Invitation révoquée.';
 
   @override
   String get inviteTitle => 'Inviter une personne';
@@ -320,7 +327,7 @@ class AppL10nFr extends AppL10n {
   String get inviteEmail => 'Adresse e-mail';
 
   @override
-  String get inviteRole => 'Role';
+  String get inviteRole => 'Rôle';
 
   @override
   String get inviteSend => 'Envoyer l\'invitation';
@@ -335,7 +342,7 @@ class AppL10nFr extends AppL10n {
   String get inviteRightNotes => 'Notes enfants';
 
   @override
-  String get inviteRightExchanges => 'Echanges';
+  String get inviteRightExchanges => 'Échanges';
 
   @override
   String get rightNone => 'Aucun';
@@ -344,7 +351,7 @@ class AppL10nFr extends AppL10n {
   String get rightView => 'Lecture';
 
   @override
-  String get rightEdit => 'Edition';
+  String get rightEdit => 'Édition';
 
   @override
   String get settingsChildren => 'Enfants';

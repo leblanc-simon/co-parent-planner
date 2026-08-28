@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
+import '../../../core/error/error_text.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../auth/application/auth_controller.dart';
 import '../data/rgpd_repository.dart';
@@ -29,7 +30,7 @@ class _PrivacyScreenState extends ConsumerState<PrivacyScreen> {
     try {
       await action();
     } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.message);
+      if (mounted) setState(() => _error = errorText(context, e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

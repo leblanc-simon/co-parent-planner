@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
+import '../../../core/error/error_text.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
@@ -10,7 +11,7 @@ import '../../../core/widgets/error_banner.dart';
 import '../../../core/widgets/initial_avatar.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/exchanges_repository.dart';
-import 'exchanges_screen.dart' show frenchDate;
+import 'exchanges_screen.dart' show exchangeDate;
 
 /// US-EX-3/5 — détail d'un échange : corps, options d'une décision (décomptes,
 /// bandeau « décision tranchée », validation), fil de messages, saisie.
@@ -50,6 +51,7 @@ class _ExchangeDetailScreenState extends ConsumerState<ExchangeDetailScreen> {
     if (text.isEmpty) return;
     setState(() => _sending = true);
     final messenger = ScaffoldMessenger.of(context);
+    final l = AppL10n.of(context);
     try {
       await ref
           .read(exchangesRepositoryProvider)
@@ -57,7 +59,7 @@ class _ExchangeDetailScreenState extends ConsumerState<ExchangeDetailScreen> {
       _message.clear();
       _reload();
     } on ApiException catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+      messenger.showSnackBar(SnackBar(content: Text(e.localized(l))));
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -74,7 +76,9 @@ class _ExchangeDetailScreenState extends ConsumerState<ExchangeDetailScreen> {
     } on ApiException catch (e) {
       messenger.showSnackBar(
         SnackBar(
-          content: Text(e.statusCode == 409 ? l.exchangeConflict : e.message),
+          content: Text(
+            e.statusCode == 409 ? l.exchangeConflict : e.localized(l),
+          ),
         ),
       );
       _reload();
@@ -91,7 +95,7 @@ class _ExchangeDetailScreenState extends ConsumerState<ExchangeDetailScreen> {
       messenger.showSnackBar(SnackBar(content: Text(l.exchangeClosed)));
       _reload();
     } on ApiException catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+      messenger.showSnackBar(SnackBar(content: Text(e.localized(l))));
     }
   }
 
@@ -121,7 +125,7 @@ class _ExchangeDetailScreenState extends ConsumerState<ExchangeDetailScreen> {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (e, _) => Padding(
             padding: const EdgeInsets.all(20),
-            child: ErrorBanner(e is ApiException ? e.message : e.toString()),
+            child: ErrorBanner(errorText(context, e)),
           ),
           data: (exchange) => Column(
             children: [
@@ -222,7 +226,9 @@ class _Header extends StatelessWidget {
         if (exchange.deadline != null) ...[
           const SizedBox(height: 6),
           Text(
-            l.exchangeDeadlineLabel(frenchDate(exchange.deadline)),
+            l.exchangeDeadlineLabel(
+              exchangeDate(l.localeName, exchange.deadline),
+            ),
             style: TextStyle(
               fontSize: 13,
               color: exchange.overdue

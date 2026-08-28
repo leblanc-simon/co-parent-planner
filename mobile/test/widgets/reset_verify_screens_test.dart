@@ -43,7 +43,7 @@ void main() {
         overrides: overrides(),
       );
 
-      expect(find.text('Lien invalide ou expire.'), findsOneWidget);
+      expect(find.text('Lien invalide ou expiré.'), findsOneWidget);
       // Bouton de retour present mais on ne tape pas (context.go sans routeur).
       expect(find.byType(OutlinedButton), findsOneWidget);
       // Le formulaire n'est pas rendu en l'absence de token.
@@ -65,7 +65,7 @@ void main() {
       await tester.pump();
 
       expect(
-        find.text('Le mot de passe doit comporter au moins 12 caracteres.'),
+        find.text('Le mot de passe doit comporter au moins 12 caractères.'),
         findsOneWidget,
       );
     });
@@ -114,7 +114,7 @@ void main() {
       // postFrameCallback -> _verify() bascule en etat erreur.
       await tester.pump();
 
-      expect(find.text('Lien invalide ou expire.'), findsOneWidget);
+      expect(find.text('Lien invalide ou expiré.'), findsOneWidget);
     });
 
     testWidgets('token valide -> banniere de succes', (tester) async {
@@ -134,7 +134,7 @@ void main() {
 
       expect(
         find.text(
-          'Votre adresse e-mail est verifiee. Vous pouvez vous connecter.',
+          'Votre adresse e-mail est vérifiée. Vous pouvez vous connecter.',
         ),
         findsOneWidget,
       );

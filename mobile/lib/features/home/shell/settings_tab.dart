@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/api_exception.dart';
+import '../../../core/error/error_text.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
@@ -11,8 +12,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/application/auth_state.dart';
 import '../../family/application/family_context.dart';
-import '../../family/data/family_repository.dart';
-import '../../members/data/members_repository.dart';
+import '../../family/presentation/family_switcher.dart';
 import '../../members/presentation/members_screen.dart';
 import '../../notifications/presentation/notifications_screen.dart';
 import '../../settings/presentation/privacy_screen.dart';
@@ -66,44 +66,10 @@ class _SettingsTabState extends ConsumerState<SettingsTab> {
         ).showSnackBar(SnackBar(content: Text(l.settingsProfileUpdated)));
       }
     } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.message);
+      if (mounted) setState(() => _error = errorText(context, e));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
-  }
-
-  /// US-SCOPE-1 — bascule de famille active (persiste le contexte → header X-Family-Id).
-  Future<void> _switchFamily(BuildContext context) async {
-    final families = await ref.read(myFamiliesProvider.future);
-    if (!context.mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final f in families)
-              ListTile(
-                title: Text(f.name),
-                subtitle: Text(f.type),
-                onTap: () async {
-                  await ref
-                      .read(familyContextProvider.notifier)
-                      .setActive(
-                        FamilyContext(
-                          familyId: f.id,
-                          familyName: f.name,
-                          type: f.type,
-                        ),
-                      );
-                  ref.invalidate(familyMembersProvider);
-                  if (sheetContext.mounted) Navigator.of(sheetContext).pop();
-                },
-              ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
@@ -141,7 +107,7 @@ class _SettingsTabState extends ConsumerState<SettingsTab> {
                   const SizedBox(height: 8),
                   TextButton.icon(
                     key: const ValueKey('settings-switch-family'),
-                    onPressed: () => _switchFamily(context),
+                    onPressed: () => showFamilySwitcher(context, ref),
                     icon: const Icon(Icons.swap_horiz),
                     label: Text(l.settingsSwitchFamily),
                   ),
@@ -219,7 +185,11 @@ class _SettingsTabState extends ConsumerState<SettingsTab> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(l.settingsLanguage),
-            trailing: const Text('Francais (fr-FR)'),
+            // Était écrit « Francais (fr-FR) » en dur, sans cédille et hors du
+            // catalogue : la seule chaîne visible de l'app qui ne pouvait pas être
+            // traduite (C62). Chaque catalogue porte désormais son propre nom de
+            // langue, dans cette langue.
+            trailing: Text(l.settingsLanguageValue),
           ),
           const Divider(),
           const SizedBox(height: 8),

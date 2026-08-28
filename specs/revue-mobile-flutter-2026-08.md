@@ -10,8 +10,8 @@
 > Détail intégral (preuve, scénario de panne, correction, verdict du vérificateur) :
 > **`specs/revue-mobile-flutter-2026-08-annexes.md`**.
 >
-> **Avancement au 2026-08-28 : 43 constats corrigés sur 68** — étapes 1 à 7 livrées, plus `C14` et
-> `C66`. Restent 25 constats : `C11` (fin de l'étape 5) et les étapes 8 à 11.
+> **Avancement au 2026-08-28 : 51 constats corrigés sur 68** — étapes 1 à 8 livrées, plus `C14` et
+> `C66`. Restent 17 constats : `C11` (fin de l'étape 5) et les étapes 9 à 11.
 > Détail par étape : voir §Journal en fin de document.
 
 ## Conditions d'observation
@@ -162,7 +162,7 @@ la session et servir le cache). Réhydrater la famille active après la connexio
 | C32 | Fiche de jour amputée de l'info de transmission, parents désignés « Parent A/B » alors que la légende affiche leurs vrais noms *(jumeau mobile du 6.1 web)* | P2 |
 | C34 | Icône « vacances » et anneau « famille liée » peints au **même coin** de la case : le marqueur de vacances est recouvert | P3 |
 
-### Étape 8 — i18n et formatage des dates
+### Étape 8 — ✅ LIVRÉE le 2026-08-28 — i18n et formatage des dates
 
 Cause racine : `intl`/`DateFormat` n'est **jamais** utilisé ; le formatage est réimplémenté à la main
 en français dans quatre écrans, et une partie des chaînes n'a jamais atteint le catalogue ARB. Cela
@@ -246,6 +246,46 @@ Cinq sur 73, chacun réfuté code en main :
 ---
 
 ## Journal
+
+### 2026-08-28 — Étape 8 livrée (i18n et formatage des dates)
+
+**Cause racine confirmée par la correction** : `intl`/`DateFormat` n'était utilisé nulle part hors du
+code généré, et **quatre** tables de noms de jours et de mois français littérales vivaient dans les
+écrans (accueil, agenda, garde, échanges) — dont deux en double exemplaire. Elles sont supprimées au
+profit de `DateLabels` (introduit à l'étape 7 pour la garde, complété ici), qui n'expose que des
+formats `intl` paramétrés par la locale de l'écran. Les symboles de date sont chargés par
+`GlobalMaterialLocalizations`, déjà présent dans `AppL10n.localizationsDelegates` : rien à appeler au
+démarrage, contrairement à ce que la fiche du constat supposait — vérifié en exécutant le formatage
+sous le harnais de test.
+
+| Constat | Correctif |
+|---|---|
+| C57 | **49 valeurs** du catalogue réaccentuées (« Reessayer », « Verifiez », « Reglages », « A venir », « Role », « Edition »…). La moitié haute du fichier — Lots 0/1 — était saisie sans diacritiques quand la moitié basse était correcte, incohérence visible sur un même écran. |
+| C19 | Les **trois** littéraux français du code disparaissent : `ApiException` n'expose plus de `message` composé en français dans une couche sans `BuildContext`, mais un `serverMessage` (le `detail` du serveur, déjà localisé par lui) et un discriminant neutre `isConnectionFailure`. Un helper unique `errorText(context, error)` résout le repli dans la locale de l'écran, et l'extension `localized(l)` sert les `catch` situés **après un `await`**, où l'écran a déjà capturé ses `AppL10n`. **26 sites d'appel migrés.** |
+| C40 · C56 | `AgendaScreen._frenchDay`, `_monthNames`, `HomeTab._frenchLongDate`/`_frenchShortDow` et `exchanges_screen.frenchDate` supprimés. L'abréviation du jour venait d'un `substring(0, 3)` sur le nom français — découpe qui n'a de sens qu'en français ; `DateFormat.E` rend « lun. ». |
+| C51 | Rôle d'invitation et type de famille **traduits** : l'écran Membres affichait « step_parent » sous l'e-mail alors qu'il possédait déjà son traducteur, et les deux feuilles de bascule affichaient « separated ». Une valeur inconnue rend désormais une chaîne **vide** plutôt que la clé technique. Les deux feuilles de bascule, dupliquées et déjà divergentes, sont mutualisées (`showFamilySwitcher`). |
+| C53 · C58 | Date des notes enfant formatée dans la locale (« Sophie · 23 juin 2026 »). Le backend expose bien un `noteDateLabel`, absent du contrat — mais c'est un libellé **français figé** : le formater côté client est la seule forme traduisible, et le drift OpenAPI reste sans autre conséquence. |
+| C62 | La ligne « Langue » des Paramètres affichait « Francais (fr-FR) » en dur, sans cédille : seule chaîne visible de l'app qu'aucun catalogue ne pouvait traduire. Chaque catalogue porte désormais son propre nom de langue. |
+
+**Deux garde-fous CI, dont il a été vérifié qu'ils échouent réellement** (`test/l10n_guard_test.dart`,
+exercé en réintroduisant chaque défaut avant de le retirer) : aucune valeur ARB ne contient un mot
+français privé de son accent, et **aucune chaîne accentuée n'existe en dur hors du catalogue**. Le
+second critère est précis sans faux positif : une chaîne destinée à l'utilisateur porte presque
+toujours un accent en français, une chaîne technique n'en porte jamais.
+
+**Correction de fond prise au passage** : les écrans affichaient `e.toString()` pour toute erreur
+non-HTTP, c'est-à-dire le texte technique d'une exception Dart montré tel quel à l'utilisateur
+(« Bad state: No element »). `errorText()` rend le message générique du catalogue.
+
+**14 nouveaux tests** (`DateLabels` en français **et en anglais** — l'invariant « ajouter une langue
+ne doit demander aucun changement de code » est ainsi réellement exercé —, `errorText`, la
+traduction du rôle d'invitation, les deux garde-fous). Portes mobile : `dart analyze --fatal-infos`
+0, format 0, **322 tests verts** (309 avant), couverture **77,9 %** (77,3 % avant). Aucun changement
+de contrat, de client Dart ni de backend.
+
+> **Piège rencontré, à retenir** : `dart format lib` reformate aussi `lib/api/generated`, ce que le
+> `CLAUDE.md` interdit — c'est exactement ce que compare la porte de drift de la CI. Toujours
+> restreindre le formatage (`dart format $(find lib test -name '*.dart' -not -path 'lib/api/generated/*')`).
 
 ### 2026-08-28 — Étape 7 livrée (garde) + parité des pastilles avec le web
 

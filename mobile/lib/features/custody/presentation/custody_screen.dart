@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
+import '../../../core/error/error_text.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
@@ -79,9 +80,7 @@ class CustodyScreen extends ConsumerWidget {
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Padding(
                   padding: const EdgeInsets.all(20),
-                  child: ErrorBanner(
-                    e is ApiException ? e.message : e.toString(),
-                  ),
+                  child: ErrorBanner(errorText(context, e)),
                 ),
                 data: (pattern) => RefreshIndicator(
                   onRefresh: () async {
@@ -178,8 +177,7 @@ class _CustodyBody extends ConsumerWidget {
         const SizedBox(height: 12),
         daysAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) =>
-              ErrorBanner(e is ApiException ? e.message : e.toString()),
+          error: (e, _) => ErrorBanner(errorText(context, e)),
           data: (days) => _Calendar(
             pattern: pattern,
             days: days,
@@ -205,8 +203,7 @@ class _CustodyBody extends ConsumerWidget {
               child: CircularProgressIndicator(),
             ),
           ),
-          error: (e, _) =>
-              ErrorBanner(e is ApiException ? e.message : e.toString()),
+          error: (e, _) => ErrorBanner(errorText(context, e)),
           data: (exceptions) => exceptions.isEmpty
               ? Text(l.custodyExceptionsEmpty)
               : Column(
@@ -226,8 +223,7 @@ class _CustodyBody extends ConsumerWidget {
         const SizedBox(height: 8),
         holidaysAsync.when(
           loading: () => const SizedBox.shrink(),
-          error: (e, _) =>
-              ErrorBanner(e is ApiException ? e.message : e.toString()),
+          error: (e, _) => ErrorBanner(errorText(context, e)),
           data: (holidays) => holidays.isEmpty
               ? Text(l.custodyHolidaysEmpty)
               : Column(
@@ -267,7 +263,7 @@ class _ImportHolidaysButtonState extends ConsumerState<_ImportHolidaysButton> {
         SnackBar(content: Text(l.custodyHolidaysImported)),
       );
     } on ApiException catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+      messenger.showSnackBar(SnackBar(content: Text(e.localized(l))));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -878,7 +874,9 @@ class _OverlayGardeToggles extends ConsumerWidget {
                     ..invalidate(overlayGardeEventsProvider)
                     ..invalidate(overlayGardeDatesProvider);
                 } on ApiException catch (e) {
-                  messenger.showSnackBar(SnackBar(content: Text(e.message)));
+                  messenger.showSnackBar(
+                    SnackBar(content: Text(e.localized(l))),
+                  );
                 }
               },
             ),
@@ -1188,7 +1186,7 @@ class _ExceptionTile extends ConsumerWidget {
                         );
                       } on ApiException catch (e) {
                         messenger.showSnackBar(
-                          SnackBar(content: Text(e.message)),
+                          SnackBar(content: Text(e.localized(l))),
                         );
                       }
                     },
@@ -1282,7 +1280,7 @@ class _CustodyDaySheetState extends ConsumerState<CustodyDaySheet> {
       messenger.showSnackBar(SnackBar(content: Text(swappedMsg)));
     } on ApiException catch (e) {
       if (mounted) {
-        setState(() => _error = e.message);
+        setState(() => _error = e.localized(l));
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -1317,8 +1315,7 @@ class _CustodyDaySheetState extends ConsumerState<CustodyDaySheet> {
                 padding: EdgeInsets.symmetric(vertical: 24),
                 child: Center(child: CircularProgressIndicator()),
               ),
-              error: (e, _) =>
-                  ErrorBanner(e is ApiException ? e.message : e.toString()),
+              error: (e, _) => ErrorBanner(errorText(context, e)),
               data: (detail) => _body(l, detail),
             ),
           ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/api_exception.dart';
+import '../../../core/error/error_text.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../l10n/app_localizations.dart';
 import '../application/auth_controller.dart';
@@ -42,7 +43,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       if (mounted) {
         setState(() {
           if (e.isRateLimited) {
-            _error = e.message;
+            _error = errorText(context, e);
           } else {
             _done = true;
           }

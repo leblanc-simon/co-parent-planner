@@ -27,6 +27,23 @@ abstract final class DateLabels {
   static String longDate(String locale, DateTime date) =>
       DateFormat.yMMMMEEEEd(locale).format(date);
 
+  /// « lundi 6 juillet » — en-tête de journée (accueil, agenda), sans millésime :
+  /// ces écrans montrent la période courante, où l'année n'apporte rien.
+  static String dayOfMonth(String locale, DateTime date) =>
+      DateFormat.MMMMEEEEd(locale).format(date);
+
+  /// « lun. » — jour abrégé d'un bloc date. L'abréviation était obtenue par
+  /// `substring(0, 3)` sur le nom français, découpe qui n'a de sens qu'en français.
+  static String shortWeekday(String locale, DateTime date) =>
+      DateFormat.E(locale).format(date);
+
+  /// « lundi 6 juillet » à partir d'une date ISO `AAAA-MM-JJ`; renvoie la chaîne
+  /// d'origine si elle n'est pas exploitable.
+  static String isoDayOfMonth(String locale, String iso) {
+    final date = CivilDate.of(iso);
+    return date == null ? iso : dayOfMonth(locale, date);
+  }
+
   /// « 23 juin » — borne d'une période (vacances, exception).
   static String dayMonth(String locale, DateTime date) =>
       DateFormat.MMMd(locale).format(date);

@@ -64,7 +64,7 @@ void main() {
     await tester.pump();
 
     expect(
-      find.text('Le mot de passe doit comporter au moins 12 caracteres.'),
+      find.text('Le mot de passe doit comporter au moins 12 caractères.'),
       findsOneWidget,
     );
     // Aucune requete reseau n'a ete tentee (validation locale d'abord).

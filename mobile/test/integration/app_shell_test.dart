@@ -92,7 +92,7 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('home-settings-button')));
       await tester.pumpAndSettle();
 
-      expect(find.widgetWithText(AppBar, 'Reglages'), findsOneWidget);
+      expect(find.widgetWithText(AppBar, 'Réglages'), findsOneWidget);
     },
   );
 

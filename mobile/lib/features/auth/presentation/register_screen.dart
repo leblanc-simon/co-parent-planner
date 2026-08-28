@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/error/api_exception.dart';
+import '../../../core/error/error_text.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../routing/routes.dart';
@@ -65,7 +66,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         if (e.fieldErrors.isNotEmpty) {
           _fieldErrors.addAll(e.fieldErrors);
         } else {
-          _error = e.message;
+          _error = errorText(context, e);
         }
       });
     } finally {

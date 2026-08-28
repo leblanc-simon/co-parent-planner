@@ -1,8 +1,9 @@
 import 'package:coparentplanner/api/generated/export.dart' as api;
 import 'package:coparentplanner/features/exchanges/data/exchanges_repository.dart';
 import 'package:coparentplanner/features/exchanges/presentation/exchanges_screen.dart'
-    show frenchDate;
+    show exchangeDate;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 api.Exchange _ex({
   required String id,
@@ -82,14 +83,18 @@ void main() {
     expect(openCount(const []), 0);
   });
 
-  group('frenchDate', () {
-    test('formate une date ISO en français', () {
-      expect(frenchDate('2026-07-06'), '6 juil. 2026');
+  group('exchangeDate', () {
+    // `DateFormat` exige les données de la locale ; sous un écran elles sont
+    // chargées par `GlobalMaterialLocalizations`, pas dans un test unitaire.
+    setUpAll(() => initializeDateFormatting('fr'));
+
+    test('formate une date ISO dans la locale demandée', () {
+      expect(exchangeDate('fr', '2026-07-06'), '6 juil. 2026');
     });
 
     test('tolère null / format court', () {
-      expect(frenchDate(null), '');
-      expect(frenchDate('bad'), '');
+      expect(exchangeDate('fr', null), '');
+      expect(exchangeDate('fr', 'bad'), '');
     });
   });
 }

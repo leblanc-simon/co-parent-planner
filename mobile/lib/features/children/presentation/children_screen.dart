@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart' as api;
-import '../../../core/error/api_exception.dart';
+import '../../../core/error/error_text.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
@@ -33,9 +33,7 @@ class ChildrenScreen extends ConsumerWidget {
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Padding(
                   padding: const EdgeInsets.all(20),
-                  child: ErrorBanner(
-                    e is ApiException ? e.message : e.toString(),
-                  ),
+                  child: ErrorBanner(errorText(context, e)),
                 ),
                 data: (children) {
                   if (children.isEmpty) {

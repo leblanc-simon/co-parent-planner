@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
+import '../../../core/error/error_text.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/util/date_labels.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../core/widgets/initial_avatar.dart';
 import '../../../l10n/app_localizations.dart';
@@ -44,7 +46,7 @@ class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
       _note.clear();
       ref.invalidate(childNotesProvider(widget.child.id));
     } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.message);
+      if (mounted) setState(() => _error = errorText(context, e));
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -147,8 +149,7 @@ class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
 
           notesAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) =>
-                ErrorBanner(e is ApiException ? e.message : e.toString()),
+            error: (e, _) => ErrorBanner(errorText(context, e)),
             data: (notes) => notes.isEmpty
                 ? Text(l.childNotesEmpty)
                 : Column(
@@ -255,7 +256,11 @@ class _NoteCard extends StatelessWidget {
               ),
               if ((note.noteDate ?? '').isNotEmpty)
                 Text(
-                  ' · ${note.noteDate}',
+                  // La date était affichée en ISO brut — « Sophie · 2026-06-23 »
+                  // dans une interface entièrement française (constat C53). Le
+                  // backend expose bien un `noteDateLabel`, mais en français figé :
+                  // le formater ici est la seule forme traduisible.
+                  ' · ${DateLabels.isoDayMonthYear(AppL10n.of(context).localeName, note.noteDate!)}',
                   style: const TextStyle(
                     fontSize: 13,
                     color: Color(0xFFA39B8C),

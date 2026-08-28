@@ -3,18 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
+import '../../../core/error/error_text.dart';
 import '../../../core/session/session_scope.dart';
 import '../../../core/sync/outbox_queued_exception.dart';
-import '../../../core/util/civil_date.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/util/civil_date.dart';
+import '../../../core/util/date_labels.dart';
 import '../../../core/widgets/error_banner.dart';
+import '../../../core/widgets/large_title_header.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../children/data/children_repository.dart';
 import '../../family/application/family_context.dart';
 import '../../members/data/members_repository.dart';
-import '../../../core/widgets/large_title_header.dart';
 import '../data/agenda_repository.dart';
 import '../data/overlay_repository.dart';
 
@@ -79,9 +81,7 @@ class AgendaScreen extends ConsumerWidget {
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Padding(
                   padding: const EdgeInsets.all(20),
-                  child: ErrorBanner(
-                    e is ApiException ? e.message : e.toString(),
-                  ),
+                  child: ErrorBanner(errorText(context, e)),
                 ),
                 data: (result) {
                   final events = result.items;
@@ -124,7 +124,9 @@ class AgendaScreen extends ConsumerWidget {
                           const SizedBox(height: 40),
                           Center(
                             child: Text(
-                              l.agendaEmptyMonth(_frenchMonth(month)),
+                              l.agendaEmptyMonth(
+                                DateLabels.monthYear(l.localeName, month),
+                              ),
                             ),
                           ),
                         ] else
@@ -183,7 +185,10 @@ class AgendaScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Text(_frenchDay(key), style: AppTypography.textTheme.titleMedium),
+              Text(
+                DateLabels.isoDayOfMonth(l.localeName, key),
+                style: AppTypography.textTheme.titleMedium,
+              ),
               const SizedBox(width: 8),
               // U-10 : sous-libellé (nombre d'événements du jour).
               Text(
@@ -205,9 +210,6 @@ class AgendaScreen extends ConsumerWidget {
     ];
   }
 
-  static String _frenchMonth(DateTime month) =>
-      '${_monthNames[month.month]} ${month.year}';
-
   static void _openForm(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
@@ -215,41 +217,11 @@ class AgendaScreen extends ConsumerWidget {
       builder: (_) => const _EventForm(),
     );
   }
-
-  static String _frenchDay(String ymd) {
-    final d = DateTime.parse(ymd);
-    const days = [
-      'lundi',
-      'mardi',
-      'mercredi',
-      'jeudi',
-      'vendredi',
-      'samedi',
-      'dimanche',
-    ];
-    return '${days[d.weekday - 1]} ${d.day} ${_monthNames[d.month]}';
-  }
 }
 
 /// Noms de mois en français. Locale unique livrée (fr-FR) : la sortie de ces
 /// libellés vers l'ARB est traitée à l'étape 8 du plan de revue (constats
 /// C40/C61), qui centralise tout le formatage de dates.
-const List<String> _monthNames = [
-  '',
-  'janvier',
-  'février',
-  'mars',
-  'avril',
-  'mai',
-  'juin',
-  'juillet',
-  'août',
-  'septembre',
-  'octobre',
-  'novembre',
-  'décembre',
-];
-
 /// Élément unifié de la liste d'un jour : occurrence propre **ou** événement d'une
 /// famille liée. Exister sous un type commun est ce qui permet de trier les deux
 /// sources ensemble (constat C39).
@@ -309,7 +281,7 @@ class _MonthNavigator extends ConsumerWidget {
           ),
           Expanded(
             child: Text(
-              '${_monthNames[month.month]} ${month.year}',
+              DateLabels.monthYear(l.localeName, month),
               key: const ValueKey('agenda-month-label'),
               textAlign: TextAlign.center,
               style: AppTypography.textTheme.titleMedium,
@@ -393,7 +365,9 @@ class _OverlayToggles extends ConsumerWidget {
                     ..invalidate(overlayPreferencesProvider)
                     ..invalidate(overlayEventsProvider);
                 } on ApiException catch (e) {
-                  messenger.showSnackBar(SnackBar(content: Text(e.message)));
+                  messenger.showSnackBar(
+                    SnackBar(content: Text(e.localized(l))),
+                  );
                 }
               },
             ),
@@ -750,7 +724,7 @@ class _EventActions extends ConsumerWidget {
       if (sheet.canPop()) sheet.pop();
       messenger.showSnackBar(SnackBar(content: Text(l.agendaDeleted)));
     } on ApiException catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+      messenger.showSnackBar(SnackBar(content: Text(e.localized(l))));
     }
   }
 }
@@ -946,7 +920,7 @@ class _EventFormState extends ConsumerState<_EventForm> {
       if (navigator.canPop()) navigator.pop();
       messenger.showSnackBar(SnackBar(content: Text(queuedMsg)));
     } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.message);
+      if (mounted) setState(() => _error = errorText(context, e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }

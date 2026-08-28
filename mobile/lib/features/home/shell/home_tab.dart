@@ -4,9 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../api/generated/export.dart' as api;
 import '../../../core/theme/app_colors.dart';
-import '../../../core/util/civil_date.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/util/civil_date.dart';
+import '../../../core/util/date_labels.dart';
 import '../../../core/widgets/large_title_header.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../routing/routes.dart';
@@ -17,7 +18,7 @@ import '../../auth/application/auth_state.dart';
 import '../../exchanges/data/exchanges_repository.dart';
 import '../../exchanges/presentation/exchanges_screen.dart';
 import '../../family/application/family_context.dart';
-import '../../family/data/family_repository.dart';
+import '../../family/presentation/family_switcher.dart';
 import 'settings_tab.dart';
 
 /// US-HOME-1 : accueil = perspective de la famille active + encarts en etat vide
@@ -44,7 +45,7 @@ class HomeTab extends ConsumerWidget {
           children: [
             // U1-01/02/03 : eyebrow date + greeting, pilule famille + engrenage.
             LargeTitleHeader(
-              eyebrow: _frenchLongDate(DateTime.now()),
+              eyebrow: DateLabels.dayOfMonth(l.localeName, DateTime.now()),
               title: '${l.homeGreeting}, $name',
               padding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
               trailing: Row(
@@ -53,7 +54,7 @@ class HomeTab extends ConsumerWidget {
                   if (family != null) ...[
                     _FamilyPill(
                       name: family.familyName,
-                      onTap: () => _switchFamily(context, ref),
+                      onTap: () => showFamilySwitcher(context, ref),
                     ),
                     const SizedBox(width: 8),
                   ],
@@ -87,39 +88,6 @@ class HomeTab extends ConsumerWidget {
             const _ExchangesCard(),
             const SizedBox(height: 16),
             _EmptyCard(title: l.homeNotesTitle, message: l.homeNotesEmpty),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// US-SCOPE-1 — bascule de famille active via une feuille modale.
-  static Future<void> _switchFamily(BuildContext context, WidgetRef ref) async {
-    final families = await ref.read(myFamiliesProvider.future);
-    if (!context.mounted) return;
-    await showModalBottomSheet<void>(
-      context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final f in families)
-              ListTile(
-                title: Text(f.name),
-                subtitle: Text(f.type),
-                onTap: () async {
-                  await ref
-                      .read(familyContextProvider.notifier)
-                      .setActive(
-                        FamilyContext(
-                          familyId: f.id,
-                          familyName: f.name,
-                          type: f.type,
-                        ),
-                      );
-                  if (sheetContext.mounted) Navigator.of(sheetContext).pop();
-                },
-              ),
           ],
         ),
       ),
@@ -510,7 +478,7 @@ class _UpcomingTile extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    _frenchShortDow(start).toUpperCase(),
+                    DateLabels.shortWeekday(l.localeName, start).toUpperCase(),
                     style: const TextStyle(
                       fontFamily: AppFonts.body,
                       fontSize: 11,
@@ -570,36 +538,3 @@ class _UpcomingTile extends StatelessWidget {
     );
   }
 }
-
-const _frenchDaysLong = [
-  'lundi',
-  'mardi',
-  'mercredi',
-  'jeudi',
-  'vendredi',
-  'samedi',
-  'dimanche',
-];
-const _frenchMonths = [
-  '',
-  'janvier',
-  'février',
-  'mars',
-  'avril',
-  'mai',
-  'juin',
-  'juillet',
-  'août',
-  'septembre',
-  'octobre',
-  'novembre',
-  'décembre',
-];
-
-/// « lundi 5 juillet » (jamais de date codée en dur).
-String _frenchLongDate(DateTime d) =>
-    '${_frenchDaysLong[d.weekday - 1]} ${d.day} ${_frenchMonths[d.month]}';
-
-/// Jour abrégé « lun. » → 3 lettres.
-String _frenchShortDow(DateTime d) =>
-    _frenchDaysLong[d.weekday - 1].substring(0, 3);

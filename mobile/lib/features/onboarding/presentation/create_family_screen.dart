@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
+import '../../../core/error/error_text.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../auth/presentation/widgets/auth_scaffold.dart';
@@ -51,7 +52,7 @@ class _CreateFamilyScreenState extends ConsumerState<CreateFamilyScreen> {
         if (e.fieldErrors.containsKey('name')) {
           _nameError = e.fieldErrors['name'];
         } else {
-          _error = e.message;
+          _error = errorText(context, e);
         }
       });
     } finally {

@@ -27,6 +27,7 @@ class ApiException implements Exception {
     this.detail,
     this.fieldErrors = const {},
     this.retryAfter,
+    this.isConnectionFailure = false,
   });
 
   final int? statusCode;
@@ -55,9 +56,26 @@ class ApiException implements Exception {
   /// constat C1).
   bool get isNetworkFailure => statusCode == null;
 
-  /// Message a afficher par defaut (detail serveur, sinon repli generique).
-  String get message =>
-      detail ?? title ?? 'Une erreur est survenue. Veuillez reessayer.';
+  /// Aucune réponse reçue **faute de connexion** (mode avion, DNS, serveur
+  /// injoignable), par opposition à un timeout de lecture ou à un abandon.
+  ///
+  /// Discriminant neutre : le libellé correspondant vit dans le catalogue ARB et
+  /// n'est résolu que par l'écran qui l'affiche. La chaîne « Connexion impossible.
+  /// Verifiez votre reseau. » était écrite ici, en français, dans une couche qui
+  /// n'a pas de `BuildContext` — donc intraduisible sans changement de code, ce que
+  /// l'invariant i18n du `CLAUDE.md` interdit (revue mobile 2026-08, constat C19).
+  final bool isConnectionFailure;
+
+  /// Message **du serveur**, déjà localisé par lui ; `null` s'il n'en a pas fourni.
+  ///
+  /// L'appelant complète par un repli localisé côté client : voir `errorText()`.
+  String? get serverMessage {
+    final d = detail;
+    if (d != null && d.isNotEmpty) return d;
+    final t = title;
+
+    return t != null && t.isNotEmpty ? t : null;
+  }
 
   factory ApiException.fromDio(DioException e) {
     final response = e.response;
@@ -114,12 +132,10 @@ class ApiException implements Exception {
 
     return ApiException(
       statusCode: status,
-      detail:
-          e.type == DioExceptionType.connectionError ||
-              e.type == DioExceptionType.connectionTimeout
-          ? 'Connexion impossible. Verifiez votre reseau.'
-          : null,
       retryAfter: int.tryParse(retryAfterHeader ?? ''),
+      isConnectionFailure:
+          e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout,
     );
   }
 

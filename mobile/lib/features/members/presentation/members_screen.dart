@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart' as api;
-import '../../../core/error/api_exception.dart';
+import '../../../core/error/error_text.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
@@ -15,15 +15,17 @@ import 'invite_screen.dart';
 
 /// US-MBR-1 — liste les membres de la famille active (rôle, admin, couleur), avec, pour un admin,
 /// l'invitation d'une personne et la gestion des invitations en attente.
+/// Libellé localisé d'un rôle de membre. Une valeur inconnue rend une chaîne vide
+/// plutôt que la clé technique du serveur (C51).
+String _roleLabel(AppL10n l, String role) => switch (role) {
+  'parent' => l.membersRoleParent,
+  'step_parent' => l.membersRoleStepParent,
+  'child' => l.membersRoleChild,
+  _ => '',
+};
+
 class MembersScreen extends ConsumerWidget {
   const MembersScreen({super.key});
-
-  String _roleLabel(AppL10n l, String role) => switch (role) {
-    'parent' => l.membersRoleParent,
-    'step_parent' => l.membersRoleStepParent,
-    'child' => l.membersRoleChild,
-    _ => role,
-  };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -37,7 +39,7 @@ class MembersScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Padding(
           padding: const EdgeInsets.all(20),
-          child: ErrorBanner(e is ApiException ? e.message : e.toString()),
+          child: ErrorBanner(errorText(context, e)),
         ),
         data: (members) {
           if (members.isEmpty) {
@@ -190,7 +192,9 @@ class _PendingInvitations extends ConsumerWidget {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(inv.email),
-                subtitle: Text(inv.role),
+                // Le rôle était affiché brut (« step_parent ») alors que l'écran
+                // possède déjà son traducteur, employé pour les membres (C51).
+                subtitle: Text(_roleLabel(AppL10n.of(context), inv.role)),
                 trailing: TextButton(
                   onPressed: () async {
                     await ref

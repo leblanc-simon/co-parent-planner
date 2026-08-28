@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
+import '../../../core/error/error_text.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/widgets/error_banner.dart';
@@ -184,7 +185,7 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
       if (navigator.canPop()) navigator.pop();
       messenger.showSnackBar(SnackBar(content: Text(l.custodySaved)));
     } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.message);
+      if (mounted) setState(() => _error = errorText(context, e));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -202,7 +203,7 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Padding(
           padding: const EdgeInsets.all(20),
-          child: ErrorBanner(e is ApiException ? e.message : e.toString()),
+          child: ErrorBanner(errorText(context, e)),
         ),
         data: (members) {
           final parents = members

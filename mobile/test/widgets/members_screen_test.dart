@@ -125,4 +125,32 @@ void main() {
       ),
     ).called(1);
   });
+
+  testWidgets(
+    'C51 — le rôle d\'une invitation est traduit, jamais « step_parent »',
+    (tester) async {
+      when(() => repo.listMembers('fam-1')).thenAnswer(
+        (_) async => const [
+          api.Member(id: 'm1', role: 'parent', isAdmin: true, self: true),
+        ],
+      );
+      when(() => repo.listInvitations('fam-1')).thenAnswer(
+        (_) async => const [
+          api.Invitation(
+            id: 'i1',
+            email: 'beau@parent.fr',
+            role: 'step_parent',
+            status: 'pending',
+          ),
+        ],
+      );
+
+      await pumpScreen(tester, const MembersScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+
+      expect(find.text('beau@parent.fr'), findsOneWidget);
+      expect(find.text('step_parent'), findsNothing);
+      expect(find.text('Beau-parent'), findsOneWidget);
+    },
+  );
 }

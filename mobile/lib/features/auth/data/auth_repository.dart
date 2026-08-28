@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,6 +7,7 @@ import '../../../core/network/api_clients.dart';
 import '../../../core/storage/secure_storage.dart';
 import '../../../core/storage/storage_providers.dart';
 import '../application/auth_state.dart';
+import 'dart:convert';
 
 /// Acces aux endpoints d'auth/compte. Enveloppe les clients generes, traduit les
 /// `DioException` en `ApiException` normalisees, et gere le stockage des jetons.
@@ -55,10 +54,9 @@ class AuthRepository {
       final access = res.accessToken;
       final refresh = res.refreshToken;
       if (access == null || refresh == null) {
-        throw ApiException(
-          statusCode: 500,
-          detail: 'Reponse de connexion invalide.',
-        );
+        // Réponse 200 sans jetons : anomalie serveur, pas un refus métier. Aucun
+        // `detail` FR en dur ici — l'écran affichera son repli localisé (C19).
+        throw ApiException(statusCode: 500);
       }
       await _storage.writeTokens(accessToken: access, refreshToken: refresh);
     } on DioException catch (e) {

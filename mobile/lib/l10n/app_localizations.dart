@@ -1,11 +1,10 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_fr.dart';
+import 'dart:async';
 
 // ignore_for_file: type=lint
 
@@ -114,7 +113,7 @@ abstract class AppL10n {
   /// No description provided for @actionRetry.
   ///
   /// In fr, this message translates to:
-  /// **'Reessayer'**
+  /// **'Réessayer'**
   String get actionRetry;
 
   /// No description provided for @actionSave.
@@ -126,8 +125,14 @@ abstract class AppL10n {
   /// No description provided for @genericError.
   ///
   /// In fr, this message translates to:
-  /// **'Une erreur est survenue. Veuillez reessayer.'**
+  /// **'Une erreur est survenue. Veuillez réessayer.'**
   String get genericError;
+
+  /// No description provided for @networkUnreachable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Connexion impossible. Vérifiez votre réseau.'**
+  String get networkUnreachable;
 
   /// No description provided for @fieldRequired.
   ///
@@ -162,7 +167,7 @@ abstract class AppL10n {
   /// No description provided for @loginSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Accedez a l\'espace de votre famille.'**
+  /// **'Accédez à l\'espace de votre famille.'**
   String get loginSubtitle;
 
   /// No description provided for @loginAction.
@@ -174,7 +179,7 @@ abstract class AppL10n {
   /// No description provided for @loginForgot.
   ///
   /// In fr, this message translates to:
-  /// **'Mot de passe oublie ?'**
+  /// **'Mot de passe oublié ?'**
   String get loginForgot;
 
   /// No description provided for @loginNoAccount.
@@ -186,19 +191,19 @@ abstract class AppL10n {
   /// No description provided for @loginRegisterLink.
   ///
   /// In fr, this message translates to:
-  /// **'Creer un compte'**
+  /// **'Créer un compte'**
   String get loginRegisterLink;
 
   /// No description provided for @registerTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Creer un compte'**
+  /// **'Créer un compte'**
   String get registerTitle;
 
   /// No description provided for @registerSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Quelques informations pour demarrer.'**
+  /// **'Quelques informations pour démarrer.'**
   String get registerSubtitle;
 
   /// No description provided for @registerFullName.
@@ -210,19 +215,19 @@ abstract class AppL10n {
   /// No description provided for @registerPhone.
   ///
   /// In fr, this message translates to:
-  /// **'Telephone (optionnel)'**
+  /// **'Téléphone (optionnel)'**
   String get registerPhone;
 
   /// No description provided for @registerAction.
   ///
   /// In fr, this message translates to:
-  /// **'Creer mon compte'**
+  /// **'Créer mon compte'**
   String get registerAction;
 
   /// No description provided for @registerHasAccount.
   ///
   /// In fr, this message translates to:
-  /// **'Deja un compte ?'**
+  /// **'Déjà un compte ?'**
   String get registerHasAccount;
 
   /// No description provided for @registerLoginLink.
@@ -234,43 +239,43 @@ abstract class AppL10n {
   /// No description provided for @passwordPolicyHint.
   ///
   /// In fr, this message translates to:
-  /// **'Au moins 12 caracteres.'**
+  /// **'Au moins 12 caractères.'**
   String get passwordPolicyHint;
 
   /// No description provided for @passwordTooShort.
   ///
   /// In fr, this message translates to:
-  /// **'Le mot de passe doit comporter au moins 12 caracteres.'**
+  /// **'Le mot de passe doit comporter au moins 12 caractères.'**
   String get passwordTooShort;
 
   /// No description provided for @checkEmailTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Verifiez votre e-mail'**
+  /// **'Vérifiez votre e-mail'**
   String get checkEmailTitle;
 
   /// No description provided for @checkEmailBody.
   ///
   /// In fr, this message translates to:
-  /// **'Un e-mail de verification a ete envoye a {email}. Ouvrez le lien qu\'il contient pour activer votre compte.'**
+  /// **'Un e-mail de vérification a été envoyé à {email}. Ouvrez le lien qu\'il contient pour activer votre compte.'**
   String checkEmailBody(String email);
 
   /// No description provided for @checkEmailBackToLogin.
   ///
   /// In fr, this message translates to:
-  /// **'Revenir a la connexion'**
+  /// **'Revenir à la connexion'**
   String get checkEmailBackToLogin;
 
   /// No description provided for @forgotTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Mot de passe oublie'**
+  /// **'Mot de passe oublié'**
   String get forgotTitle;
 
   /// No description provided for @forgotSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Saisissez votre e-mail pour recevoir un lien de reinitialisation.'**
+  /// **'Saisissez votre e-mail pour recevoir un lien de réinitialisation.'**
   String get forgotSubtitle;
 
   /// No description provided for @forgotAction.
@@ -282,7 +287,7 @@ abstract class AppL10n {
   /// No description provided for @forgotGenericSuccess.
   ///
   /// In fr, this message translates to:
-  /// **'Si un compte existe pour cette adresse, un e-mail de reinitialisation vient d\'etre envoye.'**
+  /// **'Si un compte existe pour cette adresse, un e-mail de réinitialisation vient d\'être envoyé.'**
   String get forgotGenericSuccess;
 
   /// No description provided for @resetTitle.
@@ -312,7 +317,7 @@ abstract class AppL10n {
   /// No description provided for @resetAction.
   ///
   /// In fr, this message translates to:
-  /// **'Reinitialiser'**
+  /// **'Réinitialiser'**
   String get resetAction;
 
   /// No description provided for @resetPasswordsMismatch.
@@ -324,43 +329,43 @@ abstract class AppL10n {
   /// No description provided for @resetSuccess.
   ///
   /// In fr, this message translates to:
-  /// **'Votre mot de passe a ete reinitialise. Vous pouvez vous connecter.'**
+  /// **'Votre mot de passe a été réinitialisé. Vous pouvez vous connecter.'**
   String get resetSuccess;
 
   /// No description provided for @verifyInProgress.
   ///
   /// In fr, this message translates to:
-  /// **'Verification en cours...'**
+  /// **'Vérification en cours…'**
   String get verifyInProgress;
 
   /// No description provided for @verifySuccess.
   ///
   /// In fr, this message translates to:
-  /// **'Votre adresse e-mail est verifiee. Vous pouvez vous connecter.'**
+  /// **'Votre adresse e-mail est vérifiée. Vous pouvez vous connecter.'**
   String get verifySuccess;
 
   /// No description provided for @verifyError.
   ///
   /// In fr, this message translates to:
-  /// **'Lien invalide ou expire.'**
+  /// **'Lien invalide ou expiré.'**
   String get verifyError;
 
   /// No description provided for @verifyGoToLogin.
   ///
   /// In fr, this message translates to:
-  /// **'Aller a la connexion'**
+  /// **'Aller à la connexion'**
   String get verifyGoToLogin;
 
   /// No description provided for @emailNotVerified.
   ///
   /// In fr, this message translates to:
-  /// **'Veuillez verifier votre adresse e-mail avant de vous connecter.'**
+  /// **'Veuillez vérifier votre adresse e-mail avant de vous connecter.'**
   String get emailNotVerified;
 
   /// No description provided for @sessionExpired.
   ///
   /// In fr, this message translates to:
-  /// **'Session expiree, veuillez vous reconnecter.'**
+  /// **'Session expirée, veuillez vous reconnecter.'**
   String get sessionExpired;
 
   /// No description provided for @onboardingTitle.
@@ -372,13 +377,13 @@ abstract class AppL10n {
   /// No description provided for @onboardingSubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Creez votre premiere famille ou rejoignez-en une via une invitation.'**
+  /// **'Créez votre première famille ou rejoignez-en une via une invitation.'**
   String get onboardingSubtitle;
 
   /// No description provided for @onboardingCreate.
   ///
   /// In fr, this message translates to:
-  /// **'Creer une famille'**
+  /// **'Créer une famille'**
   String get onboardingCreate;
 
   /// No description provided for @onboardingJoin.
@@ -402,7 +407,7 @@ abstract class AppL10n {
   /// No description provided for @createFamilyTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Creer une famille'**
+  /// **'Créer une famille'**
   String get createFamilyTitle;
 
   /// No description provided for @familyNameLabel.
@@ -420,7 +425,7 @@ abstract class AppL10n {
   /// No description provided for @familyTypeSeparated.
   ///
   /// In fr, this message translates to:
-  /// **'Parents separes'**
+  /// **'Parents séparés'**
   String get familyTypeSeparated;
 
   /// No description provided for @familyTypeIntact.
@@ -432,7 +437,7 @@ abstract class AppL10n {
   /// No description provided for @createFamilyAction.
   ///
   /// In fr, this message translates to:
-  /// **'Creer la famille'**
+  /// **'Créer la famille'**
   String get createFamilyAction;
 
   /// No description provided for @joinFamilyTitle.
@@ -444,7 +449,7 @@ abstract class AppL10n {
   /// No description provided for @joinFamilySubtitle.
   ///
   /// In fr, this message translates to:
-  /// **'Saisissez le code d\'invitation recu.'**
+  /// **'Saisissez le code d\'invitation reçu.'**
   String get joinFamilySubtitle;
 
   /// No description provided for @invitationTokenLabel.
@@ -486,7 +491,7 @@ abstract class AppL10n {
   /// No description provided for @tabSettings.
   ///
   /// In fr, this message translates to:
-  /// **'Reglages'**
+  /// **'Réglages'**
   String get tabSettings;
 
   /// No description provided for @homeGreeting.
@@ -504,31 +509,31 @@ abstract class AppL10n {
   /// No description provided for @homeUpcomingTitle.
   ///
   /// In fr, this message translates to:
-  /// **'A venir'**
+  /// **'À venir'**
   String get homeUpcomingTitle;
 
   /// No description provided for @homeUpcomingEmpty.
   ///
   /// In fr, this message translates to:
-  /// **'Aucun evenement a venir.'**
+  /// **'Aucun événement à venir.'**
   String get homeUpcomingEmpty;
 
   /// No description provided for @homeDecisionsTitle.
   ///
   /// In fr, this message translates to:
-  /// **'A decider'**
+  /// **'À décider'**
   String get homeDecisionsTitle;
 
   /// No description provided for @homeDecisionsEmpty.
   ///
   /// In fr, this message translates to:
-  /// **'Rien a decider pour le moment.'**
+  /// **'Rien à décider pour le moment.'**
   String get homeDecisionsEmpty;
 
   /// No description provided for @homeNotesTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Dernieres notes'**
+  /// **'Dernières notes'**
   String get homeNotesTitle;
 
   /// No description provided for @homeNotesEmpty.
@@ -552,13 +557,13 @@ abstract class AppL10n {
   /// No description provided for @homeFamilyIntact.
   ///
   /// In fr, this message translates to:
-  /// **'Toute la famille reunie.'**
+  /// **'Toute la famille réunie.'**
   String get homeFamilyIntact;
 
   /// No description provided for @settingsTitle.
   ///
   /// In fr, this message translates to:
-  /// **'Reglages'**
+  /// **'Réglages'**
   String get settingsTitle;
 
   /// No description provided for @settingsProfile.
@@ -576,7 +581,7 @@ abstract class AppL10n {
   /// No description provided for @settingsPhone.
   ///
   /// In fr, this message translates to:
-  /// **'Telephone'**
+  /// **'Téléphone'**
   String get settingsPhone;
 
   /// No description provided for @settingsLanguage.
@@ -585,16 +590,22 @@ abstract class AppL10n {
   /// **'Langue'**
   String get settingsLanguage;
 
+  /// No description provided for @settingsLanguageValue.
+  ///
+  /// In fr, this message translates to:
+  /// **'Français (fr-FR)'**
+  String get settingsLanguageValue;
+
   /// No description provided for @settingsLogout.
   ///
   /// In fr, this message translates to:
-  /// **'Se deconnecter'**
+  /// **'Se déconnecter'**
   String get settingsLogout;
 
   /// No description provided for @settingsProfileUpdated.
   ///
   /// In fr, this message translates to:
-  /// **'Profil mis a jour.'**
+  /// **'Profil mis à jour.'**
   String get settingsProfileUpdated;
 
   /// No description provided for @settingsActiveFamily.
@@ -666,19 +677,19 @@ abstract class AppL10n {
   /// No description provided for @membersRevoke.
   ///
   /// In fr, this message translates to:
-  /// **'Revoquer'**
+  /// **'Révoquer'**
   String get membersRevoke;
 
   /// No description provided for @membersInvited.
   ///
   /// In fr, this message translates to:
-  /// **'Invitation envoyee.'**
+  /// **'Invitation envoyée.'**
   String get membersInvited;
 
   /// No description provided for @membersRevoked.
   ///
   /// In fr, this message translates to:
-  /// **'Invitation revoquee.'**
+  /// **'Invitation révoquée.'**
   String get membersRevoked;
 
   /// No description provided for @inviteTitle.
@@ -696,7 +707,7 @@ abstract class AppL10n {
   /// No description provided for @inviteRole.
   ///
   /// In fr, this message translates to:
-  /// **'Role'**
+  /// **'Rôle'**
   String get inviteRole;
 
   /// No description provided for @inviteSend.
@@ -726,7 +737,7 @@ abstract class AppL10n {
   /// No description provided for @inviteRightExchanges.
   ///
   /// In fr, this message translates to:
-  /// **'Echanges'**
+  /// **'Échanges'**
   String get inviteRightExchanges;
 
   /// No description provided for @rightNone.
@@ -744,7 +755,7 @@ abstract class AppL10n {
   /// No description provided for @rightEdit.
   ///
   /// In fr, this message translates to:
-  /// **'Edition'**
+  /// **'Édition'**
   String get rightEdit;
 
   /// No description provided for @settingsChildren.

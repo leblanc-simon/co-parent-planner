@@ -3,9 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
+import '../../../core/error/error_text.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/util/civil_date.dart';
+import '../../../core/util/date_labels.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../core/widgets/initial_avatar.dart';
 import '../../../core/widgets/large_title_header.dart';
@@ -21,27 +24,18 @@ final _statusFilterProvider = StateProvider.autoDispose<String>(
   (ref) => 'open',
 );
 
-/// Libellé français d'une date `YYYY-MM-DD` (jamais de date codée en dur).
-String frenchDate(String? isoDate) {
+/// Libellé d'une date `YYYY-MM-DD` du contrat, dans la locale de l'écran.
+///
+/// Composait le mois en français depuis une table littérale : ajouter une langue
+/// aurait laissé « 8 juil. 2026 » au milieu d'une interface traduite (constats
+/// C40/C56). Rend une chaîne vide sur une valeur inexploitable, comme avant.
+String exchangeDate(String locale, String? isoDate) {
   if (isoDate == null || isoDate.length < 10) return '';
-  final d = DateTime.tryParse(isoDate.substring(0, 10));
-  if (d == null) return '';
-  const months = [
-    '',
-    'janv.',
-    'févr.',
-    'mars',
-    'avr.',
-    'mai',
-    'juin',
-    'juil.',
-    'août',
-    'sept.',
-    'oct.',
-    'nov.',
-    'déc.',
-  ];
-  return '${d.day} ${months[d.month]} ${d.year}';
+  final iso = isoDate.substring(0, 10);
+
+  return CivilDate.of(iso) == null
+      ? ''
+      : DateLabels.isoDayMonthYear(locale, iso);
 }
 
 /// US-EX-4/8 — écran liste des échanges de la famille active.
@@ -83,9 +77,7 @@ class ExchangesScreen extends ConsumerWidget {
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) => Padding(
                   padding: const EdgeInsets.all(20),
-                  child: ErrorBanner(
-                    e is ApiException ? e.message : e.toString(),
-                  ),
+                  child: ErrorBanner(errorText(context, e)),
                 ),
                 data: (all) {
                   final items = sortExchanges(filterByStatus(all, status));
@@ -310,7 +302,7 @@ class _ExchangeCard extends ConsumerWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    frenchDate(exchange.deadline),
+                    exchangeDate(l.localeName, exchange.deadline),
                     style: TextStyle(
                       fontSize: 13,
                       color: exchange.overdue
@@ -489,7 +481,7 @@ class _ExchangeFormState extends ConsumerState<_ExchangeForm> {
       if (navigator.canPop()) navigator.pop();
       messenger.showSnackBar(SnackBar(content: Text(createdMsg)));
     } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e.message);
+      if (mounted) setState(() => _error = errorText(context, e));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -573,7 +565,7 @@ class _ExchangeFormState extends ConsumerState<_ExchangeForm> {
                 subtitle: Text(
                   _deadline == null
                       ? l.exchangeNoDeadline
-                      : frenchDate(_dateOnly(_deadline!)),
+                      : exchangeDate(l.localeName, _dateOnly(_deadline!)),
                 ),
                 trailing: _deadline == null
                     ? const Icon(Icons.event)

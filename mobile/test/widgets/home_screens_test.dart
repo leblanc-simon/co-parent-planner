@@ -151,7 +151,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('Toute la famille reunie.'), findsOneWidget);
+    expect(find.text('Toute la famille réunie.'), findsOneWidget);
   });
 
   testWidgets('SettingsTab : affiche famille active + bouton de deconnexion', (
@@ -204,10 +204,10 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('MER'), findsOneWidget);
+      expect(find.text('MER.'), findsOneWidget);
       expect(find.text('1'), findsOneWidget);
       expect(find.text('00:30'), findsOneWidget);
-      expect(find.text('MAR'), findsNothing);
+      expect(find.text('MAR.'), findsNothing);
       expect(find.text('30'), findsNothing);
     },
   );
@@ -241,7 +241,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('MAR'), findsOneWidget);
+      expect(find.text('MAR.'), findsOneWidget);
       expect(find.text('23'), findsOneWidget);
     },
   );

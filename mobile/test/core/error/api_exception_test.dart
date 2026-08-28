@@ -88,14 +88,35 @@ void main() {
       expect(e.retryAfter, 30);
     });
 
-    test('erreur reseau -> message de connexion', () {
+    test('erreur reseau -> discriminant neutre, aucun libelle en dur', () {
       final e = ApiException.fromDio(
         DioException(
           requestOptions: RequestOptions(path: '/x'),
           type: DioExceptionType.connectionError,
         ),
       );
-      expect(e.message, contains('reseau'));
+      // Le libelle vit dans le catalogue ARB et n'est resolu que par l'ecran qui
+      // l'affiche : cette couche n'a pas de BuildContext (constat C19).
+      expect(e.isConnectionFailure, isTrue);
+      expect(e.isNetworkFailure, isTrue);
+      expect(e.serverMessage, isNull);
     });
+
+    test(
+      'serverMessage rend le detail du serveur, sinon le titre, sinon null',
+      () {
+        expect(
+          ApiException(statusCode: 403, detail: 'Droit requis').serverMessage,
+          'Droit requis',
+        );
+        expect(
+          ApiException(statusCode: 403, title: 'Forbidden').serverMessage,
+          'Forbidden',
+        );
+        expect(ApiException(statusCode: 500).serverMessage, isNull);
+        // Une chaine vide n'est pas un message : elle laisse la place au repli.
+        expect(ApiException(statusCode: 500, detail: '').serverMessage, isNull);
+      },
+    );
   });
 }

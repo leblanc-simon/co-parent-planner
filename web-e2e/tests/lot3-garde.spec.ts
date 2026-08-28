@@ -135,8 +135,52 @@ test('Garde : configurer un rythme → calendrier coloré → échanger un jour'
   await expect(markerB).toBeVisible();
   await page.emulateMedia({ forcedColors: 'none' });
 
-  // ---- Échanger un jour : clic sur une case → exception d'un jour (interaction restée sur le calendrier) ----
-  await page.locator('.garde-day[role="button"]').first().click();
+  // ---- Activités d'agenda en pastilles sur les cases (constat 6.1, maquette `:236-238`) ----
+  // Le planning de garde ne montrait aucune activité : le contrôleur ne lisait même pas l'agenda.
+  const activityDate = `${nextMonth}-15`;
+  await page.goto('/agenda');
+  await page.locator('.agenda-create').evaluate((d) => {
+    (d as HTMLDetailsElement).open = true;
+  });
+  await page.check('input[name="wholeFamily"]');
+  await page.fill('#a-title', 'Cours de guitare');
+  await page.selectOption('#a-cat', 'musique');
+  await page.fill('#a-start', `${activityDate}T17:30`);
+  await page.locator('.agenda-form button[type="submit"]').click();
+  await waitForSaved(page);
+
+  await page.goto(`/garde?month=${nextMonth}`);
+  const activityCell = page.locator(
+    `.garde-day[data-day-url="/garde/jour/${activityDate}"]`,
+  );
+  await expect(activityCell.locator('.garde-day__event-title')).toContainText(
+    'Cours de guitare',
+  );
+  await expect(activityCell.locator('.garde-day__event-dot--music')).toBeVisible();
+
+  // ---- Fiche de jour (US-CUST-6) : la case ouvre la fiche, l'échange se fait depuis elle ----
+  // Le clic sur une case n'échange plus le jour directement : il ouvre la modale, chargée en
+  // Turbo Frame. C'est là que vivent « Échanger ce jour » et « Modifier la garde », et c'est la
+  // seule interaction dont disposait jusqu'ici un membre en lecture seule : aucune.
+  await activityCell.click();
+  const daySheet = page.locator('.day-modal .day-sheet');
+  await expect(daySheet).toBeVisible({ timeout: 15_000 });
+  // La fiche nomme le parent en clair et l'origine de l'attribution — ce que la case ne dit pas.
+  await expect(daySheet.locator('.day-sheet__parent-name')).not.toBeEmpty();
+  await expect(daySheet.locator('.day-sheet__rule')).not.toBeEmpty();
+  // Transmission « Retour chez {Parent} le {date} à {heure} » (US-CUST-6).
+  await expect(daySheet.locator('.day-sheet__handover')).toContainText('Retour chez');
+  // Activités du jour, avec l'horaire dans le fuseau de la famille.
+  await expect(daySheet.locator('.day-sheet__event-title')).toContainText('Cours de guitare');
+  await expect(daySheet.locator('.day-sheet__event-time')).toContainText('17:30');
+  // Échap referme la modale (comportement natif de <dialog>), sans muter la garde.
+  await page.keyboard.press('Escape');
+  await expect(daySheet).not.toBeVisible();
+
+  // Réouverture puis échange effectif depuis la fiche → exception d'un jour.
+  await activityCell.click();
+  await expect(daySheet).toBeVisible();
+  await daySheet.getByRole('button', { name: 'Échanger ce jour' }).click();
   await expect(page.locator('.garde-day--exception').first()).toBeVisible({ timeout: 15_000 });
   // L'exception « Échange » figure dans la liste des exceptions, désormais sous Paramètres.
   await page.goto('/settings');

@@ -1,0 +1,581 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Functional\Web;
+
+use App\Entity\Child;
+use App\Entity\CustodyDay;
+use App\Entity\CustodyException;
+use App\Entity\CustodyPattern;
+use App\Entity\Event;
+use App\Entity\Family;
+use App\Entity\HolidayRule;
+use App\Entity\Membership;
+use App\Entity\Right;
+use App\Entity\SchoolHoliday;
+use App\Entity\User;
+use App\Enum\CustodyDaySource;
+use App\Enum\CustodyPatternKind;
+use App\Enum\EventCategory;
+use App\Enum\FamilyType;
+use App\Enum\HolidayRuleKind;
+use App\Enum\HolidaySource;
+use App\Enum\MembershipRole;
+use App\Enum\MembershipStatus;
+use App\Enum\RightDomain;
+use App\Enum\RightLevel;
+use App\Enum\UserStatus;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\KernelBrowser;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Clock\Clock;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+
+/**
+ * Écart de périmètre 6.1 de `specs/revue-web-desktop-2026-07.md` : `/garde` n'avait **ni fiche de
+ * jour ni activités d'agenda**, alors que le contrat les impose (US-CUST-6, cdc §3.4/§8, maquette
+ * `:236-238` et `:828-868`). Une case était un `<div>` inerte portant le numéro du jour, et un
+ * membre en lecture seule n'avait aucune interaction : ni parent en clair, ni heure de
+ * transmission, ni raison de l'attribution, ni activités.
+ *
+ * Les deux domaines de droit en jeu sont vérifiés séparément — `custody` ouvre la fiche, `agenda`
+ * ouvre les activités — parce que c'est précisément le genre de croisement qu'un écran server-rendered
+ * laisse fuiter sans qu'aucun test d'API ne s'en aperçoive.
+ */
+final class GardeDayDetailTest extends WebTestCase
+{
+    private const string PASSWORD = 'CorrectHorse42!';
+
+    /**
+     * Jours matérialisés par le jeu de données, à partir du 1er du mois courant. Trois mois : un
+     * jeu limité au mois courant rendait les tests dépendants de la date d'exécution — « demain »
+     * sortait de la période générée les derniers jours du mois, et le jour de référence tombait
+     * dans le passé les derniers jours aussi, ce qui faisait passer un test du bouton d'échange
+     * **actif** alors que la fiche le rendait inerte (même libellé).
+     */
+    private const int GENERATED_DAYS = 92;
+
+    // ───────────────────────── Pastilles d'activité sur le calendrier ─────────────────────────
+
+    public function testCalendarCarriesActivityBadges(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedFamily();
+        $this->login($client);
+        $day = $this->monthStart()->modify('+2 days');
+        $this->seedEvent($day->setTime(17, 30), 'Cours de guitare', EventCategory::Musique);
+
+        $client->request('GET', '/garde');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+
+        self::assertStringContainsString('garde-day__events', $html);
+        self::assertStringContainsString('Cours de guitare', $html);
+        // La couleur de la pastille vient de la catégorie, comme sur `/agenda`.
+        self::assertStringContainsString('garde-day__event-dot--music', $html);
+        // L'information n'est pas que visuelle : la case annonce ses activités aux lecteurs d'écran.
+        self::assertStringContainsString('1 activité', $html);
+    }
+
+    /**
+     * Un événement de plusieurs jours doit se voir sur **chacune** de ses cases : indexer par le
+     * seul jour de début (comme le fait la liste de `/agenda`) laissait un séjour de trois jours
+     * invisible sur les deux suivants.
+     */
+    public function testMultiDayEventBadgesEveryCoveredDay(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedFamily();
+        $this->login($client);
+        $start = $this->monthStart()->modify('+3 days');
+        $this->seedEvent($start->setTime(0, 0), 'Séjour montagne', EventCategory::Autre, $start->modify('+2 days')->setTime(23, 59), allDay: true);
+
+        $client->request('GET', '/garde');
+        $html = (string) $client->getResponse()->getContent();
+
+        self::assertSame(3, substr_count($html, 'Séjour montagne'), 'les trois jours couverts portent la pastille');
+    }
+
+    /**
+     * Une fin posée à minuit pile appartient au jour précédent : sans ce recul, un créneau 18h→00h
+     * affichait une pastille sur le lendemain, qui ne le concerne pas.
+     */
+    public function testEventEndingAtMidnightDoesNotBadgeNextDay(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedFamily();
+        $this->login($client);
+        $start = $this->monthStart()->modify('+4 days');
+        $this->seedEvent($start->setTime(18, 0), 'Veillée', EventCategory::Autre, $start->modify('+1 day')->setTime(0, 0));
+
+        $client->request('GET', '/garde');
+        $html = (string) $client->getResponse()->getContent();
+
+        self::assertSame(1, substr_count($html, 'Veillée'));
+    }
+
+    public function testCalendarHidesActivityBadgesWithoutAgendaRight(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedFamily(agenda: RightLevel::None);
+        $this->login($client);
+        $this->seedEvent($this->monthStart()->modify('+2 days')->setTime(17, 30), 'Cours de guitare', EventCategory::Musique);
+
+        $client->request('GET', '/garde');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+
+        // Ni le titre, ni le nombre : le domaine `agenda` est refusé, donc même l'existence d'une
+        // activité ne doit pas transpirer par l'écran de garde.
+        self::assertStringNotContainsString('Cours de guitare', $html);
+        self::assertStringNotContainsString('garde-day__events', $html);
+        self::assertStringNotContainsString('activité', $html);
+    }
+
+    // ───────────────────────── Fiche de jour ─────────────────────────
+
+    public function testDayDetailShowsParentOriginHandoverAndActivities(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedFamily();
+        $this->login($client);
+        $day = $this->futureDay();
+        $this->seedEvent($day->setTime(17, 30), 'Cours de guitare', EventCategory::Musique);
+
+        $client->request('GET', '/garde/jour/'.$day->format('Y-m-d'));
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+
+        // Le fragment doit porter le frame, sinon Turbo n'affiche rien dans la modale.
+        self::assertStringContainsString('<turbo-frame id="garde-day"', $html);
+        // Chez quel parent — en clair, ce que la case seule ne disait pas.
+        self::assertStringContainsString($this->expectedParentEmail($day), $html);
+        self::assertStringContainsString('Rythme habituel', $html);
+        // Transmission « Retour chez {Parent} le {date} à {handoverTime} » (US-CUST-6) : le jeu de
+        // données alterne chaque jour, la bascule est donc le lendemain.
+        self::assertStringContainsString('Retour chez '.$this->otherParentEmail($day).' le', $html);
+        self::assertStringContainsString('à 19:00', $html);
+        // Activités du jour, avec l'horaire dans le fuseau de la famille et la catégorie nommée.
+        self::assertStringContainsString('Activités du jour', $html);
+        self::assertStringContainsString('Cours de guitare', $html);
+        self::assertStringContainsString('17:30', $html);
+        self::assertStringContainsString('Musique', $html);
+        // Actions (`custody:edit`). L'échange est vérifié par son `data-action` et non par son
+        // libellé : le bouton inerte d'un jour passé porte le même texte.
+        self::assertStringContainsString('data-action="garde#swapDay"', $html);
+        self::assertStringContainsString('Échanger ce jour', $html);
+        self::assertStringContainsString('Modifier la garde', $html);
+    }
+
+    /** L'origine affichée est celle retenue par le moteur, et l'exception porte sa raison. */
+    public function testDayDetailNamesTheExceptionBehindTheAssignment(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        [$parentA, $parentB] = $this->seedFamily();
+        $this->login($client);
+
+        $day = $this->futureDay();
+        $em = $this->em();
+        $custodyDay = $em->getRepository(CustodyDay::class)->findOneBy(['date' => $day]);
+        self::assertInstanceOf(CustodyDay::class, $custodyDay);
+        $custodyDay->setParentMembership($parentB)->setSource(CustodyDaySource::Exception);
+        $em->persist((new CustodyException())
+            ->setFamily($parentA->getFamily())
+            ->setStartDate($day)
+            ->setEndDate($day)
+            ->setParentMembership($parentB)
+            ->setReason('Anniversaire'));
+        $em->flush();
+
+        $client->request('GET', '/garde/jour/'.$day->format('Y-m-d'));
+        $html = (string) $client->getResponse()->getContent();
+
+        self::assertStringContainsString('Exception', $html);
+        self::assertStringContainsString('Anniversaire', $html);
+    }
+
+    /**
+     * Jour issu d'une règle de vacances : la fiche nomme la période **et** la règle appliquée, avec
+     * le même libellé FR que `/garde` et `/settings` — un enum ne doit pas s'écrire de deux façons
+     * selon l'écran (le fragment est rendu hors du layout, il redéclare donc ces libellés).
+     */
+    public function testDayDetailNamesTheHolidayPeriodAndItsRule(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        [$parentA, $parentB] = $this->seedFamily();
+        $this->login($client);
+
+        $day = $this->futureDay();
+        $em = $this->em();
+        $custodyDay = $em->getRepository(CustodyDay::class)->findOneBy(['date' => $day]);
+        self::assertInstanceOf(CustodyDay::class, $custodyDay);
+        $custodyDay->setParentMembership($parentB)->setSource(CustodyDaySource::Holiday);
+
+        $holiday = (new SchoolHoliday())
+            ->setFamily($parentA->getFamily())
+            ->setLabel("Vacances d'Automne")
+            ->setStartDate($day->modify('-1 day'))
+            ->setEndDate($day->modify('+5 days'))
+            ->setSource(HolidaySource::Manual);
+        $rule = (new HolidayRule())->setSchoolHoliday($holiday)->setKind(HolidayRuleKind::AlternatingWeeks)->setParams(['startParent' => 'B']);
+        $holiday->setRule($rule);
+        $em->persist($holiday);
+        $em->persist($rule);
+        $em->flush();
+
+        $client->request('GET', '/garde/jour/'.$day->format('Y-m-d'));
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+
+        // L'apostrophe du libellé ressort échappée par Twig (`&#039;`), comme sur tout autre écran.
+        self::assertStringContainsString('Vacances d&#039;Automne', $html);
+        self::assertStringContainsString('Une semaine sur deux', $html);
+    }
+
+    public function testDayDetailHidesActivitiesWithoutAgendaRight(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedFamily(agenda: RightLevel::None);
+        $this->login($client);
+        $day = $this->futureDay();
+        $this->seedEvent($day->setTime(17, 30), 'Cours de guitare', EventCategory::Musique);
+
+        $client->request('GET', '/garde/jour/'.$day->format('Y-m-d'));
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+
+        // La section entière disparaît : son état vide (« Aucune activité ce jour ») dirait déjà
+        // s'il y a ou non des activités.
+        self::assertStringNotContainsString('Activités du jour', $html);
+        self::assertStringNotContainsString('Cours de guitare', $html);
+        // La garde, elle, reste consultable : les deux domaines sont indépendants.
+        self::assertStringContainsString('Rythme habituel', $html);
+    }
+
+    /**
+     * `custody=view` : l'information, pas les actions. Les présenter pour se solder par un 403 —
+     * ce que fait encore l'app mobile (constat C? de la revue Flutter) — est le défaut à éviter.
+     */
+    public function testDayDetailHidesEditActionsForViewOnlyMember(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedFamily(custody: RightLevel::View);
+        $this->login($client);
+        $day = $this->futureDay();
+
+        $client->request('GET', '/garde/jour/'.$day->format('Y-m-d'));
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+
+        self::assertStringContainsString('Retour chez', $html); // l'information reste due
+        self::assertStringNotContainsString('Échanger ce jour', $html);
+        self::assertStringNotContainsString('Modifier la garde', $html);
+    }
+
+    /** L'API refuse une exception dans le passé (422) : le bouton est présenté inerte, pas absent. */
+    public function testDayDetailDisablesSwapOnPastDay(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        [$parentA] = $this->seedFamily();
+        $this->login($client);
+
+        // Hier est déjà matérialisé sauf le 1er du mois, où il appartient au mois précédent : on
+        // complète au besoin plutôt que d'insérer en double (contrainte `uniq_custody_day`).
+        $yesterday = $this->today()->modify('-1 day');
+        $em = $this->em();
+        if (null === $em->getRepository(CustodyDay::class)->findOneBy(['date' => $yesterday])) {
+            $em->persist((new CustodyDay())
+                ->setFamily($parentA->getFamily())
+                ->setDate($yesterday)
+                ->setParentMembership($parentA)
+                ->setSource(CustodyDaySource::Base));
+            $em->flush();
+        }
+
+        $client->request('GET', '/garde/jour/'.$yesterday->format('Y-m-d'));
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+
+        self::assertStringContainsString('Un jour passé ne peut plus être échangé', $html);
+        self::assertStringNotContainsString('data-action="garde#swapDay"', $html);
+    }
+
+    /** Un jour hors de la période générée n'invente ni parent ni transmission. */
+    public function testDayDetailStatesWhenDayIsNotMaterialised(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedFamily();
+        $this->login($client);
+        $far = $this->monthStart()->modify('+8 months'); // bien au-delà de la période générée
+
+        $client->request('GET', '/garde/jour/'.$far->format('Y-m-d'));
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+
+        self::assertStringContainsString("Ce jour n'est pas encore attribué", $html);
+        self::assertStringNotContainsString('Retour chez', $html);
+        self::assertStringNotContainsString('data-action="garde#swapDay"', $html);
+    }
+
+    /**
+     * En bout d'horizon généré, aucun changement d'attributaire ne suit : la fiche n'annonce alors
+     * pas de transmission plutôt que d'en inventer une à partir du rythme théorique.
+     */
+    public function testDayDetailOmitsHandoverAtTheEndOfTheGeneratedHorizon(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedFamily();
+        $this->login($client);
+        $lastGenerated = $this->monthStart()->modify('+'.(self::GENERATED_DAYS - 1).' days');
+
+        $client->request('GET', '/garde/jour/'.$lastGenerated->format('Y-m-d'));
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+
+        self::assertStringContainsString($this->expectedParentEmail($lastGenerated), $html); // le jour EST attribué
+        self::assertStringNotContainsString('Retour chez', $html);
+    }
+
+    /**
+     * Sans droit `custody`, la fiche ne rend **rien** du jour — même refus que l'écran (revue
+     * 2026-08 C7), et le refus reste enveloppé dans le frame pour s'afficher dans la modale.
+     */
+    public function testDayDetailIsRefusedWithoutCustodyRight(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedFamily(custody: RightLevel::None);
+        $this->login($client);
+        $day = $this->futureDay();
+
+        $client->request('GET', '/garde/jour/'.$day->format('Y-m-d'));
+        self::assertResponseStatusCodeSame(403);
+        $html = (string) $client->getResponse()->getContent();
+
+        self::assertStringContainsString('<turbo-frame id="garde-day"', $html);
+        self::assertStringContainsString("Vous n'avez pas accès au planning de garde", $html);
+        self::assertStringNotContainsString('Retour chez', $html);
+        self::assertStringNotContainsString('web-b@example.com', $html);
+    }
+
+    public function testDayDetailRequiresAuthentication(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/garde/jour/'.$this->monthStart()->format('Y-m-d'));
+
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    /**
+     * `createFromFormat` est permissif (2026-02-31 → 2026-03-03) : une date inexistante doit être
+     * rejetée, pas silencieusement décalée sur un autre jour que celui demandé.
+     */
+    public function testDayDetailRejectsImpossibleDate(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedFamily();
+        $this->login($client);
+
+        $client->request('GET', '/garde/jour/2026-02-31');
+        self::assertResponseStatusCodeSame(404);
+
+        $client->request('GET', '/garde/jour/2026-13-01');
+        self::assertResponseStatusCodeSame(404);
+    }
+
+    /**
+     * Le clic sur une case ouvre la FICHE, pour tout membre `custody=view` — et n'échange plus le
+     * jour directement : `swapDay` était câblé sur la case elle-même, si bien qu'un clic (ou la
+     * touche Espace en parcourant le planning au clavier) réattribuait durablement un jour de garde
+     * derrière un simple `confirm()`.
+     */
+    public function testCalendarCellsOpenTheDaySheetInsteadOfSwapping(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedFamily(custody: RightLevel::View);
+        $this->login($client);
+
+        $client->request('GET', '/garde');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+
+        self::assertStringContainsString('click->garde#openDay', $html);
+        self::assertStringContainsString('data-day-url="/garde/jour/', $html);
+        // Un membre en lecture seule a désormais une interaction : la case est un bouton.
+        self::assertStringContainsString('role="button"', $html);
+        // Plus aucun échange déclenché par la case, quel que soit le droit.
+        self::assertStringNotContainsString('click->garde#swapDay', $html);
+    }
+
+    // ───────────────────────── Fixtures ─────────────────────────
+
+    private function em(): EntityManagerInterface
+    {
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $em);
+
+        return $em;
+    }
+
+    private function today(): \DateTimeImmutable
+    {
+        return Clock::get()->now()->setTimezone(new \DateTimeZone('Europe/Paris'))->setTime(0, 0);
+    }
+
+    private function monthStart(): \DateTimeImmutable
+    {
+        return $this->today()->modify('first day of this month');
+    }
+
+    /** Jour de référence des scénarios « à venir » : toujours matérialisé, jamais passé. */
+    private function futureDay(): \DateTimeImmutable
+    {
+        return $this->today()->modify('+2 days');
+    }
+
+    /**
+     * Parent attendu pour un jour donné, selon la règle du jeu de données (alternance quotidienne
+     * depuis le 1er du mois courant). Recalculé ici plutôt que codé en dur : le jour de référence
+     * étant relatif à aujourd'hui, sa parité change d'un jour à l'autre.
+     */
+    private function expectedParentEmail(\DateTimeImmutable $day): string
+    {
+        $index = (int) $this->monthStart()->diff($day)->days;
+
+        return 0 === $index % 2 ? 'web@example.com' : 'web-b@example.com';
+    }
+
+    /** L'autre parent : celui chez qui les enfants partent au prochain changement. */
+    private function otherParentEmail(\DateTimeImmutable $day): string
+    {
+        return 'web@example.com' === $this->expectedParentEmail($day) ? 'web-b@example.com' : 'web@example.com';
+    }
+
+    /**
+     * Famille séparée à deux parents, rythme alterné ancré au 1er du mois, et les jours du mois
+     * matérialisés en alternance quotidienne (index pair → parent A) : c'est cette alternance qui
+     * rend la transmission du lendemain calculable.
+     *
+     * @return array{0: Membership, 1: Membership} parent A (le compte connecté) et parent B
+     */
+    private function seedFamily(RightLevel $custody = RightLevel::Edit, RightLevel $agenda = RightLevel::Edit): array
+    {
+        $em = $this->em();
+        $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
+        self::assertInstanceOf(UserPasswordHasherInterface::class, $hasher);
+
+        $user = (new User())->setEmail('web@example.com')->setStatus(UserStatus::Active)
+            ->setEmailVerifiedAt(Clock::get()->now());
+        $user->setPasswordHash($hasher->hashPassword($user, self::PASSWORD));
+        $em->persist($user);
+
+        $family = (new Family())->setName('Famille Web')->setType(FamilyType::Separated);
+        $em->persist($family);
+
+        // Le rôle `parent` force `edit` partout (invariant) : restreindre un droit impose donc un
+        // beau-parent, dont les droits sont ceux qu'on lui accorde explicitement.
+        $restricted = RightLevel::Edit !== $custody || RightLevel::Edit !== $agenda;
+        $parentA = (new Membership())->setUser($user)->setFamily($family)
+            ->setRole($restricted ? MembershipRole::StepParent : MembershipRole::Parent)
+            ->setIsAdmin(!$restricted)->setStatus(MembershipStatus::Active);
+        if ($restricted) {
+            $parentA->addRight(new Right(RightDomain::Custody, $custody));
+            $parentA->addRight(new Right(RightDomain::Agenda, $agenda));
+        }
+        $em->persist($parentA);
+
+        $userB = (new User())->setEmail('web-b@example.com')->setStatus(UserStatus::Active)
+            ->setEmailVerifiedAt(Clock::get()->now());
+        $userB->setPasswordHash('x');
+        $parentB = (new Membership())->setUser($userB)->setFamily($family)
+            ->setRole(MembershipRole::Parent)->setIsAdmin(false)->setStatus(MembershipStatus::Active);
+        $em->persist($userB);
+        $em->persist($parentB);
+
+        // Le rythme exige deux membres `parent` distincts : quand le compte connecté est restreint
+        // (donc beau-parent), un troisième membre tient le rôle de parent A du planning.
+        $slotA = $parentA;
+        if ($restricted) {
+            $userC = (new User())->setEmail('web-a@example.com')->setStatus(UserStatus::Active)
+                ->setEmailVerifiedAt(Clock::get()->now());
+            $userC->setPasswordHash('x');
+            $slotA = (new Membership())->setUser($userC)->setFamily($family)
+                ->setRole(MembershipRole::Parent)->setIsAdmin(true)->setStatus(MembershipStatus::Active);
+            $em->persist($userC);
+            $em->persist($slotA);
+        }
+
+        $monthStart = $this->monthStart();
+        $em->persist((new CustodyPattern())
+            ->setFamily($family)
+            ->setKind(CustodyPatternKind::Alternating)
+            ->setAnchorDate($monthStart)
+            ->setHandoverWeekday(0)
+            ->setHandoverTime('19:00')
+            ->setParentA($slotA)
+            ->setParentB($parentB));
+
+        for ($i = 0; $i < self::GENERATED_DAYS; ++$i) {
+            $em->persist((new CustodyDay())
+                ->setFamily($family)
+                ->setDate($monthStart->modify("+{$i} day"))
+                ->setParentMembership(0 === $i % 2 ? $slotA : $parentB)
+                ->setSource(CustodyDaySource::Base));
+        }
+
+        $em->flush();
+
+        return [$slotA, $parentB];
+    }
+
+    private function seedEvent(
+        \DateTimeImmutable $startsAt,
+        string $title,
+        EventCategory $category,
+        ?\DateTimeImmutable $endsAt = null,
+        bool $allDay = false,
+    ): void {
+        $em = $this->em();
+        $family = $em->getRepository(Family::class)->findOneBy(['name' => 'Famille Web']);
+        self::assertInstanceOf(Family::class, $family);
+
+        $child = (new Child())->setFamily($family)->setFirstName('Léa')->setColor('#C2643D');
+        $em->persist($child);
+
+        $event = (new Event())
+            ->setFamily($family)
+            ->setTitle($title)
+            ->setCategory($category)
+            ->setAllDay($allDay)
+            ->setStartsAt($startsAt->setTimezone(new \DateTimeZone('UTC')))
+            ->setEndsAt($endsAt?->setTimezone(new \DateTimeZone('UTC')))
+            ->setWholeFamily(false);
+        $event->addChild($child);
+        $em->persist($event);
+        $em->flush();
+    }
+
+    private function login(KernelBrowser $client): void
+    {
+        $client->request('POST', '/api/auth/login', server: [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_ACCEPT' => 'application/json',
+        ], content: json_encode(['email' => 'web@example.com', 'password' => self::PASSWORD], \JSON_THROW_ON_ERROR));
+        self::assertResponseIsSuccessful();
+    }
+}

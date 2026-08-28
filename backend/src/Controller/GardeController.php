@@ -17,8 +17,11 @@ use App\Repository\FamilyLinkRepository;
 use App\Repository\MembershipRepository;
 use App\Repository\OverlayPreferenceRepository;
 use App\Repository\SchoolHolidayRepository;
+use App\Service\Agenda\AgendaReader;
+use App\Service\Agenda\Occurrence;
 use App\Service\Agenda\OverlayReader;
 use App\Service\Custody\CustodyStatsCalculator;
+use App\Service\Custody\DayDetailReader;
 use App\Web\ActiveFamilyResolver;
 use App\Web\MercureSubscription;
 use App\Web\ParentInitials;
@@ -46,6 +49,8 @@ final class GardeController extends AbstractController
         private readonly SchoolHolidayRepository $holidays,
         private readonly MembershipRepository $memberships,
         private readonly CustodyStatsCalculator $stats,
+        private readonly AgendaReader $agenda,
+        private readonly DayDetailReader $dayDetails,
         private readonly OverlayReader $overlayReader,
         private readonly FamilyLinkRepository $familyLinks,
         private readonly OverlayPreferenceRepository $overlayPreferences,
@@ -121,6 +126,12 @@ final class GardeController extends AbstractController
         [$overlayLinks, $enabledFamilyIds] = $this->overlayGardeLinks($family, $active);
         $overlayBadges = [] === $enabledFamilyIds ? [] : $this->overlayBadges($family, $enabledFamilyIds, $monthStart, $monthEnd);
 
+        // Activités du mois (agenda de la famille elle-même), en pastilles sur les cases (maquette
+        // `:236-238`). Domaine de droit distinct : un membre peut avoir `custody` sans `agenda`, et
+        // n'a alors pas à savoir qu'il y a des activités, ni combien.
+        $canAgenda = $active->can(RightDomain::Agenda, RightLevel::View);
+        $dayEvents = $canAgenda ? $this->monthEvents($family, $monthStart, $monthEnd) : [];
+
         // Nom affiché et marqueur non chromatique des deux parents, résolus **au même endroit** :
         // l'initiale d'une case de calendrier doit toujours désigner le nom de la légende (cdc §8).
         $parentNames = [
@@ -133,6 +144,7 @@ final class GardeController extends AbstractController
             'initials' => $this->parentInitials->pair($parentNames['A'], $parentNames['B']),
             'overlayLinks' => $overlayLinks,
             'overlayBadges' => $overlayBadges,
+            'dayEvents' => $dayEvents,
             'memberships' => $memberships,
             'activeMembership' => $active,
             'family' => $family,
@@ -163,6 +175,76 @@ final class GardeController extends AbstractController
         $this->mercure->attach($response, [\sprintf('/families/%s/custody', $family->getId())]);
 
         return $response;
+    }
+
+    /**
+     * Fiche de jour (US-CUST-6) : chez quel parent, origine de l'attribution, transmission à venir,
+     * activités du jour, et — avec `custody:edit` — les actions « Échanger ce jour » / « Modifier la
+     * garde ». Rendue comme **fragment** chargé dans le `<turbo-frame>` de la modale de `/garde`,
+     * d'où l'absence de redirection : un refus doit s'afficher **dans** la modale, pas y injecter
+     * une page de connexion entière.
+     */
+    #[Route('/garde/jour/{date}', name: 'app_garde_day', methods: ['GET'], requirements: ['date' => '\d{4}-\d{2}-\d{2}'])]
+    public function day(string $date): Response
+    {
+        $tz = new \DateTimeZone('Europe/Paris');
+        // Date calendaire stricte : `createFromFormat` est permissif (2026-02-31 → 2026-03-03).
+        $parsed = \DateTimeImmutable::createFromFormat('!Y-m-d', $date, $tz);
+        if (!$parsed instanceof \DateTimeImmutable || $parsed->format('Y-m-d') !== $date) {
+            throw $this->createNotFoundException('Date invalide.');
+        }
+
+        $active = null;
+        if ($this->security->getUser() instanceof User) {
+            $active = $this->activeFamily->active($this->activeFamily->memberships());
+        }
+
+        // Un membre sans droit `custody` n'apprend rien de ce jour — pas même l'existence d'une
+        // activité (domaine `agenda` résolu séparément plus bas), comme sur l'écran lui-même (C7).
+        if (null === $active
+            || !$active->getFamily()->getType()->hasCustody()
+            || !$active->can(RightDomain::Custody, RightLevel::View)
+        ) {
+            return $this->render('app/_garde_day.html.twig', ['denied' => true], new Response('', Response::HTTP_FORBIDDEN));
+        }
+
+        $family = $active->getFamily();
+        $pattern = $this->patterns->findOneByFamily($family);
+        $detail = $this->dayDetails->detail($family, $pattern, $parsed);
+
+        $parentNames = [
+            'A' => self::displayName($pattern?->getParentA()) ?: 'Parent A',
+            'B' => self::displayName($pattern?->getParentB()) ?: 'Parent B',
+        ];
+        $parentAId = $pattern?->getParentA()?->getId();
+
+        $canAgenda = $active->can(RightDomain::Agenda, RightLevel::View);
+
+        return $this->render('app/_garde_day.html.twig', [
+            'denied' => false,
+            'detail' => $detail,
+            'dateLabel' => $this->frenchLongDate($parsed),
+            'dateValue' => $date,
+            'slot' => self::slotOf($detail->parent, $parentAId),
+            'handoverSlot' => self::slotOf($detail->handoverParent, $parentAId),
+            'handoverDateLabel' => null !== $detail->handoverDate ? $this->frenchLongDate($detail->handoverDate) : null,
+            'parentNames' => $parentNames,
+            'initials' => $this->parentInitials->pair($parentNames['A'], $parentNames['B']),
+            'canEdit' => $active->can(RightDomain::Custody, RightLevel::Edit),
+            'canAgenda' => $canAgenda,
+            'events' => $canAgenda ? $this->dayOccurrences($family, $parsed) : [],
+            'timezone' => $family->getTimezone(),
+        ]);
+    }
+
+    /** Slot A/B d'un membership, relativement au parent A du rythme ; null s'il n'est pas attribué. */
+    private static function slotOf(?Membership $parent, ?\Symfony\Component\Uid\Uuid $parentAId): ?string
+    {
+        if (null === $parent) {
+            return null;
+        }
+
+        return null !== $parentAId && $parent->getId()->equals($parentAId) ? 'A' : 'B';
     }
 
     /** Nom d'affichage d'un parent : `full_name` (chiffré au repos, déchiffré par Doctrine) ou l'e-mail. */
@@ -247,6 +329,80 @@ final class GardeController extends AbstractController
         }
 
         return $kept;
+    }
+
+    /**
+     * Activités du mois affiché, indexées par jour local **couvert** (et non par jour de début) :
+     * un événement de plusieurs jours doit se voir sur chacune de ses cases, comme les pastilles
+     * d'overlay le font déjà. Le groupement se fait dans le fuseau **de la famille**, celui dans
+     * lequel les horaires ont été saisis.
+     *
+     * @return array<string, list<array{title: string, category: string}>>
+     */
+    private function monthEvents(Family $family, \DateTimeImmutable $monthStart, \DateTimeImmutable $monthEnd): array
+    {
+        $tz = new \DateTimeZone($family->getTimezone());
+        $utc = new \DateTimeZone('UTC');
+        // Bornes de la boucle en clés de jour (Y-m-d) : les cases du calendrier sont des dates
+        // calendaires, et comparer des chaînes reste juste même si le fuseau de la famille diffère
+        // de celui du moteur de garde.
+        $firstKey = $monthStart->format('Y-m-d');
+        $lastKey = $monthEnd->format('Y-m-d');
+
+        $byDate = [];
+        foreach ($this->agenda->occurrences($family, $monthStart->setTime(0, 0)->setTimezone($utc), $monthEnd->setTime(23, 59, 59)->setTimezone($utc), null) as $occurrence) {
+            // Une fin posée à minuit pile appartient au jour précédent : sans ce recul, un créneau
+            // 18h→00h ferait apparaître une pastille sur le lendemain, qu'il ne concerne pas.
+            $end = $occurrence->endsAt ?? $occurrence->startsAt;
+            if ($end > $occurrence->startsAt) {
+                $end = $end->modify('-1 second');
+            }
+
+            $cursor = $occurrence->startsAt->setTimezone($tz)->setTime(0, 0);
+            if ($cursor->format('Y-m-d') < $firstKey) {
+                // Événement commencé avant le mois : on entre dans la boucle au 1er du mois plutôt
+                // que d'itérer sur des jours hors grille (un all-day peut durer des semaines).
+                $fromFirst = \DateTimeImmutable::createFromFormat('!Y-m-d', $firstKey, $tz);
+                \assert(false !== $fromFirst);
+                $cursor = $fromFirst;
+            }
+            $last = $end->setTimezone($tz)->setTime(0, 0);
+
+            while ($cursor <= $last && $cursor->format('Y-m-d') <= $lastKey) {
+                $byDate[$cursor->format('Y-m-d')][] = [
+                    'title' => $occurrence->title,
+                    'category' => $occurrence->category->value,
+                ];
+                $cursor = $cursor->modify('+1 day');
+            }
+        }
+
+        return $byDate;
+    }
+
+    /**
+     * Occurrences couvrant un jour donné, dans l'ordre de l'agenda (all-day d'abord, puis l'heure).
+     *
+     * @return list<Occurrence>
+     */
+    private function dayOccurrences(Family $family, \DateTimeImmutable $date): array
+    {
+        $utc = new \DateTimeZone('UTC');
+
+        return $this->agenda->occurrences(
+            $family,
+            $date->setTime(0, 0)->setTimezone($utc),
+            $date->setTime(23, 59, 59)->setTimezone($utc),
+            null,
+        );
+    }
+
+    private function frenchLongDate(\DateTimeImmutable $d): string
+    {
+        $days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+        $months = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+
+        return $days[(int) $d->format('w')].' '.$d->format('j').' '.$months[(int) $d->format('n')].' '.$d->format('Y');
     }
 
     private function frenchMonth(\DateTimeImmutable $d): string

@@ -389,7 +389,7 @@ a:hover { text-decoration: underline; }
 .garde-cal__title { font-family: var(--font-title); font-size: 20px; font-weight: 700; color: var(--ink); text-transform: capitalize; }
 .garde-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
 .garde-cal__dow { text-align: center; font-size: 12px; color: var(--muted-2); font-weight: 600; text-transform: uppercase; padding-bottom: .3rem; }
-.garde-day { position: relative; aspect-ratio: 1; border-radius: 13px; padding: 8px; background: var(--surface); border: 1px solid var(--border); }
+.garde-day { position: relative; aspect-ratio: 1; border-radius: 13px; padding: 8px; background: var(--surface); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
 .garde-day--a { background: var(--accent-soft); border-color: var(--accent); }
 .garde-day--b { background: var(--positive-soft); border-color: var(--positive); }
 .garde-day--none { background: var(--surface); }
@@ -412,6 +412,23 @@ a:hover { text-decoration: underline; }
 .garde-day__tag { position: absolute; bottom: .25rem; right: .35rem; font-size: .65rem; color: var(--muted); }
 /* Pastille d'activité de la famille liée (overlay §3.4), superposée sans masquer la couleur du parent. */
 .garde-day__overlay { position: absolute; top: .25rem; right: .3rem; width: 8px; height: 8px; border-radius: 50%; background: var(--linked); box-shadow: 0 0 0 1.5px var(--card); }
+
+/* ── Activités de la famille sur la case (maquette `:236-238`) ──
+   Poussées en bas de la case par `margin-top: auto`, d'où le passage de `.garde-day` en colonne
+   flex. La marge basse réserve la rangée des marqueurs en position absolue (initiale du parent à
+   gauche, « vac. » à droite), que les libellés recouvraient sinon.
+   Le point de catégorie ne porte jamais l'information seul : le titre de l'activité est du texte,
+   et la fiche de jour nomme la catégorie (cdc §8.1). */
+.garde-day__events { margin-top: auto; margin-bottom: .7rem; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.garde-day__event { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.garde-day__event-dot { width: 6px; height: 6px; border-radius: 3px; flex: 0 0 auto; background: var(--cat-other); }
+.garde-day__event-dot--sport { background: var(--cat-sport); }
+.garde-day__event-dot--music { background: var(--cat-music); }
+.garde-day__event-dot--school { background: var(--cat-school); }
+.garde-day__event-dot--health { background: var(--cat-health); }
+.garde-day__event-dot--other { background: var(--cat-other); }
+.garde-day__event-title { font-size: 11px; font-weight: 500; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.garde-day__more { font-size: 10px; font-weight: 600; color: var(--muted); }
 .garde-legend { display: flex; gap: .9rem; font-size: .8rem; color: var(--ink-2); }
 /* La pastille de légende porte l'initiale et reproduit l'aspect de la case qu'elle explique (fond
    doux + bordure du parent) au lieu d'un carré de couleur pleine : une légende purement chromatique
@@ -443,6 +460,73 @@ a:hover { text-decoration: underline; }
 .garde-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: .5rem; }
 .garde-list li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; padding: .6rem .8rem; background: var(--surface); border-radius: 12px; }
 .garde-holidays-actions { margin-bottom: .8rem; }
+
+/* ---------- Lot 3 : Garde — fiche de jour (US-CUST-6, maquette `:828-868`) ----------
+   Modale portée par un `<dialog>` natif : le fond modal (`::backdrop`), le piège à focus, le
+   retour du focus à la fermeture et la touche Échap viennent du navigateur. `padding: 0` sur le
+   dialog, la marge intérieure appartenant au fragment (`.day-sheet`) que Turbo y injecte. */
+.day-modal {
+    width: 420px; max-width: calc(100vw - 2rem); max-height: calc(100vh - 3rem);
+    padding: 0; border: none; border-radius: var(--radius-card-lg);
+    background: var(--surface); color: var(--ink); box-shadow: 0 30px 70px -15px rgba(41, 38, 33, .45);
+}
+.day-modal::backdrop { background: rgba(41, 38, 33, .4); }
+.day-modal__loading { padding: 24px; color: var(--muted); }
+.day-sheet { padding: 24px; }
+.day-sheet__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+/* Pas de `text-transform: capitalize` : il capitalise CHAQUE mot et donnait « Mercredi 2 Septembre
+   2026 » — en français, le nom du mois reste en minuscules. Seule l'initiale est mise en capitale,
+   côté gabarit. */
+.day-sheet__title { font-family: var(--font-title); font-size: 22px; font-weight: 700; margin: 0; }
+.day-sheet__rule { font-size: 14px; color: var(--muted); margin: .15rem 0 0; }
+.day-sheet__close {
+    width: 32px; height: 32px; flex: 0 0 auto; border: none; border-radius: var(--radius-pill);
+    background: var(--border-2); color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+}
+.day-sheet__close:hover { background: var(--border-3); color: var(--ink-2); }
+/* Bloc « Chez » : le filet vertical reprend la couleur du parent, comme la case du calendrier. */
+.day-sheet__parent {
+    position: relative; overflow: hidden; display: flex; align-items: center; flex-wrap: wrap; gap: 13px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 15px; margin-top: 16px;
+}
+.day-sheet__parent::before { content: ''; position: absolute; left: 0; top: 0; width: 5px; height: 100%; }
+.day-sheet__parent--a::before { background: var(--accent); }
+.day-sheet__parent--b::before { background: var(--positive); }
+/* Fond doux + contour + encre sombre, et non la couleur pleine de la maquette : le blanc sur
+   `--accent` ne vaut que 4,05:1 — c'est le même arbitrage que la pastille de légende (cdc §8.1). */
+.day-sheet__avatar {
+    width: 42px; height: 42px; flex: 0 0 auto; border-radius: var(--radius-pill);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-title); font-size: 18px; font-weight: 700; color: var(--ink);
+}
+.day-sheet__parent--a .day-sheet__avatar { background: var(--accent-soft-2); border: 1px solid var(--accent); }
+.day-sheet__parent--b .day-sheet__avatar { background: var(--positive-soft); border: 1px solid var(--positive); }
+.day-sheet__parent-main { flex: 1; min-width: 0; }
+.day-sheet__parent-name { font-family: var(--font-title); font-size: 19px; font-weight: 700; overflow-wrap: anywhere; }
+/* Transmission sur sa propre ligne (la maquette la tasse à droite du bloc) : « Retour chez Benjamin
+   Flechel le dimanche 13 septembre 2026 à 18:00 » ne tient pas dans une colonne de 140 px sans
+   césure agressive, et c'est l'information que l'on vient chercher. */
+.day-sheet__handover { flex: 1 1 100%; margin: .2rem 0 0; padding-top: .6rem; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted); }
+.day-sheet__section { margin: 18px 2px 9px; }
+.day-sheet__events { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.day-sheet__event {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: .6rem; align-items: center;
+    background: var(--card); border: 1px solid var(--border); border-left: 4px solid var(--cat-other);
+    border-radius: 14px; padding: 13px;
+}
+.day-sheet__event--sport { border-left-color: var(--cat-sport); }
+.day-sheet__event--music { border-left-color: var(--cat-music); }
+.day-sheet__event--school { border-left-color: var(--cat-school); }
+.day-sheet__event--health { border-left-color: var(--cat-health); }
+.day-sheet__event--other { border-left-color: var(--cat-other); }
+.day-sheet__event-main { grid-column: 1; display: flex; justify-content: space-between; gap: .6rem; min-width: 0; }
+.day-sheet__event-title { font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.day-sheet__event-time { font-size: 14px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+.day-sheet__event-who { grid-column: 1; font-size: 13px; color: var(--muted); margin-top: 3px; overflow-wrap: anywhere; }
+.day-sheet__event-pill { grid-column: 2; grid-row: 1 / span 2; }
+.day-sheet__actions { display: flex; gap: 10px; margin-top: 18px; }
+.day-sheet__actions .btn { flex: 1; }
 
 /* ---------- Lot 3 : Garde — sélecteur de rythme (cartes + grille de nuits) ---------- */
 .sr-only {
@@ -737,6 +821,11 @@ a:hover { text-decoration: underline; }
     .grid-2 { grid-template-columns: minmax(0, 1fr); }
     .home-grid { grid-template-columns: minmax(0, 1fr); }
     .garde-layout { grid-template-columns: minmax(0, 1fr); }
+    /* Cases d'environ 55 px de large : un libellé d'activité n'y tiendrait qu'en ellipse. On garde
+       les seuls points de catégorie, alignés en ligne — le détail est dans la fiche de jour, que la
+       case ouvre. */
+    .garde-day__events { flex-direction: row; align-items: center; gap: 3px; margin-bottom: .6rem; }
+    .garde-day__event-title { display: none; }
     .rhythm-cards { grid-template-columns: minmax(0, 1fr); }
     .night { padding: 10px 4px; }
     .night__name { font-size: 12px; }
@@ -804,4 +893,7 @@ a:hover { text-decoration: underline; }
     .home-custody__day.is-today { outline: 2px solid currentColor; outline-offset: -2px; }
     /* L'exception reste distinguable par son style de trait, que le mode préserve. */
     .garde-day--exception { border-style: dashed; }
+    /* Le mode écrase le fond des pastilles d'activité : sans contour elles deviennent invisibles,
+       et sur téléphone (où le libellé est masqué) plus rien ne signalerait l'activité. */
+    .garde-day__event-dot { border: 1px solid currentColor; }
 }

@@ -387,3 +387,66 @@ l'affichage). Aucun changement d'API, d'OpenAPI, de migration ni de registre RGP
 brute de Symfony, **6.10** seconde famille impossible, **6.6** familles liées inutilisables) ;
 vague 3 — vrais développements (**6.1** fiche de jour + activités sur `/garde`, **6.5** phrase de
 garde sur l'accueil, **6.4** `/settings` en trois onglets, **6.3** écran RGPD web).
+
+### 2026-08-28 — Étape 6, vague 3 : 6.1 — pastilles d'activité + fiche de jour sur `/garde`
+
+Constat re-vérifié avant correction, et plus large qu'écrit : `GardeController` **n'injectait ni
+`AgendaReader` ni `UpcomingEventsFinder`** — l'agenda de la famille n'était donc jamais lu. La seule
+pastille existante (`garde-day__overlay`) venait de `overlayBadges()`, c'est-à-dire des familles
+**liées**, désactivées par défaut. Aucune régression : la fonctionnalité n'avait jamais existé.
+
+**Pastilles (maquette `:236-238`).** Indexation par jour **couvert**, pas par jour de début : la
+liste de `/agenda` groupe sur `startsAt`, ce qui laisserait un séjour de trois jours invisible sur
+les deux suivants. Une fin posée à minuit pile est reculée d'une seconde, sans quoi un créneau
+18h→00h posait une pastille sur le lendemain. La boucle est bornée aux clés de jour du mois — un
+`all-day` de plusieurs mois ne doit pas faire itérer hors grille. Groupement dans le fuseau **de la
+famille** (celui dans lequel les horaires ont été saisis), là où la grille de garde reste en
+Europe/Paris comme le moteur. Deux activités affichées par case, puis « +N » ; sous 900 px la case
+tombe à ~55 px et seuls les points subsistent, avec un contour en `forced-colors` sans quoi
+l'information disparaîtrait entièrement sur téléphone dans ce mode.
+
+**Fiche de jour (US-CUST-6, maquette `:828-868`).** Route `GET /garde/jour/{date}` rendant un
+**fragment**, chargé à la demande dans un `<turbo-frame>` logé dans un `<dialog>` natif. Trois choix
+et leur raison :
+
+- `<dialog>` plutôt qu'une surcouche maison : fond modal, piège à focus, restauration du focus et
+  touche Échap viennent du navigateur — tout ce qu'une modale en `<div>` réimplémente, souvent mal ;
+- chargement à la demande plutôt que 28 à 31 fiches rendues dans la page : sinon transmission et
+  activités sont calculées 31 fois pour un jour consulté ;
+- le fragment vit dans la portée du contrôleur Stimulus `garde`, donc ses `data-action` (fermeture,
+  « Échanger ce jour ») sont câblés sans une ligne de JS de plus. Le `<turbo-frame>` enveloppe le
+  fragment **entier**, réponse de refus comprise : sans frame de même id dans la réponse, Turbo
+  n'affiche rien et l'utilisateur verrait une modale vide au lieu du refus.
+
+**Transmission.** « Retour chez {Parent} le {date} à {handoverTime} » est dérivée des `CustodyDay`
+**matérialisés** qui suivent (`DayDetailReader`, fenêtre de 45 jours), et non d'une projection du
+rythme : exceptions et règles de vacances sont ainsi prises en compte comme partout ailleurs. En
+bout d'horizon glissant, aucun changement ne suit — la phrase est alors **omise** plutôt qu'inventée.
+
+**Le clic sur une case change de sens.** Il ouvrait `swapDay` : un clic, ou la touche Espace en
+parcourant le planning au clavier, réattribuait durablement un jour de garde derrière un simple
+`confirm()`. Il ouvre désormais la fiche, pour tout membre `custody=view` — qui n'avait jusqu'ici
+**aucune** interaction — et « Échanger ce jour » vit dans la fiche, sous `custody=edit`, comme la
+maquette le prescrit (`:862`). Sur un jour passé le bouton est présenté **inerte** avec sa raison,
+l'API refusant l'exception rétroactive (422, §3.3) : mieux vaut une action visiblement fermée qu'une
+action qui échoue.
+
+**Les deux domaines de droit sont vérifiés séparément** — c'est le croisement qu'un écran
+server-rendered laisse fuiter sans qu'aucun test d'API ne s'en aperçoive : `custody` ouvre la fiche,
+`agenda` ouvre les activités. Sans `agenda`, la section entière disparaît (des cases comme de la
+fiche) : son état vide dirait déjà s'il y a ou non des activités.
+
+Deux défauts trouvés en cours de route : `text-transform: capitalize` rendait « Mercredi 2 Septembre
+2026 » — en français le nom du mois reste en minuscules, la capitale initiale est posée au gabarit ;
+et `/garde` ne transmettait pas les noms des parents au contrôleur Stimulus, si bien que la
+confirmation d'échange disait « l'autre parent » au lieu de nommer la personne.
+
+Portes : backend **387 tests / 3196 assertions** (371 avant — 16 nouveaux dans
+`GardeDayDetailTest`, un par comportement contractuel) / couverture **86,4 %** / PHPStan 0 /
+cs-fixer 0 / Twig 36 ; **E2E 21/21**, le parcours garde exerçant désormais pastille, fiche, Échap et
+échange depuis la fiche. Aucun changement d'API, d'OpenAPI, de client Dart, de migration, de
+registre RGPD ni de dépendance.
+
+**Reste de l'étape 6** : vague 2 — **6.8**, **6.10**, **6.6** ; vague 3 — **6.5** phrase de garde sur
+l'accueil (elle réutilisera `DayDetailReader`, qui calcule déjà la transmission), **6.4**
+`/settings` en trois onglets, **6.3** écran RGPD web.

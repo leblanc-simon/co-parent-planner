@@ -10,6 +10,11 @@
 {% set pAInitial = initials.A|default('A') %}
 {% set pBInitial = initials.B|default('B') %}
 {% set rhythmLabel = {'alternating':'Une semaine sur deux','pattern_2_2_3':'Rythme 2-2-3','midweek_weekends':'Milieu de semaine + week-ends','custom':'Rythme personnalisé (14 jours)'} %}
+{# Classe de couleur de catégorie des pastilles d'activité — mêmes correspondances que `/agenda`. #}
+{% set catClass = {'sport':'sport','musique':'music','ecole':'school','sante':'health','autre':'other'} %}
+{# Nombre d'activités listées dans une case avant bascule en « + N » : la case fait 1:1, le numéro du
+   jour en occupe le haut et la rangée basse porte déjà le marqueur de parent et « vac. ». #}
+{% set eventsPerCell = 2 %}
 
 {% block main %}
 <header class="main__header">
@@ -32,7 +37,11 @@
 <div data-controller="garde"
      data-garde-family-id-value="{{ family.id }}"
      data-garde-parent-a-value="{{ parentAId }}"
-     data-garde-parent-b-value="{{ parentBId }}">
+     data-garde-parent-b-value="{{ parentBId }}"
+     {# Noms des deux parents : la confirmation d'un échange les nomme (« Attribuer le 12/09 à
+        Benjamin ? »). Sans ces valeurs, l'écran retombait sur « l'autre parent ». #}
+     data-garde-pa-name-value="{{ pAName }}"
+     data-garde-pb-name-value="{{ pBName }}">
     <p class="form-error" data-garde-target="error" role="alert" hidden></p>
     <p class="form-success" data-garde-target="notice" role="status" aria-live="polite" hidden></p>
 
@@ -101,18 +110,40 @@
             {% for d in ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'] %}<div class="garde-cal__dow">{{ d }}</div>{% endfor %}
             {% for week in weeks %}
                 {% for cell in week %}
+                    {% set cellEvents = dayEvents[cell.date]|default([]) %}
                     <div class="garde-day garde-day--{{ cell.slot == 'A' ? 'a' : (cell.slot == 'B' ? 'b' : 'none') }}
                                 {{ cell.source == 'exception' ? 'garde-day--exception' }}
                                 {{ cell.isToday and cell.inMonth ? 'garde-day--today' }}
                                 {{ not cell.inMonth ? 'garde-day--out' }}"
-                         {% if canEdit and cell.inMonth and cell.slot %}
-                            data-action="click->garde#swapDay keydown.enter->garde#swapDay keydown.space->garde#swapDay"
-                            data-date="{{ cell.date }}" data-slot="{{ cell.slot }}"
-                            data-date-label="{{ cell.date|date('d/m/Y') }}"
-                            role="button" tabindex="0" title="Échanger ce jour"
-                            aria-label="{{ cell.date|date('d/m/Y') }} — chez {{ cell.slot == 'A' ? pAName : pBName }}{{ cell.source == 'exception' ? ' (exception)' }}{{ cell.source == 'holiday' ? ' (vacances scolaires)' }}. Échanger ce jour."
+                         {% if cell.inMonth %}
+                            {# Le clic ouvre la FICHE DU JOUR (US-CUST-6) et non plus l'échange direct :
+                               une case portait auparavant un `swapDay` qui réattribuait durablement un
+                               jour de garde derrière un simple `confirm()`, et le droit `custody=view`
+                               n'avait aucune interaction. « Échanger ce jour » vit désormais dans la
+                               fiche, sous `custody=edit`, comme la maquette le prescrit (`:862`). #}
+                            data-action="click->garde#openDay keydown.enter->garde#openDay keydown.space->garde#openDay"
+                            data-day-url="{{ path('app_garde_day', { date: cell.date }) }}"
+                            role="button" tabindex="0" title="Voir le détail de ce jour"
+                            aria-label="{{ cell.date|date('d/m/Y') }}{% if cell.slot %} — chez {{ cell.slot == 'A' ? pAName : pBName }}{% endif %}{{ cell.source == 'exception' ? ' (exception)' }}{{ cell.source == 'holiday' ? ' (vacances scolaires)' }}{% if cellEvents is not empty %} · {{ cellEvents|length }} activité{{ cellEvents|length > 1 ? 's' : '' }}{% endif %}. Voir le détail de ce jour."
                          {% endif %}>
                         <span class="garde-day__num">{{ cell.day }}</span>
+                        {# ── Pastilles d'activité de la famille (maquette `:236-238`) ──
+                           `aria-hidden` : le nombre d'activités figure déjà dans l'aria-label de la
+                           case, et le détail dans la fiche qu'elle ouvre — sans quoi un lecteur
+                           d'écran énoncerait deux fois la même liste tronquée. #}
+                        {% if cellEvents is not empty %}
+                        <div class="garde-day__events" aria-hidden="true">
+                            {% for ev in cellEvents|slice(0, eventsPerCell) %}
+                                <span class="garde-day__event">
+                                    <i class="garde-day__event-dot garde-day__event-dot--{{ catClass[ev.category]|default('other') }}"></i>
+                                    <span class="garde-day__event-title">{{ ev.title }}</span>
+                                </span>
+                            {% endfor %}
+                            {% if cellEvents|length > eventsPerCell %}
+                                <span class="garde-day__more">+{{ cellEvents|length - eventsPerCell }}</span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
                         {# Marqueur non chromatique de l'attribution (cdc §8) : les fonds A/B ne
                            diffèrent que par la teinte (1,12:1 de luminance), donc l'initiale est le
                            seul canal qui survit au niveaux de gris, au daltonisme rouge-vert et à
@@ -120,7 +151,9 @@
                            clair — via l'aria-label de la case échangeable, ou le `.sr-only`. #}
                         {% if cell.slot %}
                             <span class="garde-day__parent" aria-hidden="true">{{ cell.slot == 'A' ? pAInitial : pBInitial }}</span>
-                            {% if not (canEdit and cell.inMonth) %}
+                            {# Les cases du mois portent le nom dans leur aria-label ; celles des mois
+                               voisins ne sont pas des boutons et ont donc besoin du texte caché. #}
+                            {% if not cell.inMonth %}
                                 <span class="sr-only">chez {{ cell.slot == 'A' ? pAName : pBName }}</span>
                             {% endif %}
                         {% endif %}
@@ -198,6 +231,23 @@
     </aside>
     </div>
     {% endif %}
+
+    {# ───────── Fiche de jour (US-CUST-6) ─────────
+       `<dialog>` natif plutôt qu'une surcouche maison : le navigateur fournit le fond modal, le
+       piège à focus, la restauration du focus à la fermeture et la touche Échap — tout ce qu'une
+       modale en `<div>` doit réimplémenter, souvent mal.
+
+       Le contenu est chargé **à la demande** dans le `<turbo-frame>` : rendre les 28 à 31 fiches du
+       mois dans la page aurait multiplié son poids et fait calculer 31 fois la transmission et les
+       activités pour un jour consulté. Le fragment étant inséré dans la portée du contrôleur
+       `garde`, ses propres `data-action` (fermeture, « Échanger ce jour ») sont câblés par Stimulus
+       sans code supplémentaire. #}
+    <dialog class="day-modal" data-garde-target="dayDialog" aria-labelledby="garde-day-title"
+            data-action="click->garde#dayBackdrop">
+        <turbo-frame id="garde-day" data-garde-target="dayFrame">
+            <p class="day-modal__loading">Chargement…</p>
+        </turbo-frame>
+    </dialog>
 
     {# La configuration du rythme, les exceptions et les vacances vivent désormais dans
        Paramètres › Rythme de garde (édition), pour garder cet écran centré sur la consultation. #}

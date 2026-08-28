@@ -1,0 +1,128 @@
+{# Fiche de jour de garde (US-CUST-6, maquette `:828-868`) — fragment chargé dans le
+   `<turbo-frame>` de la modale de `/garde`. Rendu serveur : aucune donnée de garde n'est recopiée
+   en JSON dans la page, et un membre en lecture seule y trouve enfin le parent en clair, l'origine
+   de l'attribution, l'heure de transmission et les activités du jour.
+
+   Le `<turbo-frame>` doit envelopper le fragment ENTIER, réponse de refus comprise : Turbo cherche
+   dans la réponse un frame de même id, et sans lui n'affiche rien (l'utilisateur verrait une modale
+   vide au lieu du refus). #}
+<turbo-frame id="garde-day">
+{% if denied %}
+    <div class="day-sheet">
+        <header class="day-sheet__head">
+            <h2 class="day-sheet__title" id="garde-day-title">Accès refusé</h2>
+            <button type="button" class="day-sheet__close" data-action="garde#closeDay" aria-label="Fermer">
+                <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+            </button>
+        </header>
+        <p class="empty-state">Vous n'avez pas accès au planning de garde de cette famille.</p>
+    </div>
+{% else %}
+{# Ce fragment est rendu hors du layout : les libellés FR de `shell.html.twig` ne lui parviennent
+   pas, il redéclare donc ceux dont il a besoin — avec RIGOUREUSEMENT les mêmes valeurs, un même
+   enum ne devant jamais s'écrire de deux façons selon l'écran. #}
+{% set catClass = {'sport':'sport','musique':'music','ecole':'school','sante':'health','autre':'other'} %}
+{% set catLabel = {'sport':'Sport','musique':'Musique','ecole':'École','sante':'Santé','autre':'Autre'} %}
+{% set holidayRuleLabel = {
+    'alternating_weeks': 'Une semaine sur deux',
+    'split_50_50':       'Moitié / moitié',
+    'fixed_parent':      'Toujours chez le même parent',
+    'eve_alternating':   'Réveillons en alternance',
+    'custom':            'Répartition personnalisée',
+} %}
+{% set parentName = slot ? parentNames[slot] : null %}
+
+<div class="day-sheet">
+    <header class="day-sheet__head">
+        <div>
+            <h2 class="day-sheet__title" id="garde-day-title">{{ dateLabel|capitalize }}</h2>
+            {# Origine de l'attribution : la priorité affichée est celle du moteur (exception >
+               vacances > base), pour que l'écran n'explique jamais le jour autrement que la base. #}
+            <p class="day-sheet__rule">
+                {% if detail.source is null %}
+                    Jour non planifié — hors de la période générée
+                {% elseif detail.source.value == 'exception' %}
+                    Exception{% if detail.exception and detail.exception.reason %} · {{ detail.exception.reason }}{% endif %}
+                {% elseif detail.source.value == 'holiday' %}
+                    {{ detail.holiday ? detail.holiday.label : 'Vacances scolaires' }}{% if detail.holiday and detail.holiday.rule %} · {{ holidayRuleLabel[detail.holiday.rule.kind.value] ?? detail.holiday.rule.kind.value }}{% endif %}
+                {% else %}
+                    Rythme habituel
+                    {# Une période de vacances sans règle laisse le rythme s'appliquer : le dire ici
+                       évite de croire à une erreur en voyant « vac. » sur la case. #}
+                    {% if detail.holiday %} · pendant {{ detail.holiday.label }}{% endif %}
+                {% endif %}
+            </p>
+        </div>
+        <button type="button" class="day-sheet__close" data-action="garde#closeDay" aria-label="Fermer">
+            <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        </button>
+    </header>
+
+    {# ───────── Chez quel parent + transmission ───────── #}
+    {% if slot %}
+    <div class="day-sheet__parent day-sheet__parent--{{ slot|lower }}">
+        {# L'initiale reprend le marqueur des cases du calendrier (cdc §8.1) : le même parent doit
+           porter le même marqueur partout, et il reste lisible sans la couleur. #}
+        <span class="day-sheet__avatar" aria-hidden="true">{{ slot == 'A' ? initials.A : initials.B }}</span>
+        <div class="day-sheet__parent-main">
+            <div class="eyebrow">Chez</div>
+            <div class="day-sheet__parent-name">{{ parentName }}</div>
+        </div>
+        {% if handoverDateLabel and handoverSlot and detail.handoverTime %}
+            <p class="day-sheet__handover">Retour chez {{ parentNames[handoverSlot] }} le {{ handoverDateLabel }} à {{ detail.handoverTime }}</p>
+        {% endif %}
+    </div>
+    {% else %}
+    <p class="empty-state">Ce jour n'est pas encore attribué.</p>
+    {% endif %}
+
+    {# ───────── Activités du jour (domaine `agenda`) ─────────
+       Section omise sans droit `agenda` : son état vide dirait déjà qu'il y a — ou non — des
+       activités, information que ce membre n'a pas à obtenir par cet écran. #}
+    {% if canAgenda %}
+    <div class="eyebrow day-sheet__section">Activités du jour</div>
+    {% if events is empty %}
+        <p class="empty-state">Aucune activité ce jour.</p>
+    {% else %}
+    <ul class="day-sheet__events">
+        {% for occ in events %}
+        <li class="day-sheet__event day-sheet__event--{{ catClass[occ.category.value] }}">
+            <div class="day-sheet__event-main">
+                <span class="day-sheet__event-title">{{ occ.title }}</span>
+                <span class="day-sheet__event-time">{% if occ.allDay %}Journée{% else %}{{ occ.startsAt|date('H:i', timezone) }}{% if occ.endsAt %}–{{ occ.endsAt|date('H:i', timezone) }}{% endif %}{% endif %}</span>
+            </div>
+            {# La catégorie est nommée, pas seulement colorée (la barre de gauche ne survit ni aux
+               niveaux de gris ni au contraste forcé — cdc §8.1, même raison que le marqueur A/B). #}
+            <span class="pill pill--{{ catClass[occ.category.value] }} day-sheet__event-pill">{{ catLabel[occ.category.value] }}</span>
+            <div class="day-sheet__event-who">
+                {% if occ.wholeFamily %}Toute la famille{% else %}{% for c in occ.children %}{{ c.firstName }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
+                {%- if occ.responsibleMembership %} · {{ occ.responsibleMembership.user.fullName ?: occ.responsibleMembership.user.email }}{% endif %}
+                {%- if occ.location %} · {{ occ.location }}{% endif %}
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% endif %}
+
+    {# ───────── Actions ─────────
+       `custody=edit` seulement (US-CUST-6) : un membre en lecture voit l'information, pas les
+       actions — les lui présenter pour se solder par un 403 était le défaut relevé côté mobile. #}
+    {% if canEdit %}
+    <div class="day-sheet__actions">
+        {% if slot and not detail.isPast %}
+            <button type="button" class="btn btn--ghost" data-action="garde#swapDay"
+                    data-date="{{ dateValue }}" data-slot="{{ slot }}" data-date-label="{{ detail.date|date('d/m/Y') }}">
+                Échanger ce jour
+            </button>
+        {% elseif slot %}
+            {# L'API refuse une exception dans le passé (422) : le bouton est présenté inerte avec sa
+               raison, plutôt que d'offrir une action qui échoue. #}
+            <button type="button" class="btn btn--ghost" disabled title="Un jour passé ne peut plus être échangé">Échanger ce jour</button>
+        {% endif %}
+        <a class="btn btn--primary" href="{{ path('app_settings') }}#sec-custody">Modifier la garde</a>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+</turbo-frame>

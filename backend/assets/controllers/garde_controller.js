@@ -5,7 +5,7 @@ import { ApiController } from '../api_base.js';
  * (état canonique ; la génération est asynchrone côté serveur, et le temps réel Mercure rafraîchit).
  */
 export default class extends ApiController {
-    static targets = ['kind', 'customPanel', 'midweekPanel', 'night', 'mwDay', 'parentA', 'parentB'];
+    static targets = ['kind', 'customPanel', 'midweekPanel', 'night', 'mwDay', 'parentA', 'parentB', 'dayDialog', 'dayFrame'];
     static values = { parentA: String, parentB: String, paName: String, pbName: String };
 
     connect() {
@@ -139,10 +139,47 @@ export default class extends ApiController {
     }
 
     /**
+     * Ouvre la fiche d'un jour (US-CUST-6) : charge le fragment serveur dans le `<turbo-frame>` de
+     * la modale, puis ouvre la `<dialog>` (fond modal, piège à focus et Échap fournis par le
+     * navigateur).
+     *
+     * Le fragment n'est re-demandé que si le jour change : réafficher deux fois le même jour ne
+     * doit pas rappeler le serveur, mais passer d'un jour à l'autre doit remettre l'état de
+     * chargement, sinon la fiche précédente reste à l'écran pendant la requête et se lit comme
+     * étant celle du jour qu'on vient de cliquer.
+     */
+    openDay(event) {
+        event.preventDefault(); // évite le défilement sur la touche Espace
+        const url = event.currentTarget.dataset.dayUrl;
+        if (!url || !this.hasDayDialogTarget || !this.hasDayFrameTarget) return;
+
+        const frame = this.dayFrameTarget;
+        if (frame.dataset.loadedUrl !== url) {
+            frame.innerHTML = '<p class="day-modal__loading">Chargement…</p>';
+            frame.dataset.loadedUrl = url;
+            frame.src = url;
+        }
+        this.dayDialogTarget.showModal();
+    }
+
+    closeDay() {
+        if (this.hasDayDialogTarget) this.dayDialogTarget.close();
+    }
+
+    /**
+     * Clic sur le fond modal → fermeture. La cible n'est le `<dialog>` lui-même que pour la zone
+     * hors panneau : un clic dans la fiche a pour cible un de ses descendants.
+     */
+    dayBackdrop(event) {
+        if (event.target === this.dayDialogTarget) this.closeDay();
+    }
+
+    /**
      * « Échanger ce jour » : crée une exception d'un jour vers l'autre parent.
      *
-     * Confirmation explicite : un clic (ou Entrée/Espace) sur une case réattribue durablement un jour
-     * de garde, et l'annulation ne se fait que depuis Paramètres › Exceptions.
+     * Déclenché depuis la fiche de jour (bouton explicite sous `custody=edit`), et non plus par un
+     * clic sur la case du calendrier — qui réattribuait durablement un jour de garde derrière un
+     * simple `confirm()`, y compris par mégarde en parcourant le planning au clavier.
      */
     swapDay(event) {
         event.preventDefault(); // évite le défilement sur la touche Espace

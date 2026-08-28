@@ -29,7 +29,7 @@ class CustodyPattern {
   final int handoverWeekday;
   final String handoverTime;
   final List<String>? customPattern;
-  final Map<String, String?>? settings;
+  final dynamic settings;
   final String? parentAMembershipId;
   final String? parentBMembershipId;
 

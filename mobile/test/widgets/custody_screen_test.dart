@@ -1,6 +1,9 @@
 import 'package:coparentplanner/core/session/session_scope.dart';
+import 'package:coparentplanner/core/sync/read_cache.dart';
 import 'package:coparentplanner/api/generated/export.dart' as api;
+import 'package:coparentplanner/features/agenda/data/agenda_repository.dart';
 import 'package:coparentplanner/features/agenda/data/overlay_repository.dart';
+import 'package:coparentplanner/features/custody/application/day_detail.dart';
 import 'package:coparentplanner/features/custody/data/custody_repository.dart';
 import 'package:coparentplanner/features/custody/presentation/custody_screen.dart';
 import 'package:coparentplanner/features/custody/presentation/custody_settings_screen.dart';
@@ -63,26 +66,84 @@ const _stats = api.CustodyStats(
 void main() {
   late MockCustodyRepository repo;
   late MockMembersRepository membersRepo;
+  late MockAgendaRepository agendaRepo;
 
   setUp(() {
     repo = MockCustodyRepository();
     membersRepo = MockMembersRepository();
+    agendaRepo = MockAgendaRepository();
+    when(
+      () => membersRepo.listMembers(any()),
+    ).thenAnswer((_) async => const []);
+    when(
+      () => agendaRepo.listEvents(
+        any(),
+        any(),
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
+    ).thenAnswer((_) async => const CachedResult<api.Event>.fresh([]));
   });
 
   List<Override> overrides({bool intact = false}) => [
     custodyRepositoryProvider.overrideWithValue(repo),
     overlayRepositoryProvider.overrideWithValue(emptyOverlayRepository()),
     membersRepositoryProvider.overrideWithValue(membersRepo),
+    agendaRepositoryProvider.overrideWithValue(agendaRepo),
     currentUserIdProvider.overrideWithValue('u-test'),
+    // La grille suit le mois DEMANDÉ : sans mois figé, ces tests dépendraient de
+    // la date d'exécution.
+    custodyMonthProvider.overrideWith(
+      () => FixedCustodyMonth(DateTime(2026, 7)),
+    ),
+    // « Aujourd'hui » figé au 1er juillet 2026 : les jours du jeu de données sont
+    // alors à venir, donc échangeables (l'API refuse une exception rétroactive, et
+    // le bouton est présenté inerte sur un jour passé).
+    todayProvider.overrideWithValue(DateTime(2026, 7)),
     familyContextProvider.overrideWith(
       intact ? _IntactFamilyContext.new : _FixedFamilyContext.new,
     ),
   ];
 
+  /// Membres de la famille, dont le membre courant (`self`) et ses droits effectifs.
+  /// Sans lui, aucune action de mutation n'est rendue (C29) : les tests d'édition
+  /// doivent donc dire explicitement de quel droit ils partent.
+  void stubMembers({
+    String custody = 'edit',
+    String agenda = 'view',
+    String nameA = 'Sophie Martin',
+    String nameB = 'Marc Durand',
+  }) {
+    when(() => membersRepo.listMembers('fam-1')).thenAnswer(
+      (_) async => [
+        api.Member(
+          id: 'mA',
+          role: 'parent',
+          fullName: nameA,
+          self: true,
+          rights: {'custody': custody, 'agenda': agenda},
+        ),
+        api.Member(id: 'mB', role: 'parent', fullName: nameB),
+      ],
+    );
+  }
+
   void stubReads() {
     when(() => repo.getPattern('fam-1')).thenAnswer((_) async => _pattern);
-    when(() => repo.listDays('fam-1')).thenAnswer((_) async => _days);
-    when(() => repo.getStats('fam-1')).thenAnswer((_) async => _stats);
+    when(
+      () => repo.listDays(
+        'fam-1',
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
+    ).thenAnswer((_) async => _days);
+    when(
+      () => repo.getStats(
+        'fam-1',
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
+    ).thenAnswer((_) async => _stats);
     when(() => repo.listExceptions('fam-1')).thenAnswer((_) async => const []);
     when(() => repo.listHolidays('fam-1')).thenAnswer((_) async => const []);
   }
@@ -105,6 +166,7 @@ void main() {
     tester,
   ) async {
     when(() => repo.getPattern('fam-1')).thenAnswer((_) async => null);
+    stubMembers();
 
     await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
     await tester.pumpAndSettle();
@@ -166,6 +228,7 @@ void main() {
     'détail du jour → « Échanger ce jour » crée une exception vers l\'autre parent',
     (tester) async {
       stubReads();
+      stubMembers();
       when(
         () => repo.createException(
           any(),
@@ -306,4 +369,441 @@ void main() {
       expect(sentCustom![1], 'A');
     },
   );
+
+  // ───────────────────────── Revue mobile 2026-08, étape 7 ─────────────────────
+
+  testWidgets(
+    'C27 — le chevron « mois suivant » redemande la fenêtre du mois voulu',
+    (tester) async {
+      stubReads();
+      stubMembers();
+
+      await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+
+      expect(find.text('juillet 2026'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('custody-month-next')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('août 2026'), findsOneWidget);
+      // Les jours ET les statistiques portent sur la MÊME fenêtre : les afficher
+      // sur deux périodes différentes serait pire qu'une navigation absente.
+      verify(
+        () => repo.listDays(
+          'fam-1',
+          from: DateTime(2026, 8),
+          to: DateTime(2026, 8, 31),
+        ),
+      ).called(1);
+      verify(
+        () => repo.getStats(
+          'fam-1',
+          from: DateTime(2026, 8),
+          to: DateTime(2026, 8, 31),
+        ),
+      ).called(1);
+    },
+  );
+
+  testWidgets(
+    'C55 — la case est annoncée avec le NOM du parent, pas son initiale seule',
+    (tester) async {
+      stubReads();
+      stubMembers();
+
+      await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+
+      // cdc §8.1 : « les lecteurs d'écran reçoivent le nom en clair, jamais
+      // l'initiale seule ». Jumeau du garde-fou web
+      // `WebPagesTest::testGardeCarriesNonColourParentMarker`.
+      expect(
+        find.bySemanticsLabel(RegExp(r'1 juillet 2026 — chez Sophie Martin')),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(RegExp(r'2 juillet 2026 — chez Marc Durand')),
+        findsOneWidget,
+      );
+      // Le 3 est une exception : l'annonce le dit, la case ne portant qu'un liseré.
+      expect(
+        find.bySemanticsLabel(
+          RegExp(r'3 juillet 2026 — chez Marc Durand, Exceptionnel'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('C32 — la fiche de jour nomme le parent et dit la transmission', (
+    tester,
+  ) async {
+    stubReads();
+    stubMembers();
+
+    await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('garde-day-2026-07-01')));
+    await tester.pumpAndSettle();
+
+    // Titre en toutes lettres, plus la date ISO du contrat (C58).
+    expect(find.text('mercredi 1 juillet 2026'), findsOneWidget);
+    // Le nom réel, comme la légende — plus « Parent A ».
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('custody-day-parent')))
+          .data,
+      'Sophie Martin',
+    );
+    // « Retour chez {Parent} le {date} à {heure} » (US-CUST-6), dérivé du premier
+    // jour matérialisé attribué à l'autre parent.
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('custody-day-handover')))
+          .data,
+      'Retour chez Marc Durand le 2 juil. 2026 à 19:00',
+    );
+  });
+
+  testWidgets(
+    'C32 — en bout d\'horizon, la transmission est OMISE plutôt qu\'inventée',
+    (tester) async {
+      // Un seul jour matérialisé : aucun changement d'attributaire ne suit, ni dans
+      // le mois ni dans la fenêtre de recherche.
+      when(() => repo.getPattern('fam-1')).thenAnswer((_) async => _pattern);
+      // Ordre volontaire : mocktail retient le DERNIER stub qui accepte l'appel, la
+      // fenêtre du mois doit donc être enregistrée après le cas général (au-delà,
+      // plus rien n'est matérialisé).
+      when(
+        () => repo.listDays(
+          'fam-1',
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+        ),
+      ).thenAnswer((_) async => const []);
+      when(
+        () => repo.listDays(
+          'fam-1',
+          from: DateTime(2026, 7),
+          to: DateTime(2026, 7, 31),
+        ),
+      ).thenAnswer(
+        (_) async => const [
+          api.CustodyDay(
+            date: '2026-07-01',
+            parentMembershipId: 'mA',
+            source: 'base',
+          ),
+        ],
+      );
+      when(
+        () => repo.getStats(
+          'fam-1',
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+        ),
+      ).thenAnswer((_) async => _stats);
+      when(
+        () => repo.listExceptions('fam-1'),
+      ).thenAnswer((_) async => const []);
+      when(() => repo.listHolidays('fam-1')).thenAnswer((_) async => const []);
+      stubMembers();
+
+      await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('garde-day-2026-07-01')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('custody-day-parent')), findsOneWidget);
+      expect(find.byKey(const ValueKey('custody-day-handover')), findsNothing);
+    },
+  );
+
+  testWidgets('C29 — `custody=view` : aucune action de mutation offerte', (
+    tester,
+  ) async {
+    stubReads();
+    stubMembers(custody: 'view');
+
+    await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+    await tester.pumpAndSettle();
+
+    // Ni réglages du rythme, ni import des vacances sur l'écran…
+    expect(find.byKey(const ValueKey('custody-settings-action')), findsNothing);
+    expect(find.byKey(const ValueKey('custody-import-holidays')), findsNothing);
+
+    // …ni « Échanger ce jour » dans la fiche, qui reste consultable.
+    await tester.tap(find.byKey(const ValueKey('garde-day-2026-07-01')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('custody-day-parent')), findsOneWidget);
+    expect(find.byKey(const ValueKey('custody-swap-day')), findsNothing);
+  });
+
+  testWidgets('C29 — un jour PASSÉ présente l\'échange inerte, pas absent', (
+    tester,
+  ) async {
+    stubReads();
+    stubMembers();
+
+    await pumpScreen(
+      tester,
+      const CustodyScreen(),
+      // « Aujourd'hui » après les jours du jeu de données.
+      overrides: [
+        ...overrides(),
+        todayProvider.overrideWithValue(DateTime(2026, 7, 20)),
+      ],
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('garde-day-2026-07-01')));
+    await tester.pumpAndSettle();
+
+    final button = tester.widget<FilledButton>(
+      find.byKey(const ValueKey('custody-swap-day')),
+    );
+    expect(button.onPressed, isNull);
+  });
+
+  testWidgets('C32/agenda — les activités du jour relèvent du droit `agenda`', (
+    tester,
+  ) async {
+    stubReads();
+    stubMembers(agenda: 'none');
+    when(
+      () => agendaRepo.listEvents(
+        any(),
+        any(),
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
+    ).thenAnswer(
+      (_) async => const CachedResult<api.Event>.fresh([
+        api.Event(
+          id: 'e1',
+          title: 'Judo',
+          category: 'sport',
+          startsAt: '2026-07-01T18:00:00+02:00',
+        ),
+      ]),
+    );
+
+    await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+    await tester.pumpAndSettle();
+
+    // Sans le droit `agenda`, ni pastille sur la case ni section dans la fiche :
+    // un état vide dirait déjà s'il y a des activités.
+    expect(
+      find.byKey(const ValueKey('activity-dots-2026-07-01')),
+      findsNothing,
+    );
+    await tester.tap(find.byKey(const ValueKey('garde-day-2026-07-01')));
+    await tester.pumpAndSettle();
+    expect(find.text('Activités du jour'), findsNothing);
+  });
+
+  testWidgets(
+    'pastilles — un séjour de trois jours marque les TROIS cases (jour couvert)',
+    (tester) async {
+      stubReads();
+      stubMembers();
+      when(
+        () => agendaRepo.listEvents(
+          any(),
+          any(),
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+        ),
+      ).thenAnswer(
+        (_) async => const CachedResult<api.Event>.fresh([
+          api.Event(
+            id: 'e1',
+            title: 'Classe verte',
+            category: 'ecole',
+            allDay: true,
+            startsAt: '2026-07-01T00:00:00+02:00',
+            endsAt: '2026-07-03T00:00:00+02:00',
+          ),
+        ]),
+      );
+
+      await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+
+      // Indexé sur le seul jour de début, l'événement n'apparaissait que le 1er.
+      expect(
+        find.byKey(const ValueKey('activity-dots-2026-07-01')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('activity-dots-2026-07-02')),
+        findsOneWidget,
+      );
+      // Une fin posée à minuit pile appartient au jour PRÉCÉDENT : le 3 n'est pas
+      // couvert par un « 1er → 3 à 00:00 ».
+      expect(
+        find.byKey(const ValueKey('activity-dots-2026-07-03')),
+        findsNothing,
+      );
+
+      // La fiche du 2 liste bien l'activité, avec sa catégorie nommée.
+      await tester.tap(find.byKey(const ValueKey('garde-day-2026-07-02')));
+      await tester.pumpAndSettle();
+      expect(find.text('Classe verte'), findsOneWidget);
+      expect(find.text('École'), findsOneWidget);
+      expect(find.text('Journée'), findsOneWidget);
+    },
+  );
+
+  testWidgets('C28 — le rythme 2-2-3 est nommé, pas affiché en clé technique', (
+    tester,
+  ) async {
+    when(() => repo.getPattern('fam-1')).thenAnswer(
+      (_) async => const api.CustodyPattern(
+        id: 'p1',
+        kind: 'pattern_2_2_3',
+        anchorDate: '2026-06-21',
+        handoverWeekday: 0,
+        handoverTime: '19:00',
+        parentAMembershipId: 'mA',
+        parentBMembershipId: 'mB',
+      ),
+    );
+    when(
+      () => repo.listDays(
+        'fam-1',
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
+    ).thenAnswer((_) async => _days);
+    when(
+      () => repo.getStats(
+        'fam-1',
+        from: any(named: 'from'),
+        to: any(named: 'to'),
+      ),
+    ).thenAnswer((_) async => _stats);
+    when(() => repo.listExceptions('fam-1')).thenAnswer((_) async => const []);
+    when(() => repo.listHolidays('fam-1')).thenAnswer((_) async => const []);
+    stubMembers();
+
+    await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('pattern_2_2_3'), findsNothing);
+    expect(find.textContaining('2-2-3'), findsOneWidget);
+  });
+
+  testWidgets(
+    'C30 — période de vacances sans règle : plus de barre 50/50, une phrase',
+    (tester) async {
+      stubReads();
+      stubMembers();
+      when(() => repo.listHolidays('fam-1')).thenAnswer(
+        (_) async => const [
+          api.SchoolHoliday(
+            id: 'h1',
+            label: "Vacances d'été",
+            startDate: '2026-07-04',
+            endDate: '2026-08-31',
+          ),
+          api.SchoolHoliday(
+            id: 'h2',
+            label: 'Toussaint',
+            startDate: '2026-10-17',
+            endDate: '2026-11-02',
+            ruleKind: 'eve_alternating',
+          ),
+        ],
+      );
+
+      await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+
+      // Sans règle, la barre laissait croire à un partage moitié/moitié.
+      expect(
+        find.text("Aucune règle de partage — le rythme habituel s'applique."),
+        findsOneWidget,
+      );
+      // Le genre de règle est nommé, plus sa valeur d'énumération (C31).
+      expect(find.textContaining('eve_alternating'), findsNothing);
+      expect(find.text('Réveillons en alternance'), findsOneWidget);
+      // Dates en toutes lettres, plus les bornes ISO du contrat (C58).
+      expect(find.text('4 juil. → 31 août 2026'), findsOneWidget);
+    },
+  );
+
+  testWidgets('C26 — rythme `midweek_weekends` : éditable et sauvegardé', (
+    tester,
+  ) async {
+    when(() => repo.getPattern('fam-1')).thenAnswer(
+      (_) async => const api.CustodyPattern(
+        id: 'p1',
+        kind: 'midweek_weekends',
+        anchorDate: '2026-06-21',
+        handoverWeekday: 0,
+        handoverTime: '19:00',
+        parentAMembershipId: 'mA',
+        parentBMembershipId: 'mB',
+        settings: {
+          'weekend_days': [6, 0],
+          'weekday_parents': {'1': 'A', '2': 'A', '3': 'B', '4': 'B', '5': 'B'},
+          'weekend_start_parent': 'B',
+        },
+      ),
+    );
+    stubMembers();
+    Map<String, Object?>? sentSettings;
+    String? sentKind;
+    when(
+      () => repo.updatePattern(
+        any(),
+        kind: any(named: 'kind'),
+        anchorDate: any(named: 'anchorDate'),
+        handoverWeekday: any(named: 'handoverWeekday'),
+        handoverTime: any(named: 'handoverTime'),
+        parentAMembershipId: any(named: 'parentAMembershipId'),
+        parentBMembershipId: any(named: 'parentBMembershipId'),
+        customPattern: any(named: 'customPattern'),
+        settings: any(named: 'settings'),
+      ),
+    ).thenAnswer((inv) async {
+      sentKind = inv.namedArguments[#kind] as String?;
+      sentSettings = inv.namedArguments[#settings] as Map<String, Object?>?;
+      return const api.CustodyPattern();
+    });
+
+    await pumpScreen(
+      tester,
+      const CustodySettingsScreen(),
+      overrides: overrides(),
+    );
+    await tester.pumpAndSettle();
+
+    // Le modèle du serveur est repris tel quel : le sélecteur ne l'ignorait plus
+    // (champ vide en release, assertion en debug).
+    expect(find.text('Milieu de semaine + week-ends'), findsOneWidget);
+    // Le mardi bascule A → B.
+    await tester.tap(find.byKey(const ValueKey('custody-mw-2')));
+    await tester.pump();
+
+    await tester.tap(find.byKey(const ValueKey('custody-save')));
+    await tester.pump();
+
+    expect(sentKind, 'midweek_weekends');
+    expect(sentSettings, isNotNull);
+    expect(sentSettings!['weekend_days'], [0, 6]);
+    expect(sentSettings!['weekend_start_parent'], 'B');
+    // Les jours de semaine non week-end sont couverts EXACTEMENT : le serveur
+    // refuse toute carte incomplète ou débordante (`settings_invalid`).
+    expect(sentSettings!['weekday_parents'], {
+      '1': 'A',
+      '2': 'B',
+      '3': 'B',
+      '4': 'B',
+      '5': 'B',
+    });
+  });
 }

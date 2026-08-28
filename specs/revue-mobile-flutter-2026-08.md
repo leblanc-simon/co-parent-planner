@@ -10,8 +10,8 @@
 > Détail intégral (preuve, scénario de panne, correction, verdict du vérificateur) :
 > **`specs/revue-mobile-flutter-2026-08-annexes.md`**.
 >
-> **Avancement au 2026-08-27 : 34 constats corrigés sur 68** — étapes 1 à 6 livrées, plus `C14` et
-> `C66`. Restent 34 constats : `C11` (fin de l'étape 5) et les étapes 7 à 11.
+> **Avancement au 2026-08-28 : 43 constats corrigés sur 68** — étapes 1 à 7 livrées, plus `C14` et
+> `C66`. Restent 25 constats : `C11` (fin de l'étape 5) et les étapes 8 à 11.
 > Détail par étape : voir §Journal en fin de document.
 
 ## Conditions d'observation
@@ -148,7 +148,7 @@ la session et servir le cache). Réhydrater la famille active après la connexio
 | C43 | La tuile d'un événement lié n'affiche pas sa catégorie, alors que le filtre par catégorie s'y applique | P3 |
 | C44 | Le pull-to-refresh est inopérant sur Android quand la liste ne défile pas | P3 |
 
-### Étape 7 — Garde : écran, droits, conformité §8.1
+### Étape 7 — ✅ LIVRÉE le 2026-08-28 — Garde : écran, droits, conformité §8.1
 
 | # | Constat | Gravité |
 |---|---|---|
@@ -246,6 +246,64 @@ Cinq sur 73, chacun réfuté code en main :
 ---
 
 ## Journal
+
+### 2026-08-28 — Étape 7 livrée (garde) + parité des pastilles avec le web
+
+**`C26` était plus grave qu'écrit, et le défaut vient du contrat.** La revue décrivait un sélecteur
+inutilisable et une sauvegarde refusée. En réalité, une famille en `midweek_weekends` ne pouvait pas
+même **charger** son rythme : API Platform n'inférait rien du `array<string, mixed>` du DTO et
+publiait `settings` en `additionalProperties: {type: string}` ; le modèle Dart généré depuis ce
+contrat portait donc `Map<String, String?>`, et `CustodyPattern.fromJson` levait
+`type 'List<int>' is not a subtype of type 'String?' in type cast` sur `weekend_days` — vérifié en
+exécutant la désérialisation. L'écran Garde entier tombait en erreur avant d'atteindre le sélecteur.
+Même cause structurelle qu'à l'étape 6 (`from`/`to` non déclarés) : **le contrat doit décrire ce qui
+circule réellement**. `settings` est désormais déclaré **objet libre** (`additionalProperties: true`
++ exemple) plutôt qu'avec ses trois clés en `properties` : la forme détaillée corrigeait bien le
+typage, mais faisait générer trois classes anonymes `Settings`/`Settings2`/`Settings3`, renumérotées
+au moindre objet inline ajouté ailleurs. Le générateur produit maintenant `dynamic`, la forme réelle
+restant validée par `PatternWriter::validateSettings()` et relue côté mobile par un préremplissage
+tolérant. Contrat ré-exporté, client Dart régénéré (génération vérifiée idempotente).
+
+| Constat | Correctif |
+|---|---|
+| C26 | Contrat corrigé (ci-dessus) ; `midweek_weekends` ajouté au sélecteur avec son libellé ARB ; **panneau d'édition** des sept jours (cycle parent A → parent B → week-end) et du parent qui ouvre l'alternance, jumeau du web ; `settings` transmis par `updatePattern`, et **uniquement** pour ce modèle (`config_conflict` ailleurs) ; les jours de semaine sont **dérivés** des jours de week-end, le serveur exigeant une couverture exacte. Repli sur `alternating` si le serveur annonce un modèle inconnu — jamais une valeur absente des items du `DropdownButtonFormField`. |
+| C29 | `rightProvider` / `canViewProvider` / `canEditProvider` génériques sur `Member.rights` du membre `self` — que **aucun** écran ne lisait. Réglages du rythme, « Configurer le rythme », « Échanger ce jour », suppression d'exception et import des vacances sont désormais **masqués** sans `custody:edit`. Règle asymétrique et assumée : un **bouton** de mutation reste masqué tant que le droit est inconnu (un 403 est pire qu'une action qui apparaît un instant plus tard), un **onglet** reste visible (voir C33). |
+| C33 | Onglet Garde masqué pour une famille `intact` et pour un domaine explicitement `none`, Agenda et Enfants compris (le web le fait depuis la revue 6.12). Les quatre branches de l'`indexedStack` restent en place — seul le bouton disparaît — et la clé de test reste celle de la **branche**, pas du rang affiché. Un onglet n'est masqué que sur un `none` **explicite** : le serveur renvoie toujours les six domaines, donc une carte vide signifie « pas encore chargé », et masquer dans ce cas viderait la barre au démarrage comme hors-ligne. L'onglet couramment sélectionné reste toujours rendu : personne ne doit se retrouver sur un écran sans bouton pour en sortir. |
+| C27 | `custodyMonthProvider` + fenêtre `from`/`to` sur `custody/days` **et** `custody/stats` — sur la **même** fenêtre, des jours et des statistiques portant sur deux périodes serait pire que l'absence de navigation. Chevrons câblés (cible tactile portée à 44 pt, §8.1), appui long sur le titre pour revenir au mois courant. La grille est bâtie sur le mois **demandé** et non sur les jours reçus : sinon un mois hors période générée effaçait le calendrier **et ses chevrons**, sans retour possible. |
+| C28 | `'223'` → `'pattern_2_2_3'`, `midweek_weekends` ajouté, et branche par défaut remplacée par un libellé localisé : plus aucune valeur d'énumération ne peut fuir à l'écran. |
+| C55 | `Semantics(button:, label:, excludeSemantics:)` sur chaque case — il n'existait **aucun** `Semantics` dans toute l'app. VoiceOver/TalkBack annoncent « mercredi 1 juillet 2026 — chez Sophie Martin », avec les mentions « Exceptionnel », « Vacances », « Activité » quand elles s'appliquent ; l'`excludeSemantics` joue le rôle de l'`aria-hidden` du gabarit web. `nameForSlot()`, jusque-là code mort, est enfin appelé. |
+| C30 | Barre 50/50 retirée (même décision et même motif que côté web) ; sans règle, la carte dit « Aucune règle de partage — le rythme habituel s'applique. » ; le genre de règle est **nommé** au lieu d'afficher `eve_alternating`. |
+| C32 | Fiche de jour reconstruite en transposition du fragment web : date en toutes lettres, **nom en clair** du parent avec son marqueur, origine de l'attribution dans la priorité du moteur (exception + raison > vacances + règle > rythme habituel, « pendant {période} » compris), **transmission** « Retour chez {Parent} le {date} à {heure} » — dérivée des `CustodyDay` **matérialisés** qui suivent (fenêtre de 45 jours, comme `DayDetailReader`), donc exceptions et vacances comprises, et **omise** en bout d'horizon plutôt qu'inventée. Les statistiques nomment elles aussi les parents. |
+| C34 | L'anneau « famille liée » passe **haut-droite** : il était peint par-dessus l'icône de vacances, bas-droite. Le commentaire de répartition des coins, qui décrivait déjà le conflit, est corrigé. |
+
+**Parité avec les pastilles du planning web (constat web 6.1, livré la veille).** Les activités
+étaient indexées sur le seul jour de **début** : un séjour de trois jours n'apparaissait que sur le
+premier. Elles le sont désormais par jour **couvert**, avec la même règle que le web — une fin posée
+à minuit pile appartient au jour précédent, et un événement commencé avant le mois entre au 1er
+plutôt que de faire itérer hors grille. La pastille grise unique devient **une pastille par
+catégorie** (§8), trois au plus sur une case de ~45 px, et la fiche de jour liste les activités avec
+leur horaire et leur catégorie **nommée** (la barre colorée ne survit ni aux niveaux de gris ni au
+contraste forcé). Les activités relèvent du domaine `agenda`, résolu **séparément** de `custody` :
+sans ce droit, ni pastille ni section — un état vide dirait déjà s'il y a des activités. Enfin la
+fenêtre est celle du **planning**, et non plus celle de l'agenda : naviguer dans le planning aurait
+sinon affiché les pastilles d'un autre mois.
+
+**Deux corrections d'i18n prises au passage** (elles appartiennent à l'étape 8 mais sont
+indissociables des écrans repris) : `DateLabels`, premier usage de `intl`/`DateFormat` du projet,
+remplace le tableau `['janvier', …]` littéral du calendrier et les dates **ISO brutes** de la fiche
+de jour, des exceptions et des périodes de vacances (part garde de C31/C58) ; le motif « Échange »
+envoyé au serveur passe par l'ARB (part garde de C62). Le reste de l'étape 8 est intact.
+
+**Deux points d'architecture introduits, à connaître pour la suite** : `todayProvider` (jour civil
+injectable — « ce jour est passé » décide si « Échanger ce jour » est offert ou **inerte**, et un
+test ne doit pas dépendre de la date à laquelle il tourne) et `custodyMonthProvider`, distinct du
+mois de l'agenda (les deux écrans se naviguent séparément).
+
+**26 nouveaux tests** (18 sur l'écran Garde et ses réglages, 12 unitaires purs sur l'indexation par
+jour couvert et la recherche de transmission, 3 sur la barre d'onglets — dont le cas « droits
+inconnus »). Portes mobile : `dart analyze --fatal-infos` 0, format 0, **309 tests verts** (283
+avant), couverture **77,3 %** (76,0 % avant). Portes backend : **387 tests / 3196 assertions**,
+PHPStan niv.8 0, cs-fixer 0. Contrat + client Dart régénérés, génération **idempotente**.
 
 ### 2026-08-27 — Étape 6 livrée (agenda) + C14
 

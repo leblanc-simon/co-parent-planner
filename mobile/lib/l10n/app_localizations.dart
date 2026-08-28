@@ -843,6 +843,180 @@ abstract class AppL10n {
   /// **'Activité'**
   String get custodyActivity;
 
+  /// No description provided for @custodyPrevMonth.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mois précédent'**
+  String get custodyPrevMonth;
+
+  /// No description provided for @custodyNextMonth.
+  ///
+  /// In fr, this message translates to:
+  /// **'Mois suivant'**
+  String get custodyNextMonth;
+
+  /// No description provided for @custodyToday.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aujourd\'hui'**
+  String get custodyToday;
+
+  /// No description provided for @custodyKindMidweek.
+  ///
+  /// In fr, this message translates to:
+  /// **'Milieu de semaine + week-ends'**
+  String get custodyKindMidweek;
+
+  /// No description provided for @custodyKindUnknown.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rythme de garde'**
+  String get custodyKindUnknown;
+
+  /// No description provided for @custodyDaySemantics.
+  ///
+  /// In fr, this message translates to:
+  /// **'{date} — chez {parent}'**
+  String custodyDaySemantics(String date, String parent);
+
+  /// No description provided for @custodyAtParent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chez'**
+  String get custodyAtParent;
+
+  /// No description provided for @custodyHandover.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retour chez {parent} le {date} à {time}'**
+  String custodyHandover(String parent, String date, String time);
+
+  /// No description provided for @custodyDayUnassigned.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce jour n\'est pas encore attribué.'**
+  String get custodyDayUnassigned;
+
+  /// No description provided for @custodyDayUnplanned.
+  ///
+  /// In fr, this message translates to:
+  /// **'Jour non planifié — hors de la période générée'**
+  String get custodyDayUnplanned;
+
+  /// No description provided for @custodyRuleHabitual.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rythme habituel'**
+  String get custodyRuleHabitual;
+
+  /// No description provided for @custodyRuleDuring.
+  ///
+  /// In fr, this message translates to:
+  /// **'pendant {label}'**
+  String custodyRuleDuring(String label);
+
+  /// No description provided for @custodyDayActivities.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités du jour'**
+  String get custodyDayActivities;
+
+  /// No description provided for @custodyDayActivitiesEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune activité ce jour.'**
+  String get custodyDayActivitiesEmpty;
+
+  /// No description provided for @custodyAllDay.
+  ///
+  /// In fr, this message translates to:
+  /// **'Journée'**
+  String get custodyAllDay;
+
+  /// No description provided for @custodyEditPattern.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier la garde'**
+  String get custodyEditPattern;
+
+  /// No description provided for @custodyPastNoSwap.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un jour passé ne peut plus être échangé'**
+  String get custodyPastNoSwap;
+
+  /// No description provided for @custodySwapReason.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échange'**
+  String get custodySwapReason;
+
+  /// No description provided for @custodyHolidayNoRule.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune règle de partage — le rythme habituel s\'applique.'**
+  String get custodyHolidayNoRule;
+
+  /// No description provided for @holidayRuleAlternatingWeeks.
+  ///
+  /// In fr, this message translates to:
+  /// **'Une semaine sur deux'**
+  String get holidayRuleAlternatingWeeks;
+
+  /// No description provided for @holidayRuleSplit5050.
+  ///
+  /// In fr, this message translates to:
+  /// **'Moitié / moitié'**
+  String get holidayRuleSplit5050;
+
+  /// No description provided for @holidayRuleFixedParent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toujours chez le même parent'**
+  String get holidayRuleFixedParent;
+
+  /// No description provided for @holidayRuleEveAlternating.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réveillons en alternance'**
+  String get holidayRuleEveAlternating;
+
+  /// No description provided for @holidayRuleCustom.
+  ///
+  /// In fr, this message translates to:
+  /// **'Répartition personnalisée'**
+  String get holidayRuleCustom;
+
+  /// No description provided for @custodyMidweekTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Jours de la semaine'**
+  String get custodyMidweekTitle;
+
+  /// No description provided for @custodyMidweekHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Chaque jour de semaine reste chez le même parent. Touchez un jour pour basculer parent A → parent B → week-end alterné.'**
+  String get custodyMidweekHint;
+
+  /// No description provided for @custodyWeekend.
+  ///
+  /// In fr, this message translates to:
+  /// **'Week-end'**
+  String get custodyWeekend;
+
+  /// No description provided for @custodyWeekendStart.
+  ///
+  /// In fr, this message translates to:
+  /// **'Le week-end commence chez'**
+  String get custodyWeekendStart;
+
+  /// No description provided for @custodyMidweekInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Gardez au moins un jour de week-end et au plus trois.'**
+  String get custodyMidweekInvalid;
+
   /// No description provided for @custodyOpen.
   ///
   /// In fr, this message translates to:

@@ -149,6 +149,65 @@
     }
   },
   "custodyActivity": "Activité",
+  "custodyPrevMonth": "Mois précédent",
+  "custodyNextMonth": "Mois suivant",
+  "custodyToday": "Aujourd'hui",
+  "custodyKindMidweek": "Milieu de semaine + week-ends",
+  "custodyKindUnknown": "Rythme de garde",
+  "custodyDaySemantics": "{date} — chez {parent}",
+  "@custodyDaySemantics": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "parent": {
+        "type": "String"
+      }
+    }
+  },
+  "custodyAtParent": "Chez",
+  "custodyHandover": "Retour chez {parent} le {date} à {time}",
+  "@custodyHandover": {
+    "placeholders": {
+      "parent": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "custodyDayUnassigned": "Ce jour n'est pas encore attribué.",
+  "custodyDayUnplanned": "Jour non planifié — hors de la période générée",
+  "custodyRuleHabitual": "Rythme habituel",
+  "custodyRuleDuring": "pendant {label}",
+  "@custodyRuleDuring": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "custodyDayActivities": "Activités du jour",
+  "custodyDayActivitiesEmpty": "Aucune activité ce jour.",
+  "custodyAllDay": "Journée",
+  "custodyEditPattern": "Modifier la garde",
+  "custodyPastNoSwap": "Un jour passé ne peut plus être échangé",
+  "custodySwapReason": "Échange",
+  "custodyHolidayNoRule": "Aucune règle de partage — le rythme habituel s'applique.",
+  "holidayRuleAlternatingWeeks": "Une semaine sur deux",
+  "holidayRuleSplit5050": "Moitié / moitié",
+  "holidayRuleFixedParent": "Toujours chez le même parent",
+  "holidayRuleEveAlternating": "Réveillons en alternance",
+  "holidayRuleCustom": "Répartition personnalisée",
+  "custodyMidweekTitle": "Jours de la semaine",
+  "custodyMidweekHint": "Chaque jour de semaine reste chez le même parent. Touchez un jour pour basculer parent A → parent B → week-end alterné.",
+  "custodyWeekend": "Week-end",
+  "custodyWeekendStart": "Le week-end commence chez",
+  "custodyMidweekInvalid": "Gardez au moins un jour de week-end et au plus trois.",
   "custodyOpen": "Ouvrir le planning",
   "custodyIntact": "La garde ne s'applique qu'aux familles séparées.",
   "custodyNoPattern": "Aucun rythme de garde configuré.",

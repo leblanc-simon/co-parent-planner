@@ -107,3 +107,50 @@ final familyMembersProvider = FutureProvider<List<api.Member>>((ref) async {
   if (family == null) return const [];
   return ref.watch(membersRepositoryProvider).listMembers(family.familyId);
 });
+
+/// Droits **effectifs** du membre courant sur la famille active (domaine → niveau
+/// `none|view|edit`), tels que le serveur les calcule et les expose sur `Member.rights`
+/// (le membre courant est celui dont `self` est vrai).
+///
+/// Aucun écran ne les lisait : les actions de mutation étaient offertes à tous et se
+/// soldaient par un 403, et la barre d'onglets menait à des écrans de refus (revue
+/// mobile 2026-08, constats C29 et C33). Le web applique la même règle depuis la revue
+/// web 6.12 (extension Twig `can()`).
+///
+/// Lecture **best-effort** : une carte vide tant que les membres ne sont pas chargés.
+/// Les appelants doivent donc traiter « droit inconnu » comme « pas encore autorisé »,
+/// jamais l'inverse — mieux vaut une action qui apparaît une fraction de seconde plus
+/// tard qu'une action qui mène à un refus.
+final currentMemberRightsProvider = Provider<Map<String, String>>((ref) {
+  final members = ref
+      .watch(familyMembersProvider)
+      .maybeWhen(data: (m) => m, orElse: () => const <api.Member>[]);
+  for (final m in members) {
+    if (m.self) return m.rights ?? const {};
+  }
+
+  return const {};
+});
+
+/// Niveau effectif sur un domaine (`custody`, `agenda`, `children_notes`, …), ou
+/// `null` tant qu'il est inconnu.
+final rightProvider = Provider.family<String?, String>(
+  (ref, domain) => ref.watch(currentMemberRightsProvider)[domain],
+);
+
+/// Vrai quand le membre courant peut **consulter** le domaine.
+///
+/// Faux tant que le droit est inconnu : ce provider garde des contenus (les activités
+/// du planning, par exemple), et il vaut mieux les révéler une fraction de seconde
+/// plus tard que de les montrer à qui n'y a pas droit. La barre d'onglets, elle,
+/// applique la règle inverse — voir `HomeShell`.
+final canViewProvider = Provider.family<bool, String>((ref, domain) {
+  final level = ref.watch(rightProvider(domain));
+
+  return level == 'view' || level == 'edit';
+});
+
+/// Vrai quand le membre courant peut **modifier** le domaine.
+final canEditProvider = Provider.family<bool, String>(
+  (ref, domain) => ref.watch(rightProvider(domain)) == 'edit',
+);

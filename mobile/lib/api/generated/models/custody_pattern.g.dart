@@ -12,9 +12,7 @@ CustodyPattern _$CustodyPatternFromJson(Map<String, dynamic> json) =>
       customPattern: (json['customPattern'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
-      settings: (json['settings'] as Map<String, dynamic>?)?.map(
-        (k, e) => MapEntry(k, e as String?),
-      ),
+      settings: json['settings'],
       parentAMembershipId: json['parentAMembershipId'] as String?,
       parentBMembershipId: json['parentBMembershipId'] as String?,
       id: json['id'] as String? ?? '',

@@ -407,6 +407,103 @@ class AppL10nFr extends AppL10n {
   String get custodyActivity => 'Activité';
 
   @override
+  String get custodyPrevMonth => 'Mois précédent';
+
+  @override
+  String get custodyNextMonth => 'Mois suivant';
+
+  @override
+  String get custodyToday => 'Aujourd\'hui';
+
+  @override
+  String get custodyKindMidweek => 'Milieu de semaine + week-ends';
+
+  @override
+  String get custodyKindUnknown => 'Rythme de garde';
+
+  @override
+  String custodyDaySemantics(String date, String parent) {
+    return '$date — chez $parent';
+  }
+
+  @override
+  String get custodyAtParent => 'Chez';
+
+  @override
+  String custodyHandover(String parent, String date, String time) {
+    return 'Retour chez $parent le $date à $time';
+  }
+
+  @override
+  String get custodyDayUnassigned => 'Ce jour n\'est pas encore attribué.';
+
+  @override
+  String get custodyDayUnplanned =>
+      'Jour non planifié — hors de la période générée';
+
+  @override
+  String get custodyRuleHabitual => 'Rythme habituel';
+
+  @override
+  String custodyRuleDuring(String label) {
+    return 'pendant $label';
+  }
+
+  @override
+  String get custodyDayActivities => 'Activités du jour';
+
+  @override
+  String get custodyDayActivitiesEmpty => 'Aucune activité ce jour.';
+
+  @override
+  String get custodyAllDay => 'Journée';
+
+  @override
+  String get custodyEditPattern => 'Modifier la garde';
+
+  @override
+  String get custodyPastNoSwap => 'Un jour passé ne peut plus être échangé';
+
+  @override
+  String get custodySwapReason => 'Échange';
+
+  @override
+  String get custodyHolidayNoRule =>
+      'Aucune règle de partage — le rythme habituel s\'applique.';
+
+  @override
+  String get holidayRuleAlternatingWeeks => 'Une semaine sur deux';
+
+  @override
+  String get holidayRuleSplit5050 => 'Moitié / moitié';
+
+  @override
+  String get holidayRuleFixedParent => 'Toujours chez le même parent';
+
+  @override
+  String get holidayRuleEveAlternating => 'Réveillons en alternance';
+
+  @override
+  String get holidayRuleCustom => 'Répartition personnalisée';
+
+  @override
+  String get custodyMidweekTitle => 'Jours de la semaine';
+
+  @override
+  String get custodyMidweekHint =>
+      'Chaque jour de semaine reste chez le même parent. Touchez un jour pour basculer parent A → parent B → week-end alterné.';
+
+  @override
+  String get custodyWeekend => 'Week-end';
+
+  @override
+  String get custodyWeekendStart => 'Le week-end commence chez';
+
+  @override
+  String get custodyMidweekInvalid =>
+      'Gardez au moins un jour de week-end et au plus trois.';
+
+  @override
   String get custodyOpen => 'Ouvrir le planning';
 
   @override

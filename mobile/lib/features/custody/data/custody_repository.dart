@@ -4,11 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
 import '../../../core/network/api_clients.dart';
+import '../../../core/util/civil_date.dart';
 import '../../family/application/family_context.dart';
+import '../../members/data/members_repository.dart';
 
 /// Accès au planning de garde de la famille active (Lot 3). Le scope `X-Family-Id`
-/// est posé par l'intercepteur réseau. La fenêtre [from, to] des jours/stats n'est
-/// pas paramétrée ici : le backend renvoie le **mois courant** par défaut.
+/// est posé par l'intercepteur réseau.
+///
+/// La fenêtre `[from, to]` des jours et des statistiques est **explicite** : sans
+/// elle le serveur retombe sur le mois civil courant, si bien que les deux chevrons
+/// de l'écran ne pouvaient rien faire d'autre que d'être inertes (revue mobile
+/// 2026-08, constat C27).
 class CustodyRepository {
   CustodyRepository(this._clients);
 
@@ -26,20 +32,36 @@ class CustodyRepository {
     }
   }
 
-  /// Jours effectifs du mois courant (base / vacances / exception).
-  Future<List<api.CustodyDay>> listDays(String familyId) async {
+  /// Jours effectifs de la fenêtre demandée (base / vacances / exception).
+  Future<List<api.CustodyDay>> listDays(
+    String familyId, {
+    required DateTime from,
+    required DateTime to,
+  }) async {
     try {
       return await _clients.custodyDays
-          .apiFamiliesFamilyIdcustodydaysGetCollection(familyId: familyId);
+          .apiFamiliesFamilyIdcustodydaysGetCollection(
+            familyId: familyId,
+            from: CivilDate.format(from),
+            to: CivilDate.format(to),
+          );
     } on DioException catch (e) {
       throw ApiException.fromDio(e);
     }
   }
 
-  Future<api.CustodyStats> getStats(String familyId) async {
+  /// Statistiques de la **même** fenêtre que les jours affichés : les faire porter
+  /// sur deux périodes différentes serait pire qu'une navigation absente.
+  Future<api.CustodyStats> getStats(
+    String familyId, {
+    required DateTime from,
+    required DateTime to,
+  }) async {
     try {
       return await _clients.custodyStats.apiFamiliesFamilyIdcustodystatsGet(
         familyId: familyId,
+        from: CivilDate.format(from),
+        to: CivilDate.format(to),
       );
     } on DioException catch (e) {
       throw ApiException.fromDio(e);
@@ -104,6 +126,7 @@ class CustodyRepository {
     required String parentAMembershipId,
     required String parentBMembershipId,
     List<String>? customPattern,
+    Map<String, Object?>? settings,
   }) async {
     try {
       return await _clients.custodyPattern.apiFamiliesFamilyIdcustodypatternPut(
@@ -116,6 +139,10 @@ class CustodyRepository {
           parentAMembershipId: parentAMembershipId,
           parentBMembershipId: parentBMembershipId,
           customPattern: customPattern,
+          // `settings` est requis pour `midweek_weekends` et **interdit** ailleurs
+          // (`custody.error.config_conflict`) : l'écran ne l'envoie que pour ce
+          // modèle, et le serveur refusait toute sauvegarde sans lui (C26).
+          settings: settings,
         ),
       );
     } on DioException catch (e) {
@@ -158,12 +185,46 @@ final familyCustodyPatternProvider = FutureProvider<api.CustodyPattern?>((
   return ref.watch(custodyRepositoryProvider).getPattern(family.familyId);
 });
 
+/// Mois affiché par l'écran Garde (US-CUST-5, « navigation période »).
+///
+/// Distinct du mois de l'agenda : les deux écrans se naviguent séparément, et
+/// partager le même état ferait bouger l'un en naviguant dans l'autre.
+final custodyMonthProvider = NotifierProvider<CustodyMonthController, DateTime>(
+  CustodyMonthController.new,
+);
+
+class CustodyMonthController extends Notifier<DateTime> {
+  @override
+  DateTime build() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month);
+  }
+
+  void shift(int months) {
+    state = DateTime(state.year, state.month + months);
+  }
+
+  void reset() {
+    final now = DateTime.now();
+    state = DateTime(now.year, now.month);
+  }
+}
+
+/// Premier et dernier jour du mois affiché (jour 0 du mois suivant = dernier du mois).
+({DateTime from, DateTime to}) custodyWindow(DateTime month) => (
+  from: DateTime(month.year, month.month),
+  to: DateTime(month.year, month.month + 1, 0),
+);
+
 final familyCustodyDaysProvider = FutureProvider<List<api.CustodyDay>>((
   ref,
 ) async {
   final family = ref.watch(familyContextProvider);
   if (family == null || family.isIntact) return const [];
-  return ref.watch(custodyRepositoryProvider).listDays(family.familyId);
+  final window = custodyWindow(ref.watch(custodyMonthProvider));
+  return ref
+      .watch(custodyRepositoryProvider)
+      .listDays(family.familyId, from: window.from, to: window.to);
 });
 
 final familyCustodyStatsProvider = FutureProvider<api.CustodyStats?>((
@@ -171,7 +232,10 @@ final familyCustodyStatsProvider = FutureProvider<api.CustodyStats?>((
 ) async {
   final family = ref.watch(familyContextProvider);
   if (family == null || family.isIntact) return null;
-  return ref.watch(custodyRepositoryProvider).getStats(family.familyId);
+  final window = custodyWindow(ref.watch(custodyMonthProvider));
+  return ref
+      .watch(custodyRepositoryProvider)
+      .getStats(family.familyId, from: window.from, to: window.to);
 });
 
 final familyCustodyExceptionsProvider =
@@ -190,3 +254,24 @@ final familyHolidaysProvider = FutureProvider<List<api.SchoolHoliday>>((
   if (family == null || family.isIntact) return const [];
   return ref.watch(custodyRepositoryProvider).listHolidays(family.familyId);
 });
+
+/// Droit `custody` **effectif** du membre courant.
+///
+/// L'écran Garde n'interrogeait aucun droit : « Échanger ce jour », la suppression
+/// d'une exception, l'import des vacances et l'accès aux réglages étaient offerts à
+/// un membre `custody=view`, qui n'en récoltait qu'un 403 (revue mobile 2026-08,
+/// constat C29).
+final custodyRightProvider = Provider<String?>(
+  (ref) => ref.watch(rightProvider('custody')),
+);
+
+/// Vrai quand le membre courant peut **modifier** la garde.
+final custodyCanEditProvider = Provider<bool>(
+  (ref) => ref.watch(canEditProvider('custody')),
+);
+
+/// Vrai quand le membre courant peut consulter l'agenda de la famille : les activités
+/// du planning de garde relèvent de ce domaine-là, pas de `custody`.
+final agendaCanViewProvider = Provider<bool>(
+  (ref) => ref.watch(canViewProvider('agenda')),
+);

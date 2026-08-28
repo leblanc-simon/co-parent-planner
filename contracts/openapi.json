@@ -6647,15 +6647,22 @@
                         }
                     },
                     "settings": {
-                        "type": [
-                            "object",
-                            "null"
-                        ],
-                        "additionalProperties": {
-                            "type": [
-                                "string",
-                                "null"
-                            ]
+                        "type": "object",
+                        "nullable": true,
+                        "additionalProperties": true,
+                        "example": {
+                            "weekend_days": [
+                                6,
+                                0
+                            ],
+                            "weekday_parents": {
+                                "1": "A",
+                                "2": "A",
+                                "3": "B",
+                                "4": "B",
+                                "5": "B"
+                            },
+                            "weekend_start_parent": "A"
                         }
                     },
                     "parentAMembershipId": {
@@ -6710,15 +6717,22 @@
                         }
                     },
                     "settings": {
-                        "type": [
-                            "object",
-                            "null"
-                        ],
-                        "additionalProperties": {
-                            "type": [
-                                "string",
-                                "null"
-                            ]
+                        "type": "object",
+                        "nullable": true,
+                        "additionalProperties": true,
+                        "example": {
+                            "weekend_days": [
+                                6,
+                                0
+                            ],
+                            "weekday_parents": {
+                                "1": "A",
+                                "2": "A",
+                                "3": "B",
+                                "4": "B",
+                                "5": "B"
+                            },
+                            "weekend_start_parent": "A"
                         }
                     },
                     "parentAMembershipId": {
@@ -6775,15 +6789,22 @@
                                 }
                             },
                             "settings": {
-                                "type": [
-                                    "object",
-                                    "null"
-                                ],
-                                "additionalProperties": {
-                                    "type": [
-                                        "string",
-                                        "null"
-                                    ]
+                                "type": "object",
+                                "nullable": true,
+                                "additionalProperties": true,
+                                "example": {
+                                    "weekend_days": [
+                                        6,
+                                        0
+                                    ],
+                                    "weekday_parents": {
+                                        "1": "A",
+                                        "2": "A",
+                                        "3": "B",
+                                        "4": "B",
+                                        "5": "B"
+                                    },
+                                    "weekend_start_parent": "A"
                                 }
                             },
                             "parentAMembershipId": {

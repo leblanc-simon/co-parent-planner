@@ -197,8 +197,20 @@ void main() {
       when(
         () => custodyRepo.getPattern('fam-1'),
       ).thenAnswer((_) async => _pattern);
-      when(() => custodyRepo.listDays('fam-1')).thenAnswer((_) async => _days);
-      when(() => custodyRepo.getStats('fam-1')).thenAnswer((_) async => _stats);
+      when(
+        () => custodyRepo.listDays(
+          'fam-1',
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+        ),
+      ).thenAnswer((_) async => _days);
+      when(
+        () => custodyRepo.getStats(
+          'fam-1',
+          from: any(named: 'from'),
+          to: any(named: 'to'),
+        ),
+      ).thenAnswer((_) async => _stats);
       when(
         () => custodyRepo.listExceptions('fam-1'),
       ).thenAnswer((_) async => const []);
@@ -211,6 +223,9 @@ void main() {
     });
 
     List<Override> overrides() => [
+      custodyMonthProvider.overrideWith(
+        () => FixedCustodyMonth(DateTime(2026, 7)),
+      ),
       custodyRepositoryProvider.overrideWithValue(custodyRepo),
       overlayRepositoryProvider.overrideWithValue(overlayRepo),
       membersRepositoryProvider.overrideWithValue(membersRepo),

@@ -39,3 +39,16 @@ MockOverlayRepository emptyOverlayRepository() {
   ).thenAnswer((_) async => const []);
   return mock;
 }
+
+/// Mois figé pour l'écran Garde : la grille est bâtie sur le mois **demandé** (pour
+/// que la navigation reste possible même quand le serveur ne renvoie aucun jour), un
+/// test qui stubbe des jours de juillet doit donc demander juillet — sans quoi il
+/// dépendrait de la date d'exécution.
+class FixedCustodyMonth extends CustodyMonthController {
+  FixedCustodyMonth(this.month);
+
+  final DateTime month;
+
+  @override
+  DateTime build() => month;
+}

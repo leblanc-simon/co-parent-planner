@@ -7,19 +7,28 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/util/civil_date.dart';
+import '../../../core/util/date_labels.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../core/widgets/large_title_header.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../agenda/data/agenda_repository.dart';
 import '../../agenda/data/overlay_repository.dart';
+import '../../agenda/presentation/agenda_screen.dart'
+    show CategoryPill, agendaCategoryColor;
 import '../../family/application/family_context.dart';
+import '../application/day_detail.dart';
 import '../data/custody_repository.dart';
+import 'custody_activities.dart';
 import 'custody_settings_screen.dart';
 import 'parent_initials.dart';
 
 /// US-CUST-5/6 — écran Garde mobile : calendrier mensuel coloré par parent
 /// (terracotta = A, teal = B), jours exceptionnels distingués, statistiques,
-/// exceptions et vacances. Lecture du **mois courant** (défaut serveur).
+/// exceptions et vacances, navigables **mois par mois**.
+///
+/// Les actions de mutation (réglages du rythme, échange d'un jour, suppression
+/// d'une exception, import des vacances) ne sont rendues qu'avec le droit
+/// `custody:edit` : les offrir à un membre en lecture seule ne menait qu'à un 403
+/// (revue mobile 2026-08, constat C29).
 class CustodyScreen extends ConsumerWidget {
   const CustodyScreen({super.key});
 
@@ -42,24 +51,28 @@ class CustodyScreen extends ConsumerWidget {
     }
 
     final patternAsync = ref.watch(familyCustodyPatternProvider);
+    final canEdit = ref.watch(custodyCanEditProvider);
 
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // U-08 : grand titre inline « Planning de garde » + accès au rythme.
+            // U-08 : grand titre inline « Planning de garde » + accès au rythme
+            // (réservé à `custody:edit` : le formulaire se soldait sinon par un 403).
             LargeTitleHeader(
               title: l.custodyScreenTitle,
-              trailing: IconButton(
-                key: const ValueKey('custody-settings-action'),
-                icon: const Icon(Icons.tune),
-                tooltip: l.custodySettingsTitle,
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const CustodySettingsScreen(),
-                  ),
-                ),
-              ),
+              trailing: canEdit
+                  ? IconButton(
+                      key: const ValueKey('custody-settings-action'),
+                      icon: const Icon(Icons.tune),
+                      tooltip: l.custodySettingsTitle,
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const CustodySettingsScreen(),
+                        ),
+                      ),
+                    )
+                  : null,
             ),
             Expanded(
               child: patternAsync.when(
@@ -76,6 +89,8 @@ class CustodyScreen extends ConsumerWidget {
                     ref.invalidate(familyCustodyDaysProvider);
                     ref.invalidate(familyCustodyStatsProvider);
                     ref.invalidate(familyCustodyExceptionsProvider);
+                    ref.invalidate(familyHolidaysProvider);
+                    ref.invalidate(custodyMonthActivitiesProvider);
                     await ref.read(familyCustodyDaysProvider.future);
                   },
                   child: pattern == null
@@ -91,9 +106,9 @@ class CustodyScreen extends ConsumerWidget {
   }
 }
 
-class _NoPattern extends StatelessWidget {
+class _NoPattern extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = AppL10n.of(context);
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -102,17 +117,20 @@ class _NoPattern extends StatelessWidget {
         const SizedBox(height: 40),
         Center(child: Text(l.custodyNoPattern)),
         const SizedBox(height: 16),
-        Center(
-          child: FilledButton(
-            key: const ValueKey('custody-configure'),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const CustodySettingsScreen(),
+        // Configurer un rythme est une mutation : sans `custody:edit`, l'état vide
+        // reste informatif mais n'offre plus une action qui finirait en 403 (C29).
+        if (ref.watch(custodyCanEditProvider))
+          Center(
+            child: FilledButton(
+              key: const ValueKey('custody-configure'),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const CustodySettingsScreen(),
+                ),
               ),
+              child: Text(l.custodyConfigure),
             ),
-            child: Text(l.custodyConfigure),
           ),
-        ),
       ],
     );
   }
@@ -134,17 +152,19 @@ class _CustodyBody extends ConsumerWidget {
     final overlayDates = ref
         .watch(overlayGardeDatesProvider)
         .maybeWhen(data: (d) => d, orElse: () => const <String>{});
-    // U-09 : jours porteurs d'un événement de la famille active (pastille d'activité).
-    final activityDates = ref
-        .watch(familyEventsProvider)
-        .maybeWhen(
-          data: (result) => {
-            for (final e in result.items)
-              if (CivilDate.ymd(e.startsAt).isNotEmpty)
-                CivilDate.ymd(e.startsAt),
-          },
-          orElse: () => const <String>{},
-        );
+    // U-09 : activités de la famille active, indexées par jour **couvert** (et non
+    // par jour de début : un séjour de trois jours n'apparaissait que sur le premier).
+    // Domaine de droit distinct : sans `agenda`, aucune pastille — un membre peut
+    // avoir `custody` sans avoir à savoir qu'il y a des activités, ni combien.
+    final canSeeAgenda = ref.watch(agendaCanViewProvider);
+    final activities = canSeeAgenda
+        ? ref
+              .watch(custodyMonthActivitiesProvider)
+              .maybeWhen(
+                data: (a) => a,
+                orElse: () => const <String, List<api.Event>>{},
+              )
+        : const <String, List<api.Event>>{};
 
     return ListView(
       // Même défaut que l'agenda : sans cette physique le pull-to-refresh est
@@ -164,11 +184,11 @@ class _CustodyBody extends ConsumerWidget {
             pattern: pattern,
             days: days,
             overlayDates: overlayDates,
-            activityDates: activityDates,
+            activities: activities,
           ),
         ),
         const SizedBox(height: 12),
-        const _Legend(),
+        _Legend(showActivity: canSeeAgenda),
         const SizedBox(height: 20),
         statsAsync.maybeWhen(
           data: (stats) =>
@@ -200,7 +220,7 @@ class _CustodyBody extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(l.custodyHolidaysTitle, style: AppTypography.eyebrow),
-            _ImportHolidaysButton(),
+            if (ref.watch(custodyCanEditProvider)) _ImportHolidaysButton(),
           ],
         ),
         const SizedBox(height: 8),
@@ -272,23 +292,28 @@ class _Calendar extends ConsumerWidget {
     required this.pattern,
     required this.days,
     this.overlayDates = const {},
-    this.activityDates = const {},
+    this.activities = const {},
   });
 
   final api.CustodyPattern pattern;
   final List<api.CustodyDay> days;
   final Set<String> overlayDates;
-  final Set<String> activityDates;
+
+  /// Activités de la famille, par jour couvert (clé `AAAA-MM-JJ`).
+  final Map<String, List<api.Event>> activities;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppL10n.of(context);
-    if (days.isEmpty) return Text(l.custodyNoPattern);
-
+    final month = ref.watch(custodyMonthProvider);
+    // La grille est bâtie sur le mois **demandé**, pas sur les jours reçus : sans
+    // rythme généré sur ce mois la réponse est vide, et l'écran doit tout de même
+    // afficher le mois — sinon naviguer hors de la période générée effaçait le
+    // calendrier et ses chevrons, sans retour possible.
+    final window = custodyWindow(month);
+    final first = window.from;
+    final last = window.to;
     final byDate = {for (final d in days) d.date: d};
-    final parsed = days.map((d) => DateTime.parse(d.date)).toList()..sort();
-    final first = parsed.first;
-    final last = parsed.last;
     // Lundi de la semaine du premier jour → dimanche de la semaine du dernier.
     // Arithmétique via le constructeur DateTime (jours calendaires) : insensible au changement
     // d'heure (le 25/10, +Duration(days:1) = 24 h dupliquerait/sauterait un jour).
@@ -325,15 +350,24 @@ class _Calendar extends ConsumerWidget {
       final key =
           '${cursor.year.toString().padLeft(4, '0')}-${cursor.month.toString().padLeft(2, '0')}-${cursor.day.toString().padLeft(2, '0')}';
       final day = byDate[key];
+      // Appartenance au mois affiché, et non « un jour matérialisé existe » : depuis
+      // que la grille suit le mois demandé, un jour du mois hors de la période
+      // générée doit rester une case du mois (sans couleur d'attribution) plutôt que
+      // de passer pour une case de remplissage.
+      final inMonth = cursor.month == month.month && cursor.year == month.year;
       cells.add(
         _DayCell(
           dateKey: key,
           dayNumber: cursor.day,
+          inMonth: inMonth,
           day: day,
           slot: _slotFor(day),
           isToday: key == todayKey,
-          hasOverlay: day != null && overlayDates.contains(key),
-          hasActivity: day != null && activityDates.contains(key),
+          // Marqueurs conditionnés à l'appartenance au mois, pas à la présence d'un
+          // jour matérialisé : une activité tombant sur un jour non planifié doit
+          // rester visible.
+          hasOverlay: inMonth && overlayDates.contains(key),
+          activities: inMonth ? (activities[key] ?? const []) : const [],
         ),
       );
       cursor = DateTime(cursor.year, cursor.month, cursor.day + 1);
@@ -342,20 +376,40 @@ class _Calendar extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // U-01 : navigation de mois (chevrons présentation — la fenêtre est le
-        // mois courant côté serveur ; le fenêtrage par mois relève du backend).
+        // U-01 : navigation de mois (US-CUST-5). Les deux chevrons étaient des
+        // `Container` sans `onTap` : un contrôle mort, que le commentaire justifiait
+        // par une limitation serveur inexistante — `custody/days` et `custody/stats`
+        // lisent `?from=`/`?to=` (constat C27).
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              _monthLabel(context, first),
-              style: AppTypography.textTheme.titleMedium,
+            // Un appui long sur le titre ramène au mois courant : après plusieurs
+            // pas, y revenir demandait autant d'appuis en sens inverse.
+            GestureDetector(
+              key: const ValueKey('custody-month-reset'),
+              onLongPress: () =>
+                  ref.read(custodyMonthProvider.notifier).reset(),
+              child: Text(
+                DateLabels.monthYear(l.localeName, month),
+                style: AppTypography.textTheme.titleMedium,
+              ),
             ),
-            const Row(
+            Row(
               children: [
-                _MonthNavButton(icon: Icons.chevron_left),
-                SizedBox(width: 8),
-                _MonthNavButton(icon: Icons.chevron_right),
+                _MonthNavButton(
+                  key: const ValueKey('custody-month-prev'),
+                  icon: Icons.chevron_left,
+                  tooltip: l.custodyPrevMonth,
+                  onTap: () =>
+                      ref.read(custodyMonthProvider.notifier).shift(-1),
+                ),
+                const SizedBox(width: 8),
+                _MonthNavButton(
+                  key: const ValueKey('custody-month-next'),
+                  icon: Icons.chevron_right,
+                  tooltip: l.custodyNextMonth,
+                  onTap: () => ref.read(custodyMonthProvider.notifier).shift(1),
+                ),
               ],
             ),
           ],
@@ -381,25 +435,6 @@ class _Calendar extends ConsumerWidget {
     if (pid == pattern.parentBMembershipId) return 'B';
     return null;
   }
-
-  String _monthLabel(BuildContext context, DateTime d) {
-    const months = [
-      '',
-      'janvier',
-      'février',
-      'mars',
-      'avril',
-      'mai',
-      'juin',
-      'juillet',
-      'août',
-      'septembre',
-      'octobre',
-      'novembre',
-      'décembre',
-    ];
-    return '${months[d.month]} ${d.year}';
-  }
 }
 
 class _DowHeader extends StatelessWidget {
@@ -423,22 +458,46 @@ class _DowHeader extends StatelessWidget {
 }
 
 /// Bouton de navigation de mois (U-01) : carré 34×34, rayon 10, chevron atténué.
+///
+/// La zone tactile est portée à 44 pt (§8.1) autour du carré peint : la cible visible
+/// reste celle de la maquette, la cible réelle atteint le minimum.
 class _MonthNavButton extends StatelessWidget {
-  const _MonthNavButton({required this.icon});
+  const _MonthNavButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    super.key,
+  });
 
   final IconData icon;
+  final String tooltip;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 34,
-      height: 34,
-      decoration: BoxDecoration(
-        color: AppColors.card,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border2),
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Center(
+            child: Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.border2),
+              ),
+              child: Icon(icon, size: 20, color: AppColors.muted),
+            ),
+          ),
+        ),
       ),
-      child: Icon(icon, size: 20, color: AppColors.muted),
     );
   }
 }
@@ -447,24 +506,31 @@ class _DayCell extends ConsumerWidget {
   const _DayCell({
     required this.dateKey,
     required this.dayNumber,
+    required this.inMonth,
     required this.day,
     required this.slot,
     this.isToday = false,
     this.hasOverlay = false,
-    this.hasActivity = false,
+    this.activities = const [],
   });
 
   final String dateKey;
   final int dayNumber;
+
+  /// Le jour appartient au mois affiché (les cases de complément de semaine, non).
+  final bool inMonth;
+
   final api.CustodyDay? day;
   final String? slot;
   final bool isToday;
   final bool hasOverlay;
-  final bool hasActivity;
+
+  /// Activités de la famille couvrant ce jour (pastilles colorées par catégorie).
+  final List<api.Event> activities;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final inMonth = day != null;
+    final l = AppL10n.of(context);
     final isException = day?.source == 'exception';
     final isHoliday = day?.source == 'holiday';
 
@@ -522,7 +588,7 @@ class _DayCell extends ConsumerWidget {
           // Marqueur NON CHROMATIQUE de l'attribution (cdc §8, WCAG 1.4.1) : les deux fonds A/B ne
           // diffèrent que par la teinte, donc l'information disparaissait en niveaux de gris, en
           // daltonisme rouge-vert et en contraste forcé. Bas-gauche : les autres coins sont pris
-          // (vacances bas-droite, activité bas-centre, famille liée bas-droite). Miroir du web
+          // (vacances bas-droite, activités bas-centre, famille liée haut-droite). Miroir du web
           // (`.garde-day__parent`).
           if (inMonth && slot != null)
             Align(
@@ -547,47 +613,95 @@ class _DayCell extends ConsumerWidget {
                 color: AppColors.catSchool,
               ),
             ),
-          // U-09 : pastille d'activité (événement de la famille active), bas-centre.
-          if (hasActivity)
-            const Align(
+          // U-09 : pastilles d'activité, bas-centre, **colorées par catégorie** (§8)
+          // comme les tuiles de l'agenda et les pastilles du planning web — un point
+          // gris unique ne disait ni combien d'activités ni de quelle nature.
+          // Trois au plus : au-delà, la case de ~45 px ne les distinguerait plus.
+          if (activities.isNotEmpty)
+            Align(
               alignment: Alignment.bottomCenter,
               child: Padding(
-                padding: EdgeInsets.only(bottom: 1),
-                child: _ActivityDot(),
+                padding: const EdgeInsets.only(bottom: 1),
+                child: Row(
+                  key: ValueKey('activity-dots-$dateKey'),
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final e in activities.take(3))
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 0.5),
+                        child: _ActivityDot(
+                          color: agendaCategoryColor(e.category),
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
-          // U-11 : marqueur famille liée (overlay §3.3) = anneau bas-droite.
+          // U-11 : marqueur famille liée (overlay §3.3) = anneau HAUT-droite.
+          // Il était peint bas-droite, par-dessus l'icône de vacances qui y vit déjà
+          // (constat C34) : deux marqueurs distincts ne peuvent pas partager un coin.
           if (hasOverlay)
             Align(
-              alignment: Alignment.bottomRight,
+              alignment: Alignment.topRight,
               child: _OverlayDot(key: ValueKey('overlay-dot-$dateKey')),
             ),
         ],
       ),
     );
 
-    if (!inMonth || slot == null) {
+    if (!inMonth) {
       return cell;
     }
 
-    return InkWell(
-      key: ValueKey('garde-day-$dateKey'),
-      borderRadius: BorderRadius.circular(12),
-      onTap: () => _openDetail(context, ref),
-      child: cell,
+    // cdc §8.1 : « le marqueur est aria-hidden — les lecteurs d'écran reçoivent le
+    // NOM EN CLAIR, jamais l'initiale seule », sur web comme sur mobile. La case
+    // n'était enveloppée d'aucun `Semantics` (il n'y en avait aucun dans toute
+    // l'app) : VoiceOver/TalkBack annonçaient « 23, So » (constat C55).
+    // `excludeSemantics` joue le rôle de l'`aria-hidden` du gabarit web.
+    final markers = ref.watch(parentMarkersProvider);
+    final name = slot == null
+        ? null
+        : (markers.nameForSlot(slot!).isNotEmpty
+              ? markers.nameForSlot(slot!)
+              : (slot == 'A' ? l.custodyParentA : l.custodyParentB));
+    final dayDate = CivilDate.of(dateKey);
+    final dateLabel = dayDate == null
+        ? dateKey
+        : DateLabels.longDate(l.localeName, dayDate);
+    final semantics = <String>[
+      name == null ? dateLabel : l.custodyDaySemantics(dateLabel, name),
+      if (day?.source == 'exception') l.custodyExceptional,
+      if (day?.source == 'holiday') l.custodyHoliday,
+      if (activities.isNotEmpty) l.custodyActivity,
+    ].join(', ');
+
+    return Semantics(
+      button: true,
+      label: semantics,
+      excludeSemantics: true,
+      child: InkWell(
+        key: ValueKey('garde-day-$dateKey'),
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _openDetail(context),
+        child: cell,
+      ),
     );
   }
 
-  void _openDetail(BuildContext context, WidgetRef ref) {
+  void _openDetail(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
-      builder: (_) => CustodyDayDetail(date: dateKey, slot: slot!, day: day!),
+      isScrollControlled: true,
+      builder: (_) => CustodyDaySheet(date: dateKey),
     );
   }
 }
 
 class _Legend extends ConsumerWidget {
-  const _Legend();
+  const _Legend({this.showActivity = true});
+
+  /// La pastille d'activité n'est expliquée que si elle peut apparaître (droit `agenda`).
+  final bool showActivity;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -623,7 +737,8 @@ class _Legend extends ConsumerWidget {
           icon: Icons.beach_access,
         ),
         // U-09 : pastille d'activité.
-        _LegendItem(color: AppColors.ink3, label: l.custodyActivity),
+        if (showActivity)
+          _LegendItem(color: AppColors.ink3, label: l.custodyActivity),
         // U-11 : famille liée = anneau.
         _LegendItem(
           color: AppColors.linked,
@@ -652,19 +767,18 @@ class _OverlayDot extends StatelessWidget {
   }
 }
 
-/// U-09 : pastille pleine d'activité (événement de la famille active).
+/// U-09 : pastille pleine d'activité, à la couleur de sa catégorie (§8).
 class _ActivityDot extends StatelessWidget {
-  const _ActivityDot();
+  const _ActivityDot({this.color = AppColors.ink3});
+
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 5,
       height: 5,
-      decoration: const BoxDecoration(
-        color: AppColors.ink3,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }
@@ -876,11 +990,17 @@ class _RuleBanner extends StatelessWidget {
 
   static const _weekdayKeys = <int>[0, 1, 2, 3, 4, 5, 6];
 
+  /// Le bandeau testait `'223'`, valeur qui n'existe nulle part : l'énumération
+  /// serveur vaut `pattern_2_2_3`, et l'écran de réglages envoie déjà cette
+  /// valeur-là. Un rythme 2-2-3 (ou `midweek_weekends`) tombait donc dans la branche
+  /// par défaut et affichait sa **clé technique** à l'utilisateur (constat C28).
   String _kindLabel(AppL10n l) => switch (pattern.kind) {
     'alternating' => l.custodyKindAlternating,
-    '223' => l.custodyKind223,
+    'pattern_2_2_3' => l.custodyKind223,
+    'midweek_weekends' => l.custodyKindMidweek,
     'custom' => l.custodyKindCustom,
-    _ => pattern.kind,
+    // Repli localisé : ne jamais laisser fuir une valeur d'énumération à l'écran.
+    _ => l.custodyKindUnknown,
   };
 
   String _weekday(AppL10n l) {
@@ -927,14 +1047,29 @@ class _RuleBanner extends StatelessWidget {
   }
 }
 
-/// U-03 : période spéciale (vacances) en carte autonome + barre de répartition A/B.
+/// U-03 : période spéciale (vacances) en carte autonome.
 class _HolidayCard extends StatelessWidget {
   const _HolidayCard({required this.holiday});
 
   final api.SchoolHoliday holiday;
 
+  /// Genre de règle nommé plutôt que sa valeur d'énumération : la carte affichait
+  /// `eve_alternating` tel quel (constat C31). Dictionnaire jumeau de celui du
+  /// gabarit web (`garde.html.twig`).
+  static String? ruleLabel(AppL10n l, String? kind) => switch (kind) {
+    'alternating_weeks' => l.holidayRuleAlternatingWeeks,
+    'split_50_50' => l.holidayRuleSplit5050,
+    'fixed_parent' => l.holidayRuleFixedParent,
+    'eve_alternating' => l.holidayRuleEveAlternating,
+    'custom' => l.holidayRuleCustom,
+    _ => null,
+  };
+
   @override
   Widget build(BuildContext context) {
+    final l = AppL10n.of(context);
+    final rule = ruleLabel(l, holiday.ruleKind);
+
     return AppCard(
       radius: 16,
       padding: const EdgeInsets.all(14),
@@ -950,38 +1085,23 @@ class _HolidayCard extends StatelessWidget {
                 ),
               ),
               Text(
-                '${holiday.startDate} → ${holiday.endDate}',
+                DateLabels.isoRange(
+                  l.localeName,
+                  holiday.startDate,
+                  holiday.endDate,
+                ),
                 style: const TextStyle(fontSize: 12.5, color: AppColors.muted),
               ),
             ],
           ),
-          if (holiday.ruleKind != null && holiday.ruleKind!.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              holiday.ruleKind!,
-              style: const TextStyle(fontSize: 12.5, color: AppColors.muted2),
-            ),
-          ],
-          const SizedBox(height: 10),
-          // Barre de répartition A/B (illustration du partage de la période).
-          ClipRRect(
-            borderRadius: BorderRadius.circular(5),
-            child: const Row(
-              children: [
-                Expanded(
-                  child: ColoredBox(
-                    color: AppColors.accent,
-                    child: SizedBox(height: 8),
-                  ),
-                ),
-                Expanded(
-                  child: ColoredBox(
-                    color: AppColors.positive,
-                    child: SizedBox(height: 8),
-                  ),
-                ),
-              ],
-            ),
+          const SizedBox(height: 4),
+          // La barre A/B décorative a été retirée : deux `Expanded` donnaient
+          // TOUJOURS un 50/50, ce qui laissait croire à un partage défini là où
+          // aucune règle n'existe, et contredisait une période attribuée en entier à
+          // un seul parent (`fixed_parent`). Même décision que côté web (constat C30).
+          Text(
+            rule ?? l.custodyHolidayNoRule,
+            style: const TextStyle(fontSize: 12.5, color: AppColors.muted2),
           ),
         ],
       ),
@@ -989,14 +1109,21 @@ class _HolidayCard extends StatelessWidget {
   }
 }
 
-class _Stats extends StatelessWidget {
+class _Stats extends ConsumerWidget {
   const _Stats({required this.stats});
 
   final api.CustodyStats stats;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = AppL10n.of(context);
+    // Les vrais noms, comme la légende juste au-dessus et comme les tuiles de stats
+    // du web : l'écran annonçait « Parent A · 16 jours » sous une légende qui disait
+    // « Sophie » (constat C32).
+    final markers = ref.watch(parentMarkersProvider);
+    final nameA = markers.nameA.isNotEmpty ? markers.nameA : l.custodyParentA;
+    final nameB = markers.nameB.isNotEmpty ? markers.nameB : l.custodyParentB;
+
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1004,11 +1131,11 @@ class _Stats extends StatelessWidget {
           Text(l.custodyStatsTitle.toUpperCase(), style: AppTypography.eyebrow),
           const SizedBox(height: 10),
           Text(
-            '${l.custodyParentA} · ${l.custodyStatsDays(stats.parentACount)} (${stats.pctA} %)',
+            '$nameA · ${l.custodyStatsDays(stats.parentACount)} (${stats.pctA} %)',
           ),
           const SizedBox(height: 4),
           Text(
-            '${l.custodyParentB} · ${l.custodyStatsDays(stats.parentBCount)} (${stats.pctB} %)',
+            '$nameB · ${l.custodyStatsDays(stats.parentBCount)} (${stats.pctB} %)',
           ),
         ],
       ),
@@ -1030,72 +1157,103 @@ class _ExceptionTile extends ConsumerWidget {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       dense: true,
-      title: Text('${exception.startDate} → ${exception.endDate}'),
-      subtitle: subtitle != null && subtitle.isNotEmpty ? Text(subtitle) : null,
-      trailing: IconButton(
-        icon: const Icon(Icons.delete_outline, color: AppColors.error),
-        tooltip: l.custodyDelete,
-        onPressed: family == null
-            ? null
-            : () async {
-                final messenger = ScaffoldMessenger.of(context);
-                try {
-                  await ref
-                      .read(custodyRepositoryProvider)
-                      .deleteException(family.familyId, exception.id);
-                  ref.invalidate(familyCustodyExceptionsProvider);
-                  ref.invalidate(familyCustodyDaysProvider);
-                  ref.invalidate(familyCustodyStatsProvider);
-                  messenger.showSnackBar(
-                    SnackBar(content: Text(l.custodyExceptionDeleted)),
-                  );
-                } on ApiException catch (e) {
-                  messenger.showSnackBar(SnackBar(content: Text(e.message)));
-                }
-              },
+      title: Text(
+        DateLabels.isoRange(
+          l.localeName,
+          exception.startDate,
+          exception.endDate,
+        ),
       ),
+      subtitle: subtitle != null && subtitle.isNotEmpty ? Text(subtitle) : null,
+      // Supprimer une exception est une mutation : sans `custody:edit` la corbeille
+      // n'est plus offerte du tout (elle menait à un 403 — constat C29).
+      trailing: !ref.watch(custodyCanEditProvider)
+          ? null
+          : IconButton(
+              icon: const Icon(Icons.delete_outline, color: AppColors.error),
+              tooltip: l.custodyDelete,
+              onPressed: family == null
+                  ? null
+                  : () async {
+                      final messenger = ScaffoldMessenger.of(context);
+                      try {
+                        await ref
+                            .read(custodyRepositoryProvider)
+                            .deleteException(family.familyId, exception.id);
+                        ref.invalidate(familyCustodyExceptionsProvider);
+                        ref.invalidate(familyCustodyDaysProvider);
+                        ref.invalidate(familyCustodyStatsProvider);
+                        messenger.showSnackBar(
+                          SnackBar(content: Text(l.custodyExceptionDeleted)),
+                        );
+                      } on ApiException catch (e) {
+                        messenger.showSnackBar(
+                          SnackBar(content: Text(e.message)),
+                        );
+                      }
+                    },
+            ),
     );
   }
 }
 
-/// Détail d'un jour + « Échanger ce jour » (crée une exception d'un jour vers
-/// l'autre parent). Le parent cible est déduit du rythme (slot A↔B).
-class CustodyDayDetail extends ConsumerStatefulWidget {
-  const CustodyDayDetail({
-    super.key,
-    required this.date,
-    required this.slot,
-    required this.day,
-  });
+/// Feuille de détail d'un jour (US-CUST-6), transposition mobile du fragment web
+/// `_garde_day.html.twig` : parent **en clair**, origine de l'attribution, phrase de
+/// transmission, activités du jour, puis les actions sous `custody:edit`.
+///
+/// Elle n'affichait que la date ISO brute, « Confié à : Parent A » et la source —
+/// ni le nom que la légende affiche pourtant, ni l'heure de retour, qui est
+/// l'information qu'on vient y chercher (constats C32, C55, C58).
+class CustodyDaySheet extends ConsumerStatefulWidget {
+  const CustodyDaySheet({super.key, required this.date});
 
+  /// Jour consulté, en date civile `AAAA-MM-JJ`.
   final String date;
-  final String slot;
-  final api.CustodyDay day;
 
   @override
-  ConsumerState<CustodyDayDetail> createState() => _CustodyDayDetailState();
+  ConsumerState<CustodyDaySheet> createState() => _CustodyDaySheetState();
 }
 
-class _CustodyDayDetailState extends ConsumerState<CustodyDayDetail> {
+class _CustodyDaySheetState extends ConsumerState<CustodyDaySheet> {
   bool _busy = false;
   String? _error;
 
-  String _sourceLabel(AppL10n l) => switch (widget.day.source) {
-    'exception' => l.custodySourceException,
-    'holiday' => l.custodySourceHoliday,
-    _ => l.custodySourceBase,
-  };
+  /// Origine de l'attribution, dans la priorité du moteur (exception > vacances >
+  /// base) : l'écran ne doit jamais expliquer un jour autrement que le moteur.
+  String _originLabel(AppL10n l, CustodyDayDetail detail) {
+    final source = detail.day?.source;
+    if (source == null) return l.custodyDayUnplanned;
+    if (source == 'exception') {
+      final reason = detail.exception?.reason;
+      return reason == null || reason.isEmpty
+          ? l.custodySourceException
+          : '${l.custodySourceException} · $reason';
+    }
+    if (source == 'holiday') {
+      final holiday = detail.holiday;
+      final label = holiday?.label ?? l.custodySourceHoliday;
+      final rule = _HolidayCard.ruleLabel(l, holiday?.ruleKind);
+      return rule == null ? label : '$label · $rule';
+    }
+    // Une période de vacances SANS règle laisse le rythme s'appliquer : le dire ici
+    // évite de croire à une erreur en voyant l'icône « vacances » sur la case.
+    final holiday = detail.holiday;
+    return holiday == null
+        ? l.custodyRuleHabitual
+        : '${l.custodyRuleHabitual} · ${l.custodyRuleDuring(holiday.label)}';
+  }
 
-  Future<void> _swap() async {
+  Future<void> _swap(String slot) async {
     final family = ref.read(familyContextProvider);
     final pattern = ref.read(familyCustodyPatternProvider).value;
     if (family == null || pattern == null) return;
     // Slot courant A → cible = parent B, et inversement.
-    final target = widget.slot == 'A'
+    final target = slot == 'A'
         ? pattern.parentBMembershipId
         : pattern.parentAMembershipId;
+    final l = AppL10n.of(context);
     if (target == null) {
-      setState(() => _error = AppL10n.of(context).custodySwapUnavailable);
+      setState(() => _error = l.custodySwapUnavailable);
       return;
     }
 
@@ -1105,7 +1263,8 @@ class _CustodyDayDetailState extends ConsumerState<CustodyDayDetail> {
     });
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
-    final swappedMsg = AppL10n.of(context).custodySwapped;
+    final swappedMsg = l.custodySwapped;
+    final reason = l.custodySwapReason;
     try {
       await ref
           .read(custodyRepositoryProvider)
@@ -1114,7 +1273,7 @@ class _CustodyDayDetailState extends ConsumerState<CustodyDayDetail> {
             startDate: widget.date,
             endDate: widget.date,
             parentMembershipId: target,
-            reason: 'Échange',
+            reason: reason,
           );
       ref.invalidate(familyCustodyDaysProvider);
       ref.invalidate(familyCustodyStatsProvider);
@@ -1133,6 +1292,9 @@ class _CustodyDayDetailState extends ConsumerState<CustodyDayDetail> {
   @override
   Widget build(BuildContext context) {
     final l = AppL10n.of(context);
+    final detailAsync = ref.watch(custodyDayDetailProvider(widget.date));
+    final date = CivilDate.of(widget.date);
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -1142,26 +1304,252 @@ class _CustodyDayDetailState extends ConsumerState<CustodyDayDetail> {
           children: [
             Text(l.custodyDayDetailTitle, style: AppTypography.eyebrow),
             const SizedBox(height: 8),
-            Text(widget.date, style: AppTypography.textTheme.titleLarge),
-            const SizedBox(height: 8),
             Text(
-              '${l.custodyAssignedTo} : ${widget.slot == 'A' ? l.custodyParentA : l.custodyParentB}',
+              date == null
+                  ? widget.date
+                  : DateLabels.longDate(l.localeName, date),
+              key: const ValueKey('custody-day-title'),
+              style: AppTypography.textTheme.titleLarge,
             ),
-            Text('${l.custodySource} : ${_sourceLabel(l)}'),
-            const SizedBox(height: 16),
-            if (_error != null) ...[
-              ErrorBanner(_error!),
-              const SizedBox(height: 12),
-            ],
-            FilledButton.icon(
-              key: const ValueKey('custody-swap-day'),
-              onPressed: _busy ? null : _swap,
-              icon: const Icon(Icons.swap_horiz),
-              label: Text(l.custodySwapDay),
+            const SizedBox(height: 12),
+            detailAsync.when(
+              loading: () => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (e, _) =>
+                  ErrorBanner(e is ApiException ? e.message : e.toString()),
+              data: (detail) => _body(l, detail),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _body(AppL10n l, CustodyDayDetail detail) {
+    final markers = ref.watch(parentMarkersProvider);
+    final slot = detail.slot;
+    final canEdit = ref.watch(custodyCanEditProvider);
+    final canSeeAgenda = ref.watch(agendaCanViewProvider);
+
+    String nameOf(String s) {
+      final name = markers.nameForSlot(s);
+      return name.isNotEmpty
+          ? name
+          : (s == 'A' ? l.custodyParentA : l.custodyParentB);
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _originLabel(l, detail),
+          style: const TextStyle(fontSize: 13, color: AppColors.muted),
+        ),
+        const SizedBox(height: 14),
+        if (slot == null)
+          Text(l.custodyDayUnassigned)
+        else ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // L'initiale reprend le marqueur des cases (cdc §8.1) : le même parent
+              // porte le même marqueur partout, et il reste lisible sans la couleur.
+              Container(
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: slot == 'A'
+                      ? AppColors.accentSoft2
+                      : AppColors.positiveSoft,
+                  borderRadius: BorderRadius.circular(11),
+                  border: Border.all(
+                    color: slot == 'A' ? AppColors.accent : AppColors.positive,
+                  ),
+                ),
+                child: Text(
+                  markers.markerForSlot(slot),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink2,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l.custodyAtParent, style: AppTypography.eyebrow),
+                    Text(
+                      nameOf(slot),
+                      key: const ValueKey('custody-day-parent'),
+                      style: AppTypography.textTheme.bodyLarge,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          // « Retour chez {Parent} le {date} à {heure} » (US-CUST-6), dérivée des
+          // jours **matérialisés** qui suivent. En bout d'horizon glissant aucun
+          // changement ne suit : la phrase est alors omise plutôt qu'inventée.
+          if (detail.hasHandover) ...[
+            const SizedBox(height: 8),
+            Text(
+              l.custodyHandover(
+                nameOf(detail.handoverSlot!),
+                DateLabels.isoDayMonthYear(l.localeName, detail.handoverDate!),
+                detail.handoverTime!,
+              ),
+              key: const ValueKey('custody-day-handover'),
+              style: const TextStyle(fontSize: 13, color: AppColors.label),
+            ),
+          ],
+        ],
+        // Activités du jour — domaine `agenda`. Section omise sans le droit : son
+        // état vide dirait déjà s'il y a ou non des activités, information que ce
+        // membre n'a pas à obtenir par cet écran.
+        if (canSeeAgenda) ...[
+          const SizedBox(height: 18),
+          Text(l.custodyDayActivities, style: AppTypography.eyebrow),
+          const SizedBox(height: 6),
+          _DayActivities(date: widget.date),
+        ],
+        if (_error != null) ...[
+          const SizedBox(height: 12),
+          ErrorBanner(_error!),
+        ],
+        // Actions : `custody:edit` seulement (US-CUST-6, « je vois l'info mais pas
+        // les actions d'édition »).
+        if (canEdit) ...[
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              if (slot != null)
+                Expanded(
+                  child: Tooltip(
+                    message: detail.isPast ? l.custodyPastNoSwap : '',
+                    child: FilledButton.icon(
+                      key: const ValueKey('custody-swap-day'),
+                      // L'API refuse une exception rétroactive (422) : le bouton est
+                      // présenté inerte avec sa raison, plutôt que d'offrir une
+                      // action qui échoue.
+                      onPressed: _busy || detail.isPast
+                          ? null
+                          : () => _swap(slot),
+                      icon: const Icon(Icons.swap_horiz),
+                      label: Text(l.custodySwapDay),
+                    ),
+                  ),
+                ),
+              if (slot != null) const SizedBox(width: 10),
+              OutlinedButton(
+                key: const ValueKey('custody-day-settings'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const CustodySettingsScreen(),
+                    ),
+                  );
+                },
+                child: Text(l.custodyEditPattern),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Activités couvrant le jour affiché, dans l'ordre du serveur (journée entière
+/// d'abord, puis l'heure). Même index que les pastilles des cases : un jour n'a pas
+/// à afficher ici une activité que sa case ne montrait pas.
+class _DayActivities extends ConsumerWidget {
+  const _DayActivities({required this.date});
+
+  final String date;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppL10n.of(context);
+
+    return ref
+        .watch(custodyMonthActivitiesProvider)
+        .maybeWhen(
+          data: (byDate) {
+            final events = byDate[date] ?? const <api.Event>[];
+            if (events.isEmpty) {
+              return Text(
+                l.custodyDayActivitiesEmpty,
+                style: const TextStyle(fontSize: 13, color: AppColors.muted),
+              );
+            }
+
+            return Column(
+              key: const ValueKey('custody-day-events'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final e in events)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 3,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            color: agendaCategoryColor(e.category),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                e.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 13.5),
+                              ),
+                              Text(
+                                _timeLabel(l, e),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.muted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // La catégorie est NOMMÉE, pas seulement colorée : la barre de
+                        // gauche ne survit ni aux niveaux de gris ni au contraste forcé
+                        // (cdc §8.1, même raison que le marqueur A/B).
+                        CategoryPill(category: e.category),
+                      ],
+                    ),
+                  ),
+              ],
+            );
+          },
+          orElse: () => const SizedBox.shrink(),
+        );
+  }
+
+  String _timeLabel(AppL10n l, api.Event e) {
+    if (e.allDay) return l.custodyAllDay;
+    final start = CivilDate.hm(e.startsAt);
+    final end = e.endsAt == null ? '' : CivilDate.hm(e.endsAt!);
+    return end.isEmpty ? start : '$start – $end';
   }
 }

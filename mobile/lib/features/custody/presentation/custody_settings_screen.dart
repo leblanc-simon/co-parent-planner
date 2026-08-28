@@ -12,8 +12,13 @@ import '../../members/data/members_repository.dart';
 import '../data/custody_repository.dart';
 
 /// US-CUST-1/2/9 + US-SET-3 — Paramètres › Garde : builder de rythme (dont
-/// `custom` 14 nuits), jour/heure d'échange, parents A/B ; import des vacances
-/// officielles. Réservé au droit `custody:edit`.
+/// `custom` 14 nuits et `midweek_weekends`), jour/heure d'échange, parents A/B ;
+/// import des vacances officielles. Réservé au droit `custody:edit`.
+///
+/// Le modèle `midweek_weekends` manquait au sélecteur alors que le serveur le connaît
+/// et que le web permet de le choisir : une famille ainsi configurée voyait un champ
+/// « Modèle » vide, et toute sauvegarde partait sans le bloc `settings` que le serveur
+/// exige pour ce modèle — 422 systématique (revue mobile 2026-08, constat C26).
 class CustodySettingsScreen extends ConsumerStatefulWidget {
   const CustodySettingsScreen({super.key});
 
@@ -23,6 +28,14 @@ class CustodySettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
+  /// Modèles éditables par cet écran — miroir de `CustodyPatternKind` côté serveur.
+  static const _kinds = {
+    'alternating',
+    'pattern_2_2_3',
+    'midweek_weekends',
+    'custom',
+  };
+
   bool _initialized = false;
   bool _saving = false;
   String? _error;
@@ -35,13 +48,23 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
   String? _parentB;
   List<String> _custom = List.filled(14, 'A');
 
+  /// Réglages de `midweek_weekends`, dans la convention serveur (0 = dimanche) :
+  /// jours de week-end alternés, et parent fixe de chaque jour de semaine restant.
+  /// Défauts alignés sur le formulaire web (`settings.html.twig`).
+  Set<int> _weekendDays = {6, 0};
+  Map<int, String> _weekdayParents = {1: 'A', 2: 'A', 3: 'B', 4: 'B', 5: 'B'};
+  String _weekendStart = 'A';
+
   void _prefill(api.CustodyPattern? pattern, List<api.Member> parents) {
     if (_initialized) return;
     // Défaut d'un premier rythme : aujourd'hui (jamais une date d'application codée en dur).
     final now = DateTime.now();
     _anchor = DateTime(now.year, now.month, now.day);
     if (pattern != null) {
-      _kind = pattern.kind;
+      // Jamais une valeur absente des items du sélecteur : `DropdownButtonFormField`
+      // lève alors une assertion en debug et affiche un champ vide en release. C'est
+      // ce qui arrivait à `midweek_weekends` ; le repli protège des modèles futurs.
+      _kind = _kinds.contains(pattern.kind) ? pattern.kind : 'alternating';
       if (pattern.anchorDate != null) {
         _anchor = DateTime.parse(pattern.anchorDate!);
       }
@@ -59,11 +82,56 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
           pattern.customPattern!.length == 14) {
         _custom = List.of(pattern.customPattern!);
       }
+      _prefillMidweek(pattern.settings);
     }
     // Défauts : deux premiers parents distincts.
     _parentA ??= parents.isNotEmpty ? parents.first.id : null;
     _parentB ??= parents.length > 1 ? parents[1].id : null;
     _initialized = true;
+  }
+
+  /// Relit les `settings` du serveur, typés `dynamic` au contrat (objet libre dont
+  /// la forme est validée côté serveur). Toute valeur inattendue laisse simplement
+  /// les défauts en place : un rythme mal formé ne doit pas rendre l'écran inutilisable.
+  void _prefillMidweek(Object? settings) {
+    if (settings is! Map) return;
+    final weekend = settings['weekend_days'];
+    if (weekend is List) {
+      final parsed = <int>{
+        for (final d in weekend)
+          if (int.tryParse('$d') case final v?)
+            if (v >= 0 && v <= 6) v,
+      };
+      if (parsed.isNotEmpty && parsed.length <= 3) _weekendDays = parsed;
+    }
+    final parents = settings['weekday_parents'];
+    if (parents is Map) {
+      final parsed = <int, String>{
+        for (final entry in parents.entries)
+          if (int.tryParse('${entry.key}') case final day?)
+            if (entry.value == 'A' || entry.value == 'B') day: '${entry.value}',
+      };
+      if (parsed.isNotEmpty) _weekdayParents = parsed;
+    }
+    final start = settings['weekend_start_parent'];
+    if (start == 'A' || start == 'B') _weekendStart = '$start';
+  }
+
+  /// Bloc `settings` du contrat, reconstruit à l'enregistrement.
+  ///
+  /// Les jours de semaine non week-end doivent être couverts **exactement** (ni
+  /// manquant, ni en trop) : le serveur refuse sinon en `custody.error.settings_invalid`.
+  /// On les dérive donc des jours de week-end plutôt que de recopier la carte éditée.
+  Map<String, Object?> _midweekSettings() {
+    final weekend = _weekendDays.toList()..sort();
+    return {
+      'weekend_days': weekend,
+      'weekday_parents': {
+        for (var d = 0; d <= 6; d++)
+          if (!_weekendDays.contains(d)) '$d': _weekdayParents[d] ?? 'A',
+      },
+      'weekend_start_parent': _weekendStart,
+    };
   }
 
   String _fmtDate(DateTime d) =>
@@ -78,6 +146,13 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
     // Deux parents distincts requis (famille avec un seul parent, ou même choix des deux côtés).
     if (_parentA == null || _parentB == null || _parentA == _parentB) {
       setState(() => _error = AppL10n.of(context).custodyParentsRequired);
+      return;
+    }
+    // Contrainte serveur reproduite ici : un à trois jours de week-end. La signaler
+    // avant l'envoi vaut mieux qu'un 422 « settings_invalid » sans repère à l'écran.
+    if (_kind == 'midweek_weekends' &&
+        (_weekendDays.isEmpty || _weekendDays.length > 3)) {
+      setState(() => _error = AppL10n.of(context).custodyMidweekInvalid);
       return;
     }
     setState(() {
@@ -99,6 +174,9 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
             parentAMembershipId: _parentA!,
             parentBMembershipId: _parentB!,
             customPattern: _kind == 'custom' ? _custom : null,
+            // `settings` n'est accepté QUE pour ce modèle : l'envoyer ailleurs vaut
+            // un `custody.error.config_conflict`.
+            settings: _kind == 'midweek_weekends' ? _midweekSettings() : null,
           );
       ref.invalidate(familyCustodyPatternProvider);
       ref.invalidate(familyCustodyDaysProvider);
@@ -170,6 +248,10 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
             DropdownMenuItem(
               value: 'pattern_2_2_3',
               child: Text(l.custodyKind223),
+            ),
+            DropdownMenuItem(
+              value: 'midweek_weekends',
+              child: Text(l.custodyKindMidweek),
             ),
             DropdownMenuItem(value: 'custom', child: Text(l.custodyKindCustom)),
           ],
@@ -246,6 +328,43 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
             children: [for (var i = 0; i < 14; i++) _customChip(i)],
           ),
         ],
+        if (_kind == 'midweek_weekends') ...[
+          const SizedBox(height: 16),
+          Text(l.custodyMidweekTitle, style: AppTypography.eyebrow),
+          const SizedBox(height: 4),
+          Text(
+            l.custodyMidweekHint,
+            style: const TextStyle(fontSize: 12.5, color: AppColors.muted),
+          ),
+          const SizedBox(height: 8),
+          // Semaine affichée lundi → dimanche comme le calendrier, alors que la
+          // convention serveur numérote à partir du dimanche.
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final d in [1, 2, 3, 4, 5, 6, 0]) _midweekChip(l, d),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(l.custodyWeekendStart, style: AppTypography.eyebrow),
+          const SizedBox(height: 6),
+          SegmentedButton<String>(
+            key: const ValueKey('custody-weekend-start'),
+            segments: [
+              ButtonSegment(
+                value: 'A',
+                label: Text(_parentName(parents, _parentA, l.custodyParentA)),
+              ),
+              ButtonSegment(
+                value: 'B',
+                label: Text(_parentName(parents, _parentB, l.custodyParentB)),
+              ),
+            ],
+            selected: {_weekendStart},
+            onSelectionChanged: (v) => setState(() => _weekendStart = v.first),
+          ),
+        ],
         const SizedBox(height: 24),
         FilledButton(
           key: const ValueKey('custody-save'),
@@ -260,6 +379,84 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
           ),
         ],
       ],
+    );
+  }
+
+  /// Nom d'un parent choisi, ou son libellé générique tant qu'il n'est pas résolu.
+  String _parentName(List<api.Member> parents, String? id, String fallback) {
+    for (final m in parents) {
+      if (m.id == id) {
+        return (m.fullName?.isNotEmpty ?? false)
+            ? m.fullName!
+            : (m.email ?? fallback);
+      }
+    }
+
+    return fallback;
+  }
+
+  /// Un jour de la semaine dans le rythme « milieu de semaine + week-ends » : il
+  /// cycle parent A → parent B → week-end alterné, comme sur le web.
+  Widget _midweekChip(AppL10n l, int day) {
+    final labels = <int, String>{
+      0: l.weekdaySunday,
+      1: l.weekdayMonday,
+      2: l.weekdayTuesday,
+      3: l.weekdayWednesday,
+      4: l.weekdayThursday,
+      5: l.weekdayFriday,
+      6: l.weekdaySaturday,
+    };
+    final isWeekend = _weekendDays.contains(day);
+    final slot = isWeekend ? null : (_weekdayParents[day] ?? 'A');
+    final (fg, bg, border) = switch (slot) {
+      'A' => (AppColors.accentStrong, AppColors.accentSoft2, AppColors.accent),
+      'B' => (
+        AppColors.positiveStrong,
+        AppColors.positiveSoft,
+        AppColors.positive,
+      ),
+      _ => (AppColors.ink2, AppColors.card, AppColors.border2),
+    };
+
+    return InkWell(
+      key: ValueKey('custody-mw-$day'),
+      borderRadius: BorderRadius.circular(10),
+      onTap: () => setState(() {
+        // A → B → week-end → A
+        if (isWeekend) {
+          _weekendDays.remove(day);
+          _weekdayParents[day] = 'A';
+        } else if (_weekdayParents[day] == 'B') {
+          _weekendDays.add(day);
+        } else {
+          _weekdayParents[day] = 'B';
+        }
+      }),
+      child: Container(
+        width: 46,
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: border),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              labels[day]!.substring(0, 3).toUpperCase(),
+              style: const TextStyle(fontSize: 10, color: AppColors.muted),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              slot ?? l.custodyWeekend.substring(0, 2).toUpperCase(),
+              style: TextStyle(fontWeight: FontWeight.w700, color: fg),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

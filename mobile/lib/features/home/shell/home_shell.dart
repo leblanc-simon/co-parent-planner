@@ -1,34 +1,76 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/liquid_glass.dart';
 import '../../../core/widgets/offline_banner.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../family/application/family_context.dart';
+import '../../members/data/members_repository.dart';
 
 /// Shell a onglets (US-HOME-1). `StatefulShellRoute.indexedStack` conserve
 /// l'etat de chaque onglet. Barre « liquid glass » (verre sur iOS, opaque crème
 /// sur Android).
-class HomeShell extends StatelessWidget {
+class HomeShell extends ConsumerWidget {
   const HomeShell({required this.navigationShell, super.key});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = AppL10n.of(context);
     final isIos = Theme.of(context).platform == TargetPlatform.iOS;
+    final family = ref.watch(familyContextProvider);
+    // Un onglet n'est masqué que sur un refus **explicite** : le serveur renvoie
+    // toujours les six domaines avec leur niveau, donc l'absence de valeur signifie
+    // « pas encore chargé » (ou membres injoignables hors-ligne), jamais « refusé ».
+    // Masquer dans ce cas ferait clignoter la barre au démarrage et la viderait de
+    // ses onglets hors-ligne. Les boutons de mutation appliquent la règle inverse :
+    // masqués tant que le droit n'est pas confirmé, un 403 étant pire qu'une action
+    // qui apparaît un instant plus tard.
+    bool mayView(String domain) => ref.watch(rightProvider(domain)) != 'none';
     // Composition maquette (SHELL-03) : Accueil · Garde · Agenda · Enfants.
     // L'accès aux Paramètres passe par l'engrenage d'en-tête de l'accueil (U1-03),
-    // plus d'onglet Réglages. L'onglet Garde reste présent même pour une famille
-    // unie (l'écran affiche alors l'état « famille réunie ») : le nombre de branches
-    // de l'indexedStack doit rester stable.
-    final items = [
-      (icon: Icons.home_outlined, label: l.tabHome),
-      (icon: Icons.calendar_today_outlined, label: l.tabCustody),
-      (icon: Icons.view_agenda_outlined, label: l.tabAgenda),
-      (icon: Icons.people_outline, label: l.tabNotes),
-    ];
+    // plus d'onglet Réglages.
+    //
+    // Les branches de l'`indexedStack` restent au nombre de quatre — leur nombre
+    // doit être stable — mais un onglet dont l'écran ne peut rien montrer n'est plus
+    // rendu : la spec impose de masquer Garde pour une famille **unie** (« l'onglet
+    // est absent côté UI », web ET mobile) et le web masque en plus tout onglet dont
+    // le domaine est refusé. Un bouton qui ne mène qu'à un écran de refus n'informe
+    // personne (revue mobile 2026-08, constat C33 ; revue web 6.12).
+    final items =
+        <({int branch, IconData icon, String label, bool visible})>[
+              (
+                branch: 0,
+                icon: Icons.home_outlined,
+                label: l.tabHome,
+                visible: true,
+              ),
+              (
+                branch: 1,
+                icon: Icons.calendar_today_outlined,
+                label: l.tabCustody,
+                // Le type de famille, lui, est connu localement et sans délai.
+                visible:
+                    family != null && !family.isIntact && mayView('custody'),
+              ),
+              (
+                branch: 2,
+                icon: Icons.view_agenda_outlined,
+                label: l.tabAgenda,
+                visible: mayView('agenda'),
+              ),
+              (
+                branch: 3,
+                icon: Icons.people_outline,
+                label: l.tabNotes,
+                visible: mayView('children_notes'),
+              ),
+            ]
+            .where((i) => i.visible || i.branch == navigationShell.currentIndex)
+            .toList();
 
     return Scaffold(
       body: Column(
@@ -46,16 +88,19 @@ class HomeShell extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(6, 5, 6, 0),
             child: Row(
               children: [
-                for (var i = 0; i < items.length; i++)
+                for (final item in items)
                   Expanded(
                     child: _TabItem(
-                      key: ValueKey('tab-$i'),
-                      icon: items[i].icon,
-                      label: items[i].label,
-                      selected: navigationShell.currentIndex == i,
+                      // La clé reste celle de la **branche**, pas du rang affiché :
+                      // masquer un onglet ne doit pas renommer les autres.
+                      key: ValueKey('tab-${item.branch}'),
+                      icon: item.icon,
+                      label: item.label,
+                      selected: navigationShell.currentIndex == item.branch,
                       onTap: () => navigationShell.goBranch(
-                        i,
-                        initialLocation: i == navigationShell.currentIndex,
+                        item.branch,
+                        initialLocation:
+                            item.branch == navigationShell.currentIndex,
                       ),
                     ),
                   ),

@@ -1,0 +1,25 @@
+{# Page d'erreur du front web.
+
+   `ProblemExceptionSubscriber` ne traite que `/api` : côté web, toute URL inconnue
+   ou toute erreur serveur tombait sur la page par défaut de Symfony — fond blanc,
+   « Oops! An Error Occurred », en anglais, sans le moindre chemin de retour. Les
+   liens d'e-mail périmés y aboutissaient (revue web 2026-07, constat 6.8).
+
+   Ce gabarit est l'override de `@Twig/Exception/error.html.twig` : il n'est rendu
+   qu'en environnement **non debug** (en dev, la page d'exception détaillée reste
+   affichée). `error404.html.twig` le spécialise. #}
+{% extends 'base.html.twig' %}
+{% block title %}{{ status_code }} · CoParentPlanner{% endblock %}
+{% block body %}
+<div class="auth">
+    <div class="auth__card">
+        <div class="auth__brand"><img class="auth__logo" src="{{ asset('icons/logo.png') }}" width="28" height="28" alt=""> CoParentPlanner</div>
+        <h1 class="auth__title">{% block error_title %}Une erreur est survenue{% endblock %}</h1>
+        <p class="auth__sub">{% block error_body %}
+            Le serveur n'a pas pu traiter cette demande (erreur {{ status_code }}). Réessayez dans un
+            instant ; si le problème persiste, revenez à l'accueil.
+        {% endblock %}</p>
+        <a class="btn btn--primary btn--block" href="{{ path('app_home') }}">Retour à l'accueil</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,4 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
+import { setActiveFamily } from '../family_scope.js';
 
 /*
  * Soumet un formulaire d'auth en JSON à l'API (décision D2 : le web consomme l'API ; les cookies
@@ -13,7 +14,12 @@ import { Controller } from '@hotwired/stimulus';
  */
 export default class extends Controller {
     static targets = ['error', 'notice', 'form', 'submit', 'pending'];
-    static values = { redirect: String, auto: Boolean };
+    /**
+     * `activateFamily` : la famille créée devient la famille active avant la
+     * redirection. Sans cela, créer une **seconde** famille ramenait à l'accueil de
+     * l'ancienne — le cookie de scope n'ayant pas bougé (constat 6.10).
+     */
+    static values = { redirect: String, auto: Boolean, activateFamily: Boolean };
 
     connect() {
         if (this.autoValue) {
@@ -38,11 +44,12 @@ export default class extends Controller {
             });
 
             if (response.ok) {
+                const body = await response.json().catch(() => ({}));
+                if (this.activateFamilyValue) setActiveFamily(body.id);
                 if (this.redirectValue) {
                     window.location.assign(this.redirectValue);
                     return;
                 }
-                const body = await response.json().catch(() => ({}));
                 if (this.hasNoticeTarget) {
                     this.noticeTarget.textContent = body.message || 'Opération réussie.';
                     this.noticeTarget.hidden = false;

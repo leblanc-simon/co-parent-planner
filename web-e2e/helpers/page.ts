@@ -29,3 +29,15 @@ export async function waitForScreen(page: Page): Promise<void> {
 export async function waitForSaved(page: Page): Promise<void> {
   await expect(page.locator('.form-success:visible').first()).toBeVisible({ timeout: 15_000 });
 }
+
+/**
+ * Attend le **rechargement** que `ApiController._onSuccess` déclenche après une mutation.
+ *
+ * À armer AVANT de déclencher la mutation, et à réserver aux mutations qui n'affichent aucune
+ * confirmation (bascule d'overlay) — les autres se suivent par {@link waitForSaved}. Attendre la
+ * seule réponse de l'API ne suffit pas : le rechargement part juste après, et un `goto()` enchaîné
+ * entre en collision avec lui (`net::ERR_ABORTED`).
+ */
+export function waitForReload(page: Page): Promise<unknown> {
+  return page.waitForEvent('load', { timeout: 15_000 });
+}

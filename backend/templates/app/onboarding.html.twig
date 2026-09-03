@@ -4,10 +4,15 @@
 <div class="auth">
     <div class="auth__card">
         <div class="auth__brand"><img class="auth__logo" src="{{ asset('icons/logo.png') }}" width="28" height="28" alt=""> CoParentPlanner</div>
-        <h1 class="auth__title">Bienvenue</h1>
-        <p class="auth__sub">Créez votre première famille pour commencer.</p>
+        <h1 class="auth__title">{{ hasFamilies|default(false) ? 'Nouvelle famille' : 'Bienvenue' }}</h1>
+        <p class="auth__sub">
+            {{ hasFamilies|default(false)
+                ? "Créez une seconde famille : vous basculerez de l'une à l'autre par le sélecteur en haut de l'écran."
+                : 'Créez votre première famille pour commencer.' }}
+        </p>
 
         <form data-controller="auth-form" data-auth-form-redirect-value="{{ path('app_home') }}"
+              data-auth-form-activate-family-value="true"
               data-action="submit->auth-form#submit" action="/api/families" novalidate>
             <div class="field">
                 <label for="name">Nom de la famille</label>
@@ -25,10 +30,16 @@
         </form>
 
         <p class="auth__alt">Vous avez reçu une invitation ? Ouvrez le lien reçu par e-mail.</p>
+        {# Un compte qui a déjà une famille arrive ici volontairement, depuis le sélecteur :
+           il lui faut un chemin de retour, pas un bouton de déconnexion (constat 6.10). #}
+        {% if hasFamilies|default(false) %}
+        <p class="auth__alt"><a href="{{ path('app_home') }}">Retour à l'accueil</a></p>
+        {% else %}
         <form action="{{ path('app_logout') }}" method="post" class="auth__alt">
             <input type="hidden" name="_csrf_token" data-controller="csrf-protection" value="{{ csrf_token('logout') }}">
             <button class="btn btn--ghost" type="submit">Se déconnecter</button>
         </form>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

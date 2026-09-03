@@ -166,3 +166,56 @@ test('lien d\'invitation (non connecté) → création de compte contextualisée
 
   await contextB.close();
 });
+
+/**
+ * Vague 2 de la revue web (constats 6.10 et 6.6) : deux parcours contractualisés que rien ne
+ * reliait dans l'interface.
+ *
+ * Ce test est un E2E parce que la partie décisive est en JavaScript — la famille créée doit
+ * devenir la famille **active** (cookie `cpp_family`), sans quoi « Créer ma famille » ramenait sur
+ * l'accueil de l'ancienne.
+ */
+test('créer une seconde famille depuis le sélecteur, et lire le code de partage', async ({
+  page,
+  request,
+}: {
+  page: Page;
+  request: import('@playwright/test').APIRequestContext;
+}) => {
+  const stamp = Date.now();
+  await signUpAndLogin(page, request, `e2e-second-${stamp}@example.test`, 'Alice Multi');
+
+  // Première famille (l'écran d'accueil de l'onboarding).
+  await page.fill('#name', 'Foyer Un E2E');
+  await page.selectOption('#type', 'separated');
+  await page.click('button[type="submit"]');
+  await page.waitForURL((url) => !url.pathname.includes('/onboarding'), { timeout: 15_000 });
+
+  // ---- 6.10 : le sélecteur de famille offre enfin la création ----
+  await page.goto('/');
+  await page.click('.family-select__button');
+  const create = page.locator('.family-select__menu a[href="/onboarding"]');
+  await expect(create).toBeVisible();
+  await create.click();
+  await page.waitForURL('**/onboarding', { timeout: 15_000 });
+
+  // L'écran s'adapte : ce n'est plus une première famille.
+  await expect(page.locator('.auth__title')).toContainText('Nouvelle famille');
+
+  await page.fill('#name', 'Foyer Deux E2E');
+  await page.selectOption('#type', 'intact');
+  await page.click('button[type="submit"]');
+  await page.waitForURL((url) => !url.pathname.includes('/onboarding'), { timeout: 15_000 });
+
+  // La famille créée est devenue la famille active — sinon on retombait sur la première.
+  await expect(page.locator('.family-select__label')).toContainText('Foyer Deux E2E');
+  await page.click('.family-select__button');
+  await expect(page.locator('.family-select__menu')).toContainText('Foyer Un E2E');
+
+  // ---- 6.6 : le code de partage est affiché, et le formulaire le réclame ----
+  await page.goto('/settings');
+  const shareCode = page.locator('#l-own');
+  await expect(shareCode).toBeVisible();
+  await expect(shareCode).toHaveValue(/^[0-9a-f-]{36}$/);
+  await expect(page.locator('label[for="l-id"]')).toContainText('Code de partage');
+});

@@ -388,6 +388,61 @@ brute de Symfony, **6.10** seconde famille impossible, **6.6** familles liées i
 vague 3 — vrais développements (**6.1** fiche de jour + activités sur `/garde`, **6.5** phrase de
 garde sur l'accueil, **6.4** `/settings` en trois onglets, **6.3** écran RGPD web).
 
+### 2026-09-04 — Étape 6, vague 2 : parcours cassés (6.8, 6.10, 6.6)
+
+Les trois constats se ressemblent : **la fonctionnalité existe côté serveur, mais aucun chemin
+d'interface n'y mène**. Aucun test d'API ne pouvait les voir. Chacun a été re-vérifié dans le code
+avant correction — les étapes 1 à 5 ayant beaucoup remanié le front — et les trois étaient confirmés.
+
+**6.8 — la notification perdait sa cible.** Les six contrôleurs web redirigeaient vers `/login`
+**sans conserver la page demandée**, et le formulaire de connexion renvoyait invariablement à
+l'accueil : un lien d'e-mail `/echanges?exchange=…` — ouvert le plus souvent depuis une session
+expirée, un e-mail se lisant rarement dans la minute — obligeait à retrouver à la main l'échange
+dont on venait de vous parler. La cible voyage désormais en `next`, **assaini** par `NextTarget` :
+seule une adresse interne est acceptée, jamais un tremplin vers un domaine tiers (`//evil.example`,
+`/\evil.example`, saut de ligne). Les écrans d'authentification ne sont pas des cibles — y revenir
+connecté n'aurait aucun sens. Le socle Stimulus fait de même sur son 401 après échec du
+rafraîchissement : on revient là où la session a expiré.
+
+Second volet, plus radical : `ProblemExceptionSubscriber` ne traite que `/api`, et
+`templates/bundles/` n'existait pas. **Toute URL web inconnue tombait sur la page par défaut de
+Symfony** — « Oops! An Error Occurred », fond blanc, en anglais, sans le moindre chemin de retour.
+Deux gabarits d'override (générique + 404) reprennent l'habillage de l'application. Le test vérifie
+que l'override est **au bon endroit**, la faute la plus facile à commettre et la plus silencieuse :
+un dossier mal placé ne produit aucune erreur, juste l'absence d'effet — vérifié en le déplaçant.
+
+**6.10 — la seconde famille.** `/onboarding` répondait 200 mais **aucun gabarit ne le liait**, et le
+menu du sélecteur de famille n'offrait aucune action : depuis l'interface, un compte ayant déjà une
+famille ne pouvait pas en créer une seconde. Le menu porte l'action, et l'écran s'adapte — « votre
+première famille » n'a de sens qu'une fois, et un compte qui arrive là volontairement a besoin d'un
+retour, pas d'un bouton de déconnexion. **Un trou découvert en cours de route** : la famille créée
+ne devenait pas la famille **active**, le cookie de scope ne bougeant pas — « Créer ma famille »
+ramenait donc sur l'accueil de l'ancienne. Le cookie est posé depuis la réponse de création ; sa
+forme, écrite jusqu'ici à deux endroits, est extraite dans un module partagé (`family_scope.js`).
+
+**6.6 — le code de partage.** Le formulaire réclamait « l'UUID de la famille », valeur qu'**aucun
+écran n'affichait nulle part** : lier deux familles était impossible de bout en bout. Le lot-1
+laissait le mode de désignation « à préciser à l'implémentation », en excluant seulement la devinette
+d'UUID. L'identifiant devient donc un **code de partage**, montré dans les réglages, en lecture
+seule et copiable, que l'administrateur de l'autre famille saisit de son côté ; le formulaire le
+réclame par son nom, et rappelle que le lien reste en attente jusqu'à acceptation. Rien n'est révélé
+au passage : la réponse de l'API reste non énumérante pour un code inconnu, et le bloc entier est
+réservé aux admins.
+
+**Flakiness E2E corrigée au passage, préexistante** : `lot5-overlay` échouait une fois sur deux sur
+`net::ERR_ABORTED` — vérifié sur l'arbre **avant** modification. La bascule d'overlay est la seule
+mutation sans confirmation visible : le test attendait la réponse de l'API puis naviguait, en
+collision avec le rechargement que le socle Stimulus déclenche juste après. Le piège était déjà
+documenté dans `waitForSaved` ; un `waitForReload` le ferme pour les mutations silencieuses.
+
+**16 tests fonctionnels** (dont un jeu de données sur l'assainissement de `next`) et **1 E2E** — la
+partie décisive de 6.10 étant en JavaScript, elle ne se vérifie qu'à l'écran. Portes : backend
+**403 tests / 3273 assertions** (387 avant), PHPStan 0, cs-fixer 0, Twig **38 fichiers OK** ;
+**E2E 22/22** (21 avant). Aucun changement d'API, d'OpenAPI, de migration ni de registre RGPD.
+
+**Reste de l'étape 6** : vague 3 — **6.5** phrase de garde sur l'accueil, **6.4** `/settings` en
+trois onglets, **6.3** écran RGPD web ; puis la liste « Reste à traiter » (P2/P3 de finition).
+
 ### 2026-08-28 — Étape 6, vague 3 : 6.1 — pastilles d'activité + fiche de jour sur `/garde`
 
 Constat re-vérifié avant correction, et plus large qu'écrit : `GardeController` **n'injectait ni

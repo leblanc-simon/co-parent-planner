@@ -18,7 +18,7 @@ const LEVEL_LABELS = { none: 'aucun accès', view: 'lecture', edit: 'édition' }
  * de succès la page est rechargée pour refléter l'état canonique, sinon l'erreur localisée s'affiche.
  */
 export default class extends ApiController {
-    static targets = ['summary', 'inviteRole', 'inviteRights'];
+    static targets = ['summary', 'inviteRole', 'inviteRights', 'shareCode'];
 
     // ---- Réglages famille ----
     saveFamily(event) {
@@ -102,6 +102,27 @@ export default class extends ApiController {
     }
 
     // ---- Liens entre familles ----
+    /**
+     * Copie le code de partage de la famille. Le lien entre deux familles se propose
+     * par ce code : sans moyen de le lire, le formulaire réclamait une valeur
+     * introuvable (constat 6.6).
+     */
+    async copyShareCode(event) {
+        const field = this.shareCodeTarget;
+        field.select();
+        try {
+            await navigator.clipboard.writeText(field.value);
+        } catch {
+            // Presse-papiers refusé (contexte non sécurisé, permission) : le code
+            // reste sélectionné, un Ctrl+C suffit.
+            document.execCommand?.('copy');
+        }
+        const button = event.currentTarget;
+        const label = button.textContent;
+        button.textContent = 'Copié';
+        setTimeout(() => { button.textContent = label; }, 1500);
+    }
+
     createLink(event) {
         event.preventDefault();
         const linkedFamilyId = event.currentTarget.querySelector('[name="linkedFamilyId"]').value;

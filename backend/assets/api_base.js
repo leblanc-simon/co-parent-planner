@@ -64,7 +64,10 @@ export class ApiController extends Controller {
                 response = await this._fetch(method, url, body, idempotencyKey);
             }
             if (401 === response.status) {
-                window.location.assign('/login?expired=1');
+                // La page en cours est conservée : après reconnexion, on revient là où
+                // la session a expiré au lieu d'être renvoyé à l'accueil (constat 6.8).
+                const next = encodeURIComponent(window.location.pathname + window.location.search);
+                window.location.assign(`/login?expired=1&next=${next}`);
                 return;
             }
 

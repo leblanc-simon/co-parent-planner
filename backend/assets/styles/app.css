@@ -276,6 +276,27 @@ a:hover { text-decoration: underline; }
 .family-select__item { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: .6rem .7rem; border-radius: 12px; cursor: pointer; font: inherit; color: var(--ink); }
 .family-select__item:hover, .family-select__item.is-active { background: var(--accent-soft); }
 .family-select__item small { color: var(--muted); display: block; }
+/* Action du menu (creer une famille) : separee des familles listees par un filet,
+   pour qu'elle ne se lise pas comme une famille de plus (constat 6.10). */
+.family-select__action {
+    display: flex; align-items: center; gap: .45rem; margin-top: .4rem; padding: .6rem .7rem;
+    border-top: 1px solid var(--border-2); border-radius: 0 0 12px 12px;
+    color: var(--accent-strong); font-weight: 600; font-size: .92rem; text-decoration: none;
+
+    &:hover { background: var(--accent-soft); }
+}
+
+/* Code de partage d'une famille (constat 6.6) : valeur en lecture seule, selectionnable
+   d'un clic, et bouton de copie a cote. */
+.share-code {
+    display: flex; gap: .5rem; align-items: center;
+
+    & .share-code__value {
+        flex: 1 1 auto; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: .9rem;
+    }
+}
+.field__hint { margin-top: .35rem; color: var(--muted); font-size: .85rem; }
 
 /* ---------- Responsive : sidebar repliée sous breakpoint ---------- */
 

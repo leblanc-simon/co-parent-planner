@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Security\Auth\RefreshTokenManager;
+use App\Web\NextTarget;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -26,10 +27,17 @@ final class SecurityController extends AbstractController
     }
 
     #[Route('/login', name: 'app_login', methods: ['GET'])]
-    public function login(#[MapQueryParameter] bool $expired = false): Response
-    {
+    public function login(
+        #[MapQueryParameter] bool $expired = false,
+        #[MapQueryParameter] ?string $next = null,
+    ): Response {
+        // `next` porte la page demandée avant la connexion — typiquement la cible d'un
+        // lien d'e-mail de notification (constat 6.8). Assainie : seule une adresse
+        // interne est acceptée, jamais un tremplin vers un domaine tiers.
+        $target = NextTarget::sanitize($next);
+
         if (null !== $this->security->getUser()) {
-            return $this->redirectToRoute('app_home');
+            return $this->redirect($target ?? $this->generateUrl('app_home'));
         }
 
         // Le flux d'invitation ne transite plus par le login générique : un invité anonyme atterrit
@@ -37,7 +45,10 @@ final class SecurityController extends AbstractController
         // `?expired=1` : le socle Stimulus (`ApiController._send`) redirige ici quand l'API répond
         // 401 après échec du rafraîchissement. Sans explication, l'utilisateur était simplement
         // ramené à l'écran de connexion sans savoir pourquoi sa saisie avait disparu (revue C1).
-        return $this->render('security/login.html.twig', ['expired' => $expired]);
+        return $this->render('security/login.html.twig', [
+            'expired' => $expired,
+            'next' => $target,
+        ]);
     }
 
     #[Route('/register', name: 'app_register', methods: ['GET'])]

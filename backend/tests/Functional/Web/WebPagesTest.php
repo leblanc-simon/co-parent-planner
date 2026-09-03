@@ -296,7 +296,8 @@ final class WebPagesTest extends WebTestCase
     {
         $client = static::createClient();
         $client->request('GET', '/invitations/accepted');
-        self::assertResponseRedirects('/login');
+        // La page demandée est conservée pour l'après-connexion (revue web 6.8).
+        self::assertResponseRedirects('/login?next=/invitations/accepted');
     }
 
     public function testPublicAuthPagesRender(): void

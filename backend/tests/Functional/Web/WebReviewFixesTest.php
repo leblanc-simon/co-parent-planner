@@ -61,8 +61,9 @@ final class WebReviewFixesTest extends WebTestCase
         self::assertResponseRedirects('/login');
 
         // Les cookies JWT sont effacés : plus aucune preuve d'authentification ne subsiste.
+        // La page demandée voyage en `next` pour être retrouvée après reconnexion (6.8).
         $client->request('GET', '/children');
-        self::assertResponseRedirects('/login');
+        self::assertResponseRedirects('/login?next=/children');
         $client->request('GET', '/');
         self::assertResponseRedirects('/login');
     }

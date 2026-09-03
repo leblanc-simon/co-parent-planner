@@ -24,6 +24,7 @@ use App\Service\Custody\CustodyStatsCalculator;
 use App\Service\Custody\DayDetailReader;
 use App\Web\ActiveFamilyResolver;
 use App\Web\MercureSubscription;
+use App\Web\NextTarget;
 use App\Web\ParentInitials;
 use Psr\Clock\ClockInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -65,7 +66,9 @@ final class GardeController extends AbstractController
     public function index(Request $request): Response
     {
         if (!$this->security->getUser() instanceof User) {
-            return $this->redirectToRoute('app_login');
+            // La page demandée est conservée : un lien d'e-mail ouvert hors session
+            // ramenait à l'accueil, jamais à la notification (constat 6.8).
+            return $this->redirectToRoute('app_login', NextTarget::loginParams($request));
         }
 
         $memberships = $this->activeFamily->memberships();

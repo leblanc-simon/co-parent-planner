@@ -14,7 +14,7 @@
         <p class="form-note" role="status">Votre session a expiré. Reconnectez-vous pour continuer.</p>
         {% endif %}
 
-        <form data-controller="auth-form" data-auth-form-redirect-value="{{ path('app_home') }}"
+        <form data-controller="auth-form" data-auth-form-redirect-value="{{ next|default(path('app_home')) }}"
               data-action="submit->auth-form#submit" action="/api/auth/login" novalidate>
             <div class="field">
                 <label for="email">Adresse e-mail</label>

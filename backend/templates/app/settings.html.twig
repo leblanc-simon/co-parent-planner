@@ -515,10 +515,28 @@
     {% endif %}
 
     {% if isAdmin %}
+    {# Le formulaire réclamait « l'UUID de la famille » — une valeur qu'aucun écran
+       n'affichait nulle part : lier deux familles était impossible de bout en bout
+       (revue web 2026-07, constat 6.6). Le lot-1 laissait le mode de désignation
+       « à préciser à l'implémentation », en excluant seulement la devinette d'UUID :
+       l'identifiant devient donc un **code de partage**, montré ici et copiable, que
+       l'autre administrateur saisit de son côté. Rien n'est révélé au passage — la
+       réponse de l'API reste non énumérante pour un code inconnu. #}
+    <div class="field">
+        <label for="l-own">Code de partage de cette famille</label>
+        <div class="share-code">
+            <input id="l-own" class="share-code__value" value="{{ family.id }}" readonly
+                   data-settings-target="shareCode" onfocus="this.select()">
+            <button class="btn btn--ghost" type="button" data-action="settings#copyShareCode">Copier</button>
+        </div>
+        <p class="field__hint">Transmettez-le à l'administrateur de l'autre famille pour qu'il vous lie.</p>
+    </div>
+
     <form data-action="submit->settings#createLink" style="margin-top:1rem">
         <div class="field">
-            <label for="l-id">Identifiant de la famille à lier</label>
-            <input id="l-id" name="linkedFamilyId" placeholder="UUID de la famille" required>
+            <label for="l-id">Code de partage de l'autre famille</label>
+            <input id="l-id" name="linkedFamilyId" placeholder="Code reçu de l'autre administrateur" required>
+            <p class="field__hint">Le lien reste en attente jusqu'à ce qu'un administrateur de cette famille l'accepte.</p>
         </div>
         <button class="btn btn--ink" type="submit">Proposer un lien</button>
     </form>

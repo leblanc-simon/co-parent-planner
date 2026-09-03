@@ -20,6 +20,7 @@ use App\Security\Auth\TokenHasher;
 use App\Service\Agenda\UpcomingEventsFinder;
 use App\Service\Exchange\ExchangeAssembler;
 use App\Web\ActiveFamilyResolver;
+use App\Web\NextTarget;
 use App\Web\ParentInitials;
 use Psr\Clock\ClockInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -184,14 +185,25 @@ final class HomeController extends AbstractController
         return $rows;
     }
 
+    /**
+     * Création d'une famille — première (US-ONB-1) **ou** supplémentaire.
+     *
+     * L'écran n'était atteignable que par redirection, pour un compte sans aucune
+     * famille : créer une seconde famille depuis l'interface était impossible, le
+     * sélecteur de famille n'offrant lui non plus aucune action (revue web
+     * 2026-07, constat 6.10). Il est désormais lié depuis ce sélecteur, et son
+     * contenu s'adapte : « votre première famille » n'a de sens qu'une fois.
+     */
     #[Route('/onboarding', name: 'app_onboarding', methods: ['GET'])]
-    public function onboarding(): Response
+    public function onboarding(Request $request): Response
     {
         if (!$this->security->getUser() instanceof User) {
-            return $this->redirectToRoute('app_login');
+            return $this->redirectToRoute('app_login', NextTarget::loginParams($request));
         }
 
-        return $this->render('app/onboarding.html.twig');
+        return $this->render('app/onboarding.html.twig', [
+            'hasFamilies' => [] !== $this->activeFamily->memberships(),
+        ]);
     }
 
     /**
@@ -249,10 +261,10 @@ final class HomeController extends AbstractController
      * connecté·e). Remplace l'ancienne redirection invisible vers les réglages.
      */
     #[Route('/invitations/accepted', name: 'app_invitation_accepted', methods: ['GET'])]
-    public function invitationAccepted(): Response
+    public function invitationAccepted(Request $request): Response
     {
         if (!$this->security->getUser() instanceof User) {
-            return $this->redirectToRoute('app_login');
+            return $this->redirectToRoute('app_login', NextTarget::loginParams($request));
         }
 
         $active = $this->activeFamily->active($this->activeFamily->memberships());

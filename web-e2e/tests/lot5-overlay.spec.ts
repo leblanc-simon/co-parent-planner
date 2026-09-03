@@ -1,7 +1,7 @@
 import { Page, expect, test } from '@playwright/test';
 
 import { waitForVerificationToken } from '../helpers/mailpit';
-import { waitForSaved } from '../helpers/page';
+import { waitForReload, waitForSaved } from '../helpers/page';
 
 const PASSWORD = 'MotDePasseTresLong123';
 
@@ -135,12 +135,16 @@ test('Overlay familles liées : activation → événement lié en lecture seule
   // On force checked + change : le reload Stimulus détacherait un clic natif (leçon Lot 4).
   // Cette mutation-ci n'affiche aucune confirmation : on attend sa réponse, seul signal disponible.
   const overlayEnabled = waitForOverlaySaved(page);
+  // Le socle Stimulus recharge la page après la mutation : attendre ce rechargement plutôt que de
+  // naviguer par-dessus, sinon les deux navigations se coupent (`net::ERR_ABORTED`). La page
+  // rechargée est déjà celle qu'on voulait ouvrir.
+  const overlayReloaded = waitForReload(page);
   await toggle.evaluate((el) => {
     (el as HTMLInputElement).checked = true;
     el.dispatchEvent(new Event('change', { bubbles: true }));
   });
   await overlayEnabled;
-  await page.goto(`/agenda?month=${soon.month}`);
+  await overlayReloaded;
 
   const linked = page.locator('.agenda-event--linked').filter({ hasText: 'Judo du second foyer' });
   await expect(linked).toHaveCount(1);
@@ -152,11 +156,12 @@ test('Overlay familles liées : activation → événement lié en lecture seule
   // ---- Désactiver l'overlay : l'événement lié disparaît ----
   const toggleOff = page.locator('.overlay-card input[type="checkbox"]').first();
   const overlayDisabled = waitForOverlaySaved(page);
+  const overlayOffReloaded = waitForReload(page);
   await toggleOff.evaluate((el) => {
     (el as HTMLInputElement).checked = false;
     el.dispatchEvent(new Event('change', { bubbles: true }));
   });
   await overlayDisabled;
-  await page.goto(`/agenda?month=${soon.month}`);
+  await overlayOffReloaded;
   await expect(page.locator('.agenda-event--linked')).toHaveCount(0);
 });

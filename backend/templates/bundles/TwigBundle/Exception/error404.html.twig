@@ -1,0 +1,9 @@
+{# 404 web : cas le plus fréquent, et le seul qui appelle une explication propre —
+   un lien d'e-mail périmé, un favori vers une ressource supprimée. #}
+{% extends '@Twig/Exception/error.html.twig' %}
+{% block title %}Page introuvable · CoParentPlanner{% endblock %}
+{% block error_title %}Page introuvable{% endblock %}
+{% block error_body %}
+    Cette adresse ne correspond à aucune page. Le lien a peut-être expiré, ou l'élément
+    auquel il renvoyait a été supprimé.
+{% endblock %}

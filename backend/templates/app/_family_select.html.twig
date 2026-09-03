@@ -12,5 +12,13 @@
                 <small>{{ {'parent':'Parent','step_parent':'Beau-parent','child':'Enfant'}[m.role.value] ?? m.role.value }}{{ m.isAdmin ? ' · admin' }}</small>
             </button>
         {% endfor %}
+        {# Créer une seconde famille était impossible depuis l'interface : `/onboarding`
+           répondait 200 mais aucun gabarit n'y menait, et ce menu n'offrait aucune
+           action (revue web 2026-07, constat 6.10). Rejoindre une famille reste
+           nominatif — cela passe par le lien d'invitation reçu par e-mail. #}
+        <a class="family-select__action" href="{{ path('app_onboarding') }}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Créer une famille
+        </a>
     </div>
 </div>

@@ -1917,6 +1917,18 @@ abstract class AppL10n {
   /// **'Enregistré — en attente de synchro'**
   String get offlineQueued;
 
+  /// No description provided for @syncPendingBadge.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente'**
+  String get syncPendingBadge;
+
+  /// No description provided for @agendaPendingSyncHelp.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cet événement est enregistré sur cet appareil et sera envoyé au retour du réseau. Il n\'existe pas encore côté serveur.'**
+  String get agendaPendingSyncHelp;
+
   /// No description provided for @syncPending.
   ///
   /// In fr, this message translates to:
@@ -1944,7 +1956,7 @@ abstract class AppL10n {
   /// No description provided for @syncRejectedReason.
   ///
   /// In fr, this message translates to:
-  /// **'{reason, select, conflict{Conflit : la donnée a changé entre-temps} forbidden{Droits insuffisants} invalid{Contenu refusé par le serveur} gone{Lélément nexiste plus} other{Refusé par le serveur}}'**
+  /// **'{reason, select, conflict{Conflit : la donnée a changé entre-temps} forbidden{Droits insuffisants} invalid{Contenu refusé par le serveur} gone{L\'élément n\'existe plus} other{Refusé par le serveur}}'**
   String syncRejectedReason(String reason);
 
   /// No description provided for @syncRejectedAction.

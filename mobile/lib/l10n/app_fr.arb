@@ -442,6 +442,8 @@
   "offlineBanner": "Hors-ligne — affichage des données mises en cache",
   "offlineUnavailable": "Données non disponibles hors-ligne",
   "offlineQueued": "Enregistré — en attente de synchro",
+  "syncPendingBadge": "En attente",
+  "agendaPendingSyncHelp": "Cet événement est enregistré sur cet appareil et sera envoyé au retour du réseau. Il n'existe pas encore côté serveur.",
   "syncPending": "{count, plural, =0{Tout est synchronisé} =1{1 modification en attente de synchro} other{{count} modifications en attente de synchro}}",
   "@syncPending": {
     "placeholders": {
@@ -460,7 +462,7 @@
   },
   "syncRejectedTitle": "Modifications refusées",
   "syncRejectedHelp": "Le serveur a refusé ces modifications enregistrées hors-ligne. Relancez-les ou abandonnez-les.",
-  "syncRejectedReason": "{reason, select, conflict{Conflit : la donnée a changé entre-temps} forbidden{Droits insuffisants} invalid{Contenu refusé par le serveur} gone{Lélément nexiste plus} other{Refusé par le serveur}}",
+  "syncRejectedReason": "{reason, select, conflict{Conflit : la donnée a changé entre-temps} forbidden{Droits insuffisants} invalid{Contenu refusé par le serveur} gone{L'élément n'existe plus} other{Refusé par le serveur}}",
   "@syncRejectedReason": {
     "placeholders": {
       "reason": {

@@ -77,6 +77,13 @@ class OutboxService {
     return id;
   }
 
+  /// Mutations de [userId] **encore locales** : en file, en vol ou refusées.
+  ///
+  /// C'est la source des entités optimistes (constat C11) : tant qu'une mutation
+  /// n'est pas confirmée par le serveur, l'entité qu'elle crée n'existe que là.
+  Future<List<OutboxEntry>> localEntries(String userId) =>
+      _dao.activeEntries(userId);
+
   /// Rejoue les entrées `pending` de [userId] dans l'ordre FIFO, avec la même
   /// `Idempotency-Key`. Sérialisé : un appel concurrent attend celui en vol.
   Future<void> flush(String userId) {

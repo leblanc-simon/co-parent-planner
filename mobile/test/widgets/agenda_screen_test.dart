@@ -365,4 +365,67 @@ void main() {
       expect(find.textContaining('série'), findsOneWidget);
     });
   });
+
+  group('création hors-ligne : effet optimiste (C11)', () {
+    /// Événement encore en file : identifiant synthétique `pending:<outbox>`.
+    const queued = api.Event(
+      id: 'pending:o-1',
+      title: 'Sortie scolaire',
+      category: 'ecole',
+      startsAt: '2026-07-08T08:00:00+02:00',
+      wholeFamily: true,
+    );
+
+    testWidgets('la tuile porte le badge « En attente »', (tester) async {
+      // Avant, l'entité créée hors-ligne n'apparaissait sur aucun écran : le
+      // dépôt n'écrivait que la ligne outbox.
+      stubEvents(repo, const [queued]);
+
+      await pumpScreen(tester, const AgendaScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sortie scolaire'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('agenda-pending-badge')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('aucune suppression proposée sur une entité non confirmée', (
+      tester,
+    ) async {
+      // Le serveur ne connaît pas encore cet événement : lui proposer « Supprimer »
+      // mènerait à un 404.
+      stubEvents(repo, const [queued]);
+
+      await pumpScreen(tester, const AgendaScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('agenda-event-pending:o-1')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('agenda-pending-help')), findsOneWidget);
+      expect(find.byKey(const ValueKey('agenda-delete')), findsNothing);
+    });
+
+    testWidgets('un événement confirmé garde son action de suppression', (
+      tester,
+    ) async {
+      stubEvents(repo, const [
+        api.Event(
+          id: 'e1',
+          title: 'Judo',
+          category: 'sport',
+          startsAt: '2026-07-08T18:00:00+02:00',
+        ),
+      ]);
+
+      await pumpScreen(tester, const AgendaScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('agenda-event-e1')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('agenda-pending-badge')), findsNothing);
+      expect(find.byKey(const ValueKey('agenda-delete')), findsOneWidget);
+    });
+  });
 }

@@ -10,8 +10,8 @@
 > Détail intégral (preuve, scénario de panne, correction, verdict du vérificateur) :
 > **`specs/revue-mobile-flutter-2026-08-annexes.md`**.
 >
-> **Avancement au 2026-09-04 : 62 constats corrigés sur 68** — étapes 1 à 10 livrées, plus `C14` et
-> `C66`. Restent 6 constats : `C11` (fin de l'étape 5) et le reste de l'étape 11.
+> **Revue close le 2026-09-04 : 68 constats corrigés sur 68.** Les onze étapes sont livrées, `C11`
+> (fin de l'étape 5) compris. Aucun constat confirmé ne reste ouvert.
 > *(Le compteur d'avant l'étape 9 annonçait 51/68 : il oubliait `C66`, livré hors étape.)*
 > Détail par étape : voir §Journal en fin de document.
 
@@ -125,7 +125,7 @@ déconnexion → compte B) asserte que la base locale ne contient plus **rien** 
 **Correction** : distinguer « jeton refusé » (401/403 → purge) de « serveur injoignable » (→ conserver
 la session et servir le cache). Réhydrater la famille active après la connexion.
 
-### Étape 5 — ✅ LIVRÉE le 2026-08-27 (C14 avec l'étape 6 ; reste **C11**) — Machine d'état de l'outbox
+### Étape 5 — ✅ LIVRÉE le 2026-08-27 (`C14` avec l'étape 6, `C11` avec l'étape 11) — Machine d'état de l'outbox
 
 | # | Constat | Gravité |
 |---|---|---|
@@ -209,7 +209,12 @@ rendaient que leur **instance par défaut**.
 |---|---|---|
 | C54 | Polices **variables** déclarées dans `pubspec.yaml` sans axe de graisse : toute la hiérarchie typographique du §8 est écrasée (Bricolage Grotesque figé à `wght 800` / `opsz 96`) | P2 |
 
-### Étape 11 — Portes qualité : ce que la CI ne garde pas
+### Étape 11 — ✅ LIVRÉE le 2026-09-04 — Portes qualité : ce que la CI ne garde pas (+ `C11`)
+
+Cause racine : trois portes qui **passent sans rien garder** — un `dart analyze` qui ignore ses
+propres règles, une détection de drift aveugle aux fichiers non suivis, un dénominateur de couverture
+qui ignore le code qu'aucun test ne charge — et deux pans de code écrits sans filet.
+
 
 | # | Constat | Gravité |
 |---|---|---|
@@ -258,6 +263,45 @@ Cinq sur 73, chacun réfuté code en main :
 ---
 
 ## Journal
+
+### 2026-09-04 — Étape 11 livrée (portes qualité) + `C11` : la revue mobile est close
+
+**`C11` — l'effet optimiste, sans état parallèle à réconcilier.** La création hors-ligne se limitait à
+enfiler la mutation : rien n'était écrit côté lecture, l'agenda restait strictement identique et
+l'utilisateur pouvait croire sa saisie perdue. Plutôt que d'écrire une entité fantôme dans le cache
+Drift — qu'il aurait fallu retirer à la confirmation, remplacer par la version serveur, et rouler en
+arrière au refus —, l'entité est **reconstituée à la lecture depuis l'entrée outbox qui la porte
+déjà** (`pendingEventsFrom`). Elle vit donc exactement aussi longtemps que sa mutation : elle
+disparaît quand celle-ci est confirmée puis purgée, ou quand l'utilisateur l'abandonne. Aucune
+synchronisation à écrire, aucun état à réconcilier. L'identifiant synthétique `pending:<entrée>` porte
+l'information jusqu'à l'écran, qui affiche le badge « En attente » et **retire la suppression** — le
+serveur ne connaît pas encore cet événement. L'invalidation manquante sur le chemin outbox est
+ajoutée. Hors-ligne sans cache, la présence d'une saisie locale l'emporte sur l'état « données non
+disponibles » (C14) : il y a bien quelque chose à montrer.
+
+| Constat | Correctif |
+|---|---|
+| C71 | **9 tests** sur les écritures du Lot 6 : envoi d'un message (posté, champ vidé, fil rechargé), envoi refusé (message affiché, **saisie conservée**), création d'une discussion, décision (deux options exigées avant que le bouton s'active, libellés transmis dans l'ordre), et le contrat HTTP de `create`/`postMessage`/`decide`/`patch` sur un vrai `Dio`. Couverture d'`exchanges_repository.dart` 46,9 % → **83 %**, d'`exchange_detail_screen.dart` 46,2 % → **89 %**. |
+| C72 | **13 tests** sur `CustodyRepository`, monté avec un `ScriptedAdapter` : `404 → null` (l'état vide « aucun rythme », premier écran de toute famille séparée), `403`/`500` → `ApiException` (un refus de droit n'est pas « pas de rythme »), fenêtre `[from, to]` identique pour les jours et les stats, `422` sur un jour passé, et le `settings` du modèle `midweek_weekends`. Couverture 33,8 % → **80 %**. Vérifié au passage côté serveur : le client sérialise toujours la clé `settings`, mais à `null`, et `PatternWriter::validateConfig` teste `[] !== ($data->settings ?? [])` — un `null` ne déclenche donc pas `config_conflict`. |
+| C69 | **6 tests** de `DeepLinkHandler` sur un `GoRouter` réel : les deux hôtes routés avec leur jeton, un schéma étranger et un hôte inconnu qui ne naviguent nulle part, un lien sans jeton. Le jeton passe désormais par `Uri` au lieu d'être concaténé — vérifié en réintroduisant la concaténation : un jeton `a&b=c d` arrivait tronqué à `a`. |
+| C67 | `git diff --exit-code` ne compare que les fichiers **suivis** : un fichier généré nouvellement émis passait la porte. Remplacé par `git status --porcelain`, qui voit aussi les non-suivis et les suppressions. Angle mort reproduit (`touch lib/api/generated/x.dart` → `git diff` sort **0**) puis vérifié fermé. |
+| C68 | Le dénominateur ignorait tout fichier qu'aucun test ne charge — **10 fichiers**, dont `deep_link_handler.dart`. `test/coverage_barrel_test.dart` les charge tous **et se vérifie lui-même** : ajouter un fichier à `lib/` sans l'y importer fait échouer le test, avec la ligne exacte à ajouter ; `check_coverage.py` applique la même règle depuis l'autre bord, pour que supprimer le barrel fasse échouer la porte au lieu de faire remonter le taux en silence. Les deux garde-fous ont été exercés en retirant un import. |
+
+**Le taux monte, et c'est justement le point à ne pas mal lire** : 79,7 % → **82,5 %**. Charger un
+fichier exécute ses déclarations de haut niveau, qui comptent alors pour couvertes — `main.dart` reste
+à 0/9 et `app.dart` à 1/15, désormais **comptés**. Ce que le barrel corrige n'est pas le chiffre mais
+le dénominateur : un écran de 300 lignes livré sans test le fera maintenant baisser.
+
+**Code mort supprimé** : `notes_tab.dart`, placeholder du Lot 0 remplacé par l'écran Enfants du
+Lot 2, sans aucune référence dans `lib/` ni `test/` — l'un des dix fichiers que le barrel aurait
+sinon comptés à 0 % pour toujours. **Correction d'i18n au passage** : `syncRejectedReason` rendait
+« Lélément nexiste plus », ses apostrophes ayant été retirées par crainte de l'échappement ICU —
+vérifié que `gen-l10n` les accepte telles quelles dans un `select`.
+
+Portes mobile : `dart analyze --fatal-infos --fatal-warnings` 0, format 0, **390 tests verts**
+(349 avant), couverture **82,5 %** (79,7 % avant, dénominateur désormais complet). Aucun changement de
+contrat, de client Dart ni de backend ; la CI gagne une porte de drift qui voit les fichiers
+non suivis.
 
 ### 2026-09-04 — Étape 10 livrée (typographie)
 

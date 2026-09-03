@@ -3,7 +3,16 @@
 
 Parse coverage/lcov.info en EXCLUANT le code genere (client OpenAPI, *.g.dart,
 l10n). Usage : python3 tool/check_coverage.py [lcov.info] [seuil].
+
+`flutter test --coverage` n'instrumente que les bibliotheques REELLEMENT chargees
+par l'isolat de test : un fichier qu'aucun test n'importe est absent du rapport,
+donc absent du DENOMINATEUR. Une fonctionnalite entiere livree sans le moindre
+test ne faisait donc pas bouger le taux affiche (revue mobile 2026-08, constat
+C68). `test/coverage_barrel_test.dart` les charge donc tous ; ce script verifie
+que ce barrel est complet, pour que sa suppression ou son oubli fasse echouer la
+porte au lieu de faire remonter le taux en silence.
 """
+import pathlib
 import sys
 
 
@@ -14,6 +23,30 @@ def excluded(path: str) -> bool:
         or path.endswith(".freezed.dart")
         or "l10n/app_localizations" in path
     )
+
+
+BARREL = "test/coverage_barrel_test.dart"
+
+
+def missing_from_barrel() -> list[str]:
+    """Fichiers de `lib/` que le barrel de couverture n'importe pas.
+
+    Un fichier de declarations pures (couleurs, routes, enum) n'a aucune ligne
+    instrumentable et n'apparait donc jamais dans le rapport, meme charge : la
+    completude se verifie sur le barrel, pas sur le lcov.
+    """
+    root = pathlib.Path(__file__).resolve().parent.parent
+    wanted = {
+        f"import 'package:coparentplanner/{p.relative_to(root / 'lib')}';"
+        for p in (root / "lib").rglob("*.dart")
+        if not excluded(str(p))
+    }
+    try:
+        imported = set((root / BARREL).read_text().splitlines())
+    except OSError:
+        return sorted(wanted)
+
+    return sorted(wanted - imported)
 
 
 def main() -> int:
@@ -36,6 +69,17 @@ def main() -> int:
             found += 1
             if int(parts[1]) > 0:
                 hit += 1
+
+    missing = missing_from_barrel()
+    if missing:
+        print(
+            f"ECHEC : ces fichiers de lib/ ne sont pas charges par {BARREL}, ils "
+            "ne pesent donc pas au denominateur. Ajoutez-y ces lignes :",
+            file=sys.stderr,
+        )
+        for line in missing:
+            print(f"  {line}", file=sys.stderr)
+        return 1
 
     pct = 100 * hit / found if found else 100.0
     print(

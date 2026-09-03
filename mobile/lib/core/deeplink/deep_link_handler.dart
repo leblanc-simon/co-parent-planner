@@ -23,16 +23,22 @@ class DeepLinkHandler {
     _sub = _appLinks.uriLinkStream.listen(handle);
   }
 
-  /// Expose pour les tests : route selon l'URI.
+  /// Route selon l'URI. Un schéma étranger ou un hôte inconnu ne navigue nulle
+  /// part : le lien n'est pas le nôtre.
+  ///
+  /// Le jeton est passé par `Uri` plutôt que concaténé : le serveur l'émet déjà
+  /// URL-safe, mais une interpolation brute romprait la route au premier `&` ou
+  /// `#` reçu (revue mobile 2026-08, constat C69).
   void handle(Uri uri) {
     if (uri.scheme != AppConfig.deepLinkScheme) return;
     final token = uri.queryParameters['token'] ?? '';
-    switch (uri.host) {
-      case 'verify-email':
-        _router.go('${Routes.verifyEmail}?token=$token');
-      case 'reset-password':
-        _router.go('${Routes.resetPassword}?token=$token');
-    }
+    final path = switch (uri.host) {
+      'verify-email' => Routes.verifyEmail,
+      'reset-password' => Routes.resetPassword,
+      _ => null,
+    };
+    if (path == null) return;
+    _router.go(Uri(path: path, queryParameters: {'token': token}).toString());
   }
 
   void dispose() => unawaited(_sub?.cancel());

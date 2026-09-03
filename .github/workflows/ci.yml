@@ -169,8 +169,17 @@ jobs:
         run: |
           dart run swagger_parser
           dart run build_runner build --delete-conflicting-outputs --force-jit
-          git diff --exit-code lib/api/generated \
-            || { echo "::error::Client Dart désaligné de l'OpenAPI — régénérez et committez."; exit 1; }
+          # `git diff` ne compare que les fichiers SUIVIS : un fichier généré
+          # nouvellement émis (nouveau client au premier endpoint d'un lot) n'y
+          # apparaissait pas, la porte restait verte et le dépôt se retrouvait avec
+          # du code important un fichier non commité (revue mobile 2026-08, C67).
+          # `git status --porcelain` voit aussi les non-suivis et les suppressions.
+          drift="$(git status --porcelain lib/api/generated)"
+          if [ -n "$drift" ]; then
+            echo "$drift"
+            echo "::error::Client Dart désaligné de l'OpenAPI — régénérez et committez."
+            exit 1
+          fi
       - name: Format (hors code généré)
         run: dart format --output=none --set-exit-if-changed lib/core lib/features lib/routing lib/app.dart lib/main.dart test
       - name: Analyse statique

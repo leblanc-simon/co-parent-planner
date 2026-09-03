@@ -1017,6 +1017,13 @@ class AppL10nFr extends AppL10n {
   String get offlineQueued => 'Enregistré — en attente de synchro';
 
   @override
+  String get syncPendingBadge => 'En attente';
+
+  @override
+  String get agendaPendingSyncHelp =>
+      'Cet événement est enregistré sur cet appareil et sera envoyé au retour du réseau. Il n\'existe pas encore côté serveur.';
+
+  @override
   String syncPending(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1053,7 +1060,7 @@ class AppL10nFr extends AppL10n {
       'conflict': 'Conflit : la donnée a changé entre-temps',
       'forbidden': 'Droits insuffisants',
       'invalid': 'Contenu refusé par le serveur',
-      'gone': 'Lélément nexiste plus',
+      'gone': 'L\'élément n\'existe plus',
       'other': 'Refusé par le serveur',
     });
     return '$_temp0';

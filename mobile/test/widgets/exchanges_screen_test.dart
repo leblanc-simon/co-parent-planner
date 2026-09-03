@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:coparentplanner/core/error/api_exception.dart';
 import 'package:coparentplanner/core/session/session_scope.dart';
 import 'package:coparentplanner/api/generated/export.dart' as api;
 import 'package:coparentplanner/features/children/data/children_repository.dart';
@@ -346,5 +347,200 @@ void main() {
 
       verify(() => repo.detail('x3')).called(2);
     });
+  });
+
+  group('écriture des échanges — Lot 6 sans filet jusqu\'ici (C71)', () {
+    const open = api.Exchange(
+      id: 'x9',
+      type: 'discussion',
+      title: 'Vacances',
+      status: 'open',
+    );
+
+    testWidgets('envoi d\'un message : posté, champ vidé, fil rechargé', (
+      tester,
+    ) async {
+      when(() => repo.detail('x9')).thenAnswer((_) async => open);
+      when(() => repo.postMessage('x9', 'On part quand ?')).thenAnswer(
+        (_) async => const api.Message(id: 'm1', text: 'On part quand ?'),
+      );
+
+      await pumpScreen(
+        tester,
+        const ExchangeDetailScreen(exchangeId: 'x9'),
+        overrides: overrides(),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('exchange-message-field')),
+        'On part quand ?',
+      );
+      await tester.tap(find.byKey(const ValueKey('exchange-send')));
+      await tester.pumpAndSettle();
+
+      verify(() => repo.postMessage('x9', 'On part quand ?')).called(1);
+      expect(
+        tester
+            .widget<TextField>(
+              find.byKey(const ValueKey('exchange-message-field')),
+            )
+            .controller!
+            .text,
+        isEmpty,
+      );
+      // Le fil est redemandé : le message posté doit apparaître.
+      verify(() => repo.detail('x9')).called(2);
+    });
+
+    testWidgets('envoi refusé : message d\'erreur et saisie conservée', (
+      tester,
+    ) async {
+      // Vider le champ avant de savoir si l'envoi a réussi ferait perdre la
+      // saisie de l'utilisateur.
+      when(() => repo.detail('x9')).thenAnswer((_) async => open);
+      when(() => repo.postMessage('x9', any())).thenThrow(
+        ApiException(statusCode: 403, detail: 'Droit exchanges requis'),
+      );
+
+      await pumpScreen(
+        tester,
+        const ExchangeDetailScreen(exchangeId: 'x9'),
+        overrides: overrides(),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('exchange-message-field')),
+        'Bonjour',
+      );
+      await tester.tap(find.byKey(const ValueKey('exchange-send')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Droit exchanges requis'), findsOneWidget);
+      expect(
+        tester
+            .widget<TextField>(
+              find.byKey(const ValueKey('exchange-message-field')),
+            )
+            .controller!
+            .text,
+        'Bonjour',
+      );
+    });
+
+    testWidgets('création d\'une discussion : titre transmis', (tester) async {
+      when(
+        () => repo.list('u-test', 'fam-1'),
+      ).thenAnswer((_) async => const []);
+      when(
+        () => repo.create(
+          any(),
+          type: any(named: 'type'),
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          childId: any(named: 'childId'),
+          deadline: any(named: 'deadline'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer((_) async => open);
+
+      await pumpScreen(tester, const ExchangesScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('exchange-new')));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('exchange-title')),
+        'Vacances de la Toussaint',
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('exchange-submit')));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => repo.create(
+          'fam-1',
+          type: 'discussion',
+          title: 'Vacances de la Toussaint',
+          body: null,
+          childId: null,
+          deadline: null,
+          options: null,
+        ),
+      ).called(1);
+    });
+
+    testWidgets(
+      'décision : deux options requises, puis transmises dans l\'ordre',
+      (tester) async {
+        when(
+          () => repo.list('u-test', 'fam-1'),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => repo.create(
+            any(),
+            type: any(named: 'type'),
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            childId: any(named: 'childId'),
+            deadline: any(named: 'deadline'),
+            options: any(named: 'options'),
+          ),
+        ).thenAnswer((_) async => open);
+
+        await pumpScreen(
+          tester,
+          const ExchangesScreen(),
+          overrides: overrides(),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('exchange-new')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Décision'));
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const ValueKey('exchange-title')),
+          'Colonie',
+        );
+        await tester.enterText(
+          find.byKey(const ValueKey('exchange-option-0')),
+          'Montagne',
+        );
+        await tester.pumpAndSettle();
+
+        // Une seule option remplie : le serveur en exige deux (§3.3), le bouton
+        // reste inerte plutôt que de mener à un 422.
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.byKey(const ValueKey('exchange-submit')),
+              )
+              .onPressed,
+          isNull,
+        );
+
+        await tester.enterText(
+          find.byKey(const ValueKey('exchange-option-1')),
+          'Mer',
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('exchange-submit')));
+        await tester.pumpAndSettle();
+
+        final options =
+            verify(
+                  () => repo.create(
+                    'fam-1',
+                    type: 'decision',
+                    title: 'Colonie',
+                    body: any(named: 'body'),
+                    childId: any(named: 'childId'),
+                    deadline: any(named: 'deadline'),
+                    options: captureAny(named: 'options'),
+                  ),
+                ).captured.single
+                as List<({String label, String? sub})>;
+
+        expect(options.map((o) => o.label), ['Montagne', 'Mer']);
+      },
+    );
   });
 }

@@ -12,6 +12,7 @@ import '../../../core/sync/outbox_service.dart';
 import '../../../core/sync/read_cache.dart';
 import '../../../core/util/civil_date.dart';
 import '../../family/application/family_context.dart';
+import 'pending_events.dart';
 
 /// Accès à l'agenda de la famille active (Lot 4 + offline Lot 8). Le scope `X-Family-Id`
 /// est posé par l'intercepteur réseau. Écran de référence de l'offline riche (§2.2) :
@@ -41,10 +42,10 @@ class AgendaRepository {
     String familyId, {
     required DateTime from,
     required DateTime to,
-  }) {
+  }) async {
     final fromYmd = CivilDate.format(from);
     final toYmd = CivilDate.format(to);
-    return _cache.list<api.Event>(
+    final result = await _cache.list<api.Event>(
       userId: userId,
       familyId: familyId,
       endpoint: 'events:$fromYmd:$toYmd',
@@ -55,6 +56,25 @@ class AgendaRepository {
       ),
       toJson: (e) => e.toJson(),
       fromJson: api.Event.fromJson,
+    );
+
+    // Effet optimiste (Lot 8 §3.1, constat C11) : les créations encore en file
+    // n'existent que localement, le serveur comme le cache les ignorent. Sans
+    // cette fusion, l'événement saisi hors-ligne n'apparaissait sur aucun écran.
+    final pending = pendingEventsFrom(
+      await _outbox.localEntries(userId),
+      familyId: familyId,
+      from: from,
+      to: to,
+    );
+    if (pending.isEmpty) return result;
+
+    return CachedResult<api.Event>(
+      [...result.items, ...pending],
+      stale: result.stale,
+      // Une saisie locale est quelque chose à montrer : hors-ligne et sans cache,
+      // l'écran doit l'afficher plutôt que l'état « données non disponibles ».
+      available: true,
     );
   }
 

@@ -6,6 +6,7 @@ import '../../../core/error/api_exception.dart';
 import '../../../core/error/error_text.dart';
 import '../../../core/session/session_scope.dart';
 import '../../../core/sync/outbox_queued_exception.dart';
+import '../../../core/sync/pending_local.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
@@ -484,6 +485,10 @@ class _EventTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppL10n.of(context);
+    // Créé hors-ligne, pas encore confirmé : l'entité n'existe que dans l'outbox
+    // (constat C11). Le badge le dit, et la feuille d'actions n'offre pas de
+    // supprimer un événement que le serveur ne connaît pas encore.
+    final isPending = PendingLocal.isPending(event.id);
     final time = event.allDay
         ? l.agendaAllDayLabel
         : event.startsAt.substring(11, 16);
@@ -580,6 +585,10 @@ class _EventTile extends ConsumerWidget {
                     Row(
                       children: [
                         CategoryPill(category: event.category),
+                        if (isPending) ...[
+                          const SizedBox(width: 8),
+                          _PendingBadge(label: l.syncPendingBadge),
+                        ],
                         if (childLabel.isNotEmpty) ...[
                           const SizedBox(width: 8),
                           Flexible(
@@ -643,6 +652,45 @@ class _EventTile extends ConsumerWidget {
 ///
 /// Une occurrence de **série** n'est pas supprimable ici : la suppression par portée
 /// (US-AG-6) reste web, et le dire explicitement vaut mieux que de ne rien proposer.
+/// Marqueur « en attente de synchro » d'une entité créée hors-ligne (US-OFF-2).
+class _PendingBadge extends StatelessWidget {
+  const _PendingBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey('agenda-pending-badge'),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+        border: Border.all(color: AppColors.border2),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.cloud_upload_outlined,
+            size: 12,
+            color: AppColors.muted2,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.muted2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _EventActions extends ConsumerWidget {
   const _EventActions({required this.event});
 
@@ -652,6 +700,10 @@ class _EventActions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppL10n.of(context);
     final isSeries = event.isRecurring || event.seriesId != null;
+    // Créé hors-ligne : le serveur ne connaît pas encore cet événement, il n'y a
+    // rien à y supprimer (constat C11). L'abandon de la mutation se fait depuis
+    // l'écran de synchro, avec les autres modifications en attente.
+    final isPending = PendingLocal.isPending(event.id);
 
     return SafeArea(
       child: Padding(
@@ -665,7 +717,13 @@ class _EventActions extends ConsumerWidget {
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 12),
-            if (isSeries)
+            if (isPending)
+              Text(
+                l.agendaPendingSyncHelp,
+                key: const ValueKey('agenda-pending-help'),
+                style: const TextStyle(color: AppColors.muted, fontSize: 13),
+              )
+            else if (isSeries)
               Text(
                 l.agendaSeriesReadOnly,
                 style: const TextStyle(color: AppColors.muted, fontSize: 13),
@@ -872,6 +930,9 @@ class _EventFormState extends ConsumerState<_EventForm> {
       messenger.showSnackBar(SnackBar(content: Text(createdMsg)));
     } on OutboxQueuedException {
       // Hors-ligne : la création est en file (US-OFF-2), rejouée au retour réseau.
+      // L'invalidation manquait sur ce chemin : l'agenda restait strictement
+      // identique et l'événement n'apparaissait nulle part (constat C11).
+      providers.invalidate(familyEventsProvider);
       if (navigator.canPop()) navigator.pop();
       messenger.showSnackBar(SnackBar(content: Text(queuedMsg)));
     } on ApiException catch (e) {

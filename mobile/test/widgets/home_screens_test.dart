@@ -1,10 +1,12 @@
 import 'package:coparentplanner/core/session/session_scope.dart';
+import 'package:coparentplanner/core/theme/app_colors.dart';
 import 'package:coparentplanner/core/sync/read_cache.dart';
 import 'package:coparentplanner/api/generated/export.dart' as api;
 import 'package:coparentplanner/features/agenda/data/agenda_repository.dart';
 import 'package:coparentplanner/features/exchanges/data/exchanges_repository.dart';
 import 'package:coparentplanner/features/auth/application/auth_controller.dart';
 import 'package:coparentplanner/features/auth/application/auth_state.dart';
+import 'package:coparentplanner/features/custody/application/current_custody.dart';
 import 'package:coparentplanner/features/family/application/family_context.dart';
 import 'package:coparentplanner/features/home/shell/home_tab.dart';
 import 'package:coparentplanner/features/home/shell/settings_tab.dart';
@@ -41,6 +43,7 @@ List<Override> _overrides(
   FamilyContext? family, {
   List<api.Event> events = const [],
   List<api.Exchange> exchanges = const [],
+  CurrentCustody? custody,
 }) => [
   authControllerProvider.overrideWith(() => _AuthStub(auth)),
   currentUserIdProvider.overrideWithValue('u-test'),
@@ -53,6 +56,9 @@ List<Override> _overrides(
   upcomingEventsProvider.overrideWith((ref) => events),
   // Neutralise l'appel réseau de la carte Échanges (badge).
   familyExchangesProvider.overrideWith((ref) => exchanges),
+  // Garde du jour de la carte héro : `null` = inconnue, la carte reste neutre
+  // (constat C59). Les cas colorés la surchargent avec une valeur.
+  currentCustodyProvider.overrideWith((ref) => custody),
 ];
 
 void main() {
@@ -134,6 +140,103 @@ void main() {
     expect(find.byKey(const ValueKey('home-exchanges-badge')), findsOneWidget);
     expect(find.text('2'), findsOneWidget);
     expect(find.text('2 échanges ouverts'), findsOneWidget);
+  });
+
+  group('carte héro « Garde de la semaine » (C59)', () {
+    // Le liseré était figé sur `accent`, la couleur du parent A du §8, et le corps
+    // répétait « Ouvrir le planning » : le parent B lisait, toute la semaine où il
+    // avait les enfants, un signal chromatique désignant l'autre parent.
+    const separated = FamilyContext(
+      familyId: 'f1',
+      familyName: 'Maison',
+      type: 'separated',
+    );
+
+    Color stripeColor(WidgetTester tester) {
+      final container = tester.widget<Container>(
+        find.byKey(const ValueKey('home-custody-stripe')),
+      );
+
+      return container.color!;
+    }
+
+    testWidgets('semaine du parent B : liseré teal et phrase nommée', (
+      tester,
+    ) async {
+      await pumpScreen(
+        tester,
+        const HomeTab(),
+        overrides: _overrides(
+          const AuthAuthenticated(_user),
+          separated,
+          custody: const CurrentCustody(
+            slot: 'B',
+            parentName: 'Marc Durand',
+            isSelf: false,
+            handoverDate: '2026-06-28',
+            handoverName: 'Alice',
+            handoverTime: '19:00',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(stripeColor(tester), AppColors.positive);
+      expect(
+        find.text('Les enfants sont chez Marc Durand cette semaine.'),
+        findsOneWidget,
+      );
+      // US-CUST-6 : la carte dit aussi quand ils changent de foyer.
+      expect(
+        find.textContaining('Retour chez Alice le dimanche 28 juin à 19:00'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'semaine du membre courant : liseré terracotta et « avec vous »',
+      (tester) async {
+        await pumpScreen(
+          tester,
+          const HomeTab(),
+          overrides: _overrides(
+            const AuthAuthenticated(_user),
+            separated,
+            custody: const CurrentCustody(
+              slot: 'A',
+              parentName: 'Alice',
+              isSelf: true,
+              handoverDate: null,
+              handoverName: null,
+              handoverTime: null,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(stripeColor(tester), AppColors.accent);
+        expect(
+          find.text('Les enfants sont avec vous cette semaine.'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('garde inconnue : liseré neutre, aucune couleur de parent', (
+      tester,
+    ) async {
+      // Chargement, hors-ligne, ou jour hors de l'horizon généré : mieux vaut ne
+      // rien dire que d'arborer la couleur d'un parent au hasard.
+      await pumpScreen(
+        tester,
+        const HomeTab(),
+        overrides: _overrides(const AuthAuthenticated(_user), separated),
+      );
+      await tester.pumpAndSettle();
+
+      expect(stripeColor(tester), AppColors.border);
+      expect(find.text('Ouvrir le planning'), findsOneWidget);
+    });
   });
 
   testWidgets('HomeTab : famille unie -> « toute la famille reunie »', (

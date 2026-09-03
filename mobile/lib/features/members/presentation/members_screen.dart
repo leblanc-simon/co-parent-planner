@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart' as api;
+import '../../../core/error/api_exception.dart';
 import '../../../core/error/error_text.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/util/detached_providers.dart';
+import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../core/widgets/initial_avatar.dart';
 import '../../../l10n/app_localizations.dart';
@@ -170,18 +173,69 @@ class _RightBadge extends StatelessWidget {
   }
 }
 
-class _PendingInvitations extends ConsumerWidget {
+class _PendingInvitations extends ConsumerStatefulWidget {
   const _PendingInvitations({required this.familyId});
 
   final String familyId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l = AppL10n.of(context);
-    final invitationsAsync = ref.watch(_pendingInvitationsProvider(familyId));
+  ConsumerState<_PendingInvitations> createState() =>
+      _PendingInvitationsState();
+}
 
-    return invitationsAsync.maybeWhen(
-      orElse: () => const SizedBox.shrink(),
+class _PendingInvitationsState extends ConsumerState<_PendingInvitations> {
+  /// Invitation dont la révocation est en vol : son bouton devient inerte, le
+  /// temps de l'aller-retour.
+  String? _revoking;
+
+  /// Révocation d'une invitation en attente (US-INV-2).
+  ///
+  /// Le corps de l'action tenait dans un `onPressed: () async { await … }` sans
+  /// `try/catch` : le dépôt relançant systématiquement une `ApiException`, l'échec
+  /// (409 sur une invitation déjà acceptée, perte de réseau) partait en erreur de
+  /// `Future` non attendue. Ni invalidation, ni message : l'écran restait
+  /// rigoureusement identique et l'admin repartait avec une croyance fausse
+  /// (constat C47).
+  Future<void> _revoke(api.Invitation invitation) async {
+    if (_revoking != null) return;
+    final l = AppL10n.of(context);
+    final confirmed = await confirmAction(
+      context,
+      title: l.membersRevokeConfirmTitle,
+      body: l.membersRevokeConfirmBody(invitation.email),
+      confirmLabel: l.membersRevoke,
+      confirmKey: const ValueKey('members-revoke-confirm'),
+      destructive: true,
+    );
+    if (!confirmed || !mounted) return;
+
+    setState(() => _revoking = invitation.id);
+    final messenger = ScaffoldMessenger.of(context);
+    final providers = context.providers;
+    try {
+      await ref.read(membersRepositoryProvider).revokeInvitation(invitation.id);
+      providers.invalidate(_pendingInvitationsProvider(widget.familyId));
+      messenger.showSnackBar(SnackBar(content: Text(l.membersRevoked)));
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.localized(l))));
+    } finally {
+      if (mounted) setState(() => _revoking = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppL10n.of(context);
+    final invitationsAsync = ref.watch(
+      _pendingInvitationsProvider(widget.familyId),
+    );
+
+    return invitationsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      // La section disparaissait sans un mot quand son chargement échouait : un
+      // admin hors couverture ne voyait aucune invitation en attente et ne
+      // pouvait pas savoir qu'il en existait (constat C47).
+      error: (e, _) => ErrorBanner(errorText(context, e)),
       data: (invitations) {
         if (invitations.isEmpty) return const SizedBox.shrink();
         return Column(
@@ -194,19 +248,10 @@ class _PendingInvitations extends ConsumerWidget {
                 title: Text(inv.email),
                 // Le rôle était affiché brut (« step_parent ») alors que l'écran
                 // possède déjà son traducteur, employé pour les membres (C51).
-                subtitle: Text(_roleLabel(AppL10n.of(context), inv.role)),
+                subtitle: Text(_roleLabel(l, inv.role)),
                 trailing: TextButton(
-                  onPressed: () async {
-                    await ref
-                        .read(membersRepositoryProvider)
-                        .revokeInvitation(inv.id);
-                    ref.invalidate(_pendingInvitationsProvider(familyId));
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(SnackBar(content: Text(l.membersRevoked)));
-                    }
-                  },
+                  key: ValueKey('members-revoke-${inv.id}'),
+                  onPressed: _revoking != null ? null : () => _revoke(inv),
                   child: Text(l.membersRevoke),
                 ),
               ),

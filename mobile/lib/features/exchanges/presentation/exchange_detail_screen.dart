@@ -7,6 +7,8 @@ import '../../../core/error/error_text.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/util/detached_providers.dart';
+import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../core/widgets/initial_avatar.dart';
 import '../../../l10n/app_localizations.dart';
@@ -34,14 +36,23 @@ class _ExchangeDetailScreenState extends ConsumerState<ExchangeDetailScreen> {
   final _message = TextEditingController();
   bool _sending = false;
 
+  /// Verrous anti-double-envoi. Le composeur avait le sien (`_sending`) ; la
+  /// validation d'une option et la clôture n'en avaient aucun, et deux appuis
+  /// rapprochés partaient en deux requêtes (constat C46).
+  bool _closing = false;
+  String? _deciding;
+
   @override
   void dispose() {
     _message.dispose();
     super.dispose();
   }
 
-  void _reload() {
-    ref
+  /// Rafraîchit le détail **et** la liste, via le conteneur détaché : la mutation
+  /// a réussi, le cache doit être rafraîchi même si l'écran a été quitté entre
+  /// l'envoi et la réponse (constat C23, voir `DetachedProviders`).
+  void _reload(ProviderContainer providers) {
+    providers
       ..invalidate(exchangeDetailProvider(widget.exchangeId))
       ..invalidate(familyExchangesProvider);
   }
@@ -51,13 +62,14 @@ class _ExchangeDetailScreenState extends ConsumerState<ExchangeDetailScreen> {
     if (text.isEmpty) return;
     setState(() => _sending = true);
     final messenger = ScaffoldMessenger.of(context);
+    final providers = context.providers;
     final l = AppL10n.of(context);
     try {
       await ref
           .read(exchangesRepositoryProvider)
           .postMessage(widget.exchangeId, text);
-      _message.clear();
-      _reload();
+      _reload(providers);
+      if (mounted) _message.clear();
     } on ApiException catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.localized(l))));
     } finally {
@@ -66,13 +78,16 @@ class _ExchangeDetailScreenState extends ConsumerState<ExchangeDetailScreen> {
   }
 
   Future<void> _decide(String optionId) async {
+    if (_deciding != null) return;
+    setState(() => _deciding = optionId);
     final l = AppL10n.of(context);
     final messenger = ScaffoldMessenger.of(context);
+    final providers = context.providers;
     try {
       await ref
           .read(exchangesRepositoryProvider)
           .decide(widget.exchangeId, optionId);
-      _reload();
+      _reload(providers);
     } on ApiException catch (e) {
       messenger.showSnackBar(
         SnackBar(
@@ -81,21 +96,41 @@ class _ExchangeDetailScreenState extends ConsumerState<ExchangeDetailScreen> {
           ),
         ),
       );
-      _reload();
+      _reload(providers);
+    } finally {
+      if (mounted) setState(() => _deciding = null);
     }
   }
 
-  Future<void> _close() async {
+  /// Clôture — **irréversible** : le serveur interdit la réouverture (§4.5) et
+  /// notifie tous les membres habilités. Le bouton siège dans la barre de titre,
+  /// à portée du retour : il demandait la clôture au premier effleurement, sans
+  /// rien demander (constat C46).
+  Future<void> _close(String title) async {
+    if (_closing) return;
     final l = AppL10n.of(context);
+    final confirmed = await confirmAction(
+      context,
+      title: l.exchangeCloseConfirmTitle,
+      body: l.exchangeCloseConfirmBody(title),
+      confirmLabel: l.exchangeClose,
+      confirmKey: const ValueKey('exchange-close-confirm'),
+      destructive: true,
+    );
+    if (!confirmed || !mounted) return;
+    setState(() => _closing = true);
     final messenger = ScaffoldMessenger.of(context);
+    final providers = context.providers;
     try {
       await ref
           .read(exchangesRepositoryProvider)
           .patch(widget.exchangeId, status: 'decided');
       messenger.showSnackBar(SnackBar(content: Text(l.exchangeClosed)));
-      _reload();
+      _reload(providers);
     } on ApiException catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.localized(l))));
+    } finally {
+      if (mounted) setState(() => _closing = false);
     }
   }
 
@@ -112,7 +147,7 @@ class _ExchangeDetailScreenState extends ConsumerState<ExchangeDetailScreen> {
             data: (e) => e.type == 'discussion' && e.status == 'open'
                 ? TextButton(
                     key: const ValueKey('exchange-close'),
-                    onPressed: _close,
+                    onPressed: _closing ? null : () => _close(e.title),
                     child: Text(l.exchangeClose),
                   )
                 : const SizedBox.shrink(),
@@ -132,7 +167,7 @@ class _ExchangeDetailScreenState extends ConsumerState<ExchangeDetailScreen> {
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: () async {
-                    _reload();
+                    _reload(context.providers);
                     await ref.read(
                       exchangeDetailProvider(widget.exchangeId).future,
                     );
@@ -156,7 +191,11 @@ class _ExchangeDetailScreenState extends ConsumerState<ExchangeDetailScreen> {
                       ],
                       if (exchange.type == 'decision') ...[
                         const SizedBox(height: 16),
-                        _Options(exchange: exchange, onDecide: _decide),
+                        _Options(
+                          exchange: exchange,
+                          onDecide: _decide,
+                          deciding: _deciding,
+                        ),
                       ],
                       const SizedBox(height: 20),
                       Text(l.exchangeThread, style: AppTypography.eyebrow),
@@ -245,10 +284,17 @@ class _Header extends StatelessWidget {
 /// Options d'une décision : décompte de validations, bandeau sur l'option retenue,
 /// bouton de validation si l'échange est encore ouvert.
 class _Options extends StatelessWidget {
-  const _Options({required this.exchange, required this.onDecide});
+  const _Options({
+    required this.exchange,
+    required this.onDecide,
+    required this.deciding,
+  });
 
   final api.Exchange exchange;
   final Future<void> Function(String optionId) onDecide;
+
+  /// Option dont la validation est en vol : tous les boutons sont alors inertes.
+  final String? deciding;
 
   @override
   Widget build(BuildContext context) {
@@ -321,7 +367,9 @@ class _Options extends StatelessWidget {
                       if (isOpen)
                         OutlinedButton(
                           key: ValueKey('exchange-validate-${o.id}'),
-                          onPressed: () => onDecide(o.id),
+                          onPressed: deciding != null
+                              ? null
+                              : () => onDecide(o.id),
                           child: Text(l.exchangeValidateOption),
                         ),
                     ],

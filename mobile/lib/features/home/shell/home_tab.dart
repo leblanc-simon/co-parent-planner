@@ -14,6 +14,7 @@ import '../../../routing/routes.dart';
 import '../../agenda/data/agenda_repository.dart';
 import '../../agenda/presentation/agenda_screen.dart' show CategoryPill;
 import '../../auth/application/auth_controller.dart';
+import '../../custody/application/current_custody.dart';
 import '../../auth/application/auth_state.dart';
 import '../../exchanges/data/exchanges_repository.dart';
 import '../../exchanges/presentation/exchanges_screen.dart';
@@ -73,7 +74,6 @@ class HomeTab extends ConsumerWidget {
               _CustodyHeroCard(
                 key: const ValueKey('home-custody-card'),
                 title: l.homeCustodyTitle,
-                message: l.custodyOpen,
                 onTap: () => context.go(Routes.custody),
               )
             else if (family != null && family.isIntact)
@@ -177,22 +177,41 @@ class _SettingsButton extends StatelessWidget {
   }
 }
 
-/// Carte héro « garde de la semaine » (U1-07/08) : liseré gauche 5px de la
-/// couleur de garde, rayon `cardLg`.
-class _CustodyHeroCard extends StatelessWidget {
-  const _CustodyHeroCard({
-    required this.title,
-    required this.message,
-    required this.onTap,
-    super.key,
-  });
+/// Carte héro « garde de la semaine » (U1-07/08) : liseré gauche 5px **de la
+/// couleur de garde du jour**, rayon `cardLg`.
+///
+/// Le liseré était figé sur `accent`, la couleur du parent A, et le corps répétait
+/// « Ouvrir le planning » : la carte ne disait ni chez qui sont les enfants, ni
+/// quand ils changent de foyer (constat C59). Tant que la garde du jour n'est pas
+/// connue — chargement, hors-ligne, jour hors de l'horizon généré — la carte reste
+/// **neutre** plutôt que d'arborer la couleur d'un parent au hasard.
+class _CustodyHeroCard extends ConsumerWidget {
+  const _CustodyHeroCard({required this.title, required this.onTap, super.key});
 
   final String title;
-  final String message;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppL10n.of(context);
+    final custody = ref.watch(currentCustodyProvider).valueOrNull;
+    final slot = custody?.slot;
+    final parent = switch (custody?.parentName) {
+      final String name when name.isNotEmpty => name,
+      _ => slot == 'B' ? l.custodyParentB : l.custodyParentA,
+    };
+
+    final stripe = switch (slot) {
+      'A' => AppColors.accent,
+      'B' => AppColors.positive,
+      _ => AppColors.border,
+    };
+    final message = switch (slot) {
+      null => l.custodyOpen,
+      _ when custody!.isSelf => l.homeCustodyWithYou,
+      _ => l.homeCustodyWithParent(parent),
+    };
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadii.cardLg),
@@ -209,8 +228,11 @@ class _CustodyHeroCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Liseré de la couleur de garde de la semaine (parent A par défaut).
-                Container(width: 5, color: AppColors.accent),
+                Container(
+                  key: const ValueKey('home-custody-stripe'),
+                  width: 5,
+                  color: stripe,
+                ),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(20),
@@ -235,12 +257,34 @@ class _CustodyHeroCard extends StatelessWidget {
                         const SizedBox(height: 10),
                         Text(
                           message,
-                          style: const TextStyle(
-                            fontFamily: AppFonts.body,
-                            fontSize: 14,
-                            color: AppColors.muted,
-                          ),
+                          // Phrase d'état en Bricolage 21 w600 (maquette), et non
+                          // plus une ligne de corps grise.
+                          style: slot == null
+                              ? const TextStyle(
+                                  fontFamily: AppFonts.body,
+                                  fontSize: 14,
+                                  color: AppColors.muted,
+                                )
+                              : AppTypography.textTheme.titleLarge,
                         ),
+                        if (custody != null && custody.hasHandover) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            l.custodyHandover(
+                              custody.handoverName!,
+                              DateLabels.isoDayOfMonth(
+                                l.localeName,
+                                custody.handoverDate!,
+                              ),
+                              custody.handoverTime!,
+                            ),
+                            style: const TextStyle(
+                              fontFamily: AppFonts.body,
+                              fontSize: 13,
+                              color: AppColors.muted,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

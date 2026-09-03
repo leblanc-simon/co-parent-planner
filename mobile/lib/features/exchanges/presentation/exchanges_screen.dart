@@ -9,6 +9,8 @@ import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/util/civil_date.dart';
 import '../../../core/util/date_labels.dart';
+import '../../../core/util/detached_providers.dart';
+import '../../../core/widgets/app_filter_chip.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../core/widgets/initial_avatar.dart';
 import '../../../core/widgets/large_title_header.dart';
@@ -141,52 +143,12 @@ class _StatusFilters extends ConsumerWidget {
       spacing: 8,
       children: [
         for (final (value, label) in entries)
-          _FilterChip(
+          AppFilterChip(
             label: label,
             selected: selected == value,
             onTap: () => ref.read(_statusFilterProvider.notifier).state = value,
           ),
       ],
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppRadii.pill),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: selected
-              ? AppColors.ink.withValues(alpha: 0.10)
-              : AppColors.card,
-          borderRadius: BorderRadius.circular(AppRadii.pill),
-          border: Border.all(
-            color: selected ? AppColors.ink : AppColors.border2,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: selected ? AppColors.ink : AppColors.muted,
-          ),
-        ),
-      ),
     );
   }
 }
@@ -458,6 +420,7 @@ class _ExchangeFormState extends ConsumerState<_ExchangeForm> {
     });
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
+    final providers = context.providers;
     final createdMsg = AppL10n.of(context).exchangeCreated;
     try {
       await ref
@@ -477,7 +440,7 @@ class _ExchangeFormState extends ConsumerState<_ExchangeForm> {
                   ]
                 : null,
           );
-      ref.invalidate(familyExchangesProvider);
+      providers.invalidate(familyExchangesProvider);
       if (navigator.canPop()) navigator.pop();
       messenger.showSnackBar(SnackBar(content: Text(createdMsg)));
     } on ApiException catch (e) {

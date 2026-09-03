@@ -8,6 +8,7 @@ class FakeSecureStorage implements SecureStorage {
   String? family;
   String? profile;
   String? locale;
+  String? exportOperationId;
 
   @override
   Future<String?> readAccessToken() async => access;
@@ -29,6 +30,7 @@ class FakeSecureStorage implements SecureStorage {
     access = null;
     refresh = null;
     profile = null;
+    exportOperationId = null;
   }
 
   @override
@@ -48,4 +50,11 @@ class FakeSecureStorage implements SecureStorage {
 
   @override
   Future<void> writeLocale(String value) async => locale = value;
+
+  @override
+  Future<String?> readExportOperationId() async => exportOperationId;
+
+  @override
+  Future<void> writeExportOperationId(String? id) async =>
+      exportOperationId = id;
 }

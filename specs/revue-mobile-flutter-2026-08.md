@@ -10,8 +10,9 @@
 > Détail intégral (preuve, scénario de panne, correction, verdict du vérificateur) :
 > **`specs/revue-mobile-flutter-2026-08-annexes.md`**.
 >
-> **Avancement au 2026-08-28 : 51 constats corrigés sur 68** — étapes 1 à 8 livrées, plus `C14` et
-> `C66`. Restent 17 constats : `C11` (fin de l'étape 5) et les étapes 9 à 11.
+> **Avancement au 2026-09-04 : 61 constats corrigés sur 68** — étapes 1 à 9 livrées, plus `C14` et
+> `C66`. Restent 7 constats : `C11` (fin de l'étape 5), l'étape 10 et le reste de l'étape 11.
+> *(Le compteur précédent annonçait 51/68 : il oubliait `C66`, livré hors étape.)*
 > Détail par étape : voir §Journal en fin de document.
 
 ## Conditions d'observation
@@ -177,7 +178,13 @@ viole l'invariant « toutes les chaînes externalisées, ICU » du `CLAUDE.md`.
 | C31 · C56 · C58 · C53 | Dates **ISO brutes** (`2026-06-23`) affichées sur cinq emplacements (garde, notes enfant), mois français en dur, énumérations non traduites | P2/P3 |
 | C62 | Deux chaînes françaises en dur hors ARB, dont une visible dans les Paramètres et écrite sans cédille | P3 |
 
-### Étape 9 — Écrans métier : garde-fous d'action et respect des droits
+### Étape 9 — ✅ LIVRÉE le 2026-09-04 — Écrans métier : garde-fous d'action et respect des droits
+
+Cause racine : les écrans métier proposent leurs actions **sans regarder les droits du membre** ni
+demander confirmation d'un geste irréversible, et l'après-`await` d'une mutation n'est gardé nulle
+part. Trois familles de défauts qui aboutissent toutes au même endroit : l'utilisateur agit, et le
+résultat lui échappe (403 imprévu, clôture définitive au premier effleurement, cache périmé).
+
 
 | # | Constat | Gravité |
 |---|---|---|
@@ -246,6 +253,45 @@ Cinq sur 73, chacun réfuté code en main :
 ---
 
 ## Journal
+
+### 2026-09-04 — Étape 9 livrée (garde-fous d'action, droits, `mounted`)
+
+**Trois idiomes partagés remplacent neuf corrections ponctuelles.** Les constats de cette étape
+décrivaient neuf symptômes ; ils tenaient à trois manques structurels, corrigés une fois pour toutes :
+
+- `DetachedProviders` (`context.providers`) — un conteneur Riverpod **détaché du widget**, capturé
+  avant l'`await`. `ref.invalidate` d'un `ConsumerState` démonté lève un `StateError` réel (pas un
+  `assert` : actif en release) ; l'invalidation, elle, doit précisément survivre au démontage, car la
+  mutation a réussi et le cache doit suivre. **13 sites** migrés.
+- `confirmAction(...)` — un seul idiome de confirmation nommée, là où l'app en comptait deux copies
+  pour deux actions et n'en avait aucune pour les deux plus irréversibles.
+- `AppFilterChip` — une pastille de filtre unique, partagée par l'agenda et les échanges, qui en
+  portaient chacun une copie quasi identique.
+
+| Constat | Correctif |
+|---|---|
+| C47 | La révocation tenait dans un `onPressed: () async { await … }` **sans `try/catch`** : le dépôt relançant systématiquement une `ApiException`, l'échec partait en erreur de `Future` non attendue — ni invalidation, ni message, l'écran strictement identique. Désormais : confirmation nommée, verrou anti-double-tap, message d'échec, et la section des invitations **dit** son erreur de chargement au lieu de disparaître (`maybeWhen(orElse: SizedBox.shrink())`). |
+| C46 | Clôture d'échange sous confirmation nommée — le serveur interdit la réouverture (§4.5) et notifie tous les membres, et le bouton siège dans la barre de titre, à portée du retour. Verrous `_closing`/`_deciding` sur les deux actions. **La confirmation s'arrête là** : `decide` est un *vote* upserté (`DecideProcessor`), pas un geste définitif — seul le verrou lui manquait. |
+| C48 | Le composeur de note n'est rendu qu'avec `children_notes = edit`, comme le web (`{% if canEditNotes %}`). Conforme au scénario nominal du Lot 2 : « les actions d'édition sont absentes ou désactivées ». |
+| C50 | Rôle enfant : « Modifier » retiré du menu, mention explicite du plafond, et **rabaissement des droits déjà saisis** au passage sur ce rôle — sans quoi un « Modifier » choisi avant serait parti tel quel au serveur, qui le rabaisse silencieusement (`RightsNormalizer::capForRole`). |
+| C52 | L'identifiant d'export est **persisté** (secure storage, effacé à la déconnexion et une fois l'archive livrée), relu à l'ouverture de l'écran, et le statut est **scruté** tant qu'il vaut `pending`. Une opération que le serveur ne connaît plus (404/410) est oubliée en silence — l'utilisateur n'a rien demandé en ouvrant l'écran ; hors-ligne, l'identifiant est conservé. |
+| C23 | `context.providers` sur les 13 sites d'invalidation post-`await`, `if (mounted)` avant tout geste d'interface. Deux sites que la fiche du constat ne citait pas ont été trouvés au passage : la bascule d'overlay de l'agenda et la création d'échange. |
+| C59 | La carte héro dérive sa couleur et sa phrase de la **garde du jour** : liseré `accent` (parent A) / `positive` (parent B), « Les enfants sont chez X cette semaine. » et la phrase de transmission. Nouveau `currentCustodyProvider`, volontairement **indépendant** de `familyCustodyDaysProvider` : naviguer dans le planning ne doit pas changer ce que dit l'accueil. Garde inconnue (chargement, hors-ligne, hors horizon) → liseré **neutre** plutôt qu'une couleur de parent au hasard. |
+| C60 | Nom d'auteur `Flexible` + ellipsis, date incompressible. Test au gabarit d'un iPhone SE (320 pt) avec l'adresse e-mail sur laquelle le serveur retombe faute de nom complet. |
+| C61 | Cible tactile portée à 44 pt (HIG iOS) **sans changer l'aspect** : `ConstrainedBox` + `Align` autour de la pilule, qui garde ses 32 pt dessinés. |
+
+**Registre § accessibilité** : le liseré coloré de la carte héro n'est pas un marqueur chromatique
+seul au sens du §8.1 — la phrase juste à côté **nomme** le parent.
+
+**24 nouveaux tests**, dont deux exercés à l'envers en réintroduisant le défaut : le débordement de
+la ligne « auteur · date » (C60, `RenderFlex overflowed by 618 pixels`) et le cache périmé après
+sortie d'écran (C23 — sans l'invalidation détachée, la réouverture ressert le fil d'avant l'envoi).
+Portes mobile : `dart analyze --fatal-infos --fatal-warnings` 0, format 0, **346 tests verts**
+(322 avant), couverture **79,6 %** (77,9 % avant). Aucun changement de contrat, de client Dart ni de
+backend.
+
+**Compteur d'avancement corrigé au passage** : il annonçait 51/68 en oubliant `C66`, livré hors
+étape. L'avancement réel passe de 52 à **61 constats sur 68**.
 
 ### 2026-08-28 — Étape 8 livrée (i18n et formatage des dates)
 

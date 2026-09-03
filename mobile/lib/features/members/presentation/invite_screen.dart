@@ -71,6 +71,14 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
     }
   }
 
+  /// Un compte enfant ne peut **jamais** éditer : `RightsNormalizer::capForRole`
+  /// rabaisse ses droits à `view` côté serveur, silencieusement (« les valeurs hors
+  /// borne sont normalisées, jamais une erreur »). Le formulaire proposait pourtant
+  /// « Modifier » pour ce rôle : l'admin croyait accorder l'édition, l'invitation
+  /// était créée en lecture seule et rien ne le lui disait (constat C50).
+  bool get _childRole =>
+      _role == api.InvitationCreateInvitationRequestRole.child;
+
   @override
   Widget build(BuildContext context) {
     final l = AppL10n.of(context);
@@ -113,35 +121,32 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
                   _ => l.membersRoleStepParent,
                 },
                 selected: _role == role,
-                onTap: _sending ? null : () => setState(() => _role = role),
+                onTap: _sending ? null : () => _selectRole(role),
               ),
             ),
           if (showRights) ...[
             const SizedBox(height: 16),
-            _RightRow(
-              label: l.inviteRightAgenda,
-              domain: 'agenda',
-              rights: _rights,
-              onChanged: _set,
-            ),
-            _RightRow(
-              label: l.inviteRightCustody,
-              domain: 'custody',
-              rights: _rights,
-              onChanged: _set,
-            ),
-            _RightRow(
-              label: l.inviteRightNotes,
-              domain: 'children_notes',
-              rights: _rights,
-              onChanged: _set,
-            ),
-            _RightRow(
-              label: l.inviteRightExchanges,
-              domain: 'exchanges',
-              rights: _rights,
-              onChanged: _set,
-            ),
+            if (_childRole) ...[
+              Text(
+                l.inviteChildNoEdit,
+                key: const ValueKey('invite-child-no-edit'),
+                style: const TextStyle(fontSize: 13, color: AppColors.muted),
+              ),
+              const SizedBox(height: 8),
+            ],
+            for (final (label, domain) in [
+              (l.inviteRightAgenda, 'agenda'),
+              (l.inviteRightCustody, 'custody'),
+              (l.inviteRightNotes, 'children_notes'),
+              (l.inviteRightExchanges, 'exchanges'),
+            ])
+              _RightRow(
+                label: label,
+                domain: domain,
+                rights: _rights,
+                allowEdit: !_childRole,
+                onChanged: _set,
+              ),
           ],
           const SizedBox(height: 20),
           FilledButton(
@@ -162,6 +167,20 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
 
   void _set(String domain, String level) =>
       setState(() => _rights[domain] = level);
+
+  /// Change le rôle et **rabaisse** les droits déjà saisis quand le nouveau rôle
+  /// ne peut pas les porter — sans quoi un « Modifier » choisi avant de cocher
+  /// « Enfant » partirait tel quel au serveur, qui le rabaisserait sans le dire.
+  void _selectRole(api.InvitationCreateInvitationRequestRole role) {
+    setState(() {
+      _role = role;
+      if (role == api.InvitationCreateInvitationRequestRole.child) {
+        for (final domain in _rights.keys) {
+          if (_rights[domain] == 'edit') _rights[domain] = 'view';
+        }
+      }
+    });
+  }
 }
 
 /// mob-param U-07 : carte radio de rôle (bordure 2px si actif + pastille radio).
@@ -236,12 +255,17 @@ class _RightRow extends StatelessWidget {
     required this.label,
     required this.domain,
     required this.rights,
+    required this.allowEdit,
     required this.onChanged,
   });
 
   final String label;
   final String domain;
   final Map<String, String> rights;
+
+  /// Faux pour un rôle enfant : le niveau « Modifier » n'est alors pas proposé,
+  /// puisque le serveur le refuse de toute façon (constat C50).
+  final bool allowEdit;
   final void Function(String domain, String level) onChanged;
 
   @override
@@ -266,7 +290,8 @@ class _RightRow extends StatelessWidget {
               items: [
                 DropdownMenuItem(value: 'none', child: Text(l.rightNone)),
                 DropdownMenuItem(value: 'view', child: Text(l.rightView)),
-                DropdownMenuItem(value: 'edit', child: Text(l.rightEdit)),
+                if (allowEdit)
+                  DropdownMenuItem(value: 'edit', child: Text(l.rightEdit)),
               ],
               onChanged: (v) => onChanged(domain, v ?? 'none'),
             ),

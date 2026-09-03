@@ -8,10 +8,12 @@ Future<void> pumpScreen(
   WidgetTester tester,
   Widget child, {
   List<Override> overrides = const [],
+  Size size = const Size(1080, 2400),
 }) async {
-  // Fenetre haute : les formulaires d'auth depassent 600px et leurs boutons
-  // seraient hors-ecran (echec de hit-test) sur la taille de test par defaut.
-  tester.view.physicalSize = const Size(1080, 2400);
+  // Fenetre haute par defaut : les formulaires d'auth depassent 600px et leurs
+  // boutons seraient hors-ecran (echec de hit-test) sur la taille de test par
+  // defaut. `size` permet a un test de debordement de viser un gabarit reel.
+  tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);

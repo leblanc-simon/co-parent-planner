@@ -84,6 +84,15 @@
   "homeNotesEmpty": "Aucune note pour le moment.",
   "homeCustodyTitle": "Garde de la semaine",
   "homeCustodyEmpty": "Aucun planning de garde pour le moment.",
+  "homeCustodyWithYou": "Les enfants sont avec vous cette semaine.",
+  "homeCustodyWithParent": "Les enfants sont chez {parent} cette semaine.",
+  "@homeCustodyWithParent": {
+    "placeholders": {
+      "parent": {
+        "type": "String"
+      }
+    }
+  },
   "homeFamilyIntact": "Toute la famille réunie.",
   "settingsTitle": "Réglages",
   "settingsProfile": "Profil",
@@ -106,6 +115,15 @@
   "membersPending": "Invitations en attente",
   "membersRevoke": "Révoquer",
   "membersInvited": "Invitation envoyée.",
+  "membersRevokeConfirmTitle": "Révoquer cette invitation ?",
+  "membersRevokeConfirmBody": "L'invitation envoyée à {email} ne sera plus valable. Vous pourrez réinviter cette adresse.",
+  "@membersRevokeConfirmBody": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "membersRevoked": "Invitation révoquée.",
   "inviteTitle": "Inviter une personne",
   "inviteEmail": "Adresse e-mail",
@@ -114,6 +132,7 @@
   "inviteRightAgenda": "Agenda",
   "inviteRightCustody": "Garde",
   "inviteRightNotes": "Notes enfants",
+  "inviteChildNoEdit": "Un compte enfant ne peut jamais modifier : ses droits sont limités à la consultation.",
   "inviteRightExchanges": "Échanges",
   "rightNone": "Aucun",
   "rightView": "Lecture",
@@ -387,6 +406,15 @@
   },
   "exchangeConflict": "Cette décision est déjà tranchée.",
   "exchangeClose": "Clôturer",
+  "exchangeCloseConfirmTitle": "Clore définitivement ?",
+  "exchangeCloseConfirmBody": "L'échange « {title} » sera clos et ne pourra plus être rouvert. Les membres concernés en seront informés.",
+  "@exchangeCloseConfirmBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
   "exchangeClosed": "Échange clôturé.",
   "exchangeCreate": "Créer",
   "exchangeCreated": "Échange créé.",
@@ -455,6 +483,5 @@
   "privacyDeleteButton": "Supprimer mon compte",
   "privacyDeleteConfirmTitle": "Supprimer définitivement ?",
   "privacyDeleteConfirmBody": "Cette action est irréversible : votre compte sera anonymisé et vous serez déconnecté.",
-  "privacyDeleteConfirm": "Supprimer",
-  "privacyCancel": "Annuler"
+  "privacyDeleteConfirm": "Supprimer"
 }

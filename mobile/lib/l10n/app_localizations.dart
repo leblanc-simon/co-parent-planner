@@ -1,10 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
 import 'app_localizations_fr.dart';
-import 'dart:async';
 
 // ignore_for_file: type=lint
 
@@ -554,6 +555,18 @@ abstract class AppL10n {
   /// **'Aucun planning de garde pour le moment.'**
   String get homeCustodyEmpty;
 
+  /// No description provided for @homeCustodyWithYou.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les enfants sont avec vous cette semaine.'**
+  String get homeCustodyWithYou;
+
+  /// No description provided for @homeCustodyWithParent.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les enfants sont chez {parent} cette semaine.'**
+  String homeCustodyWithParent(String parent);
+
   /// No description provided for @homeFamilyIntact.
   ///
   /// In fr, this message translates to:
@@ -686,6 +699,18 @@ abstract class AppL10n {
   /// **'Invitation envoyée.'**
   String get membersInvited;
 
+  /// No description provided for @membersRevokeConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Révoquer cette invitation ?'**
+  String get membersRevokeConfirmTitle;
+
+  /// No description provided for @membersRevokeConfirmBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'invitation envoyée à {email} ne sera plus valable. Vous pourrez réinviter cette adresse.'**
+  String membersRevokeConfirmBody(String email);
+
   /// No description provided for @membersRevoked.
   ///
   /// In fr, this message translates to:
@@ -733,6 +758,12 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Notes enfants'**
   String get inviteRightNotes;
+
+  /// No description provided for @inviteChildNoEdit.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un compte enfant ne peut jamais modifier : ses droits sont limités à la consultation.'**
+  String get inviteChildNoEdit;
 
   /// No description provided for @inviteRightExchanges.
   ///
@@ -1712,6 +1743,18 @@ abstract class AppL10n {
   /// **'Clôturer'**
   String get exchangeClose;
 
+  /// No description provided for @exchangeCloseConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Clore définitivement ?'**
+  String get exchangeCloseConfirmTitle;
+
+  /// No description provided for @exchangeCloseConfirmBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'échange « {title} » sera clos et ne pourra plus être rouvert. Les membres concernés en seront informés.'**
+  String exchangeCloseConfirmBody(String title);
+
   /// No description provided for @exchangeClosed.
   ///
   /// In fr, this message translates to:
@@ -1999,12 +2042,6 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Supprimer'**
   String get privacyDeleteConfirm;
-
-  /// No description provided for @privacyCancel.
-  ///
-  /// In fr, this message translates to:
-  /// **'Annuler'**
-  String get privacyCancel;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

@@ -1,3 +1,4 @@
+import 'package:coparentplanner/core/error/api_exception.dart';
 import 'package:coparentplanner/core/session/session_scope.dart';
 import 'package:coparentplanner/api/generated/export.dart' as api;
 import 'package:coparentplanner/features/family/application/family_context.dart';
@@ -153,4 +154,166 @@ void main() {
       expect(find.text('Beau-parent'), findsOneWidget);
     },
   );
+
+  group('révocation d\'une invitation (C47)', () {
+    /// Un admin, une invitation en attente : le décor minimal de la section.
+    void stubPending() {
+      when(() => repo.listMembers('fam-1')).thenAnswer(
+        (_) async => const [
+          api.Member(id: 'm1', role: 'parent', isAdmin: true, self: true),
+        ],
+      );
+      when(() => repo.listInvitations('fam-1')).thenAnswer(
+        (_) async => const [
+          api.Invitation(
+            id: 'i1',
+            email: 'beau@parent.fr',
+            role: 'step_parent',
+            status: 'pending',
+          ),
+        ],
+      );
+    }
+
+    testWidgets('demande confirmation, et n\'appelle rien si on annule', (
+      tester,
+    ) async {
+      stubPending();
+
+      await pumpScreen(tester, const MembersScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('members-revoke-i1')));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('beau@parent.fr'), findsWidgets);
+      await tester.tap(find.text('Annuler'));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => repo.revokeInvitation(any()));
+    });
+
+    testWidgets('échec du serveur : un message, au lieu de rien du tout', (
+      tester,
+    ) async {
+      // L'action tenait dans un `onPressed: () async { await … }` sans `try/catch` :
+      // l'exception partait en erreur de `Future` non attendue, l'écran restait
+      // rigoureusement identique et l'admin repartait avec une croyance fausse.
+      stubPending();
+      when(() => repo.revokeInvitation('i1')).thenThrow(
+        ApiException(
+          statusCode: 409,
+          detail: 'Cette invitation a déjà été acceptée.',
+        ),
+      );
+
+      await pumpScreen(tester, const MembersScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('members-revoke-i1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('members-revoke-confirm')));
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(
+        find.text('Cette invitation a déjà été acceptée.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'échec de chargement : la section le dit au lieu de disparaître',
+      (tester) async {
+        when(() => repo.listMembers('fam-1')).thenAnswer(
+          (_) async => const [
+            api.Member(id: 'm1', role: 'parent', isAdmin: true, self: true),
+          ],
+        );
+        when(
+          () => repo.listInvitations('fam-1'),
+        ).thenThrow(ApiException(statusCode: null, isConnectionFailure: true));
+
+        await pumpScreen(tester, const MembersScreen(), overrides: overrides());
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Connexion impossible. Vérifiez votre réseau.'),
+          findsOneWidget,
+        );
+      },
+    );
+  });
+
+  group('plafond du rôle enfant dans le formulaire d\'invitation (C50)', () {
+    testWidgets('« Modifier » n\'est pas proposé pour un rôle enfant', (
+      tester,
+    ) async {
+      // `RightsNormalizer::capForRole` rabaisse silencieusement les droits d'un
+      // enfant à `view` : proposer « Modifier » faisait croire à l'admin qu'il
+      // accordait l'édition.
+      await pumpScreen(tester, const InviteScreen(), overrides: overrides());
+
+      expect(find.byKey(const ValueKey('invite-child-no-edit')), findsNothing);
+      await tester.tap(find.text('Enfant'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('invite-child-no-edit')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byType(DropdownButton<String>).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Édition'), findsNothing);
+      expect(find.text('Lecture'), findsWidgets);
+    });
+
+    testWidgets(
+      'un « Modifier » déjà choisi est rabaissé au passage en enfant',
+      (tester) async {
+        when(
+          () => repo.invite(
+            any(),
+            email: any(named: 'email'),
+            role: any(named: 'role'),
+            rights: any(named: 'rights'),
+            isAdmin: any(named: 'isAdmin'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const api.Invitation(id: 'i1', email: 'x@e.fr', role: 'child'),
+        );
+
+        await pumpScreen(tester, const InviteScreen(), overrides: overrides());
+        await tester.enterText(
+          find.byKey(const ValueKey('invite-email')),
+          'x@e.fr',
+        );
+
+        // Agenda = Modifier, puis bascule du rôle sur Enfant.
+        await tester.tap(find.byType(DropdownButton<String>).first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Édition').last);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Enfant'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const ValueKey('invite-send')));
+        await tester.pump();
+
+        final sent =
+            verify(
+                  () => repo.invite(
+                    'fam-1',
+                    email: 'x@e.fr',
+                    role: api.InvitationCreateInvitationRequestRole.child,
+                    rights: captureAny(named: 'rights'),
+                    isAdmin: any(named: 'isAdmin'),
+                  ),
+                ).captured.single
+                as Map<String, String>;
+
+        expect(sent['agenda'], 'view');
+      },
+    );
+  });
 }

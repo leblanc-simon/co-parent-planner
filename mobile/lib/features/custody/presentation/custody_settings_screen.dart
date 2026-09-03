@@ -6,6 +6,7 @@ import '../../../core/error/api_exception.dart';
 import '../../../core/error/error_text.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/util/detached_providers.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../family/application/family_context.dart';
@@ -163,6 +164,10 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
     final l = AppL10n.of(context);
+    // Conteneur détaché : le rythme est enregistré, les jours régénérés côté
+    // serveur ; le cache doit suivre même si l'écran est quitté pendant l'envoi
+    // (constat C23).
+    final providers = context.providers;
     try {
       await ref
           .read(custodyRepositoryProvider)
@@ -179,9 +184,10 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
             // un `custody.error.config_conflict`.
             settings: _kind == 'midweek_weekends' ? _midweekSettings() : null,
           );
-      ref.invalidate(familyCustodyPatternProvider);
-      ref.invalidate(familyCustodyDaysProvider);
-      ref.invalidate(familyCustodyStatsProvider);
+      providers
+        ..invalidate(familyCustodyPatternProvider)
+        ..invalidate(familyCustodyDaysProvider)
+        ..invalidate(familyCustodyStatsProvider);
       if (navigator.canPop()) navigator.pop();
       messenger.showSnackBar(SnackBar(content: Text(l.custodySaved)));
     } on ApiException catch (e) {

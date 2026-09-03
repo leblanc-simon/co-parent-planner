@@ -24,6 +24,15 @@ abstract interface class SecureStorage {
 
   Future<String?> readLocale();
   Future<void> writeLocale(String locale);
+
+  /// Identifiant de la dernière opération d'export RGPD demandée (US-SET-4).
+  ///
+  /// L'API n'offre aucune liste des opérations du sujet — seulement
+  /// `POST /me/export` et `GET /me/export/{id}` — et aucun e-mail « export prêt »
+  /// n'existe : sans cet identifiant, l'archive générée et son lien signé
+  /// deviennent inatteignables dès que l'écran est quitté (constat C52).
+  Future<String?> readExportOperationId();
+  Future<void> writeExportOperationId(String? id);
 }
 
 class FlutterSecureStorageAdapter implements SecureStorage {
@@ -41,6 +50,7 @@ class FlutterSecureStorageAdapter implements SecureStorage {
   static const _kFamily = 'active_family';
   static const _kProfile = 'user_profile';
   static const _kLocale = 'locale';
+  static const _kExport = 'rgpd_export_operation';
 
   @override
   Future<String?> readAccessToken() => _storage.read(key: _kAccess);
@@ -62,6 +72,9 @@ class FlutterSecureStorageAdapter implements SecureStorage {
     await _storage.delete(key: _kAccess);
     await _storage.delete(key: _kRefresh);
     await _storage.delete(key: _kProfile);
+    // L'opération d'export appartient au compte : elle ne doit pas survivre à
+    // sa déconnexion sur un appareil partagé.
+    await _storage.delete(key: _kExport);
   }
 
   @override
@@ -94,4 +107,16 @@ class FlutterSecureStorageAdapter implements SecureStorage {
   @override
   Future<void> writeLocale(String locale) =>
       _storage.write(key: _kLocale, value: locale);
+
+  @override
+  Future<String?> readExportOperationId() => _storage.read(key: _kExport);
+
+  @override
+  Future<void> writeExportOperationId(String? id) async {
+    if (id == null) {
+      await _storage.delete(key: _kExport);
+    } else {
+      await _storage.write(key: _kExport, value: id);
+    }
+  }
 }

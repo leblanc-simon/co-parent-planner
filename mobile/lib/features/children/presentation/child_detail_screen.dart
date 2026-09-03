@@ -8,9 +8,11 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/util/date_labels.dart';
+import '../../../core/util/detached_providers.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../core/widgets/initial_avatar.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../members/data/members_repository.dart';
 import '../data/children_repository.dart';
 
 /// US-CH-1/6/7 — fiche enfant : infos pratiques, notes, et **bandeau anti-données-de-santé**.
@@ -41,10 +43,13 @@ class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
       _sending = true;
       _error = null;
     });
+    // Conteneur détaché : la note est enregistrée côté serveur, la liste doit être
+    // rafraîchie même si l'écran a été quitté pendant l'envoi (constat C23).
+    final providers = context.providers;
     try {
       await ref.read(childrenRepositoryProvider).addNote(widget.child.id, text);
-      _note.clear();
-      ref.invalidate(childNotesProvider(widget.child.id));
+      providers.invalidate(childNotesProvider(widget.child.id));
+      if (mounted) _note.clear();
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = errorText(context, e));
     } finally {
@@ -57,6 +62,12 @@ class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
     final l = AppL10n.of(context);
     final child = widget.child;
     final notesAsync = ref.watch(childNotesProvider(child.id));
+    // US-CH-1 : « les actions d'édition sont absentes ou désactivées » pour qui n'a
+    // pas le droit. Le composeur était offert à tous, y compris à un membre
+    // `children_notes = view` qui rédigeait sa note pour ne récolter qu'un 403
+    // (constat C48). Masqué tant que le droit est inconnu : mieux vaut le révéler
+    // une fraction de seconde plus tard que mener à un refus.
+    final canWriteNotes = ref.watch(canEditProvider('children_notes'));
 
     return Scaffold(
       appBar: AppBar(title: Text(child.firstName)),
@@ -127,25 +138,29 @@ class _ChildDetailScreenState extends ConsumerState<ChildDetailScreen> {
             ErrorBanner(_error!),
             const SizedBox(height: 8),
           ],
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  key: const ValueKey('child-note-input'),
-                  controller: _note,
-                  enabled: !_sending,
-                  decoration: InputDecoration(hintText: l.childNotePlaceholder),
+          if (canWriteNotes) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    key: const ValueKey('child-note-input'),
+                    controller: _note,
+                    enabled: !_sending,
+                    decoration: InputDecoration(
+                      hintText: l.childNotePlaceholder,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              FilledButton(
-                key: const ValueKey('child-note-send'),
-                onPressed: _sending ? null : _addNote,
-                child: Text(l.childNoteSend),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+                const SizedBox(width: 8),
+                FilledButton(
+                  key: const ValueKey('child-note-send'),
+                  onPressed: _sending ? null : _addNote,
+                  child: Text(l.childNoteSend),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
 
           notesAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -246,12 +261,20 @@ class _NoteCard extends StatelessWidget {
                 fontSize: 11,
               ),
               const SizedBox(width: 8),
-              Text(
-                note.authorName,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.ink,
+              // Nom compressible, date incompressible : les deux textes étaient
+              // posés nus dans le `Row`, et un nom un peu long — ou l'adresse
+              // e-mail sur laquelle le serveur retombe faute de nom complet —
+              // débordait la carte en emportant la date (constat C60).
+              Flexible(
+                child: Text(
+                  note.authorName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink,
+                  ),
                 ),
               ),
               if ((note.noteDate ?? '').isNotEmpty)
@@ -261,6 +284,7 @@ class _NoteCard extends StatelessWidget {
                   // backend expose bien un `noteDateLabel`, mais en français figé :
                   // le formater ici est la seule forme traduisible.
                   ' · ${DateLabels.isoDayMonthYear(AppL10n.of(context).localeName, note.noteDate!)}',
+                  softWrap: false,
                   style: const TextStyle(
                     fontSize: 13,
                     color: Color(0xFFA39B8C),

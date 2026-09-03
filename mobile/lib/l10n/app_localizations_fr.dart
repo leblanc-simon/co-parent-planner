@@ -252,6 +252,14 @@ class AppL10nFr extends AppL10n {
   String get homeCustodyEmpty => 'Aucun planning de garde pour le moment.';
 
   @override
+  String get homeCustodyWithYou => 'Les enfants sont avec vous cette semaine.';
+
+  @override
+  String homeCustodyWithParent(String parent) {
+    return 'Les enfants sont chez $parent cette semaine.';
+  }
+
+  @override
   String get homeFamilyIntact => 'Toute la famille réunie.';
 
   @override
@@ -318,6 +326,14 @@ class AppL10nFr extends AppL10n {
   String get membersInvited => 'Invitation envoyée.';
 
   @override
+  String get membersRevokeConfirmTitle => 'Révoquer cette invitation ?';
+
+  @override
+  String membersRevokeConfirmBody(String email) {
+    return 'L\'invitation envoyée à $email ne sera plus valable. Vous pourrez réinviter cette adresse.';
+  }
+
+  @override
   String get membersRevoked => 'Invitation révoquée.';
 
   @override
@@ -340,6 +356,10 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get inviteRightNotes => 'Notes enfants';
+
+  @override
+  String get inviteChildNoEdit =>
+      'Un compte enfant ne peut jamais modifier : ses droits sont limités à la consultation.';
 
   @override
   String get inviteRightExchanges => 'Échanges';
@@ -905,6 +925,14 @@ class AppL10nFr extends AppL10n {
   String get exchangeClose => 'Clôturer';
 
   @override
+  String get exchangeCloseConfirmTitle => 'Clore définitivement ?';
+
+  @override
+  String exchangeCloseConfirmBody(String title) {
+    return 'L\'échange « $title » sera clos et ne pourra plus être rouvert. Les membres concernés en seront informés.';
+  }
+
+  @override
   String get exchangeClosed => 'Échange clôturé.';
 
   @override
@@ -1081,7 +1109,4 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get privacyDeleteConfirm => 'Supprimer';
-
-  @override
-  String get privacyCancel => 'Annuler';
 }

@@ -1,3 +1,4 @@
+import 'package:coparentplanner/api/generated/export.dart' as api;
 import 'package:coparentplanner/features/agenda/data/agenda_repository.dart';
 import 'package:coparentplanner/features/agenda/data/overlay_repository.dart';
 import 'package:coparentplanner/features/auth/data/auth_repository.dart';
@@ -51,4 +52,31 @@ class FixedCustodyMonth extends CustodyMonthController {
 
   @override
   DateTime build() => month;
+}
+
+/// `MembersRepository` mocké ne renvoyant que le **membre courant** et ses droits
+/// effectifs.
+///
+/// Les écrans conditionnent désormais leurs actions de mutation à ces droits
+/// (constats C29, C48) : un test qui exerce une écriture doit dire de quel droit il
+/// part, faute de quoi le contrôle reste masqué — droit inconnu = pas d'action.
+MockMembersRepository membersRepositoryWithRights(
+  Map<String, String> rights, {
+  String familyId = 'fam-1',
+  String name = 'Alice Martin',
+}) {
+  final mock = MockMembersRepository();
+  when(() => mock.listMembers(familyId)).thenAnswer(
+    (_) async => [
+      api.Member(
+        id: 'm-self',
+        role: 'parent',
+        fullName: name,
+        self: true,
+        rights: rights,
+      ),
+    ],
+  );
+
+  return mock;
 }

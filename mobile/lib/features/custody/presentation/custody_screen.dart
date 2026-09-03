@@ -9,6 +9,7 @@ import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/util/civil_date.dart';
 import '../../../core/util/date_labels.dart';
+import '../../../core/util/detached_providers.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../core/widgets/large_title_header.dart';
 import '../../../l10n/app_localizations.dart';
@@ -255,10 +256,11 @@ class _ImportHolidaysButtonState extends ConsumerState<_ImportHolidaysButton> {
     if (family == null) return;
     setState(() => _busy = true);
     final messenger = ScaffoldMessenger.of(context);
+    final providers = context.providers;
     final l = AppL10n.of(context);
     try {
       await ref.read(custodyRepositoryProvider).importHolidays(family.familyId);
-      ref.invalidate(familyHolidaysProvider);
+      providers.invalidate(familyHolidaysProvider);
       messenger.showSnackBar(
         SnackBar(content: Text(l.custodyHolidaysImported)),
       );
@@ -1174,13 +1176,15 @@ class _ExceptionTile extends ConsumerWidget {
                   ? null
                   : () async {
                       final messenger = ScaffoldMessenger.of(context);
+                      final providers = context.providers;
                       try {
                         await ref
                             .read(custodyRepositoryProvider)
                             .deleteException(family.familyId, exception.id);
-                        ref.invalidate(familyCustodyExceptionsProvider);
-                        ref.invalidate(familyCustodyDaysProvider);
-                        ref.invalidate(familyCustodyStatsProvider);
+                        providers
+                          ..invalidate(familyCustodyExceptionsProvider)
+                          ..invalidate(familyCustodyDaysProvider)
+                          ..invalidate(familyCustodyStatsProvider);
                         messenger.showSnackBar(
                           SnackBar(content: Text(l.custodyExceptionDeleted)),
                         );
@@ -1261,6 +1265,7 @@ class _CustodyDaySheetState extends ConsumerState<CustodyDaySheet> {
     });
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
+    final providers = context.providers;
     final swappedMsg = l.custodySwapped;
     final reason = l.custodySwapReason;
     try {
@@ -1273,9 +1278,10 @@ class _CustodyDaySheetState extends ConsumerState<CustodyDaySheet> {
             parentMembershipId: target,
             reason: reason,
           );
-      ref.invalidate(familyCustodyDaysProvider);
-      ref.invalidate(familyCustodyStatsProvider);
-      ref.invalidate(familyCustodyExceptionsProvider);
+      providers
+        ..invalidate(familyCustodyDaysProvider)
+        ..invalidate(familyCustodyStatsProvider)
+        ..invalidate(familyCustodyExceptionsProvider);
       if (navigator.canPop()) navigator.pop();
       messenger.showSnackBar(SnackBar(content: Text(swappedMsg)));
     } on ApiException catch (e) {

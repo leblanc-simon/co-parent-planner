@@ -7,6 +7,7 @@ import '../../../core/error/error_text.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
+import '../../../core/util/detached_providers.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../l10n/app_localizations.dart';
 import '../data/notification_prefs_repository.dart';
@@ -94,6 +95,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
   Future<void> _save() async {
     final l = AppL10n.of(context);
+    // Conteneur détaché : les préférences sont enregistrées, le cache doit être
+    // rafraîchi même si l'écran est quitté pendant l'envoi (constat C23).
+    final providers = context.providers;
     setState(() {
       _saving = true;
       _error = null;
@@ -107,7 +111,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             quietHoursEnd: _quietEnd,
             locale: _locale,
           );
-      ref.invalidate(notificationPrefsProvider);
+      providers.invalidate(notificationPrefsProvider);
       if (mounted) {
         ScaffoldMessenger.of(
           context,

@@ -11,6 +11,9 @@ import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/util/civil_date.dart';
 import '../../../core/util/date_labels.dart';
+import '../../../core/util/detached_providers.dart';
+import '../../../core/widgets/app_filter_chip.dart';
+import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../core/widgets/large_title_header.dart';
 import '../../../l10n/app_localizations.dart';
@@ -352,6 +355,7 @@ class _OverlayToggles extends ConsumerWidget {
               value: enabled[link.id] ?? false,
               onChanged: (v) async {
                 final messenger = ScaffoldMessenger.of(context);
+                final providers = context.providers;
                 try {
                   await ref
                       .read(overlayRepositoryProvider)
@@ -361,7 +365,7 @@ class _OverlayToggles extends ConsumerWidget {
                         view: 'agenda',
                         enabled: v,
                       );
-                  ref
+                  providers
                     ..invalidate(overlayPreferencesProvider)
                     ..invalidate(overlayEventsProvider);
                 } on ApiException catch (e) {
@@ -693,32 +697,20 @@ class _EventActions extends ConsumerWidget {
   ) async {
     final sheet = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l.agendaDeleteConfirmTitle),
-        content: Text(l.agendaDeleteConfirmBody(event.title)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(l.actionCancel),
-          ),
-          TextButton(
-            key: const ValueKey('agenda-delete-confirm'),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(
-              l.agendaDelete,
-              style: const TextStyle(color: AppColors.catHealth),
-            ),
-          ),
-        ],
-      ),
+    final providers = context.providers;
+    final confirmed = await confirmAction(
+      context,
+      title: l.agendaDeleteConfirmTitle,
+      body: l.agendaDeleteConfirmBody(event.title),
+      confirmLabel: l.agendaDelete,
+      confirmKey: const ValueKey('agenda-delete-confirm'),
+      destructive: true,
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
 
     try {
       await ref.read(agendaRepositoryProvider).deleteEvent(event.id);
-      ref
+      providers
         ..invalidate(familyEventsProvider)
         ..invalidate(upcomingEventsProvider);
       if (sheet.canPop()) sheet.pop();
@@ -750,51 +742,13 @@ class _CategoryFilters extends ConsumerWidget {
       runSpacing: 8,
       children: [
         for (final (value, label, color) in entries)
-          _FilterChip(
+          AppFilterChip(
             label: label,
             color: color,
             selected: selected == value,
             onTap: () => ref.read(_agendaFilterProvider.notifier).state = value,
           ),
       ],
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.color,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final Color color;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: selected ? color.withValues(alpha: 0.14) : AppColors.card,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: selected ? color : AppColors.border2),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: selected ? color : AppColors.muted,
-          ),
-        ),
-      ),
     );
   }
 }
@@ -893,6 +847,7 @@ class _EventFormState extends ConsumerState<_EventForm> {
     });
     final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
+    final providers = context.providers;
     final createdMsg = AppL10n.of(context).agendaCreated;
     final queuedMsg = AppL10n.of(context).offlineQueued;
     try {
@@ -912,7 +867,7 @@ class _EventFormState extends ConsumerState<_EventForm> {
                 ? null
                 : _location.text.trim(),
           );
-      ref.invalidate(familyEventsProvider);
+      providers.invalidate(familyEventsProvider);
       if (navigator.canPop()) navigator.pop();
       messenger.showSnackBar(SnackBar(content: Text(createdMsg)));
     } on OutboxQueuedException {

@@ -57,6 +57,7 @@ docker compose down -v         # arrête + supprime les volumes (base, clés JWT
 | Binaire Mercure | récent | optionnel en dev (temps réel) |
 | Node.js | optionnel | AssetMapper ne requiert pas Node |
 | Flutter SDK | 3.38.x (Dart 3.10.x) | app mobile `/mobile` (génération client = pur Dart, sans JVM) |
+| `fonttools` (pip) | optionnel | **régénération** des coupes de polices (`mobile/tool/build_fonts.py`) ; les fichiers produits sont commités |
 
 Vérifier : `php -v && php -m | grep -E 'pdo_pgsql|sodium|intl|redis'`.
 
@@ -166,7 +167,17 @@ Le dossier `lib/api/generated/` est **commité et ne doit jamais être édité �
 régénéré par les commandes ci-dessus (la régénération est idempotente ; toute divergence avec
 `contracts/openapi.json` est détectée en CI par `git diff --exit-code lib/api/generated/`).
 Les polices du design system (Bricolage Grotesque, Hanken Grotesk) sont **auto-hébergées** sous
-`mobile/assets/fonts/` (OFL).
+`mobile/assets/fonts/` (OFL), en **coupes statiques** (une par graisse, déclarées avec leur
+`weight:` au `pubspec.yaml`) : Flutter ne pilote pas les axes d'une police variable depuis
+`TextStyle.fontWeight`. Ces fichiers sont **commités** — construire l'application ne demande donc
+rien de plus. Les **régénérer** (mise à jour d'une police, nouvelle graisse) demande `fonttools`,
+outil de génération et non dépendance de build :
+
+```bash
+pip install fonttools && python3 tool/build_fonts.py   # depuis mobile/
+```
+
+Détail des coupes et de leurs usages : `mobile/assets/fonts/README.md`.
 
 ---
 

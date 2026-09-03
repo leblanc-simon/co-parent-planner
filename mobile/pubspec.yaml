@@ -77,6 +77,9 @@ dev_dependencies:
   # Tests : mock dio + matchers
   mocktail: ^1.0.5
   http_mock_adapter: ^0.6.1
+  # Lecture du `pubspec.yaml` par le garde-fou de graisses (test/fonts_weight_test.dart) :
+  # les coupes testees sont celles reellement declarees, pas une liste recopiee.
+  yaml: ^3.1.3
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -92,14 +95,31 @@ flutter:
   uses-material-design: true
 
   # Polices auto-hebergees (design system §8) — OFL, embarquees pour fonctionner
-  # hors-ligne (cf. assets/fonts/OFL-*.txt). Fichiers variables.
+  # hors-ligne (cf. assets/fonts/OFL-*.txt).
+  #
+  # Coupes STATIQUES, une par graisse, avec leur descripteur `weight:` : les
+  # sources sont des polices variables, dont Flutter ne pilote pas les axes depuis
+  # `TextStyle.fontWeight`. Declarees en un seul fichier sans `weight:`, elles ne
+  # rendaient que leur instance par defaut — pour Bricolage `wght=800 / opsz=96`,
+  # soit le meme ExtraBold display pour tous les titres (constat C54).
+  # Regeneration : `python3 tool/build_fonts.py` (cf. assets/fonts/README.md).
   fonts:
     - family: Bricolage Grotesque
       fonts:
-        - asset: assets/fonts/BricolageGrotesque.ttf
+        - asset: assets/fonts/BricolageGrotesque-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/BricolageGrotesque-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/BricolageGrotesque-ExtraBold.ttf
+          weight: 800
     - family: Hanken Grotesk
       fonts:
-        - asset: assets/fonts/HankenGrotesk.ttf
+        - asset: assets/fonts/HankenGrotesk-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/HankenGrotesk-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/HankenGrotesk-Bold.ttf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:

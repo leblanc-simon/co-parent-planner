@@ -10,9 +10,9 @@
 > Détail intégral (preuve, scénario de panne, correction, verdict du vérificateur) :
 > **`specs/revue-mobile-flutter-2026-08-annexes.md`**.
 >
-> **Avancement au 2026-09-04 : 61 constats corrigés sur 68** — étapes 1 à 9 livrées, plus `C14` et
-> `C66`. Restent 7 constats : `C11` (fin de l'étape 5), l'étape 10 et le reste de l'étape 11.
-> *(Le compteur précédent annonçait 51/68 : il oubliait `C66`, livré hors étape.)*
+> **Avancement au 2026-09-04 : 62 constats corrigés sur 68** — étapes 1 à 10 livrées, plus `C14` et
+> `C66`. Restent 6 constats : `C11` (fin de l'étape 5) et le reste de l'étape 11.
+> *(Le compteur d'avant l'étape 9 annonçait 51/68 : il oubliait `C66`, livré hors étape.)*
 > Détail par étape : voir §Journal en fin de document.
 
 ## Conditions d'observation
@@ -198,7 +198,12 @@ résultat lui échappe (403 imprévu, clôture définitive au premier effleureme
 | C60 | La ligne « auteur · date » d'une note enfant n'a ni `Flexible` ni ellipsis → débordement | P3 |
 | C61 | Cibles tactiles des filtres agenda et échanges à ~32 pt, sous le minimum de 44 pt | P3 |
 
-### Étape 10 — Typographie
+### Étape 10 — ✅ LIVRÉE le 2026-09-04 — Typographie
+
+Cause racine : les deux polices du design system sont **variables**, et Flutter ne pilote pas leurs
+axes depuis `TextStyle.fontWeight`. Déclarées en un seul fichier sans descripteur `weight:`, elles ne
+rendaient que leur **instance par défaut**.
+
 
 | # | Constat | Gravité |
 |---|---|---|
@@ -253,6 +258,45 @@ Cinq sur 73, chacun réfuté code en main :
 ---
 
 ## Journal
+
+### 2026-09-04 — Étape 10 livrée (typographie)
+
+**Le constat est démontré, pas seulement argumenté.** Une sonde d'un test — charger
+`BricolageGrotesque.ttf` par un `FontLoader` et mesurer la largeur d'un même texte — donne
+`fontWeight: w400` et `w800` **strictement identiques** (238,14 px), quand `fontVariations wght=200`
+rend 217,08 px et `wght=800` rend 238,14 px. Autrement dit : `fontWeight` ne touche pas l'axe `wght`,
+et la valeur par défaut rendue *est* le 800. Toute la hiérarchie de titres du §8 sortait en ExtraBold
+display, `titleLarge` w600 comme `displaySmall` w700.
+
+**Correction : coupes statiques plutôt que `fontVariations`.** L'option `fontVariations` aurait
+laissé faux **tous** les `fontWeight` écrits dans les écrans (37 `w600`, 17 `w700`, 1 `w800`) —
+un `TextStyle(fontWeight: w600)` d'un écran hérite bien les `fontVariations` de son style parent,
+donc l'axe du parent, jamais la graisse demandée. Six instances sont donc figées depuis les sources
+variables (`tool/build_fonts.py`, fonttools) et déclarées une par une avec leur `weight:` :
+Bricolage 600/700/800, Hanken 400/600/700. `fontWeight` retrouve son fonctionnement normal partout,
+sans rien à écrire dans les écrans ni risque d'oubli sur un nouveau style.
+
+L'axe `opsz` de Bricolage (12 → 96, **défaut 96**) est figé sur la taille où chaque graisse est
+employée : 21 pour la SemiBold (`titleLarge`), 24 pour la Bold (titres de 18 à 30 px), 18 pour
+l'ExtraBold (logo d'authentification). Une coupe statique ne peut pas suivre la taille du texte comme
+le fait `font-optical-sizing: auto` côté web ; l'écart résiduel se compte en quelques points optiques
+sur les plus grands titres, contre 96 avant. Les sources variables restent au dépôt sous
+`assets/fonts/src/` (non embarquées) et la table des coupes est documentée dans
+`assets/fonts/README.md`. Poids embarqué : **484 Ko** contre 528 Ko auparavant.
+
+**Garde-fou CI, vérifié en échec** (`test/fonts_weight_test.dart`) : les coupes sont chargées **depuis
+les chemins déclarés au `pubspec.yaml`** — pas une liste recopiée — puis la largeur d'un même texte
+est mesurée dans chaque graisse ; deux graisses de largeur identique signent une famille réduite à une
+seule coupe. Rétabli l'ancien `pubspec.yaml`, le test échoue sur les deux critères : « coupe déclarée
+sans descripteur `weight:` » et « Expected: an object with length of <3> / Actual: Set:[238.14] » —
+le symptôme du constat, chiffré.
+
+Portes mobile : `dart analyze --fatal-infos --fatal-warnings` 0, format 0, **349 tests verts**
+(346 avant), couverture **79,7 %**. `flutter build bundle` vérifié : le `FontManifest.json` produit
+porte bien les six coupes et leurs graisses. Une dépendance de **développement** ajoutée (`yaml`,
+déjà transitive, pour que le garde-fou lise le `pubspec.yaml` réel) et `fonttools` documenté comme
+outil optionnel — `infra/INSTALL.md` à jour. Aucun changement de contrat, de client Dart ni de
+backend.
 
 ### 2026-09-04 — Étape 9 livrée (garde-fous d'action, droits, `mounted`)
 

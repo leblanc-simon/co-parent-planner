@@ -80,6 +80,14 @@ PHPStan niv.8 0, cs-fixer 0 ; mobile `dart analyze --fatal-infos --fatal-warning
 0, **283 tests**, couverture **76,0 %** ; **E2E web 21/21** ; OpenAPI ré-exporté et client Dart
 régénéré, génération **idempotente**.
 
+**Deux évolutions produit sont analysées et en attente d'implémentation**
+(`specs/evolutions-2026-09.md`, arbitrages rendus le 2026-09-05) : **A** associer un parent et un
+beau-parent (relation `partner_membership_id` 1↔1 déclarée par un admin, quatre finalités —
+affichage, foyer, droits proposés, nommage du foyer dans les e-mails) et **B** choisir la couleur du
+planning de garde **par spectateur** (préférence locale sur le modèle d'`OverlayPreference`, tokens
+du §8 en valeurs par défaut). Découpage en 5 lots E1→E5, quatre questions encore ouvertes en fin de
+document.
+
 **Plus aucun chantier de revue ouvert** : la **revue mobile** est close (68/68, 2026-09-04) et la
 **revue web** l'est à son tour (39/39, 2026-09-05) — étapes 1 à 6 **et** liste de finition P2/P3.
 Le prochain travail relève donc du produit (Lot 10 dépenses v2, Lot 11 push mobile v2) ou d'une

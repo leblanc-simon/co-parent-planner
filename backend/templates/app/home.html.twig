@@ -30,11 +30,38 @@
            tiendra jamais (revue 6.12). L'information « famille unie » n'est pas un droit et reste
            donc affichée. #}
         {% if not activeMembership.family.hasCustody or can('custody') %}
-        <section class="card card--accent">
-            <div class="eyebrow">Cette semaine</div>
+        {# Liseré gauche de la couleur de garde du JOUR (maquette :114) : constant jusqu'ici, il
+           désignait le parent A une semaine sur deux à celui qui avait pourtant les enfants. #}
+        <section class="card card--accent home-hero home-hero--{{ custody.todaySlot|default('none')|lower }}">
+            <div class="home-hero__head">
+                <div class="eyebrow">{{ activeMembership.family.hasCustody ? 'Garde · cette semaine' : 'Cette semaine' }}</div>
+                {% if heroChildren|length %}
+                <div class="home-hero__kids" aria-hidden="true">
+                    {% for child in heroChildren %}
+                    <span class="home-hero__kid" style="background: {{ child.color }}">{{ child.firstName|first|upper }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
             {% if not activeMembership.family.hasCustody %}
-                <p>Toute la famille est réunie.</p>
+                <p class="home-hero__text">Toute la famille est réunie.</p>
             {% elseif custody and custody.cells|filter(c => c.slot)|length %}
+                {# La phrase que l'accueil n'énonçait pas : chez qui sont les enfants, et quand ils
+                   changent de foyer (constat 6.5, maquette :123-127). #}
+                {% if custody.todaySlot %}
+                <p class="home-hero__text">
+                    {{ custody.isViewerDay
+                        ? 'Les enfants sont avec vous cette semaine.'
+                        : 'Les enfants sont chez ' ~ custody.names[custody.todaySlot] ~ ' cette semaine.' }}
+                </p>
+                {% endif %}
+                {% if custody.handover %}
+                <p class="home-hero__sub">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/></svg>
+                    {{ custody.handover.isViewer ? 'De retour chez vous' : 'Retour chez ' ~ custody.handover.name }}
+                    {{ custody.handover.dateLabel }}{% if custody.handover.time %}, {{ custody.handover.time }}{% endif %}
+                </p>
+                {% endif %}
                 <div class="garde-legend home-custody__legend">
                     <span><i class="garde-dot garde-dot--a" aria-hidden="true">{{ custody.initials.A }}</i> {{ custody.names.A }}</span>
                     <span><i class="garde-dot garde-dot--b" aria-hidden="true">{{ custody.initials.B }}</i> {{ custody.names.B }}</span>
@@ -58,7 +85,7 @@
                 {# Ici le droit est acquis : la promesse est tenable, on donne l'action qui la tient. #}
                 <p class="empty-state">Le planning de garde s'affichera ici.</p>
                 {% if can('custody', 'edit') %}
-                    <a class="section-head__link" href="{{ path('app_settings') }}#sec-custody">Configurer le rythme de garde →</a>
+                    <a class="section-head__link" href="{{ path('app_settings', {tab: 'garde'}) }}#sec-custody">Configurer le rythme de garde →</a>
                 {% endif %}
             {% endif %}
         </section>

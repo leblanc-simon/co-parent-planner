@@ -55,7 +55,7 @@ test('membre : inviter → accepter → retirer de la famille', async ({
   await signUpAndLogin(page, request, `e2e-rm-admin-${stamp}@example.test`, 'Admin Rm');
   await createFamily(page, 'Famille Retrait');
 
-  await page.goto('/settings');
+  await page.goto('/settings?tab=famille');
   await page.fill('#i-email', inviteeEmail);
   await page.selectOption('#i-role', 'step_parent');
   await page.locator('[data-settings-target="inviteForm"] button[type="submit"]').click();
@@ -71,7 +71,7 @@ test('membre : inviter → accepter → retirer de la famille', async ({
   await contextB.close();
 
   // L'admin voit le membre, puis le retire (confirm() accepté).
-  await page.goto('/settings');
+  await page.goto('/settings?tab=famille');
   await expect(page.locator('.members')).toContainText(inviteeEmail);
   page.on('dialog', (d) => d.accept());
   const removableRow = page.locator('.member-row', { hasText: inviteeEmail });
@@ -82,7 +82,7 @@ test('membre : inviter → accepter → retirer de la famille', async ({
   await removableRow.locator('button', { hasText: 'Retirer' }).click();
   await waitForSaved(page);
 
-  await page.goto('/settings');
+  await page.goto('/settings?tab=famille');
   await expect(page.locator('.members')).not.toContainText(inviteeEmail);
 });
 
@@ -93,7 +93,7 @@ test('dernier admin protégé : la démotion du seul admin est refusée', async 
   await signUpAndLogin(page, request, `e2e-lastadmin-${Date.now()}@example.test`, 'Solo Admin');
   await createFamily(page, 'Famille Solo');
 
-  await page.goto('/settings');
+  await page.goto('/settings?tab=famille');
   const selfRow = page.locator('.member-row').first();
   // L'édition (rôle/admin/droits) est repliée dans un <details> (WP-04).
   await selfRow.locator('details.member-row__edit').evaluate((d) => {
@@ -108,7 +108,7 @@ test('dernier admin protégé : la démotion du seul admin est refusée', async 
   await expect(page.locator('[data-settings-target="error"]')).toBeVisible({ timeout: 15_000 });
 
   // Après rechargement, l'utilisateur est toujours admin (invariant préservé).
-  await page.goto('/settings');
+  await page.goto('/settings?tab=famille');
   await expect(page.locator('.member-row').first().locator('input[name="isAdmin"]')).toBeChecked();
 });
 
@@ -133,7 +133,7 @@ test('bascule de famille active : X-Family-Id suit la famille choisie', async ({
   const pageB = await contextB.newPage();
   await signUpAndLogin(pageB, request, `e2e-switch-b-${stamp}@example.test`, 'Bruno Switch');
   await createFamily(pageB, 'Beta E2E');
-  await pageB.goto('/settings');
+  await pageB.goto('/settings?tab=famille');
   await pageB.fill('#i-email', aEmail);
   await pageB.selectOption('#i-role', 'parent');
   await pageB.locator('[data-settings-target="inviteForm"] button[type="submit"]').click();
@@ -147,7 +147,7 @@ test('bascule de famille active : X-Family-Id suit la famille choisie', async ({
   await page.waitForURL('**/invitations/accepted', { timeout: 15_000 });
 
   // A bascule sur Beta via le sélecteur de famille (depuis l'app, l'écran de bienvenue n'a pas le shell).
-  await page.goto('/settings');
+  await page.goto('/settings?tab=famille');
   await page.locator('.family-select__button').click();
   // La bascule ne passe pas par l'API (cookie `cpp_family` + rechargement) : aucune confirmation à
   // attendre, les assertions ci-dessous réessaient jusqu'à ce que la page rechargée soit à l'écran.

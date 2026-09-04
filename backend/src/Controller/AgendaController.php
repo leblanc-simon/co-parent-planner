@@ -20,6 +20,7 @@ use App\Service\Agenda\AgendaReader;
 use App\Service\Agenda\Occurrence;
 use App\Service\Agenda\OverlayReader;
 use App\Web\ActiveFamilyResolver;
+use App\Web\FrenchDate;
 use App\Web\MercureSubscription;
 use App\Web\NextTarget;
 use Psr\Clock\ClockInterface;
@@ -110,7 +111,7 @@ final class AgendaController extends AbstractController
             'canEdit' => $active->can(RightDomain::Agenda, RightLevel::Edit),
             'timezone' => $family->getTimezone(),
             'days' => $this->groupByDay($occurrences, $overlayEvents, $tz),
-            'monthLabel' => $this->frenchMonth($monthStart),
+            'monthLabel' => FrenchDate::month($monthStart),
             'monthValue' => $monthStart->format('Y-m'),
             'prevMonth' => $monthStart->modify('-1 month')->format('Y-m'),
             'nextMonth' => $monthStart->modify('+1 month')->format('Y-m'),
@@ -233,16 +234,7 @@ final class AgendaController extends AbstractController
     {
         $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $ymd, $tz);
         \assert(false !== $date);
-        $days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-        $months = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 
-        return $days[(int) $date->format('w')].' '.$date->format('j').' '.$months[(int) $date->format('n')];
-    }
-
-    private function frenchMonth(\DateTimeImmutable $d): string
-    {
-        $months = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-
-        return $months[(int) $d->format('n')].' '.$d->format('Y');
+        return FrenchDate::dayMonth($date);
     }
 }

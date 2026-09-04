@@ -404,21 +404,26 @@ final class WebPagesTest extends WebTestCase
         // (revue 6.7). Le cas à un seul parent a désormais son propre test.
         $this->addSecondParent($em, $family);
 
-        $client->request('GET', '/settings');
+        // Master-détail à trois onglets exclusifs depuis le constat 6.4 : chaque panneau se demande
+        // par son onglet, et l'onglet actif est marqué.
+        $client->request('GET', '/settings?tab=famille');
         self::assertResponseIsSuccessful();
         $html = (string) $client->getResponse()->getContent();
-        self::assertStringContainsString('Compte', $html);
         self::assertStringContainsString('Réglages de la famille', $html);
         self::assertStringContainsString('Inviter une personne', $html);
         self::assertStringContainsString('Familles liées', $html);
-        // L'édition du rythme de garde a été rapatriée ici (famille séparée + parent admin → custody:edit).
-        self::assertStringContainsString('Rythme de garde', $html);
-        self::assertStringContainsString('Enregistrer le rythme', $html);
-        self::assertStringContainsString('data-action="submit->garde#savePattern"', $html);
         // Le doublon inerte de « jour / heure d'échange » a été retiré du § Famille (revue 6.9) :
         // il n'était lu par personne et employait la convention inverse de celle du rythme.
         self::assertStringNotContainsString('id="f-hw"', $html);
         self::assertStringNotContainsString('id="f-ht"', $html);
+
+        // L'édition du rythme de garde a été rapatriée ici (famille séparée + parent admin → custody:edit).
+        $client->request('GET', '/settings?tab=garde');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('Rythme de garde', $html);
+        self::assertStringContainsString('Enregistrer le rythme', $html);
+        self::assertStringContainsString('data-action="submit->garde#savePattern"', $html);
     }
 
     /**
@@ -434,7 +439,7 @@ final class WebPagesTest extends WebTestCase
         $this->createUser($client, withFamily: true); // séparée, un seul parent
         $this->login($client);
 
-        $client->request('GET', '/settings');
+        $client->request('GET', '/settings?tab=garde');
         self::assertResponseIsSuccessful();
         $html = (string) $client->getResponse()->getContent();
 
@@ -762,8 +767,9 @@ final class WebPagesTest extends WebTestCase
         $client->request('GET', '/');
         self::assertResponseIsSuccessful();
         $html = (string) $client->getResponse()->getContent();
-        // Encart « Cette semaine » câblé : mini-semaine colorée, jour du parent A présent.
-        self::assertStringContainsString('Cette semaine', $html);
+        // Encart de garde câblé : mini-semaine colorée, jour du parent A présent.
+        // L'eyebrow suit la maquette (« Garde · cette semaine ») depuis le constat 6.5.
+        self::assertStringContainsString('Garde · cette semaine', $html);
         self::assertStringContainsString('home-custody', $html);
         self::assertStringContainsString('home-custody__day--a', $html);
         self::assertStringContainsString('web@example.com', $html); // nom (fallback e-mail) du parent A dans la légende

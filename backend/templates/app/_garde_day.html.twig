@@ -120,7 +120,7 @@
                raison, plutôt que d'offrir une action qui échoue. #}
             <button type="button" class="btn btn--ghost" disabled title="Un jour passé ne peut plus être échangé">Échanger ce jour</button>
         {% endif %}
-        <a class="btn btn--primary" href="{{ path('app_settings') }}#sec-custody">Modifier la garde</a>
+        <a class="btn btn--primary" href="{{ path('app_settings', {tab: 'garde'}) }}#sec-custody">Modifier la garde</a>
     </div>
     {% endif %}
 </div>

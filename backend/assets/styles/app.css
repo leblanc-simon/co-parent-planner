@@ -115,6 +115,37 @@ a:hover { text-decoration: underline; }
 }
 .card--accent { border-left: 6px solid var(--accent); border-radius: 20px; padding: 1.5rem; }
 
+/* Carte hero de l'accueil (maquette :113-128) : le lisere gauche suit la garde DU JOUR — il
+   designait le parent A une semaine sur deux a celui qui avait pourtant les enfants (constat 6.5).
+   `--none` (jour non materialise, hors horizon) reste neutre plutot que de trancher au hasard. */
+.home-hero {
+    &.home-hero--a { border-left-color: var(--accent); }
+    &.home-hero--b { border-left-color: var(--positive); }
+    &.home-hero--none { border-left-color: var(--border-2); }
+
+    & .home-hero__head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+
+    & .home-hero__kids { display: flex; }
+
+    & .home-hero__kid {
+        width: 32px; height: 32px; border-radius: var(--radius-pill); color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 14px; font-weight: 700; border: 2px solid var(--card); margin-left: -8px;
+    }
+
+    & .home-hero__text {
+        font-family: var(--font-title); font-size: 25px; font-weight: 600; line-height: 1.25;
+        color: var(--ink); margin-top: .75rem; max-width: 440px; text-wrap: pretty;
+    }
+
+    & .home-hero__sub {
+        display: flex; align-items: center; gap: .5rem; margin-top: .6rem;
+        color: var(--ink-2); font-size: 15px;
+
+        & svg { color: var(--muted-2); flex: 0 0 auto; }
+    }
+}
+
 /* ---------- Avatar rond + initiale (design system §8) ---------- */
 .avatar {
     border-radius: var(--radius-pill); display: flex; align-items: center; justify-content: center;
@@ -306,7 +337,21 @@ a:hover { text-decoration: underline; }
 .settings-nav { display: flex; flex-direction: column; gap: .2rem; border-right: 1px solid var(--border-2); padding: 6px 16px 6px 0; position: sticky; top: 1rem; }
 .settings-nav a { color: var(--ink-2); font-weight: 600; font-size: .92rem; padding: 10px 12px; border-radius: 11px; text-decoration: none; }
 .settings-nav a:hover { background: var(--surface); text-decoration: none; }
+/* Onglet actif du master-detail (constat 6.4) : la navigation ne marquait jamais la position
+   courante, alors que la page fait defiler des sections entieres. */
+.settings-nav a.is-active { background: var(--accent-soft); color: var(--ink); font-weight: 700; }
 .settings-pane { min-width: 0; }
+/* Ligne de reglage portant une action a droite (profil, RGPD) — constat 6.3. */
+.settings-row--action {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 1.5rem;
+    padding-top: 1.1rem; margin-top: 1.1rem; border-top: 1px solid var(--border-2);
+
+    & .settings-row__label { font-weight: 600; color: var(--ink); }
+    & .field__hint { max-width: 46ch; }
+    & .settings-row__actions { display: flex; gap: .5rem; flex-shrink: 0; }
+}
+.rgpd-export { margin-top: .6rem; font-size: .9rem; color: var(--ink-2); overflow-wrap: anywhere; }
+
 .settings-section__title { font-family: var(--font-title); font-size: 26px; font-weight: 700; margin: 0; }
 .settings-section__sub { color: var(--muted); font-size: 14px; margin: .2rem 0 1rem; }
 .settings-profile { display: flex; align-items: center; gap: 1rem; }

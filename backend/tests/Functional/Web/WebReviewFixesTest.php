@@ -199,7 +199,7 @@ final class WebReviewFixesTest extends WebTestCase
         [, $second] = $this->seedTwoParentFamily();
         $this->login($client);
 
-        $client->request('GET', '/settings');
+        $client->request('GET', '/settings?tab=garde');
         self::assertResponseIsSuccessful();
         $html = (string) $client->getResponse()->getContent();
 
@@ -244,7 +244,7 @@ final class WebReviewFixesTest extends WebTestCase
         $this->createUser(withFamily: true);
         $this->login($client);
 
-        $client->request('GET', '/settings');
+        $client->request('GET', '/settings?tab=famille');
         self::assertResponseIsSuccessful();
         $html = (string) $client->getResponse()->getContent();
         self::assertStringNotContainsString('personne(s)', $html);

@@ -200,7 +200,8 @@ final class WebReviewWave2Test extends WebTestCase
         $family = $this->em()->getRepository(Family::class)->findOneBy(['name' => 'Famille Web']);
         self::assertInstanceOf(Family::class, $family);
 
-        $client->request('GET', '/settings');
+        // Les liens vivent dans l'onglet « Famille » du master-détail (constat 6.4).
+        $client->request('GET', '/settings?tab=famille');
         self::assertResponseIsSuccessful();
         $crawler = $client->getCrawler();
 
@@ -225,7 +226,7 @@ final class WebReviewWave2Test extends WebTestCase
         $this->createUser(withFamily: true, admin: false);
         $this->login($client);
 
-        $client->request('GET', '/settings');
+        $client->request('GET', '/settings?tab=famille');
         self::assertResponseIsSuccessful();
         self::assertSame(0, $client->getCrawler()->filter('#l-own')->count());
     }

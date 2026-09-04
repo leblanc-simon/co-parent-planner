@@ -18,7 +18,18 @@ const LEVEL_LABELS = { none: 'aucun accès', view: 'lecture', edit: 'édition' }
  * de succès la page est rechargée pour refléter l'état canonique, sinon l'erreur localisée s'affiche.
  */
 export default class extends ApiController {
-    static targets = ['summary', 'inviteRole', 'inviteRights', 'shareCode'];
+    static targets = ['summary', 'inviteRole', 'inviteRights', 'shareCode', 'exportStatus', 'exportRefresh'];
+
+    /** Clé de l'opération d'export en cours (constat 6.3, même piège que le mobile C52). */
+    static EXPORT_KEY = 'cpp.rgpd.export';
+
+    connect() {
+        super.connect();
+        // L'identifiant de l'opération survit au rechargement : l'API n'expose aucune liste des
+        // opérations du sujet, et sans lui l'archive produite deviendrait inatteignable.
+        const pending = this._storedExport();
+        if (pending) this._renderExport({ id: pending, status: 'pending' });
+    }
 
     // ---- Réglages famille ----
     saveFamily(event) {
@@ -121,6 +132,107 @@ export default class extends ApiController {
         const label = button.textContent;
         button.textContent = 'Copié';
         setTimeout(() => { button.textContent = label; }, 1500);
+    }
+
+    // ---- Mon compte (US-SET-1) ----
+    saveProfile(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        // Champs effaçables : un champ vidé part à `null` pour effacer la valeur enregistrée.
+        const value = (name) => {
+            const v = form.querySelector(`[name="${name}"]`).value.trim();
+
+            return '' === v ? null : v;
+        };
+        this._send('PATCH', '/api/me', { fullName: value('fullName'), phone: value('phone') }, {
+            event,
+            notice: 'Profil enregistré.',
+        });
+    }
+
+    /**
+     * Le contrat n'expose pas de changement de mot de passe authentifié : le parcours existant est
+     * l'envoi d'un lien de réinitialisation, qui révoque au passage toutes les sessions.
+     */
+    requestPasswordReset(event) {
+        this._send('POST', '/api/auth/password/forgot', { email: this.element.dataset.settingsUserEmail }, {
+            event,
+            notice: 'Un lien de changement de mot de passe vous a été envoyé.',
+            onSuccess: () => {},
+        });
+    }
+
+    // ---- Confidentialité & données (US-SET-4 / US-SET-4b) ----
+    requestExport(event) {
+        this._send('POST', '/api/me/export', {}, {
+            event,
+            notice: 'Export demandé — il sera prêt dans quelques instants.',
+            onSuccess: (data) => {
+                this._storeExport(data.id);
+                this._renderExport(data);
+            },
+        });
+    }
+
+    refreshExport(event) {
+        const id = this._storedExport();
+        if (!id) return;
+        this._send('GET', `/api/me/export/${id}`, null, {
+            event,
+            onSuccess: (data) => {
+                if ('done' === data.status) this._storeExport(null);
+                this._renderExport(data);
+            },
+        });
+    }
+
+    deleteAccount(event) {
+        if (!window.confirm('Supprimer définitivement votre compte ? Vos données personnelles seront anonymisées de façon irréversible.')) return;
+        this._send('DELETE', '/api/me', null, {
+            event,
+            onSuccess: () => {
+                // Le compte est anonymisé mais les cookies JWT restent valides : il faut fermer la
+                // session, sinon l'écran suivant s'ouvrirait encore sous cette identité.
+                const logout = document.querySelector('form[action="/logout"]');
+                if (logout) logout.submit();
+                else window.location.assign('/login');
+            },
+        });
+    }
+
+    _renderExport(data) {
+        if (!this.hasExportStatusTarget) return;
+        const target = this.exportStatusTarget;
+        target.hidden = false;
+        if ('done' === data.status && data.downloadUrl) {
+            target.innerHTML = '';
+            const link = document.createElement('a');
+            link.href = data.downloadUrl;
+            link.textContent = 'Télécharger mon archive (lien temporaire)';
+            link.setAttribute('data-settings-target', 'exportLink');
+            target.append('Votre export est prêt : ', link);
+            if (this.hasExportRefreshTarget) this.exportRefreshTarget.hidden = true;
+            return;
+        }
+        target.textContent = 'Export en cours de préparation…';
+        if (this.hasExportRefreshTarget) this.exportRefreshTarget.hidden = false;
+    }
+
+    _storedExport() {
+        try {
+            return window.sessionStorage.getItem(this.constructor.EXPORT_KEY);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    _storeExport(id) {
+        try {
+            if (id) window.sessionStorage.setItem(this.constructor.EXPORT_KEY, id);
+            else window.sessionStorage.removeItem(this.constructor.EXPORT_KEY);
+        } catch (e) {
+            /* stockage indisponible : l'export reste demandable, seul le suivi est perdu */
+        }
     }
 
     createLink(event) {

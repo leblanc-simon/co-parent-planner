@@ -56,12 +56,12 @@ test('créer une famille → inviter → accepter → vérifier accès → ajust
   });
 
   // ---- Réglages famille (US-SET-2a) : zone scolaire persistée ----
-  await page.goto('/settings');
+  await page.goto('/settings?tab=famille');
   await expect(page.locator('h1')).toContainText('Compte');
   await page.selectOption('#f-zone', 'C');
   await page.locator('[data-settings-target="familyForm"] button[type="submit"]').click();
   await waitForSaved(page);
-  await page.goto('/settings');
+  await page.goto('/settings?tab=famille');
   await expect(page.locator('#f-zone')).toHaveValue('C');
 
   // ---- Invitation d'un beau-parent (US-INV-1) ----
@@ -88,7 +88,7 @@ test('créer une famille → inviter → accepter → vérifier accès → ajust
   await expect(pageB.locator('.auth__title')).toContainText('Bienvenue');
 
   // ---- A voit B dans la liste des membres (vérification de l'accès) ----
-  await page.goto('/settings');
+  await page.goto('/settings?tab=famille');
   await expect(page.locator('.members')).toContainText(inviteeEmail);
 
   // ---- A ajuste les droits du beau-parent : agenda -> edit ----
@@ -100,7 +100,7 @@ test('créer une famille → inviter → accepter → vérifier accès → ajust
   await memberForm.locator('select[name="rights[agenda]"]').selectOption('edit');
   await memberForm.locator('button[type="submit"]').click();
   await waitForSaved(page);
-  await page.goto('/settings');
+  await page.goto('/settings?tab=famille');
   const memberFormReloaded = page.locator('.member-row', { hasText: inviteeEmail });
   await expect(
     memberFormReloaded.locator('select[name="rights[agenda]"]'),
@@ -130,7 +130,7 @@ test('lien d\'invitation (non connecté) → création de compte contextualisée
   await page.waitForURL((url) => !url.pathname.includes('/onboarding'), {
     timeout: 15_000,
   });
-  await page.goto('/settings');
+  await page.goto('/settings?tab=famille');
   await page.fill('#i-email', inviteeEmail);
   await page.selectOption('#i-role', 'step_parent');
   await page.locator('[data-settings-target="inviteForm"] button[type="submit"]').click();
@@ -161,7 +161,7 @@ test('lien d\'invitation (non connecté) → création de compte contextualisée
   await expect(pageB).not.toHaveURL(/\/login$/);
 
   // ---- A voit B parmi les membres ----
-  await page.goto('/settings');
+  await page.goto('/settings?tab=famille');
   await expect(page.locator('.members')).toContainText(inviteeEmail);
 
   await contextB.close();
@@ -213,7 +213,7 @@ test('créer une seconde famille depuis le sélecteur, et lire le code de partag
   await expect(page.locator('.family-select__menu')).toContainText('Foyer Un E2E');
 
   // ---- 6.6 : le code de partage est affiché, et le formulaire le réclame ----
-  await page.goto('/settings');
+  await page.goto('/settings?tab=famille');
   const shareCode = page.locator('#l-own');
   await expect(shareCode).toBeVisible();
   await expect(shareCode).toHaveValue(/^[0-9a-f-]{36}$/);

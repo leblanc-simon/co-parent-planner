@@ -10,6 +10,7 @@ use App\Enum\ExchangeStatus;
 use App\Enum\InvitationStatus;
 use App\Enum\RightDomain;
 use App\Enum\RightLevel;
+use App\Repository\ChildRepository;
 use App\Repository\CustodyDayRepository;
 use App\Repository\CustodyPatternRepository;
 use App\Repository\ExchangeRepository;
@@ -18,8 +19,10 @@ use App\Repository\NoteRepository;
 use App\Repository\UserRepository;
 use App\Security\Auth\TokenHasher;
 use App\Service\Agenda\UpcomingEventsFinder;
+use App\Service\Custody\DayDetailReader;
 use App\Service\Exchange\ExchangeAssembler;
 use App\Web\ActiveFamilyResolver;
+use App\Web\FrenchDate;
 use App\Web\NextTarget;
 use App\Web\ParentInitials;
 use Psr\Clock\ClockInterface;
@@ -52,6 +55,8 @@ final class HomeController extends AbstractController
         private readonly UserRepository $users,
         private readonly TokenHasher $tokenHasher,
         private readonly ParentInitials $parentInitials,
+        private readonly DayDetailReader $dayDetails,
+        private readonly ChildRepository $children,
     ) {
     }
 
@@ -95,6 +100,11 @@ final class HomeController extends AbstractController
             'homeExchanges' => $openExchanges,
             'custody' => null !== $active ? $this->custodyWeek($active) : null,
             'recentNotes' => null !== $active ? $this->recentNotes($active) : [],
+            // Avatars des enfants sur la carte héro (maquette :117-121). Même domaine de droit que
+            // les notes : qui ne peut pas voir les enfants ne voit pas non plus leurs initiales.
+            'heroChildren' => (null !== $active && $active->can(RightDomain::ChildrenNotes, RightLevel::View))
+                ? $this->children->findByFamily($active->getFamily())
+                : [],
             'timezone' => $active?->getFamily()->getTimezone() ?? 'Europe/Paris',
         ]);
     }
@@ -103,7 +113,11 @@ final class HomeController extends AbstractController
      * Semaine de garde courante (lundi→dimanche, Europe/Paris) mappée en slots A/B, ou `null` si la
      * famille est unie ou si le membre n'a pas `custody ≥ view`. Miroir de `GardeController::buildWeeks`.
      *
-     * @return array{cells: list<array{dow: int, day: int, slot: ?string, source: ?string, isToday: bool}>, names: array{A: string, B: string}, initials: array{A: string, B: string}}|null
+     * Porte aussi la **phrase d'état du jour** et la **prochaine transmission** (maquette :123-127) :
+     * l'accueil n'énonçait ni chez qui sont les enfants, ni quand ils changent de foyer — la seule
+     * information qu'on vient y chercher (revue web 2026-07, constat 6.5).
+     *
+     * @return array{cells: list<array{dow: int, day: int, slot: ?string, source: ?string, isToday: bool}>, names: array{A: string, B: string}, initials: array{A: string, B: string}, todaySlot: ?string, isViewerDay: bool, handover: ?array{slot: string, name: string, dateLabel: string, time: ?string, isViewer: bool}}|null
      */
     private function custodyWeek(Membership $active): ?array
     {
@@ -148,12 +162,37 @@ final class HomeController extends AbstractController
         $nameOf = static fn (?Membership $m): string => null !== $m ? ($m->getUser()->getFullName() ?: $m->getUser()->getEmail()) : '';
         $names = ['A' => $nameOf($parentA) ?: 'Parent A', 'B' => $nameOf($parentB) ?: 'Parent B'];
 
+        // Slot du jour et transmission suivante, lus sur les jours **matérialisés** — jamais sur une
+        // projection du rythme, que les exceptions et les règles de vacances fausseraient. Même
+        // lecture que la fiche de jour de `/garde` (US-CUST-6), donc les deux écrans s'accordent.
+        $detail = $this->dayDetails->detail($family, $pattern, $today);
+        $slotOf = static function (?Membership $m) use ($parentAId): ?string {
+            if (null === $m) {
+                return null;
+            }
+
+            return (null !== $parentAId && $m->getId()->equals($parentAId)) ? 'A' : 'B';
+        };
+        $todaySlot = $slotOf($detail->parent);
+        $viewerSlot = $slotOf($active);
+        $handoverSlot = $slotOf($detail->handoverParent);
+
         return [
             'cells' => $cells,
             'names' => $names,
             // Marqueur non chromatique, identique à celui de /garde (cdc §8) : la mini-semaine
             // distinguait ses deux parents par la seule teinte, à 1,09:1 de contraste de luminance.
             'initials' => $this->parentInitials->pair($names['A'], $names['B']),
+            'todaySlot' => $todaySlot,
+            'isViewerDay' => null !== $todaySlot && $todaySlot === $viewerSlot,
+            // Omise plutôt qu'inventée quand aucun changement n'est matérialisé à horizon.
+            'handover' => (null !== $detail->handoverDate && null !== $handoverSlot) ? [
+                'slot' => $handoverSlot,
+                'name' => $names[$handoverSlot],
+                'dateLabel' => FrenchDate::dayMonth($detail->handoverDate),
+                'time' => $detail->handoverTime,
+                'isViewer' => $handoverSlot === $viewerSlot,
+            ] : null,
         ];
     }
 

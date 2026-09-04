@@ -1,7 +1,7 @@
 import { Page, expect, test } from '@playwright/test';
 
 import { waitForVerificationToken } from '../helpers/mailpit';
-import { waitForScreen } from '../helpers/page';
+import { waitForSaved, waitForScreen } from '../helpers/page';
 
 const PASSWORD = 'MotDePasseTresLong123';
 
@@ -104,4 +104,44 @@ test('PWA : hors-ligne — écran RO depuis le cache + bannière, mutation bloqu
   await page.goto('/agenda');
   await waitForScreen(page);
   await expect(page.locator('.pwa-banner').first()).toBeHidden();
+});
+
+/**
+ * Écart de périmètre 6.3 de la revue web : aucun écran RGPD ni gestion de compte n'existait côté
+ * web, alors que l'API porte les trois opérations depuis ce lot et que le mobile les expose —
+ * exercer ses droits demandait d'installer l'application.
+ *
+ * Ce test est un E2E parce que tout le pilotage est en JavaScript : l'enregistrement du profil, et
+ * le suivi de l'export dont l'identifiant doit survivre au rechargement (l'API n'expose aucune
+ * liste des opérations du sujet).
+ */
+test('RGPD web : profil modifiable et export suivi jusqu\'à son statut', async ({ page, request }) => {
+  await signUpLoginWithFamily(page, request, `e2e-rgpd-${Date.now()}@example.test`);
+
+  await page.goto('/settings');
+  await waitForScreen(page);
+
+  // ---- Profil (PATCH /api/me) : « Mon compte » n'était qu'un affichage ----
+  await page.fill('#p-name', 'Alice Renommée');
+  await page.fill('#p-phone', '0102030405');
+  await page.locator('[data-settings-target="profileForm"] button[type="submit"]').click();
+  await waitForSaved(page);
+
+  await page.goto('/settings');
+  await expect(page.locator('#p-name')).toHaveValue('Alice Renommée');
+  await expect(page.locator('#p-phone')).toHaveValue('0102030405');
+
+  // ---- Export (US-SET-4) : demandé, puis suivi ----
+  await page.locator('[data-action="settings#requestExport"]').click();
+  const status = page.locator('[data-settings-target="exportStatus"]');
+  await expect(status).toBeVisible();
+  await expect(page.locator('[data-settings-target="exportRefresh"]')).toBeVisible();
+
+  // L'identifiant de l'opération survit au rechargement : sans lui, l'archive produite serait
+  // inatteignable (même piège que le constat mobile C52).
+  await page.reload();
+  await waitForScreen(page);
+  await expect(page.locator('[data-settings-target="exportStatus"]')).toBeVisible();
+  await page.locator('[data-action="settings#refreshExport"]').click();
+  await expect(page.locator('[data-settings-target="exportStatus"]')).toBeVisible();
 });

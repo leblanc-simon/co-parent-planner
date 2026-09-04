@@ -48,6 +48,9 @@ export class ApiController extends Controller {
      * @param {Event}  [opts.event]      événement d'origine — sert à trouver le déclencheur à désactiver
      * @param {string} [opts.notice]     message de succès affiché après le rechargement
      * @param {boolean}[opts.idempotent] ajoute un `Idempotency-Key` (créations rejouables)
+     * @param {(data: object) => void} [opts.onSuccess] traitement du corps de réponse **à la place**
+     *        du rechargement — pour les mutations dont le résultat s'affiche sans relire la page
+     *        (statut d'un export RGPD, par exemple).
      */
     async _send(method, url, body, opts = {}) {
         const trigger = this._triggerOf(opts.event);
@@ -72,8 +75,15 @@ export class ApiController extends Controller {
             }
 
             if (response.ok) {
-                if (opts.notice) this._storeNotice(opts.notice);
                 const data = await response.json().catch(() => ({}));
+                if (opts.onSuccess) {
+                    // Pas de rechargement : la confirmation s'affiche ici même, elle n'a donc pas
+                    // besoin de survivre à une navigation.
+                    if (opts.notice) this._showNotice(opts.notice);
+                    opts.onSuccess(data);
+                    return;
+                }
+                if (opts.notice) this._storeNotice(opts.notice);
                 this._onSuccess(data, method, url);
                 return;
             }
@@ -155,6 +165,12 @@ export class ApiController extends Controller {
         }
     }
 
+    _showNotice(message) {
+        if (!this.hasNoticeTarget) return;
+        this.noticeTarget.textContent = message;
+        this.noticeTarget.hidden = false;
+    }
+
     _flushNotice() {
         if (!this.hasNoticeTarget) return;
         let message = null;
@@ -165,8 +181,7 @@ export class ApiController extends Controller {
             return;
         }
         if (!message) return;
-        this.noticeTarget.textContent = message;
-        this.noticeTarget.hidden = false;
+        this._showNotice(message);
     }
 
     // ---- État « occupé » ----

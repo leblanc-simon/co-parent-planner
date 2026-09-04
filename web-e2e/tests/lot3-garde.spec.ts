@@ -59,7 +59,7 @@ test('Garde : configurer un rythme → calendrier coloré → échanger un jour'
   });
 
   // ---- Invitation d'un second parent (le rythme exige deux parents distincts) ----
-  await page.goto('/settings');
+  await page.goto('/settings?tab=famille');
   await page.fill('#i-email', parentBEmail);
   await page.selectOption('#i-role', 'parent');
   await page.locator('[data-settings-target="inviteForm"] button[type="submit"]').click();
@@ -82,7 +82,7 @@ test('Garde : configurer un rythme → calendrier coloré → échanger un jour'
   await expect(page.locator('.empty-state')).toContainText('Aucun rythme de garde configuré');
 
   // ---- Configurer un rythme depuis Paramètres › Rythme de garde (l'édition y a été déplacée) ----
-  await page.goto('/settings');
+  await page.goto('/settings?tab=garde');
   await page.locator('.rhythm-card:has(input[value="alternating"])').click();
   await page.fill('#g-anchor', '2026-06-21');
   await page.selectOption('#g-weekday', '0'); // dimanche
@@ -183,6 +183,6 @@ test('Garde : configurer un rythme → calendrier coloré → échanger un jour'
   await daySheet.getByRole('button', { name: 'Échanger ce jour' }).click();
   await expect(page.locator('.garde-day--exception').first()).toBeVisible({ timeout: 15_000 });
   // L'exception « Échange » figure dans la liste des exceptions, désormais sous Paramètres.
-  await page.goto('/settings');
+  await page.goto('/settings?tab=garde');
   await expect(page.locator('.garde-list')).toContainText('Échange');
 });

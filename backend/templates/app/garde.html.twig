@@ -80,9 +80,9 @@
                parent il répond 422, et l'utilisateur bouclait entre cet écran et /settings. #}
             {% if canEdit and parents|length < 2 %}
                 <p>Le planning répartit les jours entre <strong>deux parents</strong> : il pourra être configuré dès que le second parent aura rejoint la famille.</p>
-                <p><a class="btn btn--primary" href="{{ path('app_settings') }}#sec-members">Voir les membres de la famille</a></p>
+                <p><a class="btn btn--primary" href="{{ path('app_settings', {tab: 'famille'}) }}#sec-members">Voir les membres de la famille</a></p>
             {% elseif canEdit %}
-                <p>Configurez un rythme dans <a href="{{ path('app_settings') }}#sec-custody">Paramètres › Rythme de garde</a> pour générer le planning.</p>
+                <p>Configurez un rythme dans <a href="{{ path('app_settings', {tab: 'garde'}) }}#sec-custody">Paramètres › Rythme de garde</a> pour générer le planning.</p>
             {% endif %}
         </section>
     {% else %}

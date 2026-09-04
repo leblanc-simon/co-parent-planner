@@ -46,7 +46,7 @@ async function setupTwoParentFamily(
   await page.waitForURL((url) => !url.pathname.includes('/onboarding'), { timeout: 15_000 });
 
   const parentBEmail = `e2e-adv-b-${stamp}@example.test`;
-  await page.goto('/settings');
+  await page.goto('/settings?tab=famille');
   await page.fill('#i-email', parentBEmail);
   await page.selectOption('#i-role', 'parent');
   await page.locator('[data-settings-target="inviteForm"] button[type="submit"]').click();
@@ -76,7 +76,7 @@ test('Garde avancée : rythme custom 14 jours, vacances manuelle + règle, excep
   page.on('dialog', (d) => d.accept());
   await setupTwoParentFamily(page, request, browser, Date.now());
   // L'édition du rythme, des vacances et des exceptions vit désormais dans Paramètres.
-  await page.goto('/settings');
+  await page.goto('/settings?tab=garde');
 
   // ---- Rythme personnalisé (14 nuits) : la grille de nuits cliquables apparaît et se sauvegarde ----
   await page.locator('.rhythm-card:has(input[value="custom"])').click();
@@ -98,7 +98,7 @@ test('Garde avancée : rythme custom 14 jours, vacances manuelle + règle, excep
   await expect(page.locator('.garde-day--b').first()).toBeVisible();
 
   // ---- Retour dans Paramètres pour les vacances et exceptions ----
-  await page.goto('/settings');
+  await page.goto('/settings?tab=garde');
 
   // ---- Vacances saisie manuellement (pas d'import réseau) ----
   const holidayForm = page.locator('form:has(input[name="label"])');

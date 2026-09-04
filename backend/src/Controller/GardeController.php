@@ -23,6 +23,7 @@ use App\Service\Agenda\OverlayReader;
 use App\Service\Custody\CustodyStatsCalculator;
 use App\Service\Custody\DayDetailReader;
 use App\Web\ActiveFamilyResolver;
+use App\Web\FrenchDate;
 use App\Web\MercureSubscription;
 use App\Web\NextTarget;
 use App\Web\ParentInitials;
@@ -159,7 +160,7 @@ final class GardeController extends AbstractController
             'parentAId' => $pattern?->getParentA()?->getId(),
             'parentBId' => $pattern?->getParentB()?->getId(),
             'weeks' => $this->buildWeeks($monthStart, $monthEnd, $daysByDate, $pattern?->getParentA()?->getId()),
-            'monthLabel' => $this->frenchMonth($monthStart),
+            'monthLabel' => FrenchDate::month($monthStart),
             'monthValue' => $monthStart->format('Y-m'),
             'prevMonth' => $monthStart->modify('-1 month')->format('Y-m'),
             'nextMonth' => $monthStart->modify('+1 month')->format('Y-m'),
@@ -226,11 +227,11 @@ final class GardeController extends AbstractController
         return $this->render('app/_garde_day.html.twig', [
             'denied' => false,
             'detail' => $detail,
-            'dateLabel' => $this->frenchLongDate($parsed),
+            'dateLabel' => FrenchDate::longDate($parsed),
             'dateValue' => $date,
             'slot' => self::slotOf($detail->parent, $parentAId),
             'handoverSlot' => self::slotOf($detail->handoverParent, $parentAId),
-            'handoverDateLabel' => null !== $detail->handoverDate ? $this->frenchLongDate($detail->handoverDate) : null,
+            'handoverDateLabel' => null !== $detail->handoverDate ? FrenchDate::longDate($detail->handoverDate) : null,
             'parentNames' => $parentNames,
             'initials' => $this->parentInitials->pair($parentNames['A'], $parentNames['B']),
             'canEdit' => $active->can(RightDomain::Custody, RightLevel::Edit),
@@ -398,21 +399,6 @@ final class GardeController extends AbstractController
             $date->setTime(23, 59, 59)->setTimezone($utc),
             null,
         );
-    }
-
-    private function frenchLongDate(\DateTimeImmutable $d): string
-    {
-        $days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-        $months = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-
-        return $days[(int) $d->format('w')].' '.$d->format('j').' '.$months[(int) $d->format('n')].' '.$d->format('Y');
-    }
-
-    private function frenchMonth(\DateTimeImmutable $d): string
-    {
-        $months = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-
-        return $months[(int) $d->format('n')].' '.$d->format('Y');
     }
 
     /**

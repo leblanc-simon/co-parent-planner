@@ -21,6 +21,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
@@ -45,8 +46,11 @@ final class SettingsController extends AbstractController
     ) {
     }
 
+    /** Onglets exclusifs du master-détail (maquette :568) ; `garde` disparaît pour une famille unie. */
+    private const array TABS = ['compte', 'famille', 'garde'];
+
     #[Route('/settings', name: 'app_settings', methods: ['GET'])]
-    public function settings(Request $request): Response
+    public function settings(Request $request, #[MapQueryParameter] string $tab = 'compte'): Response
     {
         if (!$this->security->getUser() instanceof User) {
             // La page demandée est conservée : un lien d'e-mail ouvert hors session
@@ -79,7 +83,17 @@ final class SettingsController extends AbstractController
             static fn ($m) => 'parent' === $m->getRole()->value,
         )) : [];
 
+        // Une page unique de 4 094 px, dont la navigation à neuf ancres ne marquait jamais la
+        // position courante : la maquette impose un master-détail à trois onglets exclusifs
+        // (revue web 2026-07, constat 6.4). L'onglet vit dans l'URL — il se partage, se met en
+        // favori, et le lien « Configurer le rythme » sait où il envoie.
+        if (!\in_array($tab, self::TABS, true) || ('garde' === $tab && !$hasCustody)) {
+            $tab = 'compte';
+        }
+
         return $this->render('app/settings.html.twig', [
+            'tab' => $tab,
+            'hasCustody' => $hasCustody,
             'memberships' => $allMemberships,
             'activeMembership' => $active,
             'family' => $family,

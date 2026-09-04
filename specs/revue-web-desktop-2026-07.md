@@ -388,6 +388,60 @@ brute de Symfony, **6.10** seconde famille impossible, **6.6** familles liées i
 vague 3 — vrais développements (**6.1** fiche de jour + activités sur `/garde`, **6.5** phrase de
 garde sur l'accueil, **6.4** `/settings` en trois onglets, **6.3** écran RGPD web).
 
+### 2026-09-04 — Étape 6, vague 3 : les trois derniers écarts (6.5, 6.4, 6.3) — étape close
+
+**6.5 — l'accueil énonce enfin la garde.** La carte héro portait un liseré constant, donc la
+couleur du parent A une semaine sur deux à celui qui avait pourtant les enfants, et ne disait ni
+chez qui ils sont ni quand ils changent de foyer — la seule chose qu'on vient y chercher. Elle
+reprend la maquette (`:113-128`) : liseré de la couleur du jour, phrase d'état en Bricolage 25 px,
+sous-ligne horloge « Retour chez X dimanche 28 juin, 19:00 », avatars des enfants. La garde du jour
+et la transmission sont lues par `DayDetailReader`, **le même service que la fiche de jour de
+`/garde`** : les deux écrans ne peuvent pas se contredire, et la transmission reste **omise** plutôt
+qu'inventée en bout d'horizon. Jour non matérialisé → liseré neutre : annoncer une garde qu'on ne
+connaît pas serait pire que se taire.
+
+**Extraction faite au passage** : les tables de jours et de mois français vivaient en **quatre
+exemplaires** dans `AgendaController` et `GardeController`, et une cinquième s'apprêtait à naître
+ici. `App\Web\FrenchDate` les remplace — le pendant web de ce que `DateLabels` a fait côté mobile
+(constats C40/C56), à ceci près que l'interface web est livrée en français seul (décision Lot 5) et
+ne passe donc pas par le catalogue.
+
+**6.4 — `/settings` en trois onglets exclusifs.** La page empilait neuf sections sur 4 094 px avec
+une navigation d'ancres qui ne marquait **jamais** la position courante : on ne savait ni où l'on
+était, ni ce qui restait à lire. Master-détail conforme à la maquette (`:562-575`) — Mon compte ·
+Famille · Planning de garde, ce dernier absent pour une famille unie. **L'onglet vit dans l'URL** :
+il se partage, se met en favori, et les liens internes (« Configurer le rythme », « Voir les
+membres », « Modifier la garde ») désignent désormais leur onglet — sans quoi leur ancre aurait
+pointé vers une section non rendue. Un onglet inconnu ou forgé retombe sur le compte. La navigation
+porte `aria-current="page"`.
+
+**6.3 — compte modifiable et écran RGPD.** « Mon compte » n'était qu'un affichage, et **aucun écran
+RGPD n'existait côté web** : exercer son droit d'accès ou d'effacement demandait d'installer
+l'application mobile, alors que l'API porte les trois opérations depuis le Lot 8. L'onglet Mon
+compte reçoit le profil éditable (`PATCH /api/me`), un changement de mot de passe par le parcours
+existant — envoi d'un lien à l'adresse **vérifiée** du compte, jamais à une adresse saisie sur cette
+page —, et une section « Confidentialité & données » : export asynchrone avec suivi de statut et
+lien signé, suppression de compte sous confirmation nommée. Deux détails qui comptent : l'identifiant
+de l'opération d'export est conservé en `sessionStorage` (l'API n'expose aucune liste des opérations
+du sujet — même piège que le constat mobile C52), et la suppression **ferme la session** en
+soumettant le formulaire de déconnexion, faute de quoi les cookies JWT auraient continué
+d'authentifier un compte anonymisé.
+
+Le socle `ApiController` gagne un `opts.onSuccess` : le statut d'un export s'affiche sans recharger
+la page, et la confirmation est alors montrée directement au lieu de transiter par `sessionStorage`.
+
+**La locale est volontairement laissée hors du formulaire** : `PATCH /api/me` l'accepte, mais seule
+`fr` est livrée (cdc §i18n) — un sélecteur à une valeur n'aurait rien réglé. L'adresse e-mail reste
+en lecture seule : la changer demanderait une re-vérification, hors contrat.
+
+**8 tests fonctionnels + 1 E2E** (le pilotage RGPD est entièrement en JavaScript). Les **22
+navigations E2E vers `/settings`** ont été routées vers leur onglet. Portes : backend **411 tests /
+3 380 assertions** (403 avant), PHPStan 0, cs-fixer 0, Twig 38 ; **E2E 23/23** (22 avant). Aucun
+changement d'API, d'OpenAPI, de migration ni de registre RGPD — les trois opérations existaient,
+c'est l'interface qui manquait.
+
+**L'étape 6 est close : 12 écarts sur 12.** Reste la liste « Reste à traiter » (P2/P3 de finition).
+
 ### 2026-09-04 — Étape 6, vague 2 : parcours cassés (6.8, 6.10, 6.6)
 
 Les trois constats se ressemblent : **la fonctionnalité existe côté serveur, mais aucun chemin

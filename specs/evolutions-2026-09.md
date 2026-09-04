@@ -20,6 +20,15 @@ conception :
 | A-1 | Finalité de l'association | **Les quatre** : affichage (« conjoint·e de X »), foyer (rattachement aux jours de garde du parent), droits (proposer ceux du parent), notifications (traiter le couple ensemble). |
 | A-2 | Déclaration et cardinalité | **Un admin déclare**, **1 parent ↔ 1 beau-parent**. |
 
+Quatre points de plus, tranchés le même jour :
+
+| # | Question | Réponse retenue |
+|---|---|---|
+| A-3 | Diffusion des notifications au conjoint | **Sous droit explicite** : le conjoint ne reçoit que ce que ses droits l'autorisent déjà à recevoir. *Voir l'encadré du lot E3 : le code satisfait déjà cette règle.* |
+| A-4 | Portée du lien « conjoint » | **Strictement interne à une famille.** Le foyer recomposé vu d'en face reste une **famille liée** (Lot 5), en lecture seule. |
+| B-3 | Emplacement du choix des couleurs | **Paramètres › Planning de garde.** |
+| B-4 | Liberté de couleur | **Palette imposée de 8 teintes** validées pour le contraste, dont les deux du §8. |
+
 ---
 
 ## A — Associer un parent et un beau-parent
@@ -84,12 +93,19 @@ continue de plafonner côté serveur — la proposition est une commodité de sa
 autorisation. Le récapitulatif des droits (US-INV-1, CA §3.8) doit montrer ce qui sera **réellement**
 appliqué, comme le constat mobile C50 l'a établi.
 
-**4. Notifications : traiter le couple ensemble (coût faible en v1, décision à confirmer).**
-Proposition par défaut, à valider : **le périmètre des destinataires ne change pas** — ce sont les
-droits qui décident qui reçoit quoi, et les préférences de notification restent par utilisateur
-(`NotificationPref`). L'association ne sert qu'à **nommer** le foyer dans le corps de l'e-mail
-(« chez Sophie et Bob »). Élargir la diffusion à un conjoint qui n'a pas le droit correspondant
-serait une fuite : à ne faire, si vous le souhaitez, que par un droit explicite.
+**4. Notifications : traiter le couple ensemble (arbitrage A-3 — déjà satisfait par le code).**
+
+> **Vérifié après l'arbitrage, et il change le contenu du lot.** La règle demandée — « le conjoint
+> reçoit, mais seulement sous son droit » — est **exactement celle qui s'applique aujourd'hui** :
+> `RecipientResolver::resolve()` retient *tous* les memberships actifs de la famille ayant `view` sur
+> le domaine de la notification, sans distinction de rôle. Un beau-parent qui a le droit reçoit déjà ;
+> un beau-parent qui ne l'a pas ne doit pas recevoir. **L'association n'ajoute donc rien à la
+> diffusion**, et il n'y a pas de code de diffusion à écrire.
+>
+> Le lot E3 se réduit à ce qui reste utile : **nommer le foyer** dans le corps de l'e-mail
+> (« chez Sophie et Bob » plutôt que « chez Sophie »). Si l'intention était d'élargir la diffusion
+> *au-delà* des droits, il faut le dire explicitement — ce serait une exception au modèle
+> d'autorisation, à écrire dans le cdc §2.3 avant d'être implémentée.
 
 ### Surfaces à livrer (web **et** mobile, DoD de lot)
 
@@ -159,10 +175,11 @@ contact.
   marqueurs non chromatiques (initiales des parents) restent affichés quoi qu'il arrive : c'est ce
   qui rend une palette libre acceptable. Toute idée de « supprimer les initiales puisque les couleurs
   sont personnalisées » romprait l'amendement.
-- **Palette encadrée, pas de sélecteur libre.** Le contraste du texte de l'initiale sur le fond de
-  case doit rester lisible ; un `input[type=color]` laisse choisir un jaune illisible. **Recommandé :
-  une palette de 8 teintes validées** (fond doux + bordure + encre), les deux slots devant rester
-  distincts (refus, ou avertissement, si l'on choisit la même couleur pour les deux).
+- **Palette imposée de 8 teintes (arbitrage B-4).** Huit couples *fond doux + bordure + encre*
+  validés pour le contraste, dont les deux du §8 (terracotta et teal) en valeurs par défaut. Pas de
+  sélecteur libre : le contraste du texte de l'initiale sur le fond de case doit rester lisible, et
+  c'est cette initiale qui porte l'information depuis l'amendement §8.1. Les deux slots doivent
+  rester distincts — la même teinte des deux côtés est refusée.
 - **Dérogation assumée au §8.** Le cdc fixe accent = parent A et positive = parent B. Les rendre
   configurables *localement* est une dérogation : elle doit être **écrite dans le §8** (« palette par
   défaut, surchargeable par spectateur ») avant l'implémentation, sinon la revue graphique suivante
@@ -174,9 +191,16 @@ contact.
 
 | Surface | Web | Mobile |
 |---|---|---|
-| Choix des couleurs | `/garde` (panneau « Couleurs ») ou Paramètres › Garde | écran Garde, feuille de réglages |
+| Choix des couleurs (arbitrage B-3) | Paramètres › **Planning de garde** (onglet `tab=garde`) | écran de réglages de la garde |
 | Rendu | variables CSS posées par le gabarit | `custodyPaletteProvider` |
 | Contrat | nouvelle ressource `CustodyColorPreference` (GET collection + PUT) | client régénéré |
+
+> **Conséquence de l'emplacement (B-3), à ne pas manquer** : l'onglet « Planning de garde » n'est
+> rendu que pour une famille séparée, et ses sections actuelles (rythme, exceptions, vacances) sont
+> réservées à `custody:edit`. Or **choisir ses couleurs est une préférence personnelle** : elle doit
+> être offerte à quiconque **voit** le planning — un beau-parent en `custody: view` compris. La
+> section des couleurs relève donc de `custody ≥ view`, pas de `custody:edit`, contrairement à ses
+> voisines. Idem côté mobile.
 
 ---
 
@@ -186,7 +210,7 @@ contact.
 |---|---|---|
 | **E1** | A — modèle, contrat, règles de validation, registre RGPD, affichage « conjoint·e de X » (web + mobile) | aucune |
 | **E2** | A — foyer : fiche de jour, responsable d'événement, préremplissage des droits | E1 |
-| **E3** | A — notifications : nommage du foyer (périmètre des destinataires **inchangé**) | E1 |
+| **E3** | A — notifications : **nommage** du foyer dans les e-mails. La diffusion, elle, n'a rien à changer : la règle demandée est déjà celle du code (voir A-4 ci-dessus) | E1 |
 | **E4** | B — amendement du §8, palette encadrée, modèle + contrat de la préférence | aucune (parallélisable avec E1) |
 | **E5** | B — rendu web (variables CSS) et mobile (provider), choix de couleurs, hors-ligne | E4 |
 
@@ -195,15 +219,16 @@ Playwright + tests Flutter, migration fournie, OpenAPI ré-exporté et client Da
 i18n câblée, registre des données à jour, `INSTALL.md` si une dépendance bouge, analyse statique
 propre, écrans conformes au §8.
 
-## Questions encore ouvertes
+## Ce qui reste à décider
 
-1. **E3 — notifications** : la proposition ci-dessus ne change **pas** qui reçoit les e-mails
-   (les droits décident), elle ne fait que nommer le foyer. À confirmer, ou à remplacer par une règle
-   explicite de diffusion au conjoint.
-2. **E5 — emplacement du choix des couleurs** : dans l'écran Garde (au plus près de ce qu'il repeint)
-   ou dans Paramètres › Garde (avec les autres réglages) ?
-3. **B — palette** : 8 teintes imposées, ou palette + « autre couleur » libre avec contrôle de
-   contraste au moment du choix ?
-4. **A — familles liées** : un beau-parent peut aussi être modélisé par une **famille liée** (Lot 5).
-   Faut-il, à terme, exprimer aussi le lien « conjoint » à travers un `FamilyLink`, ou l'association
-   reste-t-elle strictement interne à une famille ?
+Les huit questions de conception sont tranchées ; il ne reste que des points qui se règlent **au
+moment d'implémenter**, et qui n'engagent pas le modèle :
+
+1. **Les 8 teintes de la palette** (B-4) : à choisir avec les contrastes mesurés, en gardant
+   terracotta et teal en tête de liste. Ce choix appartient au lot E4 et sera soumis avant codage.
+2. **Le libellé exact du foyer dans les e-mails** (E3) : « chez Sophie et Bob », « chez Sophie
+   (avec Bob) » — à arbitrer sur un rendu réel dans Mailpit.
+3. **Un seul point pourrait rouvrir une décision** : si l'intention de A-3 était d'élargir la
+   diffusion *au-delà* des droits (un conjoint sans droit `agenda` recevant les notifications
+   d'agenda), il faut le dire — ce serait une exception au modèle d'autorisation du cdc §2.3, pas
+   une option d'implémentation.

@@ -85,8 +85,11 @@ régénéré, génération **idempotente**.
 beau-parent (relation `partner_membership_id` 1↔1 déclarée par un admin, quatre finalités —
 affichage, foyer, droits proposés, nommage du foyer dans les e-mails) et **B** choisir la couleur du
 planning de garde **par spectateur** (préférence locale sur le modèle d'`OverlayPreference`, tokens
-du §8 en valeurs par défaut). Découpage en 5 lots E1→E5, quatre questions encore ouvertes en fin de
-document.
+du §8 en valeurs par défaut). Découpage en 5 lots E1→E5. **Huit arbitrages rendus, plus aucune question de
+conception ouverte** — et une vérification qui vide un lot de sa substance : la règle de diffusion
+demandée pour les notifications (« le conjoint reçoit sous son droit ») est **déjà celle du code**
+(`RecipientResolver` retient tout membre actif ayant `view` sur le domaine), E3 se réduit donc au
+nommage du foyer dans les e-mails.
 
 **Plus aucun chantier de revue ouvert** : la **revue mobile** est close (68/68, 2026-09-04) et la
 **revue web** l'est à son tour (39/39, 2026-09-05) — étapes 1 à 6 **et** liste de finition P2/P3.

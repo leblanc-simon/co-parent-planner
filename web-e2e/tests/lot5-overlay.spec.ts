@@ -95,7 +95,7 @@ test('Overlay familles liées : activation → événement lié en lecture seule
   const famB = await createSeparatedFamily(page, 'Foyer B E2E');
 
   await page.goto('/agenda');
-  await page.locator('.agenda-create').evaluate((d) => {
+  await page.locator('.create-panel').evaluate((d) => {
     (d as HTMLDetailsElement).open = true;
   });
   await page.check('input[name="wholeFamily"]');

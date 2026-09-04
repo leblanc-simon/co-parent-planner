@@ -94,10 +94,22 @@
             <div class="garde-cal__nav-actions">
                 {# La légende porte le marqueur lui-même, pas seulement la couleur : sans lui elle
                    n'explique rien à qui ne distingue pas les deux teintes. #}
+                {# Les marqueurs « vac. » et « famille liée » se répétaient sur les cases sans que
+                   rien ne les explique : la légende ne nommait que les deux parents. #}
                 <div class="garde-legend">
                     <span><i class="garde-dot garde-dot--a" aria-hidden="true">{{ pAInitial }}</i> {{ pAName }}</span>
                     <span><i class="garde-dot garde-dot--b" aria-hidden="true">{{ pBInitial }}</i> {{ pBName }}</span>
+                    <span><i class="garde-legend__tag" aria-hidden="true">vac.</i> Vacances scolaires</span>
+                    {% if overlayBadges is defined and overlayBadges|length %}
+                    <span><i class="garde-legend__ring" aria-hidden="true"></i> Famille liée</span>
+                    {% endif %}
                 </div>
+                {# Une fois le rythme configuré, plus rien sur cet écran ne menait à son éditeur :
+                   le lien n'existait que dans l'état vide, et la fiche d'un jour ne se découvre
+                   qu'en ouvrant une case. #}
+                {% if canEdit %}
+                <a class="garde-cal__edit" href="{{ path('app_settings', {tab: 'garde'}) }}#sec-custody">Modifier le rythme</a>
+                {% endif %}
                 <a class="garde-cal__nav-btn" href="{{ path('app_garde', { month: prevMonth }) }}" aria-label="Mois précédent">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
                 </a>
@@ -163,6 +175,12 @@
                 {% endfor %}
             {% endfor %}
         </div>
+        {# Le mois n'était coloré qu'à partir de la mise en place du rythme : les jours antérieurs
+           n'ont jamais été matérialisés, et rien ne le disait — on croyait à un calendrier à moitié
+           cassé. #}
+        {% if weeks|reduce((carry, week) => carry + week|filter(c => c.inMonth and not c.slot)|length, 0) %}
+        <p class="garde-cal__note">Les jours sans couleur ne sont pas attribués : ils précèdent la mise en place du rythme, ou dépassent la période déjà générée.</p>
+        {% endif %}
     </section>
 
     <aside class="garde-aside">

@@ -32,7 +32,7 @@ async function signUpAndLogin(
 
 /** Ouvre le panneau de création (replié dans un <details>). */
 async function openCreate(page: Page): Promise<void> {
-  await page.locator('.agenda-create').first().evaluate((d) => {
+  await page.locator('.create-panel').first().evaluate((d) => {
     (d as HTMLDetailsElement).open = true;
   });
 }

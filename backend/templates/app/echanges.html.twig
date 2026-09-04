@@ -32,8 +32,8 @@
             </div>
 
             {% if canEdit %}
-            <details class="agenda-create card">
-                <summary class="agenda-create__cta">
+            <details class="create-panel card">
+                <summary class="create-panel__cta">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                     Nouvel échange
                 </summary>
@@ -65,7 +65,7 @@
                         </div>
                         <button class="btn btn--ghost" type="button" data-action="exchanges#addOption">+ Option</button>
                     </div>
-                    <button class="btn btn--ink" type="submit">Ouvrir l'échange</button>
+                    <button class="btn btn--primary" type="submit">Ouvrir l'échange</button>
                 </form>
             </details>
             {% endif %}
@@ -91,7 +91,11 @@
         {# ---- Détail ---- #}
         <section class="exchanges__detail">
         {% if selected is null %}
-            <div class="card"><p class="empty-state">Sélectionnez un échange.</p></div>
+            {# Idem : sans aucun échange, « Sélectionnez un échange » n'a personne à désigner. Avec
+               des échanges, le premier est désormais ouvert d'office (comme l'écran Enfants). #}
+            <div class="card"><p class="empty-state">
+                {{ exchanges|length ? 'Sélectionnez un échange.' : 'Aucun échange pour le moment.' }}
+            </p></div>
         {% else %}
             {% set sel = selected %}
             <section class="card">
@@ -122,7 +126,7 @@
                         {% if o.decided %}
                             <span class="exchange-decided-banner">Décision tranchée</span>
                         {% elseif canEdit and sel.status == 'open' %}
-                            <button class="btn btn--ink" type="button" data-action="exchanges#decide" data-exchange-id="{{ sel.id }}" data-option-id="{{ o.id }}">Valider</button>
+                            <button class="btn btn--primary" type="button" data-action="exchanges#decide" data-exchange-id="{{ sel.id }}" data-option-id="{{ o.id }}">Valider</button>
                         {% endif %}
                     </div>
                     {% endfor %}

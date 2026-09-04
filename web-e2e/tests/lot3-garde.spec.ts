@@ -139,7 +139,7 @@ test('Garde : configurer un rythme → calendrier coloré → échanger un jour'
   // Le planning de garde ne montrait aucune activité : le contrôleur ne lisait même pas l'agenda.
   const activityDate = `${nextMonth}-15`;
   await page.goto('/agenda');
-  await page.locator('.agenda-create').evaluate((d) => {
+  await page.locator('.create-panel').evaluate((d) => {
     (d as HTMLDetailsElement).open = true;
   });
   await page.check('input[name="wholeFamily"]');

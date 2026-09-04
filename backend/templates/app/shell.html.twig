@@ -37,6 +37,9 @@
 
 
 {% block body %}
+{# Lien d'évitement (WCAG 2.4.1) : la barre latérale porte huit liens, retraversés à chaque page
+   par qui navigue au clavier ou au lecteur d'écran. Visible dès qu'il reçoit le focus. #}
+<a class="skip-link" href="#main">Aller au contenu</a>
 <div class="app-shell">
     <aside class="sidebar">
         <div class="sidebar__brand">
@@ -114,7 +117,7 @@
         </form>
         {% endif %}
     </aside>
-    <main class="main">
+    <main class="main" id="main" tabindex="-1">
         {% block main %}{% endblock %}
     </main>
 </div>

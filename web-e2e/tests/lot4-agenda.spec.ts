@@ -67,7 +67,7 @@ test('Agenda : créer un événement, une série, filtrer, éditer, supprimer, �
 
   // ---- Créer un événement ponctuel (toute la famille) ----
   // Le formulaire de création est replié dans un <details> (CTA compact « Ajouter », WAG-06).
-  await page.locator('.agenda-create').evaluate((d) => {
+  await page.locator('.create-panel').evaluate((d) => {
     (d as HTMLDetailsElement).open = true;
   });
   await page.check('input[name="wholeFamily"]');
@@ -115,7 +115,7 @@ test('Agenda : créer un événement, une série, filtrer, éditer, supprimer, �
   );
 
   // ---- Créer une série hebdomadaire (4 occurrences) ----
-  await page.locator('.agenda-create').evaluate((d) => {
+  await page.locator('.create-panel').evaluate((d) => {
     (d as HTMLDetailsElement).open = true;
   });
   await page.check('input[name="wholeFamily"]');

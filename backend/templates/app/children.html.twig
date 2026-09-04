@@ -31,9 +31,12 @@
             {% endfor %}
 
             {% if canManage %}
-            <details class="child-create">
-                <summary class="btn btn--ghost btn--block">+ Ajouter un enfant</summary>
-                <form data-action="submit->children#createChild" class="child-create__form">
+            <details class="create-panel create-panel--block">
+                <summary class="create-panel__cta">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                    Ajouter un enfant
+                </summary>
+                <form data-action="submit->children#createChild" class="create-panel__form">
                     <div class="field"><label for="nc-name">Prénom</label><input id="nc-name" name="firstName" required></div>
                     <div class="field"><label for="nc-birth">Date de naissance</label><input id="nc-birth" name="birthDate" type="date"></div>
                     <button class="btn btn--primary btn--block" type="submit">Créer</button>
@@ -45,7 +48,11 @@
         {# ---- Détail : fiche enfant ---- #}
         <section class="children__detail">
         {% if selected is null %}
-            <div class="card"><p class="empty-state">Sélectionnez un enfant.</p></div>
+            {# Une famille neuve n'a aucun enfant : demander d'en « sélectionner » un envoyait
+               chercher ce qui n'existe pas (liste de finition de la revue web). #}
+            <div class="card"><p class="empty-state">
+                {{ children|length ? 'Sélectionnez un enfant.' : "Aucun enfant enregistré pour l'instant." }}
+            </p></div>
         {% else %}
             {% set child = detail.child %}
 

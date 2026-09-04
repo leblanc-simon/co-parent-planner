@@ -44,10 +44,10 @@ test('Enfants : créer un profil, bandeau anti-santé, ajouter une note', async 
   await expect(page.locator('h1')).toContainText('Enfants');
 
   // Créer un enfant via le volet « Ajouter un enfant ».
-  await page.locator('.child-create summary').click();
+  await page.locator('.create-panel summary').click();
   await page.fill('#nc-name', 'Léa');
   await page.fill('#nc-birth', '2016-09-12');
-  await page.locator('.child-create__form button[type="submit"]').click();
+  await page.locator('.create-panel__form button[type="submit"]').click();
   await waitForSaved(page);
 
   // La fiche est sélectionnée : bandeau anti-données-de-santé visible.

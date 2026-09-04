@@ -6,7 +6,8 @@
 > Sources de vérité : `specs/cdc.md` (§8 = design system), `specs/design/*.dc.html` (maquettes,
 > font foi pour le rendu), `CLAUDE.md` (invariants).
 >
-> **État d'avancement : voir §Journal en fin de document.**
+> **Revue close le 2026-09-05 : 39 constats confirmés, 39 corrigés.** Étapes 1 à 6 livrées, liste
+> de finition P2/P3 comprise. Détail par étape : voir §Journal en fin de document.
 
 ## Conditions d'observation
 
@@ -121,7 +122,7 @@ fonctionnalités **contractualisées et non livrées côté web**, pas des défa
 | 6.11 | Barre latérale **non collante** : sur `/settings` (3 962 px), après 1 500 px de défilement la navigation principale est hors écran (`top: −1316`) et « Se déconnecter » est à `top: 2380`. La sous-navigation des réglages est pourtant `position: sticky` | — |
 | 6.12 | Vue à droits restreints : l'accueil affiche « Le planning de garde s'affichera ici. » à un membre qui n'aura **jamais** ce droit ; l'onglet « Garde » reste dans la navigation et mène à un refus ; « + Nouvel événement » est proposé à quelqu'un qui n'a que `view` | — |
 
-### Reste à traiter (P2/P3 de finition, sans dépendance)
+### Reste à traiter (P2/P3 de finition, sans dépendance) — ✅ TRAITÉE le 2026-09-05
 
 Labels du panneau d'édition d'événement non associés à leur champ (`</label>` fermés avant le champ,
 aucun `for`) — WCAG 1.3.1/4.1.2 ; pas de lien d'évitement clavier ; sélecteur de famille sans
@@ -387,6 +388,62 @@ l'affichage). Aucun changement d'API, d'OpenAPI, de migration ni de registre RGP
 brute de Symfony, **6.10** seconde famille impossible, **6.6** familles liées inutilisables) ;
 vague 3 — vrais développements (**6.1** fiche de jour + activités sur `/garde`, **6.5** phrase de
 garde sur l'accueil, **6.4** `/settings` en trois onglets, **6.3** écran RGPD web).
+
+### 2026-09-05 — Liste « Reste à traiter » : les finitions P2/P3 — la revue web est close
+
+**Sept des vingt-deux points étaient déjà corrigés** par les étapes 1 à 6, la liste datant du 27/07 :
+`aria-label` des cases du calendrier (livré avec 6.1), barres A/B 50/50 des périodes spéciales
+(étape 5), bande morte de 348 px (2.13 `margin-inline`), champs de série visibles hors récurrence
+(le vrai coupable était le `[hidden]` de la feuille UA, étape 2), parent bénéficiaire des exceptions
+et troncature de leur libellé, prénoms tronqués des cartes-nuit (devenues des **initiales** avec le
+marqueur non chromatique de l'étape 5), et « Parent A/B » avant le premier enregistrement — le
+calendrier ne se rend qu'avec un rythme, ce repli ne peut plus s'afficher. **Cartes blanches
+imbriquées** : vérifié par analyse de l'arbre des quatre gabarits concernés, plus une seule
+imbrication. Chaque point a été re-vérifié dans le code avant d'être écarté.
+
+**Accessibilité.** Les libellés du panneau d'édition d'événement étaient posés **avant** leur champ,
+sans `for` et sans l'envelopper : rien ne les associait, ni pour un lecteur d'écran, ni pour le clic
+(WCAG 1.3.1/4.1.2). Le panneau se répétant par occurrence, la clé combine l'événement **et** la date
+d'occurrence — l'identifiant seul se répéterait sur toute une série. Un **lien d'évitement** ouvre
+désormais chaque écran (la barre latérale porte huit liens, retraversés à chaque page). Le sélecteur
+de famille annonce son état (`aria-expanded`), sa nature (`role="menu"`) et se ferme par **Échap** en
+rendant le focus à son déclencheur — sa seule sortie était un clic ailleurs, geste qu'un utilisateur
+au clavier n'a pas ; son ouverture passe de la classe seule à `hidden`, pour que l'œil et
+l'assistance lisent le même état.
+
+**Signaux trompeurs.** Le marqueur « famille liée » était un point plein `#9C6FB0` — teinte que le §8
+donne **aussi** à la catégorie « Musique » : sur une case portant une activité musicale, les deux
+étaient indiscernables. Le §8 fixant les deux couleurs, on distingue par la **forme** (un anneau,
+qu'aucune pastille de catégorie n'emploie) et par une entrée de légende — laquelle nomme enfin
+« vac. », répété sur les cases sans que rien ne l'explique. Les badges de droit portaient les deux
+couleurs réservées au parent A et au parent B : « Lecture » arborait le teal du parent B, si bien
+qu'il se lisait comme le plus fort des deux ; un niveau de droit n'est pas un slot de garde — le plus
+permissif est plein, le moindre est un contour. Même correction pour les badges de rôle, où
+« Beau-parent » se lisait « parent B ». Enfin, les jours non attribués du mois courant sont
+**expliqués** : le calendrier semblait à moitié cassé alors qu'il s'agit des jours antérieurs à la
+mise en place du rythme.
+
+**Cohérence visuelle.** La maquette ne porte **aucun** bouton terracotta ni **aucune** pilule
+d'action (ses boutons vont de 10 à 13 px de rayon ; `999px` y est réservé aux avatars, pastilles et
+badges). Le projet mélangeait les deux formes dans un même formulaire et employait indifféremment
+`--primary` et `--ink` pour le même geste : une seule apparence d'action subsiste, en encre, rayon
+12 px — `btn--ink` est fondu dans `btn--primary`. Le déclencheur de création avait **trois**
+apparences pour un même geste : un `create-panel` unique sert l'agenda, les échanges et les enfants.
+Les traitements de champ compacts, recopiés à l'identique à deux endroits, tiennent en une règle. Le
+mois n'est plus écrit deux fois sur l'écran Agenda.
+
+**Parcours et états vides.** `/echanges` ouvrait sur « Sélectionnez un échange » alors qu'il y en
+avait à montrer — l'écran Enfants ouvre le premier depuis toujours : deux master-détail voisins,
+deux comportements. Et une famille neuve se voyait demander de sélectionner ce qui n'existe pas ;
+les deux volets distinguent désormais « rien à montrer » de « rien de sélectionné ». Enfin, une fois
+le rythme configuré, `/garde` ne menait plus à son éditeur : le lien n'existait que dans l'état vide.
+
+**10 tests fonctionnels**, dont celui des libellés vérifié en retirant un `for` — il échoue en
+nommant le libellé fautif. Portes : backend **421 tests / 3 510 assertions** (411 avant), PHPStan 0,
+cs-fixer 0, Twig 38 ; **E2E 23/23**. Aucun changement d'API, d'OpenAPI, de migration ni de registre
+RGPD — que du gabarit, du CSS et deux contrôleurs web.
+
+**La revue web de juillet est close : 39 constats sur 39.**
 
 ### 2026-09-04 — Étape 6, vague 3 : les trois derniers écarts (6.5, 6.4, 6.3) — étape close
 

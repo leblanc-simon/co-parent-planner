@@ -623,7 +623,7 @@ final class WebPagesTest extends WebTestCase
         self::assertResponseIsSuccessful();
         $html = (string) $client->getResponse()->getContent();
         self::assertStringContainsString('Agenda', $html);
-        self::assertStringContainsString('agenda-create__cta', $html); // parent admin → agenda:edit (CTA compact « Ajouter »)
+        self::assertStringContainsString('create-panel__cta', $html); // parent admin → agenda:edit (CTA compact « Ajouter »)
         self::assertStringContainsString('Aucun événement ce mois-ci', $html);
         // Élément de UX Turbo, seul à honorer `private` (abonnement authentifié — revue 2026-08 C2).
         self::assertStringContainsString('turbo-mercure-stream-source private', $html);

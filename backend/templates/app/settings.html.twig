@@ -97,7 +97,7 @@
             <p class="rgpd-export" data-settings-target="exportStatus" hidden></p>
         </div>
         <div class="settings-row__actions">
-            <button class="btn btn--ink" type="button" data-action="settings#requestExport">Demander l'export</button>
+            <button class="btn btn--primary" type="button" data-action="settings#requestExport">Demander l'export</button>
             <button class="btn btn--ghost" type="button" data-action="settings#refreshExport"
                     data-settings-target="exportRefresh" hidden>Actualiser</button>
         </div>
@@ -135,7 +135,7 @@
             <div class="field"><label for="qh-start">Silence — début</label><input id="qh-start" name="quietHoursStart" type="time" value="{{ quietHoursStart }}"></div>
             <div class="field"><label for="qh-end">Silence — fin</label><input id="qh-end" name="quietHoursEnd" type="time" value="{{ quietHoursEnd }}"></div>
         </div>
-        <button class="btn btn--ink" type="submit">Enregistrer les préférences</button>
+        <button class="btn btn--primary" type="submit">Enregistrer les préférences</button>
     </form>
 </section>
 
@@ -281,7 +281,7 @@
             {% endfor %}
         </div>
         <p class="invite-summary" data-settings-target="summary"></p>
-        <button class="btn btn--ink" type="submit">Envoyer l'invitation</button>
+        <button class="btn btn--primary" type="submit">Envoyer l'invitation</button>
     </form>
     </div>
 
@@ -347,7 +347,7 @@
             <input id="l-id" name="linkedFamilyId" placeholder="Code reçu de l'autre administrateur" required>
             <p class="field__hint">Le lien reste en attente jusqu'à ce qu'un administrateur de cette famille l'accepte.</p>
         </div>
-        <button class="btn btn--ink" type="submit">Proposer un lien</button>
+        <button class="btn btn--primary" type="submit">Proposer un lien</button>
     </form>
     {% endif %}
 </section>

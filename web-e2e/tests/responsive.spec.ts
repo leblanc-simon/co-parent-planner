@@ -74,9 +74,9 @@ test('les ecrans authentifies ne debordent pas horizontalement', async ({
   // Un enfant : la fiche enfant est l'ecran le plus dense (master-detail a trois colonnes),
   // c'est celui qui debordait a la largeur de reference.
   await page.goto('/children');
-  await page.locator('.child-create > summary').click();
+  await page.locator('.create-panel > summary').click();
   await page.fill('#nc-name', 'Sacha');
-  await page.locator('.child-create__form button[type="submit"]').click();
+  await page.locator('.create-panel__form button[type="submit"]').click();
   await expect(page.locator('.child-card__name')).toContainText('Sacha');
 
   for (const screen of APP_SCREENS) {

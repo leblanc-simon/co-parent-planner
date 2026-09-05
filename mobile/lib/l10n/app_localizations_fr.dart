@@ -892,6 +892,24 @@ class AppL10nFr extends AppL10n {
   String get exchangeUnread => 'Non lu';
 
   @override
+  String get exchangeMoreOptions => 'Plus d\'options';
+
+  @override
+  String get exchangeSetDeadline => 'Fixer une échéance';
+
+  @override
+  String get exchangeChangeDeadline => 'Modifier l\'échéance';
+
+  @override
+  String get exchangeClearDeadline => 'Retirer';
+
+  @override
+  String get exchangeDeadlineSaved => 'Échéance enregistrée.';
+
+  @override
+  String get exchangeDeadlineCleared => 'Échéance retirée.';
+
+  @override
   String get exchangeAnonymous => 'Membre supprimé';
 
   @override

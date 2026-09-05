@@ -391,6 +391,15 @@
   "exchangeOverdue": "En retard",
   "exchangeDecided": "Décidé",
   "exchangeUnread": "Non lu",
+  "exchangeMoreOptions": "Plus d'options",
+  "@exchangeMoreOptions": {
+    "description": "Déplie les champs secondaires du formulaire de création (point 8 de la revue)."
+  },
+  "exchangeSetDeadline": "Fixer une échéance",
+  "exchangeChangeDeadline": "Modifier l'échéance",
+  "exchangeClearDeadline": "Retirer",
+  "exchangeDeadlineSaved": "Échéance enregistrée.",
+  "exchangeDeadlineCleared": "Échéance retirée.",
   "@exchangeUnread": {
     "description": "Marqueur de fil non lu (X5) — lu par les lecteurs d'écran, la pastille ne l'étant pas."
   },

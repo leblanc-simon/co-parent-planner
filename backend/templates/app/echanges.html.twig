@@ -51,16 +51,23 @@
                     </div>
                     <div class="field"><label for="e-title">Titre</label><input id="e-title" name="title" required maxlength="200"></div>
                     <div class="field"><label for="e-body">Message d'introduction</label><textarea id="e-body" name="body" rows="2"></textarea></div>
-                    <div class="grid-2">
-                        <div class="field">
-                            <label for="e-child">Concerne</label>
-                            <select id="e-child" name="childId">
-                                <option value="">Toute la famille</option>
-                                {% for c in children %}<option value="{{ c.id }}">{{ c.firstName }}</option>{% endfor %}
-                            </select>
+                    {# Poser une question simple est l'action la plus fréquente : elle ne demande
+                       plus que type, titre et message. L'enfant et l'échéance se déplient — et se
+                       déplient d'eux-mêmes pour une décision, qui a presque toujours une date
+                       (point 8 de la revue). #}
+                    <details class="exchange-form__more" data-exchanges-target="more">
+                        <summary>Plus d'options</summary>
+                        <div class="grid-2">
+                            <div class="field">
+                                <label for="e-child">Concerne</label>
+                                <select id="e-child" name="childId">
+                                    <option value="">Toute la famille</option>
+                                    {% for c in children %}<option value="{{ c.id }}">{{ c.firstName }}</option>{% endfor %}
+                                </select>
+                            </div>
+                            <div class="field"><label for="e-deadline">Échéance (optionnelle)</label><input id="e-deadline" name="deadline" type="date"></div>
                         </div>
-                        <div class="field"><label for="e-deadline">Échéance (optionnelle)</label><input id="e-deadline" name="deadline" type="date"></div>
-                    </div>
+                    </details>
                     <div class="exchange-options" data-exchanges-target="options" hidden>
                         <div class="eyebrow">Options (au moins deux)</div>
                         <div data-exchanges-target="optionsRows">
@@ -133,6 +140,20 @@
                     {% endif %}
                 </div>
                 {% if sel.body %}<p class="exchange-detail__body">{{ sel.body }}</p>{% endif %}
+
+                {% if canEdit and sel.status == 'open' %}
+                {# Le serveur accepte `deadline` depuis toujours (`''` efface), aucun écran ne
+                   l'offrait : une échéance mal saisie ne se corrigeait qu'en rouvrant un autre
+                   échange, c'est-à-dire jamais (point 7 de la revue). #}
+                <form class="exchange-deadline" data-action="submit->exchanges#updateDeadline" data-exchange-id="{{ sel.id }}">
+                    <label for="e-deadline-{{ sel.id }}">Échéance</label>
+                    <input id="e-deadline-{{ sel.id }}" name="deadline" type="date" value="{{ sel.deadline }}">
+                    <button class="btn btn--ghost" type="submit">{{ sel.deadline ? 'Modifier' : 'Fixer' }}</button>
+                    {% if sel.deadline %}
+                        <button class="btn btn--ghost" type="button" data-action="exchanges#clearDeadline" data-exchange-id="{{ sel.id }}">Retirer</button>
+                    {% endif %}
+                </form>
+                {% endif %}
 
                 {% if sel.type == 'decision' %}
                 {# État du tour de vote (X1). L'écran ne disait pas ce qu'un clic engageait : la

@@ -46,6 +46,8 @@ import 'package:coparentplanner/core/sync/idempotency_scope.dart';
 import 'package:coparentplanner/core/sync/outbox_queued_exception.dart';
 import 'package:coparentplanner/core/sync/outbox_service.dart';
 import 'package:coparentplanner/core/sync/outbox_status.dart';
+import 'package:coparentplanner/core/realtime/realtime_client.dart';
+import 'package:coparentplanner/core/realtime/sse.dart';
 import 'package:coparentplanner/core/sync/pending_local.dart';
 import 'package:coparentplanner/core/sync/read_cache.dart';
 import 'package:coparentplanner/core/sync/sync_providers.dart';
@@ -88,6 +90,7 @@ import 'package:coparentplanner/features/custody/presentation/custody_activities
 import 'package:coparentplanner/features/custody/presentation/custody_screen.dart';
 import 'package:coparentplanner/features/custody/presentation/custody_settings_screen.dart';
 import 'package:coparentplanner/features/custody/presentation/parent_initials.dart';
+import 'package:coparentplanner/features/exchanges/application/exchanges_realtime.dart';
 import 'package:coparentplanner/features/exchanges/data/exchanges_repository.dart';
 import 'package:coparentplanner/features/exchanges/presentation/exchange_detail_screen.dart';
 import 'package:coparentplanner/features/exchanges/presentation/exchanges_screen.dart';

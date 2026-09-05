@@ -1695,6 +1695,42 @@ abstract class AppL10n {
   /// **'Non lu'**
   String get exchangeUnread;
 
+  /// Déplie les champs secondaires du formulaire de création (point 8 de la revue).
+  ///
+  /// In fr, this message translates to:
+  /// **'Plus d\'options'**
+  String get exchangeMoreOptions;
+
+  /// No description provided for @exchangeSetDeadline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fixer une échéance'**
+  String get exchangeSetDeadline;
+
+  /// No description provided for @exchangeChangeDeadline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Modifier l\'échéance'**
+  String get exchangeChangeDeadline;
+
+  /// No description provided for @exchangeClearDeadline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer'**
+  String get exchangeClearDeadline;
+
+  /// No description provided for @exchangeDeadlineSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échéance enregistrée.'**
+  String get exchangeDeadlineSaved;
+
+  /// No description provided for @exchangeDeadlineCleared.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échéance retirée.'**
+  String get exchangeDeadlineCleared;
+
   /// No description provided for @exchangeAnonymous.
   ///
   /// In fr, this message translates to:

@@ -48,7 +48,7 @@ adopter le geste de la maquette : **sélection réversible puis validation expli
 bouton par option. Un clic de sélection ne part pas au serveur ; c'est « Valider mon choix » qui
 engage — ce qui règle aussi le point 1 sans ajouter de dialogue.
 
-## 3. Le fil n'est pas une conversation — P2
+## 3. Le fil n'est pas une conversation — P2 ✅ *livré le 2026-09-05 (X3)*
 
 La maquette aligne **ses propres messages à droite**, avec une bulle teintée, l'auteur et l'heure
 sous la bulle. L'implémentation — web comme mobile — pose tous les messages à gauche, avatar puis
@@ -71,7 +71,7 @@ Résultat : une décision que l'autre parent n'a jamais votée reste ouverte ind
 (action irréversible, comme la clôture d'une discussion), envoyer `decidedOptionId`. Rien à écrire
 côté serveur.
 
-## 5. La carte de liste cache ce qui permet de trier — P2
+## 5. La carte de liste cache ce qui permet de trier — P2 ✅ *livré le 2026-09-05 (X4)*
 
 Elle affiche : type, retard, décidé, titre, « Un enfant » ou « Toute la famille », le nombre de
 messages, l'échéance. Elle **n'affiche pas** :
@@ -87,7 +87,7 @@ messages, l'échéance. Elle **n'affiche pas** :
 « avatar + auteur · N réponses · prénom de l'enfant ». Le prénom demande soit `childName` au contrat,
 soit une résolution côté vue à partir de la liste déjà disponible.
 
-## 6. Rien ne distingue un échange qui a bougé — P2
+## 6. Rien ne distingue un échange qui a bougé — P2 ✅ *livré le 2026-09-05 (X5)*
 
 Aucune notion de lecture n'existe (`grep unread|lastReadAt` → rien). Le badge de navigation compte
 les échanges **ouverts**, pas ceux qui ont du nouveau. Sur un écran conversationnel, c'est le manque
@@ -99,12 +99,12 @@ et le badge de navigation peut compter les non-lus plutôt que les ouverts. Donn
 personnelle (même nature qu'`OverlayPreference`). C'est le point le plus coûteux de cette liste, et
 probablement celui qui change le plus le quotidien.
 
-## 7. L'échéance ne se modifie pas depuis l'écran — P3
+## 7. L'échéance ne se modifie pas depuis l'écran — P3 ✅ *livré le 2026-09-05 (X6)*
 
 `UpdateExchangeRequest` accepte `deadline` (et `''` pour l'effacer) ; aucune UI ne l'offre. Une
 échéance mal saisie ne se corrige qu'en rouvrant un autre échange — c'est-à-dire jamais.
 
-## 8. Le formulaire de création demande tout, d'emblée — P3
+## 8. Le formulaire de création demande tout, d'emblée — P3 ✅ *livré le 2026-09-05 (X6)*
 
 Type, titre, message, enfant, échéance et deux options sont présentés en bloc. La maquette n'a qu'un
 bouton « Nouvel échange » et suppose un formulaire plus court. À froid, la friction est réelle pour
@@ -113,7 +113,7 @@ l'action la plus fréquente (poser une question simple).
 **Proposition.** Réduire à *titre + message*, et ne révéler enfant, échéance et options que si l'on
 choisit « Décision » ou si l'on déplie « Plus d'options ».
 
-## 9. Mobile : pas de temps réel sur le seul écran conversationnel — P3 (différé assumé)
+## 9. Mobile : pas de temps réel sur le seul écran conversationnel — P3 ✅ *livré le 2026-09-05 (X6)*
 
 `exchange_detail_screen.dart` le documente : « pas de live SSE mobile (différé, cohérent Lots 3/4) ».
 C'est défendable pour la garde et l'agenda ; ça l'est moins ici, où deux personnes s'écrivent. Le
@@ -130,7 +130,7 @@ backend publie déjà les événements Mercure ; il ne manque que l'abonnement m
 | **X3** ✅ | Point 3 : fil en bulles asymétriques (web + mobile) | inchangé |
 | **X4** ✅ | Point 5 : carte de liste conforme à la maquette | `childName` |
 | **X5** ✅ | Point 6 : lecture et non-lus | nouvelle ressource |
-| **X6** | Points 7, 8, 9 : échéance éditable, formulaire progressif, temps réel mobile | inchangé |
+| **X6** ✅ | Points 7, 8, 9 : échéance éditable, formulaire progressif, temps réel mobile | inchangé |
 
 **X1 et X2 se tiennent** : ce sont les deux moitiés d'un même sujet — comprendre, avant de cliquer,
 ce que le clic engage. C'est par là qu'il faut commencer.
@@ -221,3 +221,43 @@ mobile **404 tests** (401 avant), couverture **82,9 %**, `dart analyze` 0, forma
 `cache:clear`, 1 min 20 contre 47 s ensuite). OpenAPI ré-exporté, client Dart régénéré sans drift.
 
 **Reste** X6 : échéance éditable, formulaire de création progressif, temps réel mobile.
+
+### 2026-09-05 — X6 livré : la revue est CLOSE (9 points sur 9)
+
+**Point 7 — l'échéance se corrige depuis l'écran.** `UpdateExchangeRequest` l'acceptait depuis
+toujours (`''` efface, `null` = inchangée) ; aucune UI ne l'offrait, si bien qu'une échéance mal
+saisie ne se corrigeait qu'en rouvrant un autre échange, c'est-à-dire jamais. Ligne d'action
+discrète sous le corps de l'échange, des deux côtés, avec un bouton « Retirer » distinct. La nuance
+`''` / `null` — tout le contrat de cet endpoint — n'était couverte par aucun test : elle l'est
+maintenant, y compris le cas « un PATCH qui ne parle pas d'échéance ne l'efface pas ».
+
+**Point 8 — le formulaire ne demande plus tout d'emblée.** Type, titre, message ; l'enfant et
+l'échéance se déplient derrière « Plus d'options », et se déplient **d'eux-mêmes** quand on choisit
+« Décision » — une décision a presque toujours une date. On déplie, jamais on ne replie : refermer
+sous les doigts de qui vient d'y saisir quelque chose serait pire que de laisser ouvert.
+
+**Point 9 — le temps réel mobile, qui était le vrai reste à faire.** Les Lots 3, 4 et 6 l'avaient
+différé ; défendable pour la garde et l'agenda, beaucoup moins sur l'écran où deux personnes
+s'écrivent. Le backend publiait déjà ; il ne manquait que l'abonnement.
+
+- **Ce que le serveur pousse est un signal, pas une charge utile** (`<turbo-stream action="refresh">`,
+  destiné au web). Le mobile n'a donc rien à désérialiser : il relit l'état canonique, exactement
+  comme après une mutation. C'est ce qui rend l'abonnement sans risque — aucun contenu ne transite
+  par un chemin qui ne serait pas déjà testé.
+- **Les topics lisibles restent décidés par le serveur** : le jeton vient de
+  `GET /api/realtime/token`, scopé à la famille active (§3.12). Le client ne choisit pas ce qu'il
+  voit.
+- **L'abonnement vit dans un provider `autoDispose`**, pas dans un `State` d'écran : il se ferme tout
+  seul quand plus personne n'écoute, et se rouvre à la bascule de famille — un abonnement qui lui
+  survivrait écouterait les topics de l'ancienne.
+- **Une coupure est la situation normale d'un flux long**, pas une erreur à remonter : reprise avec
+  attente croissante plafonnée. Le premier signal reçu après reconnexion réaligne l'écran, puisqu'il
+  déclenche une relecture complète.
+- Le **découpage SSE** est isolé (`core/realtime/sse.dart`) parce que c'est la seule partie pure, et
+  celle où une erreur se voit le moins : compter les battements de cœur de Mercure ferait recharger
+  l'écran toutes les quinze secondes. Six tests l'encadrent.
+
+**Portes** : backend **445 tests / 3 947 assertions** (443 avant), PHPStan 0, cs-fixer 0, Twig 38 ;
+mobile **418 tests** (404 avant), couverture **83,0 %**, `dart analyze` 0, format 0 ; **E2E 23/23**
+(le parcours Lot 6 exerce désormais la correction d'échéance de bout en bout). Aucune dépendance
+ajoutée — l'abonnement SSE tient sur `dio`, déjà présent : `INSTALL.md` est inchangé.

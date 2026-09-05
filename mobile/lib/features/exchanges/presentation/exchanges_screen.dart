@@ -17,6 +17,7 @@ import '../../../core/widgets/large_title_header.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../children/data/children_repository.dart';
 import '../../family/application/family_context.dart';
+import '../application/exchanges_realtime.dart';
 import '../data/exchanges_repository.dart';
 import 'exchange_detail_screen.dart';
 
@@ -45,7 +46,8 @@ String exchangeDate(String locale, String? isoDate) {
 /// Filtres de statut (Ouverts/Décidés), cartes (type, titre, rattachement,
 /// auteur, échéance, marqueur « en retard », nombre de messages), état vide,
 /// FAB de création. Tri : ouverts d'abord (§3.6). Rafraîchissement par
-/// pull-to-refresh — le live SSE mobile est différé (cohérent Lots 3/4).
+/// pull-to-refresh **et** par abonnement Mercure (point 9 de la revue) : la
+/// création ou la clôture d'un échange par l'autre parent arrive sans geste.
 class ExchangesScreen extends ConsumerWidget {
   const ExchangesScreen({super.key});
 
@@ -55,6 +57,10 @@ class ExchangesScreen extends ConsumerWidget {
     final family = ref.watch(familyContextProvider);
     final exchangesAsync = ref.watch(familyExchangesProvider);
     final status = ref.watch(_statusFilterProvider);
+    // L'abonnement vit tant que l'écran est monté : `watch` suffit à l'ouvrir, `autoDispose` à le
+    // fermer. Sa valeur n'est jamais lue — il ne pousse qu'un signal, et c'est le provider qui
+    // invalide la liste.
+    ref.watch(exchangesListSignalProvider);
 
     return Scaffold(
       floatingActionButton: family == null
@@ -385,6 +391,13 @@ class _ExchangeFormState extends ConsumerState<_ExchangeForm> {
   bool _wholeFamily = true;
   String? _childId;
   DateTime? _deadline;
+
+  /// Champs secondaires dépliés (point 8 de la revue).
+  ///
+  /// Le formulaire demandait type, titre, message, enfant, échéance et deux options d'un bloc,
+  /// alors que l'action la plus fréquente est de poser une question simple. Choisir « Décision »
+  /// les déplie d'office : une décision a presque toujours une échéance.
+  bool _more = false;
   final _options = <TextEditingController>[
     TextEditingController(),
     TextEditingController(),
@@ -443,7 +456,7 @@ class _ExchangeFormState extends ConsumerState<_ExchangeForm> {
             title: _title.text.trim(),
             body: _body.text.trim().isEmpty ? null : _body.text.trim(),
             childId: _wholeFamily ? null : _childId,
-            deadline: _deadline == null ? null : _dateOnly(_deadline!),
+            deadline: _deadline == null ? null : exchangeDateOnly(_deadline!),
             options: _type == 'decision'
                 ? [
                     for (final c in _options)
@@ -501,7 +514,12 @@ class _ExchangeFormState extends ConsumerState<_ExchangeForm> {
                   ),
                 ],
                 selected: {_type},
-                onSelectionChanged: (s) => setState(() => _type = s.first),
+                onSelectionChanged: (s) => setState(() {
+                  _type = s.first;
+                  // On déplie, jamais on ne replie : refermer sous les doigts de qui vient d'y
+                  // saisir quelque chose serait pire que de laisser ouvert.
+                  if (_type == 'decision') _more = true;
+                }),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -518,38 +536,57 @@ class _ExchangeFormState extends ConsumerState<_ExchangeForm> {
                 decoration: InputDecoration(labelText: l.exchangeFieldBody),
               ),
               const SizedBox(height: 4),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l.exchangeWholeFamily),
-                value: _wholeFamily,
-                onChanged: (v) => setState(() => _wholeFamily = v),
-              ),
-              if (!_wholeFamily && children.isNotEmpty)
-                DropdownButtonFormField<String>(
-                  initialValue: _childId,
-                  decoration: InputDecoration(labelText: l.exchangeChooseChild),
-                  items: [
-                    for (final c in children)
-                      DropdownMenuItem(value: c.id, child: Text(c.firstName)),
-                  ],
-                  onChanged: (v) => setState(() => _childId = v),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  key: const ValueKey('exchange-more-options'),
+                  onPressed: () => setState(() => _more = !_more),
+                  icon: Icon(
+                    _more ? Icons.expand_less : Icons.expand_more,
+                    size: 18,
+                  ),
+                  label: Text(l.exchangeMoreOptions),
                 ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l.exchangeFieldDeadline),
-                subtitle: Text(
-                  _deadline == null
-                      ? l.exchangeNoDeadline
-                      : exchangeDate(l.localeName, _dateOnly(_deadline!)),
-                ),
-                trailing: _deadline == null
-                    ? const Icon(Icons.event)
-                    : IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () => setState(() => _deadline = null),
-                      ),
-                onTap: _pickDeadline,
               ),
+              if (_more) ...[
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l.exchangeWholeFamily),
+                  value: _wholeFamily,
+                  onChanged: (v) => setState(() => _wholeFamily = v),
+                ),
+                if (!_wholeFamily && children.isNotEmpty)
+                  DropdownButtonFormField<String>(
+                    initialValue: _childId,
+                    decoration: InputDecoration(
+                      labelText: l.exchangeChooseChild,
+                    ),
+                    items: [
+                      for (final c in children)
+                        DropdownMenuItem(value: c.id, child: Text(c.firstName)),
+                    ],
+                    onChanged: (v) => setState(() => _childId = v),
+                  ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l.exchangeFieldDeadline),
+                  subtitle: Text(
+                    _deadline == null
+                        ? l.exchangeNoDeadline
+                        : exchangeDate(
+                            l.localeName,
+                            exchangeDateOnly(_deadline!),
+                          ),
+                  ),
+                  trailing: _deadline == null
+                      ? const Icon(Icons.event)
+                      : IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () => setState(() => _deadline = null),
+                        ),
+                  onTap: _pickDeadline,
+                ),
+              ],
               if (_type == 'decision') ...[
                 const SizedBox(height: 8),
                 Text(l.exchangeFieldOptions, style: AppTypography.eyebrow),
@@ -605,9 +642,13 @@ class _ExchangeFormState extends ConsumerState<_ExchangeForm> {
       ),
     );
   }
-
-  static String _dateOnly(DateTime d) =>
-      '${d.year.toString().padLeft(4, '0')}-'
-      '${d.month.toString().padLeft(2, '0')}-'
-      '${d.day.toString().padLeft(2, '0')}';
 }
+
+/// Date « nue » au format attendu par le contrat (`Y-m-d`), sans fuseau ni heure.
+///
+/// Partagée avec l'écran de détail depuis que l'échéance s'y modifie (point 7) : deux copies de ce
+/// formatage auraient fini par diverger.
+String exchangeDateOnly(DateTime d) =>
+    '${d.year.toString().padLeft(4, '0')}-'
+    '${d.month.toString().padLeft(2, '0')}-'
+    '${d.day.toString().padLeft(2, '0')}';

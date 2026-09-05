@@ -521,4 +521,38 @@ final class ExchangeApiLot6Test extends ApiAuthTestCase
         }
         self::fail('Échange '.$exchangeId.' absent de la liste.');
     }
+
+    /**
+     * X6 (point 7) — l'échéance se fixe, se corrige et **s'efface** par PATCH.
+     *
+     * `''` efface, `null` laisse inchangé : c'est toute la nuance de l'endpoint, et l'écran s'y
+     * appuie pour le bouton « Retirer ».
+     */
+    public function testDeadlineIsSetCorrectedAndCleared(): void
+    {
+        [$client, $h, $familyId] = $this->family('ex-deadline@example.com');
+        $merge = $h + ['Content-Type' => 'application/merge-patch+json'];
+
+        $id = $client->request('POST', '/api/families/'.$familyId.'/exchanges', [
+            'json' => ['type' => 'discussion', 'title' => 'Piscine', 'deadline' => '2026-10-01'],
+            'headers' => $h,
+        ])->toArray()['id'];
+
+        $moved = $client->request('PATCH', '/api/exchanges/'.$id, [
+            'json' => ['deadline' => '2026-11-15'], 'headers' => $merge,
+        ])->toArray();
+        self::assertSame('2026-11-15', $moved['deadline']);
+
+        // Un PATCH qui ne parle pas d'échéance ne doit pas l'effacer.
+        $untouched = $client->request('PATCH', '/api/exchanges/'.$id, [
+            'json' => ['status' => 'open'], 'headers' => $merge,
+        ])->toArray();
+        self::assertSame('2026-11-15', $untouched['deadline']);
+
+        $cleared = $client->request('PATCH', '/api/exchanges/'.$id, [
+            'json' => ['deadline' => ''], 'headers' => $merge,
+        ])->toArray();
+        self::assertNull($cleared['deadline']);
+        self::assertFalse($cleared['overdue']);
+    }
 }

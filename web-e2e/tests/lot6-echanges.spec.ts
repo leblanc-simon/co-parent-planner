@@ -113,9 +113,23 @@ test('Échanges : discussion + message, décision + bascule, marqueur « en reta
   await openCreate(page);
   await page.selectOption('#e-type', 'discussion');
   await page.fill('#e-title', 'Sujet en retard');
+  // L'échéance vit désormais derrière « Plus d'options » : le formulaire ne demande plus que type,
+  // titre et message d'emblée (point 8 de la revue des échanges).
+  await page.locator('.exchange-form__more > summary').click();
   await page.fill('#e-deadline', pastDate(5));
   await page.locator('.exchange-form button[type="submit"]').click();
   await waitForSaved(page);
   const late = page.locator('.exchange-card').filter({ hasText: 'Sujet en retard' });
   await expect(late.locator('.exchange-tag--overdue')).toBeVisible();
+
+  // ---- L'échéance se corrige depuis l'écran (point 7) ----
+  // Le serveur l'acceptait depuis toujours ; aucune UI ne l'offrait, si bien qu'une échéance mal
+  // saisie ne se corrigeait qu'en rouvrant un autre échange.
+  await late.first().click();
+  await expect(page.locator('.exchange-detail__head')).toContainText('Sujet en retard');
+  await page.locator('.exchange-deadline button[type="button"]').click();
+  await waitForSaved(page);
+  await expect(
+    page.locator('.exchange-card').filter({ hasText: 'Sujet en retard' }).locator('.exchange-tag--overdue'),
+  ).toHaveCount(0);
 });

@@ -13,14 +13,17 @@ import '../../../core/widgets/error_banner.dart';
 import '../../../core/widgets/initial_avatar.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../members/data/members_repository.dart';
+import '../application/exchanges_realtime.dart';
 import '../data/exchanges_repository.dart';
-import 'exchanges_screen.dart' show exchangeDate;
+import 'exchanges_screen.dart' show exchangeDate, exchangeDateOnly;
 
 /// US-EX-3/5 — détail d'un échange : corps, options d'une décision (décomptes,
 /// bandeau « décision tranchée », validation), fil de messages, saisie.
 ///
 /// Le détail est rechargé après chaque action (message / decide / clôture) via
-/// invalidation du provider — pas de live SSE mobile (différé, cohérent Lots 3/4).
+/// invalidation du provider, **et** à réception d'un signal Mercure (point 9 de
+/// la revue) : sur le seul écran où deux personnes s'écrivent, rouvrir l'écran
+/// pour savoir si l'autre a répondu n'était pas tenable.
 /// Les droits sont réputés `edit` côté UI ; le serveur reste autorité (un `403`
 /// est signalé). Un `409` (décision déjà tranchée) réaligne l'état affiché.
 class ExchangeDetailScreen extends ConsumerStatefulWidget {
@@ -78,6 +81,52 @@ class _ExchangeDetailScreenState extends ConsumerState<ExchangeDetailScreen> {
     final providers = context.providers;
     await ref.read(exchangesRepositoryProvider).markRead(widget.exchangeId);
     providers.invalidate(familyExchangesProvider);
+  }
+
+  bool _deadlineBusy = false;
+
+  /// Point 7 de la revue — fixer ou corriger l'échéance depuis l'écran.
+  ///
+  /// `UpdateExchangeRequest` l'accepte depuis toujours (`''` efface, `null` = inchangée) ; aucune
+  /// UI ne l'offrait, si bien qu'une échéance mal saisie ne se corrigeait qu'en rouvrant un autre
+  /// échange — c'est-à-dire jamais.
+  Future<void> _pickDeadline(String? current) async {
+    final now = DateTime.now();
+    final parsed = current == null ? null : DateTime.tryParse(current);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: parsed ?? now,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 5),
+    );
+    if (picked == null) return;
+    await _saveDeadline(exchangeDateOnly(picked));
+  }
+
+  /// [value] vide efface l'échéance : c'est `''`, et non `null`, qui l'exprime au serveur.
+  Future<void> _saveDeadline(String value) async {
+    if (_deadlineBusy) return;
+    setState(() => _deadlineBusy = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final providers = context.providers;
+    final l = AppL10n.of(context);
+    try {
+      await ref
+          .read(exchangesRepositoryProvider)
+          .patch(widget.exchangeId, deadline: value);
+      _reload(providers);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            value.isEmpty ? l.exchangeDeadlineCleared : l.exchangeDeadlineSaved,
+          ),
+        ),
+      );
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.localized(l))));
+    } finally {
+      if (mounted) setState(() => _deadlineBusy = false);
+    }
   }
 
   /// Rafraîchit le détail **et** la liste, via le conteneur détaché : la mutation
@@ -228,6 +277,9 @@ class _ExchangeDetailScreenState extends ConsumerState<ExchangeDetailScreen> {
   Widget build(BuildContext context) {
     final l = AppL10n.of(context);
     final async = ref.watch(exchangeDetailProvider(widget.exchangeId));
+    // Abonnement au topic de cet échange, ouvert par le `watch` et fermé avec l'écran. Sa valeur
+    // n'est jamais lue : le serveur ne pousse qu'un signal, le provider relit l'état canonique.
+    ref.watch(exchangeDetailSignalProvider(widget.exchangeId));
 
     return Scaffold(
       appBar: AppBar(
@@ -267,6 +319,13 @@ class _ExchangeDetailScreenState extends ConsumerState<ExchangeDetailScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                     children: [
                       _Header(exchange: exchange),
+                      if (exchange.status == 'open')
+                        _DeadlineRow(
+                          deadline: exchange.deadline,
+                          busy: _deadlineBusy,
+                          onPick: _pickDeadline,
+                          onClear: () => _saveDeadline(''),
+                        ),
                       if (exchange.body != null &&
                           exchange.body!.isNotEmpty) ...[
                         const SizedBox(height: 12),
@@ -307,6 +366,44 @@ class _ExchangeDetailScreenState extends ConsumerState<ExchangeDetailScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Ligne d'échéance modifiable (point 7). Discrète : c'est une correction occasionnelle, pas
+/// l'action principale de l'écran.
+class _DeadlineRow extends StatelessWidget {
+  const _DeadlineRow({
+    required this.deadline,
+    required this.busy,
+    required this.onPick,
+    required this.onClear,
+  });
+
+  final String? deadline;
+  final bool busy;
+  final void Function(String?) onPick;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppL10n.of(context);
+    final has = (deadline ?? '').isNotEmpty;
+    return Row(
+      children: [
+        TextButton.icon(
+          key: const ValueKey('exchange-edit-deadline'),
+          onPressed: busy ? null : () => onPick(deadline),
+          icon: const Icon(Icons.event, size: 18),
+          label: Text(has ? l.exchangeChangeDeadline : l.exchangeSetDeadline),
+        ),
+        if (has)
+          TextButton(
+            key: const ValueKey('exchange-clear-deadline'),
+            onPressed: busy ? null : onClear,
+            child: Text(l.exchangeClearDeadline),
+          ),
+      ],
     );
   }
 }

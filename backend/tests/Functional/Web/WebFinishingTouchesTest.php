@@ -333,6 +333,36 @@ final class WebFinishingTouchesTest extends WebTestCase
         self::assertSame(0, $crawler->filter('.exchange-card__unread')->count());
     }
 
+    /**
+     * X6 — l'échéance se corrige depuis l'écran (point 7), et le formulaire de création ne demande
+     * plus tout d'emblée (point 8).
+     */
+    public function testDeadlineIsEditableAndCreationFormIsProgressive(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser();
+        $exchange = $this->seedExchangeWithMessages();
+        $this->login($client);
+
+        $crawler = $client->request('GET', '/echanges?exchange='.$exchange->getId());
+        self::assertResponseIsSuccessful();
+
+        // Le serveur acceptait `deadline` depuis toujours ; aucune UI ne l'offrait.
+        self::assertSame(1, $crawler->filter('form.exchange-deadline input[type="date"]')->count());
+        self::assertStringContainsString(
+            'exchanges#updateDeadline',
+            (string) $client->getResponse()->getContent(),
+        );
+
+        // Les champs secondaires sont repliés : poser une question simple est l'action la plus
+        // fréquente, et elle ne demande plus que type, titre et message.
+        self::assertSame(1, $crawler->filter('details.exchange-form__more')->count());
+        self::assertSame(0, $crawler->filter('details.exchange-form__more[open]')->count());
+        self::assertSame(1, $crawler->filter('details.exchange-form__more #e-child')->count());
+        self::assertSame(1, $crawler->filter('details.exchange-form__more #e-deadline')->count());
+    }
+
     private function markRead(Exchange $exchange): void
     {
         $family = $this->family();

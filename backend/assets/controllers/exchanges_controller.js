@@ -5,7 +5,7 @@ import { ApiController } from '../api_base.js';
  * (état canonique ; le temps réel Mercure rafraîchit aussi chez les autres membres).
  */
 export default class extends ApiController {
-    static targets = ['type', 'options', 'optionsRows', 'option', 'submitVote'];
+    static targets = ['type', 'options', 'optionsRows', 'option', 'submitVote', 'more'];
     static values = { unreadId: String };
 
     connect() {
@@ -45,7 +45,35 @@ export default class extends ApiController {
 
     toggleType() {
         if (!this.hasTypeTarget || !this.hasOptionsTarget) return;
-        this.optionsTarget.hidden = this.typeTarget.value !== 'decision';
+        const decision = this.typeTarget.value === 'decision';
+        this.optionsTarget.hidden = !decision;
+        // Une décision a presque toujours une échéance : choisir « Décision » déplie les champs
+        // secondaires (point 8). On ne les replie pas ensuite — refermer sous les doigts de qui
+        // vient d'y saisir quelque chose serait pire que de laisser ouvert.
+        if (decision && this.hasMoreTarget) this.moreTarget.open = true;
+    }
+
+    /**
+     * Point 7 — fixer ou corriger l'échéance depuis l'écran.
+     *
+     * `UpdateExchangeRequest` l'accepte depuis toujours (`''` efface) ; aucune UI ne l'offrait, si
+     * bien qu'une échéance mal saisie ne se corrigeait qu'en rouvrant un autre échange.
+     */
+    updateDeadline(event) {
+        event.preventDefault();
+        const f = event.currentTarget;
+        this._send('PATCH', `/api/exchanges/${f.dataset.exchangeId}`, { deadline: this._val(f, 'deadline') }, {
+            event,
+            notice: this._val(f, 'deadline') ? 'Échéance enregistrée.' : 'Échéance retirée.',
+        });
+    }
+
+    /** Retirer l'échéance : `''` l'efface côté serveur (`null` signifierait « inchangée »). */
+    clearDeadline(event) {
+        this._send('PATCH', `/api/exchanges/${event.currentTarget.dataset.exchangeId}`, { deadline: '' }, {
+            event,
+            notice: 'Échéance retirée.',
+        });
     }
 
     addOption(event) {

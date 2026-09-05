@@ -913,4 +913,106 @@ void main() {
       verifyNever(() => repo.markRead(any()));
     });
   });
+
+  group('échéance et formulaire progressif (X6)', () {
+    testWidgets("l'échéance se fixe et se retire depuis le détail", (
+      tester,
+    ) async {
+      // `UpdateExchangeRequest` acceptait `deadline` depuis toujours ; aucune UI ne l'offrait, si
+      // bien qu'une échéance mal saisie ne se corrigeait qu'en rouvrant un autre échange
+      // (point 7 de la revue).
+      when(() => repo.detail('x10')).thenAnswer(
+        (_) async => const api.Exchange(
+          id: 'x10',
+          type: 'discussion',
+          title: 'Piscine',
+          status: 'open',
+          deadline: '2026-10-01',
+        ),
+      );
+      when(
+        () => repo.patch(any(), deadline: any(named: 'deadline')),
+      ).thenAnswer((_) async => const api.Exchange(id: 'x10', status: 'open'));
+
+      await pumpScreen(
+        tester,
+        const ExchangeDetailScreen(exchangeId: 'x10'),
+        overrides: overrides(),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('exchange-clear-deadline')));
+      await tester.pumpAndSettle();
+
+      // `''` efface ; `null` signifierait « inchangée » — la nuance est tout l'endpoint.
+      verify(() => repo.patch('x10', deadline: '')).called(1);
+    });
+
+    testWidgets('un échange clos n\'offre plus de modifier son échéance', (
+      tester,
+    ) async {
+      when(() => repo.detail('x11')).thenAnswer(
+        (_) async => const api.Exchange(
+          id: 'x11',
+          type: 'discussion',
+          title: 'Piscine',
+          status: 'decided',
+          deadline: '2026-10-01',
+        ),
+      );
+
+      await pumpScreen(
+        tester,
+        const ExchangeDetailScreen(exchangeId: 'x11'),
+        overrides: overrides(),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('exchange-edit-deadline')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('le formulaire ne demande que le nécessaire, et se déplie', (
+      tester,
+    ) async {
+      // Type, titre, message, enfant, échéance et deux options d'un bloc : à froid, la friction
+      // était réelle pour l'action la plus fréquente — poser une question simple (point 8).
+      when(
+        () => repo.list('u-test', 'fam-1'),
+      ).thenAnswer((_) async => const []);
+
+      await pumpScreen(tester, const ExchangesScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('exchange-new')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('exchange-title')), findsOneWidget);
+      expect(find.text('Toute la famille'), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('exchange-more-options')));
+      await tester.pumpAndSettle();
+      expect(find.text('Toute la famille'), findsOneWidget);
+    });
+
+    testWidgets('choisir « Décision » déplie les champs secondaires', (
+      tester,
+    ) async {
+      // Une décision a presque toujours une échéance : la lui faire chercher serait absurde.
+      when(
+        () => repo.list('u-test', 'fam-1'),
+      ).thenAnswer((_) async => const []);
+
+      await pumpScreen(tester, const ExchangesScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('exchange-new')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Toute la famille'), findsNothing);
+      await tester.tap(find.text('Décision'));
+      await tester.pumpAndSettle();
+      expect(find.text('Toute la famille'), findsOneWidget);
+    });
+  });
 }

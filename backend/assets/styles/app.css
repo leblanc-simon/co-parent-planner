@@ -889,6 +889,25 @@ a:hover { text-decoration: underline; }
 .exchange-detail__title { font-family: var(--font-title); font-size: 24px; font-weight: 700; margin: .4rem 0 .2rem; }
 .exchange-detail__meta { color: var(--muted); font-size: .85rem; margin: 0; }
 .exchange-detail__body { margin: 1rem 0 0; white-space: pre-wrap; }
+/* Echeance editable (point 7) : une ligne d'action discrete, pas un formulaire de plus. */
+.exchange-deadline {
+    display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin-top: 1rem;
+
+    & label { font-size: .8rem; color: var(--muted); }
+    & input { padding: 7px 10px; border: 1px solid var(--border); border-radius: 10px; font: inherit; background: var(--card); color: var(--ink); }
+}
+/* Champs secondaires du formulaire de creation (point 8) : replies par defaut, deplies d'office
+   quand on choisit « Decision ». */
+.exchange-form__more {
+    & > summary {
+        cursor: pointer; font-size: .82rem; font-weight: 600; color: var(--muted);
+        padding: .2rem 0;
+
+        &:hover { color: var(--ink-2); }
+    }
+
+    & .grid-2 { margin-top: .6rem; }
+}
 .exchange-options-list { display: flex; flex-direction: column; gap: .6rem; margin-top: 1.1rem; }
 .exchange-option { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 14px 16px; border: 1px solid var(--border); border-radius: 15px; }
 .exchange-option--decided { border-color: var(--positive); background: var(--positive-soft); }

@@ -169,3 +169,18 @@ les références (`SET NULL`) sans casser les liens/audits :
 | Champ | Catégorie | Sensibilité | Base légale | Finalité | Conservation | Destinataires |
 |---|---|---|---|---|---|---|
 | `Membership.partnerMembership` | Identité (relation entre personnes) | Standard (UUID ; les identités liées restent 🔒) | Exécution du contrat (coordination du foyer recomposé) | Situer un beau-parent par rapport au parent qu'il accompagne : affichage, foyer de garde, droits proposés | Durée de vie du membership ; `SET NULL` au retrait du parent visé ; effacée avec le membre à la suppression de compte | Membres de la famille habilités à voir la liste des membres |
+
+## Champs (revue UX des échanges — X5, non-lus)
+
+> `ExchangeRead.lastReadAt` dit **quand une personne identifiée était devant son écran**. C'est peu,
+> mais ce n'est pas rien : la règle du projet est d'inscrire plutôt que d'arbitrer au cas par cas.
+> La donnée n'est **jamais exposée aux autres membres** — l'API ne renvoie que `hasUnread`, du seul
+> point de vue de l'appelant ; personne ne peut savoir quand l'autre parent a ouvert un fil.
+>
+> `lastReadMessage` est le repère effectif du marqueur (un identifiant de message, pas une date) :
+> les horodatages du schéma sont à la seconde, et une réponse postée dans la même seconde qu'une
+> lecture passait pour déjà lue.
+
+| Champ | Catégorie | Sensibilité | Base légale | Finalité | Conservation | Destinataires |
+|---|---|---|---|---|---|---|
+| `ExchangeRead.lastReadAt` | Technique (horodatage d'activité) | Standard | Exécution du contrat (coordination parentale) | Distinguer les échanges qui ont du nouveau de ceux déjà lus | Durée de vie de l'échange ou du membership (`CASCADE`) ; purge RGPD (Lot 8) | Interne (usage serveur) — jamais exposé aux autres membres |

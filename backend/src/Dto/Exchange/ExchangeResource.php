@@ -17,12 +17,14 @@ use App\State\Exchange\CreateExchangeProcessor;
 use App\State\Exchange\DecideProcessor;
 use App\State\Exchange\ExchangeItemProvider;
 use App\State\Exchange\ExchangesProvider;
+use App\State\Exchange\MarkReadProcessor;
 use App\State\Exchange\UpdateExchangeProcessor;
 
 /**
  * Échange exposé (Lot 6 §6.1). La collection `/families/{id}/exchanges?status=` renvoie les résumés
  * (sans le fil) triés (§3.6) ; `GET /exchanges/{id}` renvoie le détail (options + décomptes + fil en
- * clair). `POST .../decide` valide une option et renvoie l'échange (statut + options à jour). Le
+ * clair). `POST .../decide` valide une option et renvoie l'échange (statut + options à jour) ;
+ * `POST .../read` marque le fil lu pour l'appelant (X5). Le
  * marqueur `overdue` est dérivé (fuseau famille, §3.4).
  */
 #[ApiResource(
@@ -58,6 +60,15 @@ use App\State\Exchange\UpdateExchangeProcessor;
             read: false,
             processor: UpdateExchangeProcessor::class,
         ),
+        // Marque l'échange lu par l'appelant (X5). Sans corps ; idempotent — la lecture n'avance
+        // jamais en arrière. `exchanges:view` suffit (cf. MarkReadProcessor).
+        new Post(
+            uriTemplate: '/exchanges/{id}/read',
+            status: 200,
+            input: false,
+            read: false,
+            processor: MarkReadProcessor::class,
+        ),
         new Post(
             uriTemplate: '/exchanges/{id}/decide',
             input: DecideRequest::class,
@@ -73,6 +84,11 @@ class ExchangeResource
     public string $title = '';
     public ?string $body = null;
     public ?string $childId = null;
+    /**
+     * Prénom de l'enfant concerné (X4). La carte de liste écrivait « Un enfant » — elle avait
+     * l'identifiant mais pas le nom, et c'est le nom qui permet de trier d'un coup d'œil.
+     */
+    public ?string $childName = null;
     public ?string $authorMembershipId = null;
     public ?string $authorName = null;
     public ?string $authorColor = null;
@@ -108,6 +124,15 @@ class ExchangeResource
     public bool $myVoteMaySettle = false;
     public ?string $lastMessageAt = null;
     /**
+     * L'échange a bougé depuis ma dernière lecture (X5).
+     *
+     * Rien ne distinguait un fil qui venait de recevoir trois messages d'un fil dormant depuis un
+     * mois : il fallait ouvrir chacun pour le savoir. Comparaison de dates, du seul point de vue de
+     * l'appelant — poster un message ou ouvrir un échange marque sa lecture, ce qui garde la règle
+     * réduite à `dernière activité > dernière lecture`.
+     */
+    public bool $hasUnread = false;
+    /**
      * Version de l'échange à renvoyer dans `expectedVersion` d'un PATCH (verrou optimiste, §4.2) —
      * même défaut que l'agenda : la contrainte existait côté serveur sans être lisible (C20).
      */
@@ -127,6 +152,7 @@ class ExchangeResource
         $view->title = $exchange->getTitle();
         $view->body = $exchange->getBody();
         $view->childId = null !== $exchange->getChild() ? (string) $exchange->getChild()->getId() : null;
+        $view->childName = $exchange->getChild()?->getFirstName();
         $author = $exchange->getAuthorMembership();
         if (null !== $author) {
             $view->authorMembershipId = (string) $author->getId();

@@ -9,6 +9,7 @@ part of 'exchange.dart';
 Exchange _$ExchangeFromJson(Map<String, dynamic> json) => Exchange(
   body: json['body'] as String?,
   childId: json['childId'] as String?,
+  childName: json['childName'] as String?,
   authorMembershipId: json['authorMembershipId'] as String?,
   authorName: json['authorName'] as String?,
   authorColor: json['authorColor'] as String?,
@@ -33,6 +34,7 @@ Exchange _$ExchangeFromJson(Map<String, dynamic> json) => Exchange(
   createdAt: json['createdAt'] as String? ?? '',
   messageCount: (json['messageCount'] as num?)?.toInt() ?? 0,
   myVoteMaySettle: json['myVoteMaySettle'] as bool? ?? false,
+  hasUnread: json['hasUnread'] as bool? ?? false,
   version: (json['version'] as num?)?.toInt() ?? 1,
 );
 
@@ -42,6 +44,7 @@ Map<String, dynamic> _$ExchangeToJson(Exchange instance) => <String, dynamic>{
   'title': instance.title,
   'body': instance.body,
   'childId': instance.childId,
+  'childName': instance.childName,
   'authorMembershipId': instance.authorMembershipId,
   'authorName': instance.authorName,
   'authorColor': instance.authorColor,
@@ -55,6 +58,7 @@ Map<String, dynamic> _$ExchangeToJson(Exchange instance) => <String, dynamic>{
   'awaitingVoters': instance.awaitingVoters,
   'myVoteMaySettle': instance.myVoteMaySettle,
   'lastMessageAt': instance.lastMessageAt,
+  'hasUnread': instance.hasUnread,
   'version': instance.version,
   'options': instance.options,
   'messages': instance.messages,

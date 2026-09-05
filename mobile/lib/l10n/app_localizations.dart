@@ -1689,6 +1689,12 @@ abstract class AppL10n {
   /// **'Décidé'**
   String get exchangeDecided;
 
+  /// Marqueur de fil non lu (X5) — lu par les lecteurs d'écran, la pastille ne l'étant pas.
+  ///
+  /// In fr, this message translates to:
+  /// **'Non lu'**
+  String get exchangeUnread;
+
   /// No description provided for @exchangeAnonymous.
   ///
   /// In fr, this message translates to:

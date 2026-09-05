@@ -49,6 +49,16 @@ abstract class ExchangeClient {
     @Body() required ExchangeDecideRequest body,
   });
 
+  /// Creates a Exchange resource.
+  ///
+  /// Creates a Exchange resource.
+  ///
+  /// [id] - Exchange identifier.
+  @POST('/api/exchanges/{id}/read')
+  Future<Exchange> apiExchangesIdreadPost({
+    @Path('id') required String id,
+  });
+
   /// Retrieves the collection of Exchange resources.
   ///
   /// Retrieves the collection of Exchange resources.

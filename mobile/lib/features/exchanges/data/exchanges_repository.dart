@@ -111,6 +111,19 @@ class ExchangesRepository {
     }
   }
 
+  /// X5 — marque l'échange lu par l'appelant. **Silencieux** : un échec ne coûte
+  /// qu'une pastille qui reste, jamais un message d'erreur — l'utilisateur n'a rien
+  /// demandé, il a seulement ouvert un fil.
+  Future<void> markRead(String exchangeId) async {
+    try {
+      await _clients.exchanges.apiExchangesIdreadPost(id: exchangeId);
+    } on DioException {
+      // Ignoré volontairement (y compris hors-ligne) : rien à rejouer, la prochaine
+      // ouverture réessaiera. Aucune entrée d'outbox — une lecture périmée n'a pas
+      // de valeur à la resynchronisation.
+    }
+  }
+
   /// US-EX-6 — clôture / édition d'un échange (statut, option retenue, échéance).
   Future<api.Exchange> patch(
     String exchangeId, {

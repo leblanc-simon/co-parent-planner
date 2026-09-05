@@ -10,6 +10,7 @@ use App\Dto\Exchange\OptionView;
 use App\Entity\Exchange;
 use App\Entity\Membership;
 use App\Repository\ExchangeOptionRepository;
+use App\Repository\ExchangeReadRepository;
 use App\Repository\MessageRepository;
 use App\Repository\OptionVoteRepository;
 
@@ -24,37 +25,54 @@ final class ExchangeAssembler
         private readonly ExchangeOptionRepository $options,
         private readonly MessageRepository $messages,
         private readonly OptionVoteRepository $votes,
+        private readonly ExchangeReadRepository $reads,
         private readonly OverdueChecker $overdue,
         private readonly DecisionEngine $decisions,
     ) {
     }
 
     /**
+     * [$viewer] renseigné : chaque résumé porte son marqueur de non-lu (X5), calculé en **une**
+     * requête pour toute la liste.
+     *
      * @param list<Exchange> $exchanges
      *
      * @return list<ExchangeResource>
      */
-    public function list(array $exchanges, \DateTimeZone $tz): array
+    public function list(array $exchanges, \DateTimeZone $tz, ?Membership $viewer = null): array
     {
         $tally = $this->votes->tallyFor($exchanges);
         $stats = $this->messages->statsFor($exchanges);
+        // `null` (et non `[]`) quand l'appelant ne dit pas qui regarde : sans point de vue, il n'y a
+        // pas de non-lu — un tableau vide voudrait dire « ce membre n'a jamais rien lu ».
+        $reads = null;
+        $lastIds = [];
+        if (null !== $viewer && [] !== $exchanges) {
+            $reads = $this->reads->lastReadByExchange($viewer, $exchanges[0]->getFamily());
+            $lastIds = $this->messages->lastIdsFor($exchanges);
+        }
 
-        return array_map(fn (Exchange $e): ExchangeResource => $this->summary($e, $tz, $tally, $stats), $exchanges);
+        return array_map(fn (Exchange $e): ExchangeResource => $this->summary($e, $tz, $tally, $stats, $reads, $lastIds), $exchanges);
     }
 
     /**
      * Résumé (sans le fil), à partir des décomptes/stats précalculés.
      *
-     * @param array<string, int>                                          $tally
-     * @param array<string, array{count: int, last: ?\DateTimeImmutable}> $stats
+     * @param array<string, int>                                                    $tally
+     * @param array<string, array{count: int, last: ?\DateTimeImmutable}>           $stats
+     * @param array<string, array{at: \DateTimeImmutable, messageId: ?string}>|null $reads   lectures de l'appelant, par échange ; `null` = appelant inconnu
+     * @param array<string, string>                                                 $lastIds dernier message de chaque échange
      */
-    public function summary(Exchange $exchange, \DateTimeZone $tz, array $tally, array $stats): ExchangeResource
+    public function summary(Exchange $exchange, \DateTimeZone $tz, array $tally, array $stats, ?array $reads = null, array $lastIds = []): ExchangeResource
     {
         $res = ExchangeResource::scalarFrom($exchange, $this->overdue->isOverdue($exchange, $tz));
         $res->options = $this->optionViews($exchange, $tally);
         $stat = $stats[(string) $exchange->getId()] ?? null;
         $res->messageCount = $stat['count'] ?? 0;
-        $res->lastMessageAt = ($stat['last'] ?? null)?->setTimezone($tz)->format(\DateTimeInterface::ATOM);
+        $last = $stat['last'] ?? null;
+        $res->lastMessageAt = $last?->setTimezone($tz)->format(\DateTimeInterface::ATOM);
+        $res->hasUnread = null !== $reads
+            && $this->isUnread($lastIds[(string) $exchange->getId()] ?? null, $reads[(string) $exchange->getId()] ?? null);
 
         return $res;
     }
@@ -79,9 +97,53 @@ final class ExchangeAssembler
         $res->messages = array_map(static fn ($m): MessageView => MessageView::fromEntity($m, $tz), $messages);
         $res->messageCount = \count($messages);
         $last = [] !== $messages ? end($messages) : null;
-        $res->lastMessageAt = false !== $last && null !== $last ? $last->getSentAt()->setTimezone($tz)->format(\DateTimeInterface::ATOM) : null;
+        $lastAt = false !== $last && null !== $last ? $last->getSentAt() : null;
+        $res->lastMessageAt = $lastAt?->setTimezone($tz)->format(\DateTimeInterface::ATOM);
+        // Le détail dit encore « non lu » : c'est le marquage (POST .../read) qui consomme, pas la
+        // lecture — même règle que l'aperçu d'invitation, qui ne consomme pas le jeton.
+        // `max()` sur les identifiants, et non le dernier du tri d'affichage : la liste, elle,
+        // compare à `MAX(id)` — les deux règles doivent désigner le même message.
+        $lastId = [] !== $messages ? max(array_map(static fn ($m): string => (string) $m->getId(), $messages)) : null;
+        $res->hasUnread = null !== $viewer && $this->isUnread($lastId, $this->readState($viewer, $exchange));
 
         return $res;
+    }
+
+    /**
+     * Lecture de [$viewer] sur cet échange, sous la même forme que la carte de la liste.
+     *
+     * @return array{at: \DateTimeImmutable, messageId: ?string}|null
+     */
+    private function readState(Membership $viewer, Exchange $exchange): ?array
+    {
+        $read = $this->reads->findOneFor($viewer, $exchange);
+        if (null === $read) {
+            return null;
+        }
+
+        return [
+            'at' => $read->getLastReadAt(),
+            'messageId' => null !== $read->getLastReadMessage() ? (string) $read->getLastReadMessage()->getId() : null,
+        ];
+    }
+
+    /**
+     * A-t-il bougé depuis ma dernière lecture ?
+     *
+     * Comparaison d'**identifiants de messages**, pas de dates : les horodatages du schéma sont à la
+     * seconde, et une réponse postée dans la même seconde qu'une lecture passait pour déjà lue.
+     * Jamais lu ⇒ non lu — l'auteur, lui, est marqué lecteur au moment où il crée l'échange ou y
+     * poste, sans quoi il verrait ses propres écrits en gras.
+     *
+     * @param array{at: \DateTimeImmutable, messageId: ?string}|null $read
+     */
+    private function isUnread(?string $lastMessageId, ?array $read): bool
+    {
+        if (null === $read) {
+            return true;
+        }
+
+        return $lastMessageId !== $read['messageId'];
     }
 
     /**

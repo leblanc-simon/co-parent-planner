@@ -39,7 +39,8 @@ final class ExchangesProvider implements ProviderInterface
         $tz = new \DateTimeZone($ctx->family->getTimezone());
         $list = $this->exchanges->listForFamily($ctx->family, $this->statusFilter());
 
-        return $this->assembler->list($list, $tz);
+        // Le membre appelant est passé à l'assembleur : sans point de vue, pas de non-lu (X5).
+        return $this->assembler->list($list, $tz, $ctx->membership);
     }
 
     private function statusFilter(): ?ExchangeStatus

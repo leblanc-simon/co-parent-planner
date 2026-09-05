@@ -889,6 +889,9 @@ class AppL10nFr extends AppL10n {
   String get exchangeDecided => 'Décidé';
 
   @override
+  String get exchangeUnread => 'Non lu';
+
+  @override
   String get exchangeAnonymous => 'Membre supprimé';
 
   @override

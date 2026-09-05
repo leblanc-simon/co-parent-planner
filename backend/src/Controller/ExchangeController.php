@@ -65,7 +65,8 @@ final class ExchangeController extends AbstractController
 
         $tz = new \DateTimeZone($family->getTimezone());
         $statusFilter = ExchangeStatus::tryFrom((string) $request->query->get('status', ''));
-        $list = $this->assembler->list($this->exchanges->listForFamily($family, $statusFilter), $tz);
+        // Le membre actif est passé à l'assembleur : sans point de vue, pas de non-lu (X5).
+        $list = $this->assembler->list($this->exchanges->listForFamily($family, $statusFilter), $tz, $active);
 
         $selected = null;
         $selectedId = (string) $request->query->get('exchange', '');

@@ -164,18 +164,14 @@ class _ExchangeCard extends ConsumerWidget {
     final l = AppL10n.of(context);
     final isDecision = exchange.type == 'decision';
 
-    final children = ref
-        .watch(familyChildrenProvider)
-        .maybeWhen(data: (c) => c, orElse: () => const <api.Child>[]);
-    String target = l.exchangeWholeFamily;
-    if (exchange.childId != null) {
-      for (final c in children) {
-        if (c.id == exchange.childId) {
-          target = c.firstName;
-          break;
-        }
-      }
-    }
+    // Le prénom vient désormais du contrat (X4). Il était résolu depuis la liste des enfants, qui
+    // n'est pas toujours chargée : un échange concernant Léa s'annonçait alors « Toute la famille ».
+    final target = exchange.childName ?? l.exchangeWholeFamily;
+    // X5 — rien ne distinguait un fil qui venait de recevoir trois messages d'un fil
+    // dormant depuis un mois. La pastille porte la couleur, la graisse du titre porte
+    // le reste, et `Semantics` porte le mot : un marqueur seulement chromatique
+    // n'existe pas pour tout le monde (§8.1).
+    final unread = exchange.hasUnread;
 
     return InkWell(
       key: ValueKey('exchange-card-${exchange.id}'),
@@ -188,12 +184,28 @@ class _ExchangeCard extends ConsumerWidget {
       child: AppCard(
         radius: 16,
         padding: const EdgeInsets.all(14),
+        border: unread ? AppColors.accent : null,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               children: [
+                if (unread) ...[
+                  Semantics(
+                    label: l.exchangeUnread,
+                    child: Container(
+                      key: ValueKey('exchange-unread-${exchange.id}'),
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: AppColors.accent,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 _TypePill(isDecision: isDecision),
                 const SizedBox(width: 8),
                 if (exchange.status == 'decided')
@@ -219,9 +231,9 @@ class _ExchangeCard extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               exchange.title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
-                fontWeight: FontWeight.w600,
+                fontWeight: unread ? FontWeight.w700 : FontWeight.w600,
                 color: AppColors.ink,
               ),
             ),

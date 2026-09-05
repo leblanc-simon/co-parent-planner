@@ -78,6 +78,7 @@ const Map<String, bool> expectedFamilyScoped = {
   '/api/exchanges/{exchangeId}/messages': true,
   '/api/exchanges/{id}': true,
   '/api/exchanges/{id}/decide': true,
+  '/api/exchanges/{id}/read': true,
   '/api/holidays/{id}/rule': true,
   // Révocation d'invitation : RevokeInvitationProcessor::scope->require().
   '/api/invitations/{id}': true,

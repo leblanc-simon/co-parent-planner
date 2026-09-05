@@ -2125,6 +2125,90 @@
                 }
             }
         },
+        "/api/exchanges/{id}/read": {
+            "post": {
+                "operationId": "api_exchanges_idread_post",
+                "tags": [
+                    "Exchange"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Exchange resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Exchange"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Exchange.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a Exchange resource.",
+                "description": "Creates a Exchange resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Exchange identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            }
+        },
         "/api/families/{familyId}/exchanges": {
             "get": {
                 "operationId": "api_families_familyIdexchanges_get_collection",
@@ -7726,7 +7810,7 @@
             },
             "Exchange": {
                 "type": "object",
-                "description": "\u00c9change expos\u00e9 (Lot 6 \u00a76.1). La collection `/families/{id}/exchanges?status=` renvoie les r\u00e9sum\u00e9s\n(sans le fil) tri\u00e9s (\u00a73.6) ; `GET /exchanges/{id}` renvoie le d\u00e9tail (options + d\u00e9comptes + fil en\nclair). `POST .../decide` valide une option et renvoie l'\u00e9change (statut + options \u00e0 jour). Le\nmarqueur `overdue` est d\u00e9riv\u00e9 (fuseau famille, \u00a73.4).",
+                "description": "\u00c9change expos\u00e9 (Lot 6 \u00a76.1). La collection `/families/{id}/exchanges?status=` renvoie les r\u00e9sum\u00e9s\n(sans le fil) tri\u00e9s (\u00a73.6) ; `GET /exchanges/{id}` renvoie le d\u00e9tail (options + d\u00e9comptes + fil en\nclair). `POST .../decide` valide une option et renvoie l'\u00e9change (statut + options \u00e0 jour) ;\n`POST .../read` marque le fil lu pour l'appelant (X5). Le\nmarqueur `overdue` est d\u00e9riv\u00e9 (fuseau famille, \u00a73.4).",
                 "properties": {
                     "id": {
                         "default": "",
@@ -7747,6 +7831,13 @@
                         ]
                     },
                     "childId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "childName": {
+                        "description": "Pr\u00e9nom de l'enfant concern\u00e9 (X4). La carte de liste \u00e9crivait \u00ab Un enfant \u00bb \u2014 elle avait\nl'identifiant mais pas le nom, et c'est le nom qui permet de trier d'un coup d'\u0153il.",
                         "type": [
                             "string",
                             "null"
@@ -7823,6 +7914,11 @@
                             "null"
                         ]
                     },
+                    "hasUnread": {
+                        "description": "L'\u00e9change a boug\u00e9 depuis ma derni\u00e8re lecture (X5).",
+                        "default": false,
+                        "type": "boolean"
+                    },
                     "version": {
                         "description": "Version de l'\u00e9change \u00e0 renvoyer dans `expectedVersion` d'un PATCH (verrou optimiste, \u00a74.2) \u2014\nm\u00eame d\u00e9faut que l'agenda : la contrainte existait c\u00f4t\u00e9 serveur sans \u00eatre lisible (C20).",
                         "default": 1,
@@ -7844,7 +7940,7 @@
             },
             "Exchange.CreateExchangeRequest": {
                 "type": "object",
-                "description": "\u00c9change expos\u00e9 (Lot 6 \u00a76.1). La collection `/families/{id}/exchanges?status=` renvoie les r\u00e9sum\u00e9s\n(sans le fil) tri\u00e9s (\u00a73.6) ; `GET /exchanges/{id}` renvoie le d\u00e9tail (options + d\u00e9comptes + fil en\nclair). `POST .../decide` valide une option et renvoie l'\u00e9change (statut + options \u00e0 jour). Le\nmarqueur `overdue` est d\u00e9riv\u00e9 (fuseau famille, \u00a73.4).",
+                "description": "\u00c9change expos\u00e9 (Lot 6 \u00a76.1). La collection `/families/{id}/exchanges?status=` renvoie les r\u00e9sum\u00e9s\n(sans le fil) tri\u00e9s (\u00a73.6) ; `GET /exchanges/{id}` renvoie le d\u00e9tail (options + d\u00e9comptes + fil en\nclair). `POST .../decide` valide une option et renvoie l'\u00e9change (statut + options \u00e0 jour) ;\n`POST .../read` marque le fil lu pour l'appelant (X5). Le\nmarqueur `overdue` est d\u00e9riv\u00e9 (fuseau famille, \u00a73.4).",
                 "properties": {
                     "type": {
                         "type": [
@@ -7902,7 +7998,7 @@
             },
             "Exchange.DecideRequest": {
                 "type": "object",
-                "description": "\u00c9change expos\u00e9 (Lot 6 \u00a76.1). La collection `/families/{id}/exchanges?status=` renvoie les r\u00e9sum\u00e9s\n(sans le fil) tri\u00e9s (\u00a73.6) ; `GET /exchanges/{id}` renvoie le d\u00e9tail (options + d\u00e9comptes + fil en\nclair). `POST .../decide` valide une option et renvoie l'\u00e9change (statut + options \u00e0 jour). Le\nmarqueur `overdue` est d\u00e9riv\u00e9 (fuseau famille, \u00a73.4).",
+                "description": "\u00c9change expos\u00e9 (Lot 6 \u00a76.1). La collection `/families/{id}/exchanges?status=` renvoie les r\u00e9sum\u00e9s\n(sans le fil) tri\u00e9s (\u00a73.6) ; `GET /exchanges/{id}` renvoie le d\u00e9tail (options + d\u00e9comptes + fil en\nclair). `POST .../decide` valide une option et renvoie l'\u00e9change (statut + options \u00e0 jour) ;\n`POST .../read` marque le fil lu pour l'appelant (X5). Le\nmarqueur `overdue` est d\u00e9riv\u00e9 (fuseau famille, \u00a73.4).",
                 "properties": {
                     "optionId": {
                         "type": [
@@ -7914,7 +8010,7 @@
             },
             "Exchange.UpdateExchangeRequest.jsonMergePatch": {
                 "type": "object",
-                "description": "\u00c9change expos\u00e9 (Lot 6 \u00a76.1). La collection `/families/{id}/exchanges?status=` renvoie les r\u00e9sum\u00e9s\n(sans le fil) tri\u00e9s (\u00a73.6) ; `GET /exchanges/{id}` renvoie le d\u00e9tail (options + d\u00e9comptes + fil en\nclair). `POST .../decide` valide une option et renvoie l'\u00e9change (statut + options \u00e0 jour). Le\nmarqueur `overdue` est d\u00e9riv\u00e9 (fuseau famille, \u00a73.4).",
+                "description": "\u00c9change expos\u00e9 (Lot 6 \u00a76.1). La collection `/families/{id}/exchanges?status=` renvoie les r\u00e9sum\u00e9s\n(sans le fil) tri\u00e9s (\u00a73.6) ; `GET /exchanges/{id}` renvoie le d\u00e9tail (options + d\u00e9comptes + fil en\nclair). `POST .../decide` valide une option et renvoie l'\u00e9change (statut + options \u00e0 jour) ;\n`POST .../read` marque le fil lu pour l'appelant (X5). Le\nmarqueur `overdue` est d\u00e9riv\u00e9 (fuseau famille, \u00a73.4).",
                 "properties": {
                     "status": {
                         "type": [
@@ -7969,6 +8065,13 @@
                                 ]
                             },
                             "childId": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "childName": {
+                                "description": "Pr\u00e9nom de l'enfant concern\u00e9 (X4). La carte de liste \u00e9crivait \u00ab Un enfant \u00bb \u2014 elle avait\nl'identifiant mais pas le nom, et c'est le nom qui permet de trier d'un coup d'\u0153il.",
                                 "type": [
                                     "string",
                                     "null"
@@ -8045,6 +8148,11 @@
                                     "null"
                                 ]
                             },
+                            "hasUnread": {
+                                "description": "L'\u00e9change a boug\u00e9 depuis ma derni\u00e8re lecture (X5).",
+                                "default": false,
+                                "type": "boolean"
+                            },
                             "version": {
                                 "description": "Version de l'\u00e9change \u00e0 renvoyer dans `expectedVersion` d'un PATCH (verrou optimiste, \u00a74.2) \u2014\nm\u00eame d\u00e9faut que l'agenda : la contrainte existait c\u00f4t\u00e9 serveur sans \u00eatre lisible (C20).",
                                 "default": 1,
@@ -8065,7 +8173,7 @@
                         }
                     }
                 ],
-                "description": "\u00c9change expos\u00e9 (Lot 6 \u00a76.1). La collection `/families/{id}/exchanges?status=` renvoie les r\u00e9sum\u00e9s\n(sans le fil) tri\u00e9s (\u00a73.6) ; `GET /exchanges/{id}` renvoie le d\u00e9tail (options + d\u00e9comptes + fil en\nclair). `POST .../decide` valide une option et renvoie l'\u00e9change (statut + options \u00e0 jour). Le\nmarqueur `overdue` est d\u00e9riv\u00e9 (fuseau famille, \u00a73.4)."
+                "description": "\u00c9change expos\u00e9 (Lot 6 \u00a76.1). La collection `/families/{id}/exchanges?status=` renvoie les r\u00e9sum\u00e9s\n(sans le fil) tri\u00e9s (\u00a73.6) ; `GET /exchanges/{id}` renvoie le d\u00e9tail (options + d\u00e9comptes + fil en\nclair). `POST .../decide` valide une option et renvoie l'\u00e9change (statut + options \u00e0 jour) ;\n`POST .../read` marque le fil lu pour l'appelant (X5). Le\nmarqueur `overdue` est d\u00e9riv\u00e9 (fuseau famille, \u00a73.4)."
             },
             "Family": {
                 "type": "object",
@@ -10723,7 +10831,7 @@
         },
         {
             "name": "Exchange",
-            "description": "\u00c9change expos\u00e9 (Lot 6 \u00a76.1). La collection `/families/{id}/exchanges?status=` renvoie les r\u00e9sum\u00e9s\n(sans le fil) tri\u00e9s (\u00a73.6) ; `GET /exchanges/{id}` renvoie le d\u00e9tail (options + d\u00e9comptes + fil en\nclair). `POST .../decide` valide une option et renvoie l'\u00e9change (statut + options \u00e0 jour). Le\nmarqueur `overdue` est d\u00e9riv\u00e9 (fuseau famille, \u00a73.4)."
+            "description": "\u00c9change expos\u00e9 (Lot 6 \u00a76.1). La collection `/families/{id}/exchanges?status=` renvoie les r\u00e9sum\u00e9s\n(sans le fil) tri\u00e9s (\u00a73.6) ; `GET /exchanges/{id}` renvoie le d\u00e9tail (options + d\u00e9comptes + fil en\nclair). `POST .../decide` valide une option et renvoie l'\u00e9change (statut + options \u00e0 jour) ;\n`POST .../read` marque le fil lu pour l'appelant (X5). Le\nmarqueur `overdue` est d\u00e9riv\u00e9 (fuseau famille, \u00a73.4)."
         },
         {
             "name": "Message",

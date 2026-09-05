@@ -9,6 +9,7 @@ use App\Entity\Membership;
 use App\Entity\Message;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -87,5 +88,55 @@ class MessageRepository extends ServiceEntityRepository
         }
 
         return $stats;
+    }
+
+    /**
+     * Identifiant du **dernier message** de chaque échange — repère du marqueur de non-lu (X5).
+     *
+     * Une requête pour toute la liste, comme les décomptes. En SQL natif : les identifiants sont des
+     * `Uuid::v7` (ordonnés dans le temps), or PostgreSQL 16 n'a pas d'agrégat `max(uuid)` — d'où le
+     * `DISTINCT ON`, qui répond exactement à la question posée sans transtypage.
+     *
+     * @param list<Exchange> $exchanges
+     *
+     * @return array<string, string> identifiant d'échange => identifiant du dernier message
+     */
+    public function lastIdsFor(array $exchanges): array
+    {
+        if ([] === $exchanges) {
+            return [];
+        }
+
+        /** @var list<array{exchange_id: string, id: string}> $rows */
+        $rows = $this->getEntityManager()->getConnection()->fetchAllAssociative(
+            'SELECT DISTINCT ON (exchange_id) exchange_id, id FROM messages WHERE exchange_id IN (?) ORDER BY exchange_id, id DESC',
+            [array_map(static fn (Exchange $e): string => (string) $e->getId(), $exchanges)],
+            [ArrayParameterType::STRING],
+        );
+
+        $ids = [];
+        foreach ($rows as $row) {
+            $ids[$row['exchange_id']] = $row['id'];
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Dernier message d'un échange, ou `null` si le fil est vide.
+     *
+     * Trié par identifiant : les `Uuid::v7` sont ordonnés dans le temps, là où `sentAt` est stocké à
+     * la seconde — deux messages de la même seconde s'y départagent (X5).
+     */
+    public function lastFor(Exchange $exchange): ?Message
+    {
+        /** @var ?Message $message */
+        $message = $this->createQueryBuilder('m')
+            ->andWhere('m.exchange = :exchange')->setParameter('exchange', $exchange)
+            ->orderBy('m.id', 'DESC')
+            ->setMaxResults(1)
+            ->getQuery()->getOneOrNullResult();
+
+        return $message;
     }
 }

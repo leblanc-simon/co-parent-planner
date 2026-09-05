@@ -8,6 +8,7 @@ import 'package:coparentplanner/features/exchanges/data/exchanges_repository.dar
 import 'package:coparentplanner/features/exchanges/presentation/exchange_detail_screen.dart';
 import 'package:coparentplanner/features/exchanges/presentation/exchanges_screen.dart';
 import 'package:coparentplanner/features/family/application/family_context.dart';
+import 'package:coparentplanner/features/members/data/members_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,18 +29,28 @@ class _FixedFamilyContext extends FamilyContextController {
 void main() {
   late MockExchangesRepository repo;
   late MockChildrenRepository childrenRepo;
+  late MockMembersRepository membersRepo;
 
   setUp(() {
     repo = MockExchangesRepository();
     childrenRepo = MockChildrenRepository();
+    membersRepo = MockMembersRepository();
+    // Le fil distingue ses propres messages (X3) : sans membres, personne n'est « soi ».
+    when(
+      () => membersRepo.listMembers('fam-1'),
+    ).thenAnswer((_) async => const []);
     when(
       () => childrenRepo.listChildren('u-test', 'fam-1'),
     ).thenAnswer((_) async => const []);
+    // Ouvrir un détail marque le fil lu (X5) : le stub par défaut évite d'imposer
+    // ce détail à tous les tests qui n'en parlent pas.
+    when(() => repo.markRead(any())).thenAnswer((_) async {});
   });
 
   List<Override> overrides() => [
     exchangesRepositoryProvider.overrideWithValue(repo),
     childrenRepositoryProvider.overrideWithValue(childrenRepo),
+    membersRepositoryProvider.overrideWithValue(membersRepo),
     currentUserIdProvider.overrideWithValue('u-test'),
     familyContextProvider.overrideWith(_FixedFamilyContext.new),
   ];
@@ -155,8 +166,9 @@ void main() {
     expect(find.text('Montagne'), findsOneWidget);
     expect(find.text('Décision tranchée'), findsOneWidget);
     expect(find.text('Je préfère la montagne'), findsOneWidget);
-    // Auteur anonymisé toléré (authorName null).
-    expect(find.text('Membre supprimé'), findsOneWidget);
+    // Auteur anonymisé toléré (authorName null). Depuis X3, l'auteur et l'heure tiennent sous la
+    // bulle en une seule ligne — le fil est un dialogue, plus un journal.
+    expect(find.textContaining('Membre supprimé'), findsOneWidget);
     // Échange décidé : pas de bouton de validation.
     expect(find.text('Valider cette option'), findsNothing);
   });
@@ -723,6 +735,182 @@ void main() {
       expect(find.byKey(const ValueKey('exchange-submit-vote')), findsNothing);
       expect(find.byKey(const ValueKey('exchange-settle')), findsNothing);
       expect(find.text('Décidé : Montagne'), findsOneWidget);
+    });
+  });
+
+  group('fil en bulles et carte de liste (X3/X4)', () {
+    testWidgets(
+      'mes messages sont à droite, sans avatar ; ceux de l\'autre à gauche',
+      (tester) async {
+        // Tous les messages étaient posés à gauche : deux parents qui s'écrivent lisaient un
+        // journal, pas un dialogue.
+        when(() => membersRepo.listMembers('fam-1')).thenAnswer(
+          (_) async => const [
+            api.Member(
+              id: 'm-moi',
+              role: 'parent',
+              self: true,
+              fullName: 'Alice',
+            ),
+            api.Member(id: 'm-autre', role: 'parent', fullName: 'Marc'),
+          ],
+        );
+        when(() => repo.detail('x6')).thenAnswer(
+          (_) async => const api.Exchange(
+            id: 'x6',
+            type: 'discussion',
+            title: 'Vacances',
+            status: 'open',
+            messages: [
+              api.MessageView(
+                id: 'msg1',
+                text: 'On part quand ?',
+                authorMembershipId: 'm-autre',
+                authorName: 'Marc',
+                sentAt: '2026-07-08T10:00:00+02:00',
+              ),
+              api.MessageView(
+                id: 'msg2',
+                text: 'En juillet',
+                authorMembershipId: 'm-moi',
+                authorName: 'Alice',
+                sentAt: '2026-07-08T10:05:00+02:00',
+              ),
+            ],
+          ),
+        );
+
+        await pumpScreen(
+          tester,
+          const ExchangeDetailScreen(exchangeId: 'x6'),
+          overrides: overrides(),
+        );
+        await tester.pumpAndSettle();
+
+        final mine = tester.getRect(
+          find.byKey(const ValueKey('exchange-bubble-msg2')),
+        );
+        final theirs = tester.getRect(
+          find.byKey(const ValueKey('exchange-bubble-msg1')),
+        );
+        // La sienne est plus à droite que celle de l'autre : c'est l'écart qui fait le dialogue.
+        expect(mine.right, greaterThan(theirs.right));
+        expect(mine.left, greaterThan(theirs.left));
+
+        // Son propre nom n'apprend rien sous sa propre bulle ; celui de l'autre, si.
+        expect(find.textContaining('Marc ·'), findsOneWidget);
+        expect(find.textContaining('Alice ·'), findsNothing);
+      },
+    );
+
+    testWidgets('la carte nomme l\'enfant concerné, même sans liste d\'enfants', (
+      tester,
+    ) async {
+      // Le prénom était résolu depuis la liste des enfants, pas toujours chargée : un échange
+      // concernant Léa s'annonçait alors « Toute la famille » (X4).
+      when(() => repo.list('u-test', 'fam-1')).thenAnswer(
+        (_) async => const [
+          api.Exchange(
+            id: 'x7',
+            type: 'discussion',
+            title: 'Inscription piscine',
+            status: 'open',
+            childId: 'c1',
+            childName: 'Léa',
+            authorName: 'Marc Durand',
+          ),
+        ],
+      );
+      when(
+        () => childrenRepo.listChildren('u-test', 'fam-1'),
+      ).thenThrow(ApiException(statusCode: 403));
+
+      await pumpScreen(tester, const ExchangesScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Léa'), findsOneWidget);
+      expect(find.text('Toute la famille'), findsNothing);
+      expect(find.text('Marc Durand'), findsOneWidget);
+    });
+  });
+
+  group('non-lus (X5)', () {
+    testWidgets('la carte non lue porte une pastille ; la carte lue, aucune', (
+      tester,
+    ) async {
+      // L'arbre sémantique n'est pas construit par défaut en test : sans lui, on ne
+      // pourrait pas vérifier ce qu'un lecteur d'écran annonce.
+      final semantics = tester.ensureSemantics();
+      // Rien ne distinguait un fil qui venait de recevoir trois messages d'un fil
+      // dormant depuis un mois : il fallait ouvrir chacun pour le savoir.
+      when(() => repo.list('u-test', 'fam-1')).thenAnswer(
+        (_) async => const [
+          api.Exchange(
+            id: 'neuf',
+            type: 'discussion',
+            title: 'Du nouveau',
+            status: 'open',
+            hasUnread: true,
+          ),
+          api.Exchange(
+            id: 'vu',
+            type: 'discussion',
+            title: 'Déjà lu',
+            status: 'open',
+          ),
+        ],
+      );
+
+      await pumpScreen(tester, const ExchangesScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('exchange-unread-neuf')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('exchange-unread-vu')), findsNothing);
+
+      // Le marqueur ne tient pas qu'à la couleur (§8.1) : le titre est plus gras,
+      // et un lecteur d'écran entend « Non lu ».
+      final neuf = tester.widget<Text>(find.text('Du nouveau'));
+      final vu = tester.widget<Text>(find.text('Déjà lu'));
+      expect(neuf.style?.fontWeight, FontWeight.w700);
+      expect(vu.style?.fontWeight, FontWeight.w600);
+      // Le libellé se fond dans l'annonce de la carte (c'est le but : une carte, une
+      // phrase) — d'où la recherche par motif et non par égalité.
+      expect(find.bySemanticsLabel(RegExp('Non lu')), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('ouvrir un échange le marque lu, une seule fois', (
+      tester,
+    ) async {
+      when(() => repo.detail('x9')).thenAnswer(
+        (_) async => const api.Exchange(
+          id: 'x9',
+          type: 'discussion',
+          title: 'Piscine',
+          status: 'open',
+          hasUnread: true,
+        ),
+      );
+
+      await pumpScreen(
+        tester,
+        const ExchangeDetailScreen(exchangeId: 'x9'),
+        overrides: overrides(),
+      );
+      await tester.pumpAndSettle();
+
+      // `verify` consomme les appels enregistrés : ce qui suit ne voit donc que
+      // les nouveaux.
+      verify(() => repo.markRead('x9')).called(1);
+
+      // Le `build` se rejoue à chaque `setState` ; la lecture, elle, n'a lieu
+      // qu'une fois — sinon chaque frappe dans le composeur repartirait au réseau.
+      await tester.enterText(find.byType(TextField).last, 'coucou');
+      await tester.pumpAndSettle();
+      verifyNever(() => repo.markRead(any()));
     });
   });
 }

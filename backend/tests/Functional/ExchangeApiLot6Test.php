@@ -433,4 +433,92 @@ final class ExchangeApiLot6Test extends ApiAuthTestCase
         ]);
         self::assertSame(422, $res->getStatusCode());
     }
+
+    /**
+     * X5 — non-lus. Rien ne distinguait un fil qui venait de recevoir trois messages d'un fil
+     * dormant depuis un mois : il fallait ouvrir chacun pour le savoir.
+     */
+    public function testUnreadMarkerFollowsActivityAndReading(): void
+    {
+        [$client, $hA, $familyId] = $this->family('ex-read-a@example.com');
+        $this->addMember($familyId, 'ex-read-b@example.com', MembershipRole::Parent, RightLevel::Edit);
+        $hB = $this->bearer($this->login($client, 'ex-read-b@example.com')) + ['X-Family-Id' => $familyId];
+
+        $exchangeId = $client->request('POST', '/api/families/'.$familyId.'/exchanges', [
+            'json' => ['type' => 'discussion', 'title' => 'Piscine'],
+            'headers' => $hA,
+        ])->toArray()['id'];
+
+        // L'auteur ne retrouve pas ses propres écrits en gras ; pour B, l'échange est neuf.
+        self::assertFalse($this->listedExchange($client, $familyId, $hA, $exchangeId)['hasUnread']);
+        self::assertTrue($this->listedExchange($client, $familyId, $hB, $exchangeId)['hasUnread']);
+
+        // Ouvrir le détail NE consomme pas : c'est POST .../read qui marque (le GET reste un
+        // aperçu, comme pour l'aperçu d'invitation).
+        $detail = $client->request('GET', '/api/exchanges/'.$exchangeId, ['headers' => $hB])->toArray();
+        self::assertTrue($detail['hasUnread']);
+        self::assertTrue($this->listedExchange($client, $familyId, $hB, $exchangeId)['hasUnread']);
+
+        $marked = $client->request('POST', '/api/exchanges/'.$exchangeId.'/read', ['headers' => $hB])->toArray();
+        self::assertFalse($marked['hasUnread']);
+        self::assertFalse($this->listedExchange($client, $familyId, $hB, $exchangeId)['hasUnread']);
+
+        // A répond : le fil redevient non lu pour B, et reste lu pour A qui vient d'écrire.
+        $client->request('POST', '/api/exchanges/'.$exchangeId.'/messages', [
+            'json' => ['text' => 'Le cours est à 17h.'], 'headers' => $hA,
+        ]);
+        self::assertTrue($this->listedExchange($client, $familyId, $hB, $exchangeId)['hasUnread']);
+        self::assertFalse($this->listedExchange($client, $familyId, $hA, $exchangeId)['hasUnread']);
+    }
+
+    /** Marquer lu est une lecture, pas une écriture : `exchanges:view` suffit (X5). */
+    public function testMarkReadIsAllowedToViewOnlyMembers(): void
+    {
+        [$client, $hA, $familyId] = $this->family('ex-read-view@example.com');
+        $this->addMember($familyId, 'ex-read-viewer@example.com', MembershipRole::Child, RightLevel::View);
+        $hV = $this->bearer($this->login($client, 'ex-read-viewer@example.com')) + ['X-Family-Id' => $familyId];
+
+        $exchangeId = $client->request('POST', '/api/families/'.$familyId.'/exchanges', [
+            'json' => ['type' => 'discussion', 'title' => 'Piscine'],
+            'headers' => $hA,
+        ])->toArray()['id'];
+
+        $res = $client->request('POST', '/api/exchanges/'.$exchangeId.'/read', ['headers' => $hV]);
+        self::assertSame(200, $res->getStatusCode());
+        self::assertFalse($this->listedExchange($client, $familyId, $hV, $exchangeId)['hasUnread']);
+    }
+
+    /** La lecture est strictement personnelle : celle de B ne fait rien tomber chez A. */
+    public function testReadingIsPersonalToTheCaller(): void
+    {
+        [$client, $hA, $familyId] = $this->family('ex-read-priv-a@example.com');
+        $this->addMember($familyId, 'ex-read-priv-b@example.com', MembershipRole::Parent, RightLevel::Edit);
+        $hB = $this->bearer($this->login($client, 'ex-read-priv-b@example.com')) + ['X-Family-Id' => $familyId];
+
+        // Ouvert par B : non lu pour A.
+        $exchangeId = $client->request('POST', '/api/families/'.$familyId.'/exchanges', [
+            'json' => ['type' => 'discussion', 'title' => 'Cantine'],
+            'headers' => $hB,
+        ])->toArray()['id'];
+
+        $client->request('POST', '/api/exchanges/'.$exchangeId.'/read', ['headers' => $hB]);
+        self::assertTrue($this->listedExchange($client, $familyId, $hA, $exchangeId)['hasUnread']);
+    }
+
+    /**
+     * @param array<string,string> $headers
+     *
+     * @return array<string,mixed>
+     */
+    private function listedExchange(Client $client, string $familyId, array $headers, string $exchangeId): array
+    {
+        /** @var list<array<string,mixed>> $list */
+        $list = $client->request('GET', '/api/families/'.$familyId.'/exchanges', ['headers' => $headers])->toArray();
+        foreach ($list as $item) {
+            if ($item['id'] === $exchangeId) {
+                return $item;
+            }
+        }
+        self::fail('Échange '.$exchangeId.' absent de la liste.');
+    }
 }

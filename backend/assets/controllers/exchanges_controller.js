@@ -6,10 +6,41 @@ import { ApiController } from '../api_base.js';
  */
 export default class extends ApiController {
     static targets = ['type', 'options', 'optionsRows', 'option', 'submitVote'];
+    static values = { unreadId: String };
 
     connect() {
         super.connect();
         this.toggleType();
+        this.markSelectedRead();
+    }
+
+    /**
+     * Marque lu l'échange affiché (X5).
+     *
+     * Volontairement **silencieux** : ni bandeau de confirmation, ni bandeau d'erreur, ni
+     * rechargement — `_send()` fait les trois. Marquer lu n'est pas un geste de l'utilisateur, c'est
+     * la conséquence de son regard ; l'annoncer serait du bruit, et un échec ne coûte qu'une
+     * pastille qui reste jusqu'à la prochaine ouverture.
+     */
+    async markSelectedRead() {
+        const id = this.unreadIdValue;
+        if (!id) return;
+        try {
+            const url = `/api/exchanges/${id}/read`;
+            let response = await this._fetch('POST', url, {}, null);
+            if (401 === response.status && (await this._refreshSession())) {
+                response = await this._fetch('POST', url, {}, null);
+            }
+            if (!response.ok) return;
+        } catch (e) {
+            return;
+        }
+        // La pastille tombe sans rechargement : la page affichée est déjà la bonne, seul ce
+        // marqueur-là est devenu faux.
+        const card = document.getElementById(`exchange-card-${id}`);
+        if (!card) return;
+        card.classList.remove('exchange-card--unread');
+        card.querySelector('.exchange-card__unread')?.remove();
     }
 
     toggleType() {

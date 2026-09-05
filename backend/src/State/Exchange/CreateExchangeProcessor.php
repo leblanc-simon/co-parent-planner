@@ -11,6 +11,7 @@ use App\Dto\Exchange\ExchangeResource;
 use App\Entity\Exchange;
 use App\Enum\AuditAction;
 use App\Enum\NotificationType;
+use App\Repository\ExchangeReadRepository;
 use App\Repository\ExchangeRepository;
 use App\Security\Auth\AuditLogger;
 use App\Security\Exchanges\ExchangeAccess;
@@ -36,6 +37,7 @@ final class CreateExchangeProcessor implements ProcessorInterface
         private readonly ExchangeAccess $access,
         private readonly ExchangeWriter $writer,
         private readonly ExchangeRepository $exchanges,
+        private readonly ExchangeReadRepository $reads,
         private readonly ExchangeAssembler $assembler,
         private readonly ExchangePublisher $publisher,
         private readonly NotificationEmitter $notifier,
@@ -55,6 +57,10 @@ final class CreateExchangeProcessor implements ProcessorInterface
         $key = \is_string($rawKey) && '' !== $rawKey ? $rawKey : null;
 
         $exchange = null !== $key ? $this->createIdempotent($ctx, $data, $key) : $this->createSimple($ctx, $data);
+
+        // Ouvrir un échange, c'est l'avoir lu (X5) — sinon son auteur le retrouve en gras.
+        $this->reads->markRead($ctx->membership, $exchange, $exchange->getCreatedAt());
+        $this->em->flush();
 
         $this->publisher->publishList($ctx->family);
         // Notification e-mail (Lot 7) : nouvel échange → membres habilités (hors auteur).

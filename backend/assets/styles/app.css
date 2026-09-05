@@ -858,7 +858,28 @@ a:hover { text-decoration: underline; }
 .exchange-card.is-active { border-color: var(--accent); background: var(--accent-soft); }
 .exchange-card__head { display: flex; flex-wrap: wrap; gap: .35rem; }
 .exchange-card__title { font-weight: 600; }
-.exchange-card__meta { font-size: .8rem; color: var(--muted); }
+.exchange-card__meta {
+    display: flex; align-items: center; flex-wrap: wrap; gap: .35rem;
+    font-size: .8rem; color: var(--muted); margin-top: .55rem;
+
+    & .exchange-card__sep { color: var(--border-3); }
+    /* Le prenom de l'enfant ferme la ligne, comme dans la maquette. */
+    & .exchange-card__child { margin-left: auto; font-weight: 600; color: var(--ink-2); }
+}
+/* Carte NON LUE (X5) : la pastille porte la couleur, la graisse du titre porte le reste — un
+   marqueur qui ne tient qu'a la teinte n'existe pas pour tout le monde (§8.1), et le texte
+   « Non lu — » du lecteur d'ecran complete la paire. */
+.exchange-card--unread {
+    border-color: var(--accent);
+
+    & .exchange-card__title { font-weight: 700; }
+    & .exchange-card__meta { color: var(--ink-2); }
+}
+.exchange-card__unread {
+    width: 9px; height: 9px; border-radius: var(--radius-pill); background: var(--accent);
+    align-self: center; flex-shrink: 0;
+}
+.avatar--18 { width: 18px; height: 18px; font-size: 9px; }
 .exchange-tag { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: var(--radius-pill); }
 .exchange-tag--discussion { color: var(--cat-sport); background: var(--cat-sport-bg); }
 .exchange-tag--decision { color: var(--accent-strong); background: var(--accent-soft-2); }
@@ -914,11 +935,34 @@ a:hover { text-decoration: underline; }
 }
 .exchange-vote-actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .9rem; }
 .exchange-thread { list-style: none; padding: 0; margin: 0 0 1rem; display: flex; flex-direction: column; gap: .8rem; }
-.exchange-message { display: flex; gap: .6rem; }
-.exchange-message__body { min-width: 0; }
-.exchange-message__meta { display: flex; gap: .5rem; align-items: baseline; }
-.exchange-message__meta time { color: var(--muted); font-size: .78rem; }
-.exchange-message__text { margin: .2rem 0 0; white-space: pre-wrap; }
+/* Fil en BULLES ASYMETRIQUES (maquette `:467-478`, X3) : les messages etaient tous poses a gauche,
+   avatar puis texte — deux parents qui s'ecrivent lisaient un journal, pas un dialogue. */
+.exchange-message {
+    display: flex; gap: .6rem; align-items: flex-start;
+
+    & .exchange-message__body { min-width: 0; max-width: 72%; }
+
+    & .exchange-message__text {
+        margin: 0; white-space: pre-wrap; overflow-wrap: anywhere;
+        background: var(--card); border: 1px solid var(--border);
+        border-radius: 16px; padding: 12px 15px; line-height: 1.45; color: var(--ink-2);
+    }
+
+    & .exchange-message__meta {
+        display: flex; gap: .5rem; align-items: baseline; margin-top: .25rem;
+        font-size: .72rem; color: var(--muted-2);
+    }
+
+    & .exchange-message__meta time { color: var(--muted-2); font-size: .72rem; }
+
+    /* Les siens : a droite, sans avatar (on sait qui l'on est), bulle teintee. */
+    &.exchange-message--mine {
+        flex-direction: row-reverse;
+
+        & .exchange-message__text { background: var(--accent-soft); border-color: var(--accent-soft-2); }
+        & .exchange-message__meta { justify-content: flex-end; }
+    }
+}
 .exchange-options { margin: 0 0 1rem; padding: .8rem; border: 1px solid var(--border-3); border-radius: 12px; background: var(--surface); }
 .exchange-option-row { display: flex; gap: .5rem; margin-bottom: .5rem; }
 .exchange-option-row input { flex: 1; padding: .5rem .7rem; border: 1px solid var(--border); border-radius: 10px; background: var(--card); font: inherit; }

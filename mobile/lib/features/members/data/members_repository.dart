@@ -132,6 +132,23 @@ final currentMemberRightsProvider = Provider<Map<String, String>>((ref) {
   return const {};
 });
 
+/// Identifiant du membership du compte courant dans la famille active, ou `null` tant que les
+/// membres ne sont pas chargés.
+///
+/// Sert à distinguer **ses propres** messages de ceux de l'autre parent dans un fil d'échange
+/// (X3) : le fil les posait tous à gauche, si bien que deux personnes qui s'écrivent lisaient un
+/// journal plutôt qu'un dialogue.
+final currentMembershipIdProvider = Provider<String?>((ref) {
+  final members = ref
+      .watch(familyMembersProvider)
+      .maybeWhen(data: (m) => m, orElse: () => const <api.Member>[]);
+  for (final m in members) {
+    if (m.self) return m.id;
+  }
+
+  return null;
+});
+
 /// Niveau effectif sur un domaine (`custody`, `agenda`, `children_notes`, …), ou
 /// `null` tant qu'il est inconnu.
 final rightProvider = Provider.family<String?, String>(

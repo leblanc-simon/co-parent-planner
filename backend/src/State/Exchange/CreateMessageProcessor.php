@@ -11,6 +11,7 @@ use App\Dto\Exchange\MessageResource;
 use App\Entity\Exchange;
 use App\Entity\Message;
 use App\Enum\NotificationType;
+use App\Repository\ExchangeReadRepository;
 use App\Repository\MessageRepository;
 use App\Security\Exchanges\ExchangeAccess;
 use App\Service\Exchange\ExchangePublisher;
@@ -33,6 +34,7 @@ final class CreateMessageProcessor implements ProcessorInterface
         private readonly ExchangeAccess $access,
         private readonly MessageWriter $writer,
         private readonly MessageRepository $messages,
+        private readonly ExchangeReadRepository $reads,
         private readonly ExchangePublisher $publisher,
         private readonly NotificationEmitter $notifier,
         private readonly RequestStack $requestStack,
@@ -53,6 +55,11 @@ final class CreateMessageProcessor implements ProcessorInterface
         $message = null !== $key
             ? $this->createIdempotent($exchange, $ctx->membership, $data, $key)
             : $this->createSimple($exchange, $ctx->membership, $data);
+
+        // Poster, c'est avoir lu (X5) : sans cela l'auteur verrait son propre message en non-lu, et
+        // le marqueur ne se réduirait plus à une comparaison de dates.
+        $this->reads->markRead($ctx->membership, $exchange, $message->getSentAt(), $message);
+        $this->em->flush();
 
         $this->publisher->publishExchange($exchange);
         // Notification e-mail (Lot 7) : nouveau message → participants habilités (hors auteur).

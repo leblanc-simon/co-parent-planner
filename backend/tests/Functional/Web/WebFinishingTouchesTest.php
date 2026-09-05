@@ -10,6 +10,7 @@ use App\Entity\CustodyPattern;
 use App\Entity\Exchange;
 use App\Entity\Family;
 use App\Entity\Membership;
+use App\Entity\Message;
 use App\Entity\User;
 use App\Enum\CustodyDaySource;
 use App\Enum\CustodyPatternKind;
@@ -19,6 +20,8 @@ use App\Enum\FamilyType;
 use App\Enum\MembershipRole;
 use App\Enum\MembershipStatus;
 use App\Enum\UserStatus;
+use App\Repository\ExchangeReadRepository;
+use App\Repository\MessageRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -266,6 +269,85 @@ final class WebFinishingTouchesTest extends WebTestCase
         self::assertSame(2, substr_count($html, 'Conjoint·e de'));
     }
 
+    // ───────────────────────── Échanges : fil et carte (X3/X4) ─────────────────────────
+
+    /**
+     * Le fil posait tous les messages à gauche : deux parents qui s'écrivent lisaient un journal,
+     * pas un dialogue (revue UX des échanges, X3). Et la carte de liste écrivait « Un enfant »
+     * alors qu'elle avait l'identifiant sans le nom (X4).
+     */
+    public function testExchangeThreadAndCardFollowTheMockup(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser();
+        $exchange = $this->seedExchangeWithMessages();
+        $this->login($client);
+
+        $crawler = $client->request('GET', '/echanges?exchange='.$exchange->getId());
+        self::assertResponseIsSuccessful();
+
+        // Le message du membre courant porte le modificateur, celui de l'autre non.
+        self::assertSame(1, $crawler->filter('.exchange-message--mine')->count());
+        self::assertSame(2, $crawler->filter('.exchange-message')->count());
+        // Pas d'avatar sur sa propre bulle : on sait qui l'on est.
+        self::assertSame(0, $crawler->filter('.exchange-message--mine .avatar')->count());
+        self::assertSame(1, $crawler->filter('.exchange-message:not(.exchange-message--mine) .avatar')->count());
+
+        // La carte nomme l'enfant et l'auteur.
+        $html = (string) $client->getResponse()->getContent();
+        self::assertStringContainsString('Léa', $html);
+        self::assertStringNotContainsString('Un enfant', $html);
+        self::assertSame(1, $crawler->filter('.exchange-card__child')->count());
+    }
+
+    /**
+     * X5 — un fil qui vient de bouger doit se distinguer d'un fil dormant, sans qu'il faille
+     * l'ouvrir. Le marqueur ne tient pas qu'à la couleur (§8.1) : pastille, graisse et texte.
+     */
+    public function testUnreadExchangesAreMarkedInTheList(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser();
+        $exchange = $this->seedExchangeWithMessages();
+        $this->login($client);
+
+        // Jamais lu par le membre courant : la carte porte la pastille et l'annonce en toutes lettres.
+        $crawler = $client->request('GET', '/echanges');
+        self::assertResponseIsSuccessful();
+        self::assertSame(1, $crawler->filter('.exchange-card--unread')->count());
+        self::assertSame(1, $crawler->filter('.exchange-card__unread')->count());
+        self::assertStringContainsString('Non lu', (string) $client->getResponse()->getContent());
+        // C'est le navigateur qui marquera lu, par POST : le rendu ne consomme rien, sinon un simple
+        // préchargement au survol ferait tomber la pastille.
+        self::assertStringContainsString(
+            'data-exchanges-unread-id-value="'.$exchange->getId().'"',
+            (string) $client->getResponse()->getContent(),
+        );
+
+        // Une fois le fil marqué lu, plus rien ne le signale.
+        $this->markRead($exchange);
+        $crawler = $client->request('GET', '/echanges');
+        self::assertSame(0, $crawler->filter('.exchange-card--unread')->count());
+        self::assertSame(0, $crawler->filter('.exchange-card__unread')->count());
+    }
+
+    private function markRead(Exchange $exchange): void
+    {
+        $family = $this->family();
+        $me = $this->em()->getRepository(Membership::class)->findOneBy(['family' => $family]);
+        self::assertInstanceOf(Membership::class, $me);
+        $reads = self::getContainer()->get(ExchangeReadRepository::class);
+        self::assertInstanceOf(ExchangeReadRepository::class, $reads);
+        $messages = self::getContainer()->get(MessageRepository::class);
+        self::assertInstanceOf(MessageRepository::class, $messages);
+        $fresh = $this->em()->find(Exchange::class, $exchange->getId());
+        self::assertInstanceOf(Exchange::class, $fresh);
+        $reads->markRead($me, $fresh, Clock::get()->now(), $messages->lastFor($fresh));
+        $this->em()->flush();
+    }
+
     // ───────────────────────── fixtures ─────────────────────────
 
     private function em(): EntityManagerInterface
@@ -331,6 +413,33 @@ final class WebFinishingTouchesTest extends WebTestCase
             ->setStartsAt(Clock::get()->now()->setTime(18, 0));
         $this->em()->persist($event);
         $this->em()->flush();
+    }
+
+    /** Échange concernant un enfant nommé, avec un message de chaque parent. */
+    private function seedExchangeWithMessages(): Exchange
+    {
+        $family = $this->family();
+        $me = $this->em()->getRepository(Membership::class)->findOneBy(['family' => $family]);
+        self::assertInstanceOf(Membership::class, $me);
+        $other = $this->addStepParent();
+
+        $child = (new Child())->setFamily($family)->setFirstName('Léa');
+        $exchange = (new Exchange())->setFamily($family)->setAuthorMembership($me)
+            ->setType(ExchangeType::Discussion)->setStatus(ExchangeStatus::Open)
+            ->setTitle('Inscription piscine')->setChild($child);
+        $this->em()->persist($child);
+        $this->em()->persist($exchange);
+        $this->em()->persist(
+            (new Message())->setExchange($exchange)->setAuthorMembership($other)
+                ->setText('On inscrit Léa ?')->setSentAt(Clock::get()->now()->modify('-1 hour')),
+        );
+        $this->em()->persist(
+            (new Message())->setExchange($exchange)->setAuthorMembership($me)
+                ->setText('Oui, je m\'en occupe.')->setSentAt(Clock::get()->now()),
+        );
+        $this->em()->flush();
+
+        return $exchange;
     }
 
     private function seedExchange(): void

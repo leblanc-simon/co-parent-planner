@@ -127,9 +127,9 @@ backend publie déjà les événements Mercure ; il ne manque que l'abonnement m
 |---|---|---|
 | **X1** ✅ | Points 1 + 2 : sélection réversible, validation explicite, état du tour, « mon choix » | `OptionView.myVote`, état du tour sur `ExchangeResource` |
 | **X2** ✅ | Point 4 : trancher une décision (`decidedOptionId` depuis l'UI) | inchangé |
-| **X3** | Point 3 : fil en bulles asymétriques (web + mobile) | inchangé |
-| **X4** | Point 5 : carte de liste conforme à la maquette | `childName` |
-| **X5** | Point 6 : lecture et non-lus | nouvelle ressource |
+| **X3** ✅ | Point 3 : fil en bulles asymétriques (web + mobile) | inchangé |
+| **X4** ✅ | Point 5 : carte de liste conforme à la maquette | `childName` |
+| **X5** ✅ | Point 6 : lecture et non-lus | nouvelle ressource |
 | **X6** | Points 7, 8, 9 : échéance éditable, formulaire progressif, temps réel mobile | inchangé |
 
 **X1 et X2 se tiennent** : ce sont les deux moitiés d'un même sujet — comprendre, avant de cliquer,
@@ -173,3 +173,51 @@ mobile **399 tests** (393 avant), couverture **82,8 %**, `dart analyze --fatal-i
 **E2E 23/23** ×3. OpenAPI ré-exporté, client Dart régénéré sans drift.
 
 **Restent** X3 (fil en bulles asymétriques), X4 (carte de liste), X5 (non-lus) et X6.
+
+### 2026-09-05 — X3, X4 et X5 livrés
+
+**X3 — le fil est redevenu un dialogue.** Tous les messages étaient posés à gauche, avatar compris :
+deux parents qui s'écrivent lisaient un journal, pas une conversation. Les siens vont à droite, sans
+avatar (on sait qui l'on est) et sans son propre nom sous la bulle ; ceux de l'autre restent à
+gauche, nommés. Web (`.exchange-message--mine`) et mobile (`_Bubble(mine:)`).
+
+**X4 — la carte de liste nomme enfin les gens.** Elle écrivait « Un enfant » alors qu'elle avait
+l'identifiant sans le prénom, et taisait l'auteur. `ExchangeResource.childName` entre au contrat :
+le mobile le résolvait depuis la liste des enfants, qui n'est pas toujours chargée — un échange
+concernant Léa s'annonçait alors « Toute la famille ». Le test web a levé un oubli au passage : le
+**détail** disait lui aussi « Un enfant concerné ».
+
+**X5 — les non-lus.** Rien ne distinguait un fil qui venait de recevoir trois messages d'un fil
+dormant depuis un mois : il fallait ouvrir chacun pour le savoir. Nouvelle entité `ExchangeRead`
+(membre × échange), `POST /api/exchanges/{id}/read`, `hasUnread` sur la ressource.
+
+Quatre décisions de conception :
+
+- **Le marquage est un POST, jamais un effet de bord du GET.** Le projet avait déjà tranché ainsi
+  pour l'aperçu d'invitation (« GET = aperçu non consommant »). Ce n'est pas une coquetterie REST :
+  Turbo précharge les liens au survol, et un GET qui écrit aurait fait tomber les pastilles de fils
+  jamais ouverts. Côté web c'est le navigateur qui poste, silencieusement (ni bandeau, ni
+  rechargement) ; côté mobile, une fois par ouverture d'écran.
+- **Le repère est un identifiant de message, pas une date.** La première version comparait
+  `dernière activité > dernière lecture` — et **le test l'a prise en défaut** : les horodatages du
+  schéma sont stockés à la seconde, si bien qu'une réponse postée dans la même seconde qu'une lecture
+  passait pour déjà lue. `ExchangeRead.lastReadMessage` compare des `Uuid::v7` (ordonnés dans le
+  temps) : exact, sans dépendre de la précision d'horloge. Une requête `DISTINCT ON` pour toute la
+  liste — PostgreSQL 16 n'a pas d'agrégat `max(uuid)`.
+- **Écrire vaut lire.** Créer un échange ou y poster marque son auteur lecteur : sans cela il
+  retrouverait ses propres écrits en gras, et la règle cesserait d'être une simple comparaison.
+- **`exchanges:view` suffit.** Marquer lu n'est pas écrire dans l'échange ; un membre en lecture
+  seule doit pouvoir faire tomber son propre marqueur. Rien n'est publié sur Mercure : la lecture est
+  strictement personnelle — l'API ne renvoie que `hasUnread`, du seul point de vue de l'appelant,
+  et personne ne peut savoir quand l'autre parent a ouvert un fil. Entrée de registre ajoutée
+  (`ExchangeRead.lastReadAt`, catégorie technique).
+
+Le marqueur ne tient jamais à la seule couleur (§8.1) : pastille **et** graisse du titre **et**
+« Non lu » pour les lecteurs d'écran, des deux côtés.
+
+**Portes** : backend **443 tests / 3 906 assertions** (438 avant), PHPStan 0, cs-fixer 0, Twig 38 ;
+mobile **404 tests** (401 avant), couverture **82,9 %**, `dart analyze` 0, format 0 ; **E2E 23/23**
+×2 (une première exécution avait échoué sur deux `waitForSaved` — cache Symfony froid juste après un
+`cache:clear`, 1 min 20 contre 47 s ensuite). OpenAPI ré-exporté, client Dart régénéré sans drift.
+
+**Reste** X6 : échéance éditable, formulaire de création progressif, temps réel mobile.

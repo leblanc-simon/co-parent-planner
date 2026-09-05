@@ -11,7 +11,8 @@ part 'exchange_jsonld.g.dart';
 
 /// Échange exposé (Lot 6 §6.1). La collection `/families/{id}/exchanges?status=` renvoie les résumés.
 /// (sans le fil) triés (§3.6) ; `GET /exchanges/{id}` renvoie le détail (options + décomptes + fil en.
-/// clair). `POST .../decide` valide une option et renvoie l'échange (statut + options à jour). Le.
+/// clair). `POST .../decide` valide une option et renvoie l'échange (statut + options à jour) ;.
+/// `POST .../read` marque le fil lu pour l'appelant (X5). Le.
 /// marqueur `overdue` est dérivé (fuseau famille, §3.4).
 @JsonSerializable()
 class ExchangeJsonld {
@@ -26,10 +27,12 @@ class ExchangeJsonld {
     this.createdAt = '',
     this.messageCount = 0,
     this.myVoteMaySettle = false,
+    this.hasUnread = false,
     this.version = 1,
     this.object5,
     this.body,
     this.childId,
+    this.childName,
     this.authorMembershipId,
     this.authorName,
     this.authorColor,
@@ -61,6 +64,10 @@ class ExchangeJsonld {
   final String title;
   final String? body;
   final String? childId;
+
+  /// Prénom de l'enfant concerné (X4). La carte de liste écrivait « Un enfant » — elle avait.
+  /// l'identifiant mais pas le nom, et c'est le nom qui permet de trier d'un coup d'œil.
+  final String? childName;
   final String? authorMembershipId;
   final String? authorName;
   final String? authorColor;
@@ -81,6 +88,9 @@ class ExchangeJsonld {
   /// une égalité laisse l'échange ouvert (§3.3).
   final bool myVoteMaySettle;
   final String? lastMessageAt;
+
+  /// L'échange a bougé depuis ma dernière lecture (X5).
+  final bool hasUnread;
 
   /// Version de l'échange à renvoyer dans `expectedVersion` d'un PATCH (verrou optimiste, §4.2) —.
   /// même défaut que l'agenda : la contrainte existait côté serveur sans être lisible (C20).

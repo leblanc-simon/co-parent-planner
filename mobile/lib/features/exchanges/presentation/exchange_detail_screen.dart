@@ -12,6 +12,7 @@ import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/error_banner.dart';
 import '../../../core/widgets/initial_avatar.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../members/data/members_repository.dart';
 import '../data/exchanges_repository.dart';
 import 'exchanges_screen.dart' show exchangeDate;
 
@@ -55,9 +56,28 @@ class _ExchangeDetailScreenState extends ConsumerState<ExchangeDetailScreen> {
   bool _chosenTouched = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Après le premier rendu : c'est l'affichage qui vaut lecture, pas la
+    // construction du widget — et `ref.read` est interdit pendant `initState`.
+    // `initState` ne s'exécutant qu'une fois, la lecture ne part qu'une fois : la
+    // déclencher depuis `build` la ferait repartir à chaque frappe du composeur.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _markRead());
+  }
+
+  @override
   void dispose() {
     _message.dispose();
     super.dispose();
+  }
+
+  /// X5 — l'échange affiché n'est plus non lu. Silencieux : `markRead` avale ses
+  /// erreurs, et la liste est rafraîchie pour faire tomber la pastille.
+  Future<void> _markRead() async {
+    if (!mounted) return; // écran quitté avant la première frame
+    final providers = context.providers;
+    await ref.read(exchangesRepositoryProvider).markRead(widget.exchangeId);
+    providers.invalidate(familyExchangesProvider);
   }
 
   /// Rafraîchit le détail **et** la liste, via le conteneur détaché : la mutation
@@ -650,14 +670,19 @@ class _RadioDot extends StatelessWidget {
   }
 }
 
-/// Fil de messages (bulles). Tolère un auteur anonymisé (« Membre supprimé »).
-class _Thread extends StatelessWidget {
+/// Fil de messages en **bulles asymétriques** : les siennes à droite, sans avatar.
+///
+/// Tous les messages étaient posés à gauche, avatar puis texte : deux parents qui s'écrivent
+/// lisaient un journal, pas un dialogue — sur l'écran dont la conversation est l'unique objet
+/// (revue UX des échanges, X3, maquette `:467-478`). Tolère un auteur anonymisé
+/// (« Membre supprimé »).
+class _Thread extends ConsumerWidget {
   const _Thread({required this.messages});
 
   final List<api.MessageView> messages;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = AppL10n.of(context);
     if (messages.isEmpty) {
       return Padding(
@@ -668,17 +693,24 @@ class _Thread extends StatelessWidget {
         ),
       );
     }
+    final me = ref.watch(currentMembershipIdProvider);
     final sorted = [...messages]
       ..sort((a, b) {
         final byTime = a.sentAt.compareTo(b.sentAt);
         return byTime != 0 ? byTime : a.id.compareTo(b.id);
       });
+
     return Column(
       children: [
         for (final m in sorted)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: _Bubble(message: m),
+            child: _Bubble(
+              message: m,
+              // Tant que les membres ne sont pas chargés, aucun message n'est « le sien » : mieux
+              // vaut un fil uniformément à gauche qu'un alignement qui saute une fois chargé.
+              mine: me != null && m.authorMembershipId == me,
+            ),
           ),
       ],
     );
@@ -686,65 +718,59 @@ class _Thread extends StatelessWidget {
 }
 
 class _Bubble extends StatelessWidget {
-  const _Bubble({required this.message});
+  const _Bubble({required this.message, required this.mine});
 
   final api.MessageView message;
+  final bool mine;
 
   @override
   Widget build(BuildContext context) {
     final l = AppL10n.of(context);
     final author = message.authorName ?? l.exchangeAnonymous;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: mine ? MainAxisAlignment.end : MainAxisAlignment.start,
       children: [
-        InitialAvatar.from(
-          hexColor: message.authorColor,
-          label: author,
-          size: 28,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
+        if (!mine) ...[
+          InitialAvatar.from(
+            hexColor: message.authorColor,
+            label: author,
+            size: 28,
+          ),
+          const SizedBox(width: 8),
+        ],
+        Flexible(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: mine
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      author,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.ink2,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _localTime(message.sentAt),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.muted2,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 2),
               Container(
+                key: ValueKey('exchange-bubble-${message.id}'),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.card,
+                  color: mine ? AppColors.accentSoft : AppColors.card,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(
+                    color: mine ? AppColors.accentSoft2 : AppColors.border,
+                  ),
                 ),
                 child: Text(
                   message.text,
                   style: const TextStyle(fontSize: 14, color: AppColors.ink),
                 ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                // Son propre nom n'apprend rien : seule l'heure est utile de ce côté-là.
+                mine
+                    ? _localTime(message.sentAt)
+                    : '$author · ${_localTime(message.sentAt)}',
+                style: const TextStyle(fontSize: 11, color: AppColors.muted2),
               ),
             ],
           ),

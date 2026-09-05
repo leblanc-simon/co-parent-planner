@@ -63,7 +63,7 @@ final class CreateExchangeProcessor implements ProcessorInterface
             'title' => $exchange->getTitle(),
         ]);
 
-        return $this->assembler->detail($exchange, $tz);
+        return $this->assembler->detail($exchange, $tz, $ctx->membership);
     }
 
     private function createSimple(FamilyContext $ctx, CreateExchangeRequest $data): Exchange

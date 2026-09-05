@@ -875,6 +875,44 @@ a:hover { text-decoration: underline; }
 .exchange-option__sub { font-size: .82rem; color: var(--muted); }
 .exchange-option__count { font-size: .78rem; color: var(--muted-2); font-weight: 600; }
 .exchange-decided-banner { font-size: 12px; font-weight: 600; color: var(--positive-strong); }
+
+/* Option SELECTIONNABLE (X1) : le choix est reversible et local, c'est « Valider mon choix » qui
+   engage. La pastille reprend le radio de la maquette (`:455`) — un marqueur de forme, pas
+   seulement une teinte de bordure (§8.1). */
+.exchange-option--choice {
+    width: 100%; text-align: left; background: var(--card); cursor: pointer; font: inherit;
+    border: 2px solid var(--border);
+
+    &:hover { border-color: var(--border-3); }
+    &:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    & .exchange-option__dot {
+        width: 22px; height: 22px; border-radius: var(--radius-pill); flex-shrink: 0;
+        border: 2px solid var(--muted-2); display: flex; align-items: center; justify-content: center;
+    }
+
+    &.is-chosen {
+        border-color: var(--ink); background: var(--surface);
+
+        & .exchange-option__dot {
+            border-color: var(--ink);
+
+            &::after { content: ''; width: 9px; height: 9px; border-radius: var(--radius-pill); background: var(--ink); }
+        }
+    }
+}
+.exchange-option.is-chosen .exchange-option__count { color: var(--ink-2); }
+
+/* Etat du tour de vote : la phrase que l'ecran ne disait pas. */
+.exchange-status {
+    display: inline-flex; align-items: center; gap: .5rem; margin: 0 0 .9rem;
+    padding: 9px 14px; border-radius: 11px; background: var(--surface);
+    font-size: .85rem; font-weight: 600; color: var(--ink-2);
+
+    &.exchange-status--decided { background: var(--positive-soft); color: var(--positive-strong); }
+    &.exchange-status--urgent { background: var(--accent-soft); color: var(--accent-strong); }
+}
+.exchange-vote-actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .9rem; }
 .exchange-thread { list-style: none; padding: 0; margin: 0 0 1rem; display: flex; flex-direction: column; gap: .8rem; }
 .exchange-message { display: flex; gap: .6rem; }
 .exchange-message__body { min-width: 0; }

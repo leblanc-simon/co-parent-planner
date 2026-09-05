@@ -10,7 +10,7 @@
 > une **conversation qui aboutit à une décision**. Les six premiers points ci-dessous découlent tous
 > de cet écart-là.
 
-## 1. Le vote ne dit pas ce qu'il va déclencher — P1
+## 1. Le vote ne dit pas ce qu'il va déclencher — P1 ✅ *livré le 2026-09-05 (X1)*
 
 **Ce que fait le code.** Chaque option porte son propre bouton « Valider ». Un clic envoie le vote
 immédiatement (`exchanges#decide` / `exchange-validate-{id}`). L'écran affiche, par option, un
@@ -36,7 +36,7 @@ prochain clic est un brouillon ou une signature.
 Cela demande d'exposer au contrat ce que le serveur sait déjà : qui a voté (sans dire **pour quoi** —
 ce serait un vote à bulletin ouvert, à arbitrer) et si le vote de l'appelant existe.
 
-## 2. On ne voit pas son propre vote — P1
+## 2. On ne voit pas son propre vote — P1 ✅ *livré le 2026-09-05 (X1)*
 
 `OptionView` expose `voteCount` et `decided`, **jamais** « c'est mon choix ». Après avoir voté, rien
 ne le rappelle : le décompte passe de 0 à 1, sans dire que ce 1, c'est vous. La maquette, elle,
@@ -59,7 +59,7 @@ l'écran dont c'est **l'unique objet**, c'est l'écart le plus visible à la maq
 l'autre, heure discrète sous la bulle. Aucun changement de contrat : `authorMembershipId` suffit à
 savoir si le message est le sien.
 
-## 4. Une décision que personne ne tranche reste ouverte pour toujours — P2
+## 4. Une décision que personne ne tranche reste ouverte pour toujours — P2 ✅ *livré le 2026-09-05 (X2)*
 
 Le bouton « Clore » n'est offert que pour une **discussion** (`sel.type == 'discussion'` côté web,
 `e.type == 'discussion'` côté mobile). Or `ExchangeWriter` accepte parfaitement de clore une décision
@@ -125,8 +125,8 @@ backend publie déjà les événements Mercure ; il ne manque que l'abonnement m
 
 | Lot | Contenu | Contrat |
 |---|---|---|
-| **X1** | Points 1 + 2 : sélection réversible, validation explicite, état du tour, « mon choix » | `OptionView.myVote`, état du tour sur `ExchangeResource` |
-| **X2** | Point 4 : trancher une décision (`decidedOptionId` depuis l'UI) | inchangé |
+| **X1** ✅ | Points 1 + 2 : sélection réversible, validation explicite, état du tour, « mon choix » | `OptionView.myVote`, état du tour sur `ExchangeResource` |
+| **X2** ✅ | Point 4 : trancher une décision (`decidedOptionId` depuis l'UI) | inchangé |
 | **X3** | Point 3 : fil en bulles asymétriques (web + mobile) | inchangé |
 | **X4** | Point 5 : carte de liste conforme à la maquette | `childName` |
 | **X5** | Point 6 : lecture et non-lus | nouvelle ressource |
@@ -134,3 +134,42 @@ backend publie déjà les événements Mercure ; il ne manque que l'abonnement m
 
 **X1 et X2 se tiennent** : ce sont les deux moitiés d'un même sujet — comprendre, avant de cliquer,
 ce que le clic engage. C'est par là qu'il faut commencer.
+
+---
+
+## Journal
+
+### 2026-09-05 — X1 et X2 livrés
+
+**Le vote se fait désormais en deux gestes.** Choisir une option est **local et réversible** — rien
+ne part au serveur ; c'est « Valider mon choix » qui engage. Le contrat porte l'état du tour, calculé
+là où la règle vit déjà (`DecisionEngine`) plutôt que redérivé côté web et côté mobile :
+`myVotedOptionId`, `awaitingVoters` (qui manque à l'appel, **hors moi**) et `myVoteMaySettle`.
+
+Trois décisions de conception qui méritent d'être dites :
+
+- **« peut » trancher, pas « va » trancher.** Même quand tous les autres ont voté, une **égalité**
+  laisse l'échange ouvert (§3.3) : annoncer un tranchage certain serait faux une fois sur deux.
+- **Confirmation seulement quand elle a un sens.** Elle n'apparaît que si le vote peut trancher. La
+  réclamer à chaque fois apprendrait à passer outre, et la plupart des votes restent modifiables.
+- **Agrégats, jamais de scrutin ouvert.** On dit qui n'a pas encore voté ; on ne dit jamais pour quoi
+  chacun a voté. Un décompte entre coparents n'est pas un vote à bulletin ouvert — c'était une
+  question laissée ouverte par la revue, elle est tranchée dans ce sens.
+
+**X2 — trancher une décision que personne ne vote.** Le serveur l'acceptait depuis toujours
+(`decidedOptionId`) ; aucun écran ne l'offrait, si bien qu'une décision non votée restait ouverte,
+et « en retard », indéfiniment. Action disponible sur les deux plateformes, sous confirmation nommée.
+
+**Flakiness E2E : la cause racine trouvée, et elle était dans le produit.** Deux tests échouaient une
+fois sur deux ou trois. La confirmation de succès n'était **jamais masquée** : elle restait à
+l'écran, si bien qu'attendre « la confirmation » pouvait être satisfait par le message de la mutation
+**précédente**, et l'assertion suivante s'exécutait alors pendant le rechargement. Le socle
+`ApiController` masque désormais la confirmation dès qu'une nouvelle mutation part — ce qui est aussi
+la bonne UX : un message de succès affiché à côté d'un geste en cours laisse croire qu'il a abouti.
+Trois exécutions consécutives vertes après correction.
+
+**Portes** : backend **438 tests / 3 778 assertions** (435 avant), PHPStan 0, cs-fixer 0, Twig 38 ;
+mobile **399 tests** (393 avant), couverture **82,8 %**, `dart analyze --fatal-infos` 0, format 0 ;
+**E2E 23/23** ×3. OpenAPI ré-exporté, client Dart régénéré sans drift.
+
+**Restent** X3 (fil en bulles asymétriques), X4 (carte de liste), X5 (non-lus) et X6.

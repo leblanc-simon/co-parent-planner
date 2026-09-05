@@ -82,6 +82,30 @@ class ExchangeResource
     public bool $overdue = false;
     public string $createdAt = '';
     public int $messageCount = 0;
+
+    /**
+     * État du tour de vote d'une **décision**, du point de vue de l'appelant (X1).
+     *
+     * L'écran affichait un bouton « Valider » par option, sans jamais dire ce que le clic engageait :
+     * `DecisionEngine` ne tranche que lorsque **tous** les électeurs ont voté, si bien que le même
+     * geste était tantôt un brouillon modifiable, tantôt une signature définitive — et les deux
+     * situations étaient identiques à l'écran. Ces trois champs les distinguent.
+     *
+     * Volontairement **agrégés** : on dit qui n'a pas encore voté, jamais pour quoi chacun a voté —
+     * un scrutin ouvert entre coparents n'est pas la même chose qu'un décompte.
+     */
+    public ?string $myVotedOptionId = null;
+    /**
+     * Noms des électeurs qui n'ont pas encore voté, **hors moi**.
+     *
+     * @var list<string>
+     */
+    public array $awaitingVoters = [];
+    /**
+     * Je suis le dernier électeur à ne pas avoir voté : mon vote **peut** trancher — « peut », car
+     * une égalité laisse l'échange ouvert (§3.3).
+     */
+    public bool $myVoteMaySettle = false;
     public ?string $lastMessageAt = null;
     /**
      * Version de l'échange à renvoyer dans `expectedVersion` d'un PATCH (verrou optimiste, §4.2) —

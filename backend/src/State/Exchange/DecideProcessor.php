@@ -113,7 +113,7 @@ final class DecideProcessor implements ProcessorInterface
             ]);
         }
 
-        return $this->assembler->detail($exchange, $tz);
+        return $this->assembler->detail($exchange, $tz, $ctx->membership);
     }
 
     private function resolveOption(Exchange $exchange, ?string $optionId): ExchangeOption

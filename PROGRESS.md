@@ -84,10 +84,12 @@ régénéré, génération **idempotente**.
 
 **Évolutions produit : E1 et E4 livrées le 2026-09-05 ; restent E2, E3 et E5.**
 
-**Revue UX/UI de l'écran Échanges** (`specs/revue-echanges-ux-2026-09.md`, 2026-09-05) — auto-critique
-contre la maquette et le code : 9 points, dont **deux P1** sur le vote (l'écran ne dit pas si le
-prochain clic est un brouillon ou une signature, et ne montre jamais son propre choix). Découpage
-X1→X6 proposé, rien d'implémenté.
+**Revue UX/UI de l'écran Échanges** (`specs/revue-echanges-ux-2026-09.md`, 2026-09-05) — 9 points,
+dont deux P1 sur le vote. **X1 et X2 livrés le 2026-09-05** : vote en deux gestes (choix local
+réversible, puis engagement), état du tour porté par le contrat (`myVotedOptionId`,
+`awaitingVoters`, `myVoteMaySettle`) et calculé là où la règle vit déjà, confirmation demandée
+**seulement** quand le vote peut trancher, et action « retenir cette option et clore » qu'aucun écran
+n'offrait alors que le serveur l'acceptait. **Restent X3 à X6.**
 (`specs/evolutions-2026-09.md`, arbitrages rendus le 2026-09-05) : **A** associer un parent et un
 beau-parent (relation `partner_membership_id` 1↔1 déclarée par un admin, quatre finalités —
 affichage, foyer, droits proposés, nommage du foyer dans les e-mails) et **B** choisir la couleur du

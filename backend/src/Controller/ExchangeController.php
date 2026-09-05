@@ -71,7 +71,7 @@ final class ExchangeController extends AbstractController
         $selectedId = (string) $request->query->get('exchange', '');
         if ('' !== $selectedId) {
             $entity = $this->access->loadInFamily($selectedId, $family);
-            $selected = $this->assembler->detail($entity, $tz);
+            $selected = $this->assembler->detail($entity, $tz, $active);
         }
         // Sans sélection, le volet de droite demandait « Sélectionnez un échange. » alors qu'il y en
         // avait à montrer — l'écran Enfants, lui, ouvre le premier depuis toujours. Deux
@@ -80,6 +80,7 @@ final class ExchangeController extends AbstractController
             $selected = $this->assembler->detail(
                 $this->access->loadInFamily($list[0]->id, $family),
                 $tz,
+                $active,
             );
         }
 

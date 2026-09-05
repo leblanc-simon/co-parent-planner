@@ -115,22 +115,70 @@
                 {% if sel.body %}<p class="exchange-detail__body">{{ sel.body }}</p>{% endif %}
 
                 {% if sel.type == 'decision' %}
-                <div class="exchange-options-list">
+                {# État du tour de vote (X1). L'écran ne disait pas ce qu'un clic engageait : la
+                   décision ne bascule que lorsque TOUS les électeurs ont voté, si bien que le même
+                   bouton était tantôt un brouillon, tantôt une signature. #}
+                {% set decidedOption = sel.options|filter(o => o.decided)|first %}
+                <p class="exchange-status {{ sel.status == 'decided' ? 'exchange-status--decided' : (sel.myVoteMaySettle ? 'exchange-status--urgent') }}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    {% if sel.status == 'decided' %}
+                        Décidé{{ decidedOption ? ' : ' ~ decidedOption.label }}
+                    {% elseif sel.myVoteMaySettle %}
+                        {{ sel.awaitingVoters is empty and sel.myVotedOptionId is null
+                            ? 'Tout le monde a répondu sauf vous — votre choix peut trancher la décision.'
+                            : 'Votre choix peut trancher la décision.' }}
+                    {% elseif sel.awaitingVoters|length %}
+                        En attente de {{ sel.awaitingVoters|join(' et ') }}{{ sel.myVotedOptionId ? ' — votre choix reste modifiable' : '' }}.
+                    {% elseif sel.deadline %}
+                        Réponse attendue avant le {{ sel.deadline|date('d/m/Y') }}.
+                    {% endif %}
+                </p>
+
+                <div class="exchange-options-list" {{ canEdit and sel.status == 'open' ? 'role="radiogroup" aria-label="Options de la décision"' : '' }}>
                     {% for o in sel.options %}
-                    <div class="exchange-option {{ o.decided ? 'exchange-option--decided' }}">
-                        <div class="exchange-option__info">
-                            <strong>{{ o.label }}</strong>
-                            {% if o.sub %}<span class="exchange-option__sub">{{ o.sub }}</span>{% endif %}
-                            <span class="exchange-option__count">{{ o.voteCount }} validation{{ o.voteCount > 1 ? 's' }}</span>
+                    {% if canEdit and sel.status == 'open' %}
+                        {# Sélection RÉVERSIBLE : ce bouton ne parle pas au serveur, c'est
+                           « Valider mon choix » qui engage (maquette `:454-463`). #}
+                        <button type="button" role="radio" aria-checked="{{ o.myVote ? 'true' : 'false' }}"
+                                class="exchange-option exchange-option--choice {{ o.myVote ? 'is-chosen' }}"
+                                data-exchanges-target="option" data-option-id="{{ o.id }}"
+                                data-action="exchanges#chooseOption">
+                            <span class="exchange-option__dot" aria-hidden="true"></span>
+                            <span class="exchange-option__info">
+                                <strong>{{ o.label }}</strong>
+                                {% if o.sub %}<span class="exchange-option__sub">{{ o.sub }}</span>{% endif %}
+                                <span class="exchange-option__count">{{ o.voteCount }} validation{{ o.voteCount > 1 ? 's' }}{{ o.myVote ? ' · votre choix' }}</span>
+                            </span>
+                        </button>
+                    {% else %}
+                        <div class="exchange-option {{ o.decided ? 'exchange-option--decided' }} {{ o.myVote ? 'is-chosen' }}">
+                            <div class="exchange-option__info">
+                                <strong>{{ o.label }}</strong>
+                                {% if o.sub %}<span class="exchange-option__sub">{{ o.sub }}</span>{% endif %}
+                                <span class="exchange-option__count">{{ o.voteCount }} validation{{ o.voteCount > 1 ? 's' }}{{ o.myVote ? ' · votre choix' }}</span>
+                            </div>
+                            {% if o.decided %}<span class="exchange-decided-banner">Décision tranchée</span>{% endif %}
                         </div>
-                        {% if o.decided %}
-                            <span class="exchange-decided-banner">Décision tranchée</span>
-                        {% elseif canEdit and sel.status == 'open' %}
-                            <button class="btn btn--primary" type="button" data-action="exchanges#decide" data-exchange-id="{{ sel.id }}" data-option-id="{{ o.id }}">Valider</button>
-                        {% endif %}
-                    </div>
+                    {% endif %}
                     {% endfor %}
                 </div>
+
+                {% if canEdit and sel.status == 'open' %}
+                <div class="exchange-vote-actions">
+                    <button class="btn btn--primary" type="button"
+                            data-exchanges-target="submitVote" data-action="exchanges#submitVote"
+                            data-exchange-id="{{ sel.id }}" data-option-id="{{ sel.myVotedOptionId }}"
+                            data-may-settle="{{ sel.myVoteMaySettle ? 'true' : 'false' }}"
+                            {{ sel.myVotedOptionId ? '' : 'disabled' }}>
+                        {{ sel.myVotedOptionId ? 'Changer mon choix' : 'Valider mon choix' }}
+                    </button>
+                    {# X2 — trancher une décision que personne ne vote. Le serveur l'accepte depuis
+                       toujours (`decidedOptionId`) ; sans cette action, une décision non votée
+                       restait ouverte et « en retard » indéfiniment. #}
+                    <button class="btn btn--ghost" type="button" data-action="exchanges#settleDecision"
+                            data-exchange-id="{{ sel.id }}">Retenir cette option et clore</button>
+                </div>
+                {% endif %}
                 {% endif %}
             </section>
 

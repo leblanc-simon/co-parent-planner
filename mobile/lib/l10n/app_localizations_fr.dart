@@ -912,6 +912,57 @@ class AppL10nFr extends AppL10n {
   String get exchangeValidateOption => 'Valider cette option';
 
   @override
+  String get exchangeChooseOption => 'Valider mon choix';
+
+  @override
+  String get exchangeChangeChoice => 'Changer mon choix';
+
+  @override
+  String get exchangeMyChoice => 'votre choix';
+
+  @override
+  String get exchangeSettle => 'Retenir cette option et clore';
+
+  @override
+  String get exchangeSettleConfirmTitle => 'Trancher la décision ?';
+
+  @override
+  String exchangeSettleConfirmBody(String label) {
+    return 'L\'option « $label » sera retenue et l\'échange clos. Cette action est irréversible.';
+  }
+
+  @override
+  String get exchangeVoteMaySettleTitle => 'Votre choix peut trancher';
+
+  @override
+  String get exchangeVoteMaySettleBody =>
+      'Tous les autres membres ont voté : votre choix peut trancher définitivement cette décision.';
+
+  @override
+  String exchangeStatusDecided(String label) {
+    return 'Décidé : $label';
+  }
+
+  @override
+  String get exchangeStatusMaySettle =>
+      'Votre choix peut trancher la décision.';
+
+  @override
+  String exchangeStatusAwaiting(String names) {
+    return 'En attente de $names.';
+  }
+
+  @override
+  String exchangeStatusAwaitingEditable(String names) {
+    return 'En attente de $names — votre choix reste modifiable.';
+  }
+
+  @override
+  String exchangeStatusDeadline(String date) {
+    return 'Réponse attendue avant le $date.';
+  }
+
+  @override
   String exchangeVotesCount(num count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

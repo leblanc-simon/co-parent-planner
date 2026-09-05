@@ -14,6 +14,7 @@ OptionViewJsonld _$OptionViewJsonldFromJson(Map<String, dynamic> json) =>
       position: (json['position'] as num?)?.toInt() ?? 0,
       voteCount: (json['voteCount'] as num?)?.toInt() ?? 0,
       decided: json['decided'] as bool? ?? false,
+      myVote: json['myVote'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$OptionViewJsonldToJson(OptionViewJsonld instance) =>
@@ -24,4 +25,5 @@ Map<String, dynamic> _$OptionViewJsonldToJson(OptionViewJsonld instance) =>
       'position': instance.position,
       'voteCount': instance.voteCount,
       'decided': instance.decided,
+      'myVote': instance.myVote,
     };

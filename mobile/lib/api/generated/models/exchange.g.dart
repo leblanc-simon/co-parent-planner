@@ -14,6 +14,10 @@ Exchange _$ExchangeFromJson(Map<String, dynamic> json) => Exchange(
   authorColor: json['authorColor'] as String?,
   deadline: json['deadline'] as String?,
   decidedOptionId: json['decidedOptionId'] as String?,
+  myVotedOptionId: json['myVotedOptionId'] as String?,
+  awaitingVoters: (json['awaitingVoters'] as List<dynamic>?)
+      ?.map((e) => e as String)
+      .toList(),
   lastMessageAt: json['lastMessageAt'] as String?,
   options: (json['options'] as List<dynamic>?)
       ?.map((e) => OptionView.fromJson(e as Map<String, dynamic>))
@@ -28,6 +32,7 @@ Exchange _$ExchangeFromJson(Map<String, dynamic> json) => Exchange(
   overdue: json['overdue'] as bool? ?? false,
   createdAt: json['createdAt'] as String? ?? '',
   messageCount: (json['messageCount'] as num?)?.toInt() ?? 0,
+  myVoteMaySettle: json['myVoteMaySettle'] as bool? ?? false,
   version: (json['version'] as num?)?.toInt() ?? 1,
 );
 
@@ -46,6 +51,9 @@ Map<String, dynamic> _$ExchangeToJson(Exchange instance) => <String, dynamic>{
   'overdue': instance.overdue,
   'createdAt': instance.createdAt,
   'messageCount': instance.messageCount,
+  'myVotedOptionId': instance.myVotedOptionId,
+  'awaitingVoters': instance.awaitingVoters,
+  'myVoteMaySettle': instance.myVoteMaySettle,
   'lastMessageAt': instance.lastMessageAt,
   'version': instance.version,
   'options': instance.options,

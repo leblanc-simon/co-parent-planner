@@ -187,7 +187,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('exchange-validate-o1')));
+    // Le vote se fait en DEUX gestes depuis X1 : choisir l'option (local, réversible), puis
+    // engager. Un bouton par option ne disait pas si le clic était un brouillon ou une signature.
+    await tester.tap(find.byKey(const ValueKey('exchange-option-o1')));
+    await tester.pumpAndSettle();
+    verifyNever(() => repo.decide(any(), any()));
+
+    await tester.tap(find.byKey(const ValueKey('exchange-submit-vote')));
     await tester.pumpAndSettle();
 
     verify(() => repo.decide('x2', 'o1')).called(1);
@@ -278,10 +284,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const ValueKey('exchange-validate-o1')));
+      await tester.tap(find.byKey(const ValueKey('exchange-option-o1')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('exchange-submit-vote')));
       await tester.pump();
       await tester.tap(
-        find.byKey(const ValueKey('exchange-validate-o1')),
+        find.byKey(const ValueKey('exchange-submit-vote')),
         warnIfMissed: false,
       );
       await tester.pump();
@@ -542,5 +550,179 @@ void main() {
         expect(options.map((o) => o.label), ['Montagne', 'Mer']);
       },
     );
+  });
+
+  group('vote en deux temps et état du tour (X1/X2)', () {
+    api.Exchange decision({
+      String? myVotedOptionId,
+      bool maySettle = false,
+      List<String> awaiting = const [],
+      String status = 'open',
+    }) => api.Exchange(
+      id: 'x5',
+      type: 'decision',
+      title: 'Colonie',
+      status: status,
+      myVotedOptionId: myVotedOptionId,
+      myVoteMaySettle: maySettle,
+      awaitingVoters: awaiting,
+      options: [
+        api.OptionView(
+          id: 'o1',
+          label: 'Montagne',
+          position: 0,
+          voteCount: myVotedOptionId == 'o1' ? 1 : 0,
+          myVote: myVotedOptionId == 'o1',
+        ),
+        const api.OptionView(id: 'o2', label: 'Mer', position: 1),
+      ],
+    );
+
+    Future<void> open(WidgetTester tester, api.Exchange exchange) async {
+      when(() => repo.detail('x5')).thenAnswer((_) async => exchange);
+      await pumpScreen(
+        tester,
+        const ExchangeDetailScreen(exchangeId: 'x5'),
+        overrides: overrides(),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'choisir une option n\'envoie rien : c\'est la validation qui engage',
+      (tester) async {
+        await open(tester, decision());
+
+        // Sans sélection, on ne peut pas engager.
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.byKey(const ValueKey('exchange-submit-vote')),
+              )
+              .onPressed,
+          isNull,
+        );
+
+        await tester.tap(find.byKey(const ValueKey('exchange-option-o2')));
+        await tester.pump();
+        verifyNever(() => repo.decide(any(), any()));
+        expect(
+          tester
+              .widget<FilledButton>(
+                find.byKey(const ValueKey('exchange-submit-vote')),
+              )
+              .onPressed,
+          isNotNull,
+        );
+      },
+    );
+
+    testWidgets('mon choix est rappelé, et le bouton le dit', (tester) async {
+      // Le décompte passait de 0 à 1 sans jamais indiquer que ce 1, c'était vous.
+      await open(tester, decision(myVotedOptionId: 'o1', awaiting: ['Marc']));
+
+      // Sur l'option : « 1 validation · votre choix ».
+      expect(find.textContaining('· votre choix'), findsOneWidget);
+      expect(find.text('Changer mon choix'), findsOneWidget);
+      expect(
+        find.text('En attente de Marc — votre choix reste modifiable.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'quand le vote peut trancher, l\'écran le dit et demande confirmation',
+      (tester) async {
+        when(
+          () => repo.decide('x5', 'o1'),
+        ).thenAnswer((_) async => decision(status: 'decided'));
+        await open(tester, decision(maySettle: true));
+
+        expect(find.byKey(const ValueKey('exchange-status')), findsOneWidget);
+        expect(find.textContaining('peut trancher'), findsWidgets);
+
+        await tester.tap(find.byKey(const ValueKey('exchange-option-o1')));
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('exchange-submit-vote')));
+        await tester.pumpAndSettle();
+
+        // Confirmation demandée : ce clic-là n'est plus un brouillon.
+        expect(
+          find.byKey(const ValueKey('exchange-vote-confirm')),
+          findsOneWidget,
+        );
+        verifyNever(() => repo.decide(any(), any()));
+
+        await tester.tap(find.byKey(const ValueKey('exchange-vote-confirm')));
+        await tester.pumpAndSettle();
+        verify(() => repo.decide('x5', 'o1')).called(1);
+      },
+    );
+
+    testWidgets('un vote modifiable ne demande aucune confirmation', (
+      tester,
+    ) async {
+      when(
+        () => repo.decide('x5', 'o2'),
+      ).thenAnswer((_) async => decision(myVotedOptionId: 'o2'));
+      await open(tester, decision(awaiting: ['Marc']));
+
+      await tester.tap(find.byKey(const ValueKey('exchange-option-o2')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('exchange-submit-vote')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('exchange-vote-confirm')), findsNothing);
+      verify(() => repo.decide('x5', 'o2')).called(1);
+    });
+
+    testWidgets('X2 — trancher une décision que personne ne vote', (
+      tester,
+    ) async {
+      // Le serveur l'acceptait depuis toujours ; aucun écran ne l'offrait, et une décision non
+      // votée restait ouverte — et « en retard » — indéfiniment.
+      when(
+        () => repo.patch('x5', decidedOptionId: 'o1'),
+      ).thenAnswer((_) async => decision(status: 'decided'));
+      await open(tester, decision());
+
+      await tester.tap(find.byKey(const ValueKey('exchange-option-o1')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('exchange-settle')));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('irréversible'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('exchange-settle-confirm')));
+      await tester.pumpAndSettle();
+
+      verify(() => repo.patch('x5', decidedOptionId: 'o1')).called(1);
+    });
+
+    testWidgets('décision tranchée : plus de sélection, l\'état la nomme', (
+      tester,
+    ) async {
+      await open(
+        tester,
+        const api.Exchange(
+          id: 'x5',
+          type: 'decision',
+          title: 'Colonie',
+          status: 'decided',
+          options: [
+            api.OptionView(
+              id: 'o1',
+              label: 'Montagne',
+              position: 0,
+              voteCount: 2,
+              decided: true,
+            ),
+          ],
+        ),
+      );
+
+      expect(find.byKey(const ValueKey('exchange-submit-vote')), findsNothing);
+      expect(find.byKey(const ValueKey('exchange-settle')), findsNothing);
+      expect(find.text('Décidé : Montagne'), findsOneWidget);
+    });
   });
 }

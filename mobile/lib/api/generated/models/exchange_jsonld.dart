@@ -25,6 +25,7 @@ class ExchangeJsonld {
     this.overdue = false,
     this.createdAt = '',
     this.messageCount = 0,
+    this.myVoteMaySettle = false,
     this.version = 1,
     this.object5,
     this.body,
@@ -34,6 +35,8 @@ class ExchangeJsonld {
     this.authorColor,
     this.deadline,
     this.decidedOptionId,
+    this.myVotedOptionId,
+    this.awaitingVoters,
     this.lastMessageAt,
     this.options,
     this.messages,
@@ -67,6 +70,16 @@ class ExchangeJsonld {
   final bool overdue;
   final String createdAt;
   final int messageCount;
+
+  /// État du tour de vote d'une **décision**, du point de vue de l'appelant (X1).
+  final String? myVotedOptionId;
+
+  /// Noms des électeurs qui n'ont pas encore voté, **hors moi**.
+  final List<String>? awaitingVoters;
+
+  /// Je suis le dernier électeur à ne pas avoir voté : mon vote **peut** trancher — « peut », car.
+  /// une égalité laisse l'échange ouvert (§3.3).
+  final bool myVoteMaySettle;
   final String? lastMessageAt;
 
   /// Version de l'échange à renvoyer dans `expectedVersion` d'un PATCH (verrou optimiste, §4.2) —.

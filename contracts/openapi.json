@@ -7798,6 +7798,25 @@
                         "default": 0,
                         "type": "integer"
                     },
+                    "myVotedOptionId": {
+                        "description": "\u00c9tat du tour de vote d'une **d\u00e9cision**, du point de vue de l'appelant (X1).",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "awaitingVoters": {
+                        "description": "Noms des \u00e9lecteurs qui n'ont pas encore vot\u00e9, **hors moi**.",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "myVoteMaySettle": {
+                        "description": "Je suis le dernier \u00e9lecteur \u00e0 ne pas avoir vot\u00e9 : mon vote **peut** trancher \u2014 \u00ab peut \u00bb, car\nune \u00e9galit\u00e9 laisse l'\u00e9change ouvert (\u00a73.3).",
+                        "default": false,
+                        "type": "boolean"
+                    },
                     "lastMessageAt": {
                         "type": [
                             "string",
@@ -8000,6 +8019,25 @@
                             "messageCount": {
                                 "default": 0,
                                 "type": "integer"
+                            },
+                            "myVotedOptionId": {
+                                "description": "\u00c9tat du tour de vote d'une **d\u00e9cision**, du point de vue de l'appelant (X1).",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "awaitingVoters": {
+                                "description": "Noms des \u00e9lecteurs qui n'ont pas encore vot\u00e9, **hors moi**.",
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "myVoteMaySettle": {
+                                "description": "Je suis le dernier \u00e9lecteur \u00e0 ne pas avoir vot\u00e9 : mon vote **peut** trancher \u2014 \u00ab peut \u00bb, car\nune \u00e9galit\u00e9 laisse l'\u00e9change ouvert (\u00a73.3).",
+                                "default": false,
+                                "type": "boolean"
                             },
                             "lastMessageAt": {
                                 "type": [
@@ -9645,6 +9683,11 @@
                     "decided": {
                         "default": false,
                         "type": "boolean"
+                    },
+                    "myVote": {
+                        "description": "Cette option est **celle que j'ai valid\u00e9e** (X1). Le d\u00e9compte seul ne le disait pas : apr\u00e8s\navoir vot\u00e9, il passait de 0 \u00e0 1 sans jamais indiquer que ce 1, c'\u00e9tait vous.",
+                        "default": false,
+                        "type": "boolean"
                     }
                 }
             },
@@ -9674,6 +9717,11 @@
                         "type": "integer"
                     },
                     "decided": {
+                        "default": false,
+                        "type": "boolean"
+                    },
+                    "myVote": {
+                        "description": "Cette option est **celle que j'ai valid\u00e9e** (X1). Le d\u00e9compte seul ne le disait pas : apr\u00e8s\navoir vot\u00e9, il passait de 0 \u00e0 1 sans jamais indiquer que ce 1, c'\u00e9tait vous.",
                         "default": false,
                         "type": "boolean"
                     }

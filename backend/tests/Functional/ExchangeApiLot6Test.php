@@ -348,4 +348,89 @@ final class ExchangeApiLot6Test extends ApiAuthTestCase
         $res = $client->request('GET', '/api/exchanges/'.$exchangeId, ['headers' => $hB]);
         self::assertSame(404, $res->getStatusCode());
     }
+
+    // ---- État du tour de vote (revue UX des échanges, X1/X2) ----
+
+    /**
+     * Ce que l'écran ne disait pas : selon que l'autre parent a voté ou non, le même clic est un
+     * brouillon modifiable ou une signature définitive. Le serveur, qui porte déjà la règle
+     * (`DecisionEngine` : consensus de TOUS les électeurs), l'énonce désormais.
+     */
+    public function testVoteTurnIsExposedToTheCaller(): void
+    {
+        [$client, $hA, $familyId] = $this->family('ex-turn-a@example.com');
+        $this->addMember($familyId, 'ex-turn-b@example.com', MembershipRole::Parent, RightLevel::Edit);
+        $hB = $this->bearer($this->login($client, 'ex-turn-b@example.com')) + ['X-Family-Id' => $familyId];
+
+        $decision = $client->request('POST', '/api/families/'.$familyId.'/exchanges', [
+            'json' => ['type' => 'decision', 'title' => 'Colonie', 'options' => [['label' => 'Montagne'], ['label' => 'Mer']]],
+            'headers' => $hA,
+        ])->toArray();
+        $exchangeId = $decision['id'];
+        $o1 = $decision['options'][0]['id'];
+
+        // Personne n'a voté : A attend B, et son vote ne tranchera pas.
+        $beforeA = $client->request('GET', '/api/exchanges/'.$exchangeId, ['headers' => $hA])->toArray();
+        self::assertNull($beforeA['myVotedOptionId']);
+        self::assertFalse($beforeA['myVoteMaySettle']);
+        self::assertCount(1, $beforeA['awaitingVoters']);
+
+        // A vote : son choix lui est rappelé, et il attend toujours B.
+        $afterA = $client->request('POST', '/api/exchanges/'.$exchangeId.'/decide', [
+            'json' => ['optionId' => $o1], 'headers' => $hA,
+        ])->toArray();
+        self::assertSame($o1, $afterA['myVotedOptionId']);
+        self::assertFalse($afterA['myVoteMaySettle']);
+        self::assertTrue($afterA['options'][0]['myVote']);
+        self::assertFalse($afterA['options'][1]['myVote']);
+
+        // Vu par B : c'est à lui de jouer, et son vote PEUT trancher.
+        $forB = $client->request('GET', '/api/exchanges/'.$exchangeId, ['headers' => $hB])->toArray();
+        self::assertTrue($forB['myVoteMaySettle']);
+        self::assertSame([], $forB['awaitingVoters']);
+        // Le vote de A ne lui est pas attribué : on dit qui manque, jamais pour quoi chacun a voté.
+        self::assertNull($forB['myVotedOptionId']);
+        self::assertFalse($forB['options'][0]['myVote']);
+    }
+
+    /**
+     * X2 — trancher une décision que personne ne vote. `ExchangeWriter` l'acceptait depuis toujours ;
+     * aucun écran ne l'offrait, et une décision non votée restait ouverte indéfiniment.
+     */
+    public function testADecisionCanBeSettledWithoutAnyVote(): void
+    {
+        [$client, $h, $familyId] = $this->family('ex-settle@example.com');
+        $decision = $client->request('POST', '/api/families/'.$familyId.'/exchanges', [
+            'json' => ['type' => 'decision', 'title' => 'Colonie', 'options' => [['label' => 'Montagne'], ['label' => 'Mer']]],
+            'headers' => $h,
+        ])->toArray();
+        $o2 = $decision['options'][1]['id'];
+
+        $settled = $client->request('PATCH', '/api/exchanges/'.$decision['id'], [
+            'json' => ['decidedOptionId' => $o2],
+            'headers' => $h + ['Content-Type' => 'application/merge-patch+json'],
+        ])->toArray();
+
+        self::assertSame('decided', $settled['status']);
+        self::assertSame($o2, $settled['decidedOptionId']);
+        // Une décision tranchée n'attend plus personne.
+        self::assertSame([], $settled['awaitingVoters']);
+        self::assertFalse($settled['myVoteMaySettle']);
+    }
+
+    /** Clore une décision SANS retenir d'option n'a pas de sens : le serveur le refuse. */
+    public function testADecisionCannotBeClosedWithoutAWinningOption(): void
+    {
+        [$client, $h, $familyId] = $this->family('ex-settle-none@example.com');
+        $decision = $client->request('POST', '/api/families/'.$familyId.'/exchanges', [
+            'json' => ['type' => 'decision', 'title' => 'Colonie', 'options' => [['label' => 'A'], ['label' => 'B']]],
+            'headers' => $h,
+        ])->toArray();
+
+        $res = $client->request('PATCH', '/api/exchanges/'.$decision['id'], [
+            'json' => ['status' => 'decided'],
+            'headers' => $h + ['Content-Type' => 'application/merge-patch+json'],
+        ]);
+        self::assertSame(422, $res->getStatusCode());
+    }
 }

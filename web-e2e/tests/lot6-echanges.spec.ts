@@ -94,7 +94,17 @@ test('Échanges : discussion + message, décision + bascule, marqueur « en reta
 
   await page.locator('.exchange-card').filter({ hasText: 'Choix du centre aéré' }).first().click();
   await expect(page.locator('.exchange-detail__head')).toContainText('Choix du centre aéré');
-  await page.locator('button[data-action="exchanges#decide"]').first().click();
+
+  // Le vote se fait en DEUX gestes depuis X1 : choisir l'option (local, réversible), puis engager.
+  // Un bouton par option ne disait pas si le clic était un brouillon ou une signature — et il l'est
+  // ici, l'électorat valant 1.
+  await expect(page.locator('.exchange-status')).toBeVisible();
+  await page.locator('[data-exchanges-target="option"]').first().click();
+  await expect(page.locator('[data-exchanges-target="option"]').first()).toHaveClass(/is-chosen/);
+
+  // Électorat de 1 : ce vote tranche, l'écran le dit et demande confirmation.
+  page.once('dialog', (d) => d.accept());
+  await page.locator('[data-exchanges-target="submitVote"]').click();
   await waitForSaved(page);
   await expect(page.locator('.exchange-decided-banner')).toBeVisible();
 

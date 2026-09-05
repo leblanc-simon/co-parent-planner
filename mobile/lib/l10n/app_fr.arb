@@ -404,6 +404,54 @@
   "exchangeMessagePlaceholder": "Écrire un message…",
   "exchangeDecidedBanner": "Décision tranchée",
   "exchangeValidateOption": "Valider cette option",
+  "exchangeChooseOption": "Valider mon choix",
+  "exchangeChangeChoice": "Changer mon choix",
+  "exchangeMyChoice": "votre choix",
+  "exchangeSettle": "Retenir cette option et clore",
+  "exchangeSettleConfirmTitle": "Trancher la décision ?",
+  "exchangeSettleConfirmBody": "L'option « {label} » sera retenue et l'échange clos. Cette action est irréversible.",
+  "@exchangeSettleConfirmBody": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "exchangeVoteMaySettleTitle": "Votre choix peut trancher",
+  "exchangeVoteMaySettleBody": "Tous les autres membres ont voté : votre choix peut trancher définitivement cette décision.",
+  "exchangeStatusDecided": "Décidé : {label}",
+  "@exchangeStatusDecided": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "exchangeStatusMaySettle": "Votre choix peut trancher la décision.",
+  "exchangeStatusAwaiting": "En attente de {names}.",
+  "@exchangeStatusAwaiting": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "exchangeStatusAwaitingEditable": "En attente de {names} — votre choix reste modifiable.",
+  "@exchangeStatusAwaitingEditable": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "exchangeStatusDeadline": "Réponse attendue avant le {date}.",
+  "@exchangeStatusDeadline": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
   "exchangeVotesCount": "{count, plural, =0{Aucune validation} one{{count} validation} other{{count} validations}}",
   "@exchangeVotesCount": {
     "placeholders": {

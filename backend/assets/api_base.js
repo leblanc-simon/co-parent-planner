@@ -58,6 +58,10 @@ export class ApiController extends Controller {
         const idempotencyKey = opts.idempotent ? this._uuid() : null;
 
         if (this.hasErrorTarget) this.errorTarget.hidden = true;
+        // La confirmation de l'action PRÉCÉDENTE disparaît dès qu'une nouvelle part : la laisser
+        // affichée à côté d'un geste en cours laisse croire qu'il a déjà abouti — et, côté tests,
+        // rendait « attendre la confirmation » satisfiable par un message périmé.
+        if (this.hasNoticeTarget) this.noticeTarget.hidden = true;
         this._busy(trigger, true);
 
         try {

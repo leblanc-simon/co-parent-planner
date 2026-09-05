@@ -15,6 +15,7 @@ class OptionViewJsonld {
     this.position = 0,
     this.voteCount = 0,
     this.decided = false,
+    this.myVote = false,
   });
   
   factory OptionViewJsonld.fromJson(Map<String, Object?> json) => _$OptionViewJsonldFromJson(json);
@@ -25,6 +26,10 @@ class OptionViewJsonld {
   final int position;
   final int voteCount;
   final bool decided;
+
+  /// Cette option est **celle que j'ai validée** (X1). Le décompte seul ne le disait pas : après.
+  /// avoir voté, il passait de 0 à 1 sans jamais indiquer que ce 1, c'était vous.
+  final bool myVote;
 
   Map<String, Object?> toJson() => _$OptionViewJsonldToJson(this);
 }

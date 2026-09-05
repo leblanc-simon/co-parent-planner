@@ -17,6 +17,7 @@ ExchangeJsonld _$ExchangeJsonldFromJson(Map<String, dynamic> json) =>
       overdue: json['overdue'] as bool? ?? false,
       createdAt: json['createdAt'] as String? ?? '',
       messageCount: (json['messageCount'] as num?)?.toInt() ?? 0,
+      myVoteMaySettle: json['myVoteMaySettle'] as bool? ?? false,
       version: (json['version'] as num?)?.toInt() ?? 1,
       object5: json['@context'],
       body: json['body'] as String?,
@@ -26,6 +27,10 @@ ExchangeJsonld _$ExchangeJsonldFromJson(Map<String, dynamic> json) =>
       authorColor: json['authorColor'] as String?,
       deadline: json['deadline'] as String?,
       decidedOptionId: json['decidedOptionId'] as String?,
+      myVotedOptionId: json['myVotedOptionId'] as String?,
+      awaitingVoters: (json['awaitingVoters'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
       lastMessageAt: json['lastMessageAt'] as String?,
       options: (json['options'] as List<dynamic>?)
           ?.map((e) => OptionViewJsonld.fromJson(e as Map<String, dynamic>))
@@ -54,6 +59,9 @@ Map<String, dynamic> _$ExchangeJsonldToJson(ExchangeJsonld instance) =>
       'overdue': instance.overdue,
       'createdAt': instance.createdAt,
       'messageCount': instance.messageCount,
+      'myVotedOptionId': instance.myVotedOptionId,
+      'awaitingVoters': instance.awaitingVoters,
+      'myVoteMaySettle': instance.myVoteMaySettle,
       'lastMessageAt': instance.lastMessageAt,
       'version': instance.version,
       'options': instance.options,

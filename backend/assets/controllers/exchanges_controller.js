@@ -5,7 +5,7 @@ import { ApiController } from '../api_base.js';
  * (état canonique ; le temps réel Mercure rafraîchit aussi chez les autres membres).
  */
 export default class extends ApiController {
-    static targets = ['type', 'options', 'optionsRows'];
+    static targets = ['type', 'options', 'optionsRows', 'option', 'submitVote'];
 
     connect() {
         super.connect();
@@ -65,16 +65,67 @@ export default class extends ApiController {
 
     // Voter pour une option : action principale de l'écran, donc sans confirmation (le consensus,
     // lui, est arbitré côté serveur). L'ambiguïté du libellé est traitée dans le gabarit.
-    decide(event) {
+    /**
+     * Sélection d'une option — **locale**, rien ne part au serveur (X1).
+     *
+     * Chaque option portait auparavant son propre bouton « Valider » : un clic envoyait le vote, et
+     * comme `DecisionEngine` ne tranche qu'une fois TOUS les électeurs ayant voté, le même geste
+     * était tantôt un brouillon modifiable, tantôt une signature définitive — sans que rien ne les
+     * distingue. On sépare donc le choix de l'engagement.
+     */
+    chooseOption(event) {
+        const option = event.currentTarget;
+        this.optionTargets.forEach((el) => {
+            const chosen = el === option;
+            el.classList.toggle('is-chosen', chosen);
+            el.setAttribute('aria-checked', chosen ? 'true' : 'false');
+        });
+        if (this.hasSubmitVoteTarget) {
+            this.submitVoteTarget.disabled = false;
+            this.submitVoteTarget.dataset.optionId = option.dataset.optionId;
+        }
+    }
+
+    /** Engagement du vote : c'est ce bouton-ci qui écrit, et lui seul. */
+    submitVote(event) {
         const el = event.currentTarget;
-        this._send('POST', `/api/exchanges/${el.dataset.exchangeId}/decide`, { optionId: el.dataset.optionId }, {
+        const optionId = el.dataset.optionId;
+        if (!optionId) return;
+        // Confirmation demandée UNIQUEMENT quand le vote peut trancher : la réclamer à chaque fois
+        // apprendrait à passer outre, et la plupart des votes sont modifiables.
+        if ('true' === el.dataset.maySettle
+            && !window.confirm('Tous les autres membres ont voté : votre choix peut trancher définitivement cette décision. Continuer ?')) {
+            return;
+        }
+        this._send('POST', `/api/exchanges/${el.dataset.exchangeId}/decide`, { optionId }, {
             event,
             notice: 'Votre choix est enregistré.',
         });
     }
 
+    /**
+     * Trancher une décision que personne ne vote (X2).
+     *
+     * Le serveur l'accepte depuis toujours — `ExchangeWriter` clôt une décision en forçant l'option
+     * retenue — mais aucun écran ne l'offrait : une décision non votée restait ouverte, et « en
+     * retard », indéfiniment.
+     */
+    settleDecision(event) {
+        const el = event.currentTarget;
+        const optionId = this.hasSubmitVoteTarget ? this.submitVoteTarget.dataset.optionId : null;
+        if (!optionId) {
+            this._showError('Choisissez d\'abord l\'option à retenir.');
+            return;
+        }
+        if (!window.confirm('Retenir cette option et clore la décision ? Cette action est irréversible.')) return;
+        this._send('PATCH', `/api/exchanges/${el.dataset.exchangeId}`, { decidedOptionId: optionId }, {
+            event,
+            notice: 'Décision tranchée.',
+        });
+    }
+
     closeExchange(event) {
-        if (!window.confirm('Clore cet échange ?')) return;
+        if (!window.confirm('Clore cet échange ? Il ne pourra plus être rouvert.')) return;
         this._send('PATCH', `/api/exchanges/${event.currentTarget.dataset.exchangeId}`, { status: 'decided' }, {
             event,
             notice: 'Échange clos.',

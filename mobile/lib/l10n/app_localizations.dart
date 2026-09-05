@@ -1731,6 +1731,84 @@ abstract class AppL10n {
   /// **'Valider cette option'**
   String get exchangeValidateOption;
 
+  /// No description provided for @exchangeChooseOption.
+  ///
+  /// In fr, this message translates to:
+  /// **'Valider mon choix'**
+  String get exchangeChooseOption;
+
+  /// No description provided for @exchangeChangeChoice.
+  ///
+  /// In fr, this message translates to:
+  /// **'Changer mon choix'**
+  String get exchangeChangeChoice;
+
+  /// No description provided for @exchangeMyChoice.
+  ///
+  /// In fr, this message translates to:
+  /// **'votre choix'**
+  String get exchangeMyChoice;
+
+  /// No description provided for @exchangeSettle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retenir cette option et clore'**
+  String get exchangeSettle;
+
+  /// No description provided for @exchangeSettleConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Trancher la décision ?'**
+  String get exchangeSettleConfirmTitle;
+
+  /// No description provided for @exchangeSettleConfirmBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'L\'option « {label} » sera retenue et l\'échange clos. Cette action est irréversible.'**
+  String exchangeSettleConfirmBody(String label);
+
+  /// No description provided for @exchangeVoteMaySettleTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre choix peut trancher'**
+  String get exchangeVoteMaySettleTitle;
+
+  /// No description provided for @exchangeVoteMaySettleBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Tous les autres membres ont voté : votre choix peut trancher définitivement cette décision.'**
+  String get exchangeVoteMaySettleBody;
+
+  /// No description provided for @exchangeStatusDecided.
+  ///
+  /// In fr, this message translates to:
+  /// **'Décidé : {label}'**
+  String exchangeStatusDecided(String label);
+
+  /// No description provided for @exchangeStatusMaySettle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Votre choix peut trancher la décision.'**
+  String get exchangeStatusMaySettle;
+
+  /// No description provided for @exchangeStatusAwaiting.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente de {names}.'**
+  String exchangeStatusAwaiting(String names);
+
+  /// No description provided for @exchangeStatusAwaitingEditable.
+  ///
+  /// In fr, this message translates to:
+  /// **'En attente de {names} — votre choix reste modifiable.'**
+  String exchangeStatusAwaitingEditable(String names);
+
+  /// No description provided for @exchangeStatusDeadline.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réponse attendue avant le {date}.'**
+  String exchangeStatusDeadline(String date);
+
   /// No description provided for @exchangeVotesCount.
   ///
   /// In fr, this message translates to:

@@ -30,6 +30,6 @@ final class ExchangeItemProvider implements ProviderInterface
         $tz = new \DateTimeZone($ctx->family->getTimezone());
         $exchange = $this->access->loadInFamily($uriVariables['id'] ?? null, $ctx->family);
 
-        return $this->assembler->detail($exchange, $tz);
+        return $this->assembler->detail($exchange, $tz, $ctx->membership);
     }
 }

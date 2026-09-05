@@ -15,8 +15,13 @@ class OptionView
     public int $position = 0;
     public int $voteCount = 0;
     public bool $decided = false;
+    /**
+     * Cette option est **celle que j'ai validée** (X1). Le décompte seul ne le disait pas : après
+     * avoir voté, il passait de 0 à 1 sans jamais indiquer que ce 1, c'était vous.
+     */
+    public bool $myVote = false;
 
-    public static function fromEntity(ExchangeOption $option, int $voteCount, bool $decided): self
+    public static function fromEntity(ExchangeOption $option, int $voteCount, bool $decided, bool $myVote = false): self
     {
         $view = new self();
         $view->id = (string) $option->getId();
@@ -25,6 +30,7 @@ class OptionView
         $view->position = $option->getPosition();
         $view->voteCount = $voteCount;
         $view->decided = $decided;
+        $view->myVote = $myVote;
 
         return $view;
     }

@@ -40,12 +40,17 @@ class AppCard extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(20),
     this.radius = AppRadii.card,
+    this.border,
     super.key,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
   final double radius;
+
+  /// Couleur de bordure quand la carte porte un **état** (option sélectionnée d'une décision) ;
+  /// `null` = bordure douce standard.
+  final Color? border;
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +59,10 @@ class AppCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.card,
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(
+          color: border ?? AppColors.border,
+          width: null != border ? 2 : 1,
+        ),
         boxShadow: AppShadows.soft,
       ),
       child: child,

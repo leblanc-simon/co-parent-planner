@@ -23,6 +23,8 @@ MemberJsonld _$MemberJsonldFromJson(Map<String, dynamic> json) => MemberJsonld(
   rights: (json['rights'] as Map<String, dynamic>?)?.map(
     (k, e) => MapEntry(k, e as String),
   ),
+  partnerMembershipId: json['partnerMembershipId'] as String?,
+  partnerName: json['partnerName'] as String?,
 );
 
 Map<String, dynamic> _$MemberJsonldToJson(MemberJsonld instance) =>
@@ -41,4 +43,6 @@ Map<String, dynamic> _$MemberJsonldToJson(MemberJsonld instance) =>
       'childId': instance.childId,
       'rights': instance.rights,
       'self': instance.self,
+      'partnerMembershipId': instance.partnerMembershipId,
+      'partnerName': instance.partnerName,
     };

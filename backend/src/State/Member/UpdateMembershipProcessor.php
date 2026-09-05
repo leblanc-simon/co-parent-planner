@@ -20,6 +20,7 @@ use App\Security\Auth\AuditLogger;
 use App\Security\FamilyScope;
 use App\Security\Membership\LastAdminGuard;
 use App\Security\Membership\MembershipWriter;
+use App\Security\Membership\PartnerWriter;
 use App\State\Concern\ReadsProvidedKeys;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -43,6 +44,7 @@ final class UpdateMembershipProcessor implements ProcessorInterface
         private readonly FamilyScope $scope,
         private readonly MembershipRepository $memberships,
         private readonly MembershipWriter $writer,
+        private readonly PartnerWriter $partners,
         private readonly LastAdminGuard $lastAdmin,
         private readonly AuditLogger $audit,
         private readonly RequestStack $requestStack,
@@ -58,7 +60,9 @@ final class UpdateMembershipProcessor implements ProcessorInterface
         $provided = $this->providedKeys();
 
         $isSelf = $membership->getUser()->getId()->equals($ctx->user()->getId());
-        $touchesStructure = (bool) array_intersect($provided, ['role', 'isAdmin', 'rights']);
+        // L'association de couple est une donnée de structure : elle relie deux personnes et
+        // s'affiche à toute la famille — un membre ne se déclare pas conjoint de qui il veut.
+        $touchesStructure = (bool) array_intersect($provided, ['role', 'isAdmin', 'rights', 'partnerMembershipId']);
 
         // Couleur : éditable par le membre lui-même sans droit family_settings.
         if (!$touchesStructure && \in_array('displayColor', $provided, true) && $isSelf) {
@@ -88,8 +92,21 @@ final class UpdateMembershipProcessor implements ProcessorInterface
 
             $this->writer->apply($membership, $role, $isAdmin, $rights);
 
+            // Le rôle vient peut-être de changer : une association de couple qui n'a plus de sens
+            // (deux parents, un enfant) tombe d'elle-même plutôt que de survivre en incohérence.
+            if (MembershipRole::StepParent !== $role) {
+                $this->partners->detach($membership);
+            }
+
             if (\in_array('displayColor', $provided, true)) {
                 $membership->setDisplayColor($data->displayColor);
+            }
+
+            // Couple parent ↔ beau-parent (E1) : `null` explicite dissocie. Appliqué APRÈS le rôle,
+            // qui vient peut-être de changer — un membre promu parent ne peut plus accompagner un
+            // parent, et la règle de rôles le refuse alors, plutôt que de laisser un couple absurde.
+            if (\in_array('partnerMembershipId', $provided, true)) {
+                $this->partners->apply($membership, $data->partnerMembershipId);
             }
 
             $this->audit->persist(
@@ -99,7 +116,11 @@ final class UpdateMembershipProcessor implements ProcessorInterface
             );
         });
 
-        return MemberResource::fromMembership($membership, self: $isSelf);
+        return MemberResource::fromMembership(
+            $membership,
+            self: $isSelf,
+            partner: $membership->getPartnerMembership() ?? $this->memberships->findOneBy(['partnerMembership' => $membership]),
+        );
     }
 
     /**

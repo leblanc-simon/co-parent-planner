@@ -154,3 +154,18 @@ les références (`SET NULL`) sans casser les liens/audits :
 - `Child.*` (Lot 2 — infos pratiques libres ; **aucune donnée de santé typée**, cf. invariant).
 
 > À chaque introduction, ajouter l'attribut `#[PersonalData]` + une ligne ci-dessus (DoD du lot).
+
+## Champs (évolution E1 — association parent ↔ beau-parent)
+
+> `Membership.partnerMembership` relie **deux personnes identifiées** de la même famille et
+> énonce une information de **vie privée** (« Bob est le conjoint de Sophie »). Ce n'est pas un
+> simple drapeau technique : il entre au registre. Il n'est pas chiffrable — c'est une clé
+> étrangère, et la chiffrer casserait la jointure comme l'unicité 1 ↔ 1 ; sa protection tient au
+> contrôle d'accès (visible des seuls membres habilités à lire la liste des membres) et au fait
+> qu'un dump brut ne révèle que deux UUID, dont les identités restent 🔒.
+>
+> Il n'accorde **aucun droit** : ce que chacun voit reste décidé par les Voters.
+
+| Champ | Catégorie | Sensibilité | Base légale | Finalité | Conservation | Destinataires |
+|---|---|---|---|---|---|---|
+| `Membership.partnerMembership` | Identité (relation entre personnes) | Standard (UUID ; les identités liées restent 🔒) | Exécution du contrat (coordination du foyer recomposé) | Situer un beau-parent par rapport au parent qu'il accompagne : affichage, foyer de garde, droits proposés | Durée de vie du membership ; `SET NULL` au retrait du parent visé ; effacée avec le membre à la suppression de compte | Membres de la famille habilités à voir la liste des membres |

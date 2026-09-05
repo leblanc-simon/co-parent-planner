@@ -31,13 +31,27 @@ final class FamilyMembersProvider implements ProviderInterface
     {
         $ctx = $this->scope->require();
         $currentUserId = (string) $ctx->user()->getId();
+        $members = $this->memberships->findActiveByFamily($ctx->family);
+
+        // Le couple (E1) n'est stocké que du côté du beau-parent : l'index miroir permet de le rendre
+        // AUSSI du côté du parent, en une passe sur la collection déjà chargée — plutôt qu'une
+        // requête par membre, ou une jointure que chaque écran referait de son côté.
+        $partnerOf = [];
+        foreach ($members as $member) {
+            $partner = $member->getPartnerMembership();
+            if (null !== $partner) {
+                $partnerOf[(string) $member->getId()] = $partner;
+                $partnerOf[(string) $partner->getId()] = $member;
+            }
+        }
 
         return array_map(
             static fn ($membership) => MemberResource::fromMembership(
                 $membership,
                 self: (string) $membership->getUser()->getId() === $currentUserId,
+                partner: $partnerOf[(string) $membership->getId()] ?? null,
             ),
-            $this->memberships->findActiveByFamily($ctx->family),
+            $members,
         );
     }
 }

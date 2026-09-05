@@ -208,10 +208,10 @@ contact.
 
 | Lot | Contenu | Dépendances |
 |---|---|---|
-| **E1** | A — modèle, contrat, règles de validation, registre RGPD, affichage « conjoint·e de X » (web + mobile) | aucune |
+| **E1** ✅ | A — modèle, contrat, règles de validation, registre RGPD, affichage « conjoint·e de X » (web + mobile) | aucune |
 | **E2** | A — foyer : fiche de jour, responsable d'événement, préremplissage des droits | E1 |
 | **E3** | A — notifications : **nommage** du foyer dans les e-mails. La diffusion, elle, n'a rien à changer : la règle demandée est déjà celle du code (voir A-4 ci-dessus) | E1 |
-| **E4** | B — amendement du §8, palette encadrée, modèle + contrat de la préférence | aucune (parallélisable avec E1) |
+| **E4** ✅ | B — amendement du §8, palette encadrée, modèle + contrat de la préférence | aucune (parallélisable avec E1) |
 | **E5** | B — rendu web (variables CSS) et mobile (provider), choix de couleurs, hors-ligne | E4 |
 
 **DoD par lot** (identique aux lots produits) : tests unitaires + fonctionnels API + E2E web
@@ -232,3 +232,58 @@ moment d'implémenter**, et qui n'engagent pas le modèle :
    diffusion *au-delà* des droits (un conjoint sans droit `agenda` recevant les notifications
    d'agenda), il faut le dire — ce serait une exception au modèle d'autorisation du cdc §2.3, pas
    une option d'implémentation.
+
+---
+
+## Journal
+
+### 2026-09-05 — E1 et E4 livrés
+
+**E1 — association parent ↔ beau-parent.** `Membership.partner_membership_id`, auto-référence
+nullable **portée par le beau-parent**, `SET NULL` au retrait du parent visé, index unique (1 ↔ 1).
+`PartnerWriter` centralise les quatre refus — cible hors famille, rôles incompatibles,
+auto-association, parent déjà pris — et **accepte les deux sens de saisie** : l'admin désigne le
+conjoint depuis la ligne du parent ou depuis celle du beau-parent, sans avoir à savoir de quel côté
+la relation est stockée. Un changement de rôle qui rend le couple absurde (promotion en parent) le
+retire de lui-même plutôt que de le laisser survivre en incohérence. Rendu **des deux côtés** par un
+index miroir construit en une passe sur la collection déjà chargée, côté API comme côté gabarit.
+Entrée au **registre des données personnelles** : le champ relie deux personnes identifiées et
+énonce une information de vie privée ; il n'est pas chiffrable (clé étrangère) et sa protection tient
+au contrôle d'accès. **13 tests API + 1 test web + 2 tests mobiles.**
+
+**E4 — couleurs du planning par spectateur.** §8 **amendé** (nouveau §8.2) avant toute
+implémentation, comme prévu : les tokens du §8 restent les valeurs par défaut, la personnalisation
+est locale au spectateur, la palette est fermée à 8 teintes et le §8.1 s'applique sans exception —
+les initiales des parents restent affichées quelle que soit la palette. `CustodyColorPreference`
+est clé sur **(spectateur, membre observé)** et non sur le slot A/B. Deux règles portées par le
+serveur : une teinte hors catalogue est refusée, et les deux parents ne peuvent pas partager la même
+couleur. Lecture et écriture sous **`custody ≥ view`** — choisir ses couleurs est une préférence
+personnelle, offerte à qui **voit** le planning, un beau-parent en lecture compris.
+
+**Deux pièges d'outillage rencontrés, à retenir** :
+
+> **Le cache de métadonnées d'API Platform survit à l'ajout d'une propriété.** Un champ ajouté à une
+> ressource n'apparaissait ni dans les réponses ni dans l'OpenAPI exporté, alors qu'il était bien
+> écrit en base — la sonde SQL le montrait. `php bin/console cache:clear` (dev **et** test) est
+> nécessaire après tout ajout de propriété, sinon on cherche le défaut dans le mauvais fichier.
+>
+> **Les entités chargées avant une requête HTTP sont détachées** par la réinitialisation des services
+> du client de test : les modifier ne produit aucun `UPDATE`, en silence. Il faut les relire après la
+> requête.
+
+**Deux garde-fous ont mordu, et c'est ce qu'on leur demande** : la porte de drift du client Dart
+(corrigée au constat C67) a vu les fichiers générés **non suivis** du nouveau client ; et le test de
+contrat des routes mobiles (C17) a exigé que `/families/{familyId}/custody-colors` soit
+explicitement déclarée comme scopée famille, plutôt que de la laisser passer sans en décider.
+
+**Course E2E corrigée au passage** : `lot6-echanges` attendait une confirmation de succès après un
+**clic de navigation** — il n'attendait en fait que le message resté à l'écran depuis la mutation
+précédente, et ne passait que si l'assertion devançait la navigation. Le test attend désormais le
+volet de détail lui-même. Même famille que la course fermée par `waitForReload` à la vague 2.
+
+**Portes** : backend **435 tests / 3 727 assertions** (421 avant), PHPStan 0, cs-fixer 0, Twig 38 ;
+mobile **393 tests**, couverture 82,5 %, `dart analyze --fatal-infos` 0, format 0, client Dart
+régénéré ; **E2E 23/23**. OpenAPI ré-exporté, deux migrations fournies, registre à jour.
+
+**Reste** : E2 (foyer), E3 (nommage du foyer dans les e-mails) et E5 (rendu des couleurs, web et
+mobile, avec le choix dans Paramètres › Planning de garde sous `custody ≥ view`).

@@ -17,6 +17,7 @@ class MemberUpdateMembershipRequestJsonMergePatch {
     this.isAdmin,
     this.rights,
     this.displayColor,
+    this.partnerMembershipId,
   });
   
   factory MemberUpdateMembershipRequestJsonMergePatch.fromJson(Map<String, Object?> json) => _$MemberUpdateMembershipRequestJsonMergePatchFromJson(json);
@@ -27,6 +28,10 @@ class MemberUpdateMembershipRequestJsonMergePatch {
   /// domaine → niveau proposé
   final Map<String, String>? rights;
   final String? displayColor;
+
+  /// Parent que ce beau-parent accompagne (E1). `null` explicite = dissocier — la clé doit être.
+  /// **présente** dans le corps pour être appliquée, comme les autres champs de ce PATCH partiel.
+  final String? partnerMembershipId;
 
   Map<String, Object?> toJson() => _$MemberUpdateMembershipRequestJsonMergePatchToJson(this);
 }

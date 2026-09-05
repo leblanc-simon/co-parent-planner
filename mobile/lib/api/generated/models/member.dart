@@ -17,6 +17,8 @@ class Member {
     this.phone,
     this.childId,
     this.rights,
+    this.partnerMembershipId,
+    this.partnerName,
     this.id = '',
     this.userId = '',
     this.role = '',
@@ -41,6 +43,14 @@ class Member {
 
   /// Vrai s'il s'agit du membre correspondant à l'utilisateur courant.
   final bool self;
+
+  /// Couple parent ↔ beau-parent (E1). Le champ est rendu **des deux côtés** : le beau-parent porte.
+  /// la relation, le parent la voit en miroir — sans quoi la moitié des écrans devrait faire la.
+  /// jointure elle-même.
+  final String? partnerMembershipId;
+
+  /// Nom 🔒 déchiffré du conjoint, ou son e-mail à défaut ; `null` sans association.
+  final String? partnerName;
 
   Map<String, Object?> toJson() => _$MemberToJson(this);
 }

@@ -227,6 +227,45 @@ final class WebFinishingTouchesTest extends WebTestCase
         self::assertStringContainsString('Aucun échange pour le moment', $html);
     }
 
+    // ───────────────────────── E1 — association parent ↔ beau-parent ─────────────────────────
+
+    /**
+     * L'écran Membres offre le sélecteur de conjoint et affiche la mention des deux côtés
+     * (évolution E1, `specs/evolutions-2026-09.md`).
+     */
+    public function testMembersScreenExposesThePartnerAssociation(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser();
+        $step = $this->addStepParent();
+        $this->login($client);
+
+        $crawler = $client->request('GET', '/settings?tab=famille');
+        self::assertResponseIsSuccessful();
+
+        // Le sélecteur ne propose que le rôle opposé : un couple relie un parent et un beau-parent.
+        $select = $crawler->filter('form[data-membership-id="'.$step->getId().'"] select[name="partnerMembershipId"]');
+        self::assertSame(1, $select->count());
+        $options = $select->filter('option')->each(static fn ($o): string => trim($o->text()));
+        self::assertContains('Alice Web', $options);
+
+        // Une fois l'association posée, la mention se lit sur les DEUX lignes.
+        // Les entités chargées AVANT une requête HTTP sont détachées par la réinitialisation des
+        // services du client de test : les modifier ne produirait aucun UPDATE. On les relit.
+        $step = $this->em()->find(Membership::class, $step->getId());
+        self::assertInstanceOf(Membership::class, $step);
+        $parent = $this->em()->getRepository(Membership::class)
+            ->findOneBy(['family' => $this->family(), 'role' => MembershipRole::Parent]);
+        self::assertInstanceOf(Membership::class, $parent);
+        $step->setPartnerMembership($parent);
+        $this->em()->flush();
+
+        $client->request('GET', '/settings?tab=famille');
+        $html = (string) $client->getResponse()->getContent();
+        self::assertSame(2, substr_count($html, 'Conjoint·e de'));
+    }
+
     // ───────────────────────── fixtures ─────────────────────────
 
     private function em(): EntityManagerInterface
@@ -235,6 +274,24 @@ final class WebFinishingTouchesTest extends WebTestCase
         self::assertInstanceOf(EntityManagerInterface::class, $em);
 
         return $em;
+    }
+
+    /** Beau-parent de la famille, éligible à une association de couple. */
+    private function addStepParent(): Membership
+    {
+        $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
+        self::assertInstanceOf(UserPasswordHasherInterface::class, $hasher);
+
+        $user = (new User())->setEmail('step@example.com')->setFullName('Bob Beau')
+            ->setStatus(UserStatus::Active)->setEmailVerifiedAt(Clock::get()->now());
+        $user->setPasswordHash($hasher->hashPassword($user, self::PASSWORD));
+        $membership = (new Membership())->setUser($user)->setFamily($this->family())
+            ->setRole(MembershipRole::StepParent)->setStatus(MembershipStatus::Active);
+        $this->em()->persist($user);
+        $this->em()->persist($membership);
+        $this->em()->flush();
+
+        return $membership;
     }
 
     private function createUser(): User

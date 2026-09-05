@@ -27,6 +27,9 @@ class CustodyPatternUpdatePatternRequest {
   final int? handoverWeekday;
   final String? handoverTime;
   final List<String>? customPattern;
+
+  /// Réglages du modèle `midweek_weekends` (US-CUST-1) : jours de week-end, parent de chaque jour.
+  /// de semaine, parent qui ouvre l'alternance des week-ends.
   final dynamic settings;
   final String? parentAMembershipId;
   final String? parentBMembershipId;

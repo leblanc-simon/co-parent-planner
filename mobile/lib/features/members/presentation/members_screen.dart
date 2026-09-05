@@ -136,6 +136,20 @@ class _MemberTile extends StatelessWidget {
                   label,
                   style: const TextStyle(fontSize: 13, color: AppColors.muted),
                 ),
+                // Couple parent ↔ beau-parent (évolution E1) : rien n'exprimait jusqu'ici QUEL
+                // parent un beau-parent accompagne. Le serveur rend la mention des deux côtés,
+                // la relation n'étant stockée qu'une fois.
+                if ((member.partnerName ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    l.membersPartnerOf(member.partnerName!),
+                    key: ValueKey('member-partner-${member.id}'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppColors.muted2,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

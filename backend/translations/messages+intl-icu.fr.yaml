@@ -111,6 +111,10 @@ membership:
     error:
         admin_requires_parent: "Seul un parent peut être administrateur de la famille."
         not_found: 'Membre introuvable.'
+        partner_not_in_family: "Le parent désigné n'appartient pas à cette famille."
+        partner_roles: "Un lien de couple relie un beau-parent à un parent de la famille."
+        partner_itself: "Un membre ne peut pas être son ou sa propre conjoint·e."
+        partner_already_taken: "Ce parent est déjà associé à un·e autre conjoint·e."
 
 family:
     error:
@@ -160,6 +164,7 @@ custody:
         custom_invalid: 'Le motif personnalisé doit contenir exactement 14 créneaux (A ou B).'
         settings_invalid: 'La configuration du modèle « jours fixes + week-ends » est invalide.'
         config_conflict: "La configuration fournie ne correspond pas au modèle choisi."
+        color_conflict: "Les deux parents doivent avoir des couleurs différentes sur votre planning."
         date_invalid: 'Date invalide.'
         range_invalid: 'La date de fin doit être postérieure ou égale à la date de début.'
         out_of_horizon: "La plage est hors de l'horizon de garde (passé ou au-delà de 18 mois)."

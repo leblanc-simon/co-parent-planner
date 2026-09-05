@@ -25,6 +25,13 @@ final class UpdateMembershipRequest
     #[Assert\Regex(pattern: '/^#[0-9A-Fa-f]{6}$/', message: 'La couleur doit être un code hexadécimal #RRGGBB.')]
     public ?string $displayColor = null;
 
+    /**
+     * Parent que ce beau-parent accompagne (E1). `null` explicite = dissocier — la clé doit être
+     * **présente** dans le corps pour être appliquée, comme les autres champs de ce PATCH partiel.
+     */
+    #[Assert\Uuid]
+    public ?string $partnerMembershipId = null;
+
     /** @return list<string> */
     public static function validRoles(): array
     {

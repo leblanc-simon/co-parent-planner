@@ -641,6 +641,189 @@
                 ]
             }
         },
+        "/api/families/{familyId}/custody-colors": {
+            "get": {
+                "operationId": "api_families_familyIdcustody-colors_get_collection",
+                "tags": [
+                    "CustodyColor"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CustodyColor collection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/CustodyColor"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "CustodyColor.jsonld collection.",
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/HydraCollectionBaseSchemaNoPagination"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "member"
+                                            ],
+                                            "properties": {
+                                                "member": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/CustodyColor.jsonld"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Retrieves the collection of CustodyColor resources.",
+                "description": "Retrieves the collection of CustodyColor resources.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            },
+            "put": {
+                "operationId": "api_families_familyIdcustody-colors_put",
+                "tags": [
+                    "CustodyColor"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CustodyColor resource updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustodyColor"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustodyColor.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Replaces the CustodyColor resource.",
+                "description": "Replaces the CustodyColor resource.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The updated CustodyColor resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CustodyColor.UpdateCustodyColorRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CustodyColor.UpdateCustodyColorRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
         "/api/families/{familyId}/custody/days": {
             "get": {
                 "operationId": "api_families_familyIdcustodydays_get_collection",
@@ -6461,6 +6644,104 @@
                 ],
                 "description": "Unprocessable entity"
             },
+            "CustodyColor": {
+                "type": "object",
+                "description": "Couleur du planning choisie par le **membre courant** pour un parent donn\u00e9 (cdc \u00a78.2).\n\n`GET` liste ses pr\u00e9f\u00e9rences ; `PUT` fait un upsert idempotent `{targetMembershipId, palette}`.\nM\u00eame forme que `OverlayPreference` (Lot 5) : c'est la m\u00eame nature de donn\u00e9e \u2014 une pr\u00e9f\u00e9rence\nd'affichage locale au spectateur, qui n'engage personne d'autre.",
+                "properties": {
+                    "targetMembershipId": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "palette": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "border": {
+                        "description": "Triplet effectif, pour que le client n'ait pas \u00e0 recopier la table du \u00a78.2.",
+                        "default": "",
+                        "type": "string"
+                    },
+                    "soft": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "ink": {
+                        "default": "",
+                        "type": "string"
+                    }
+                }
+            },
+            "CustodyColor.UpdateCustodyColorRequest": {
+                "type": "object",
+                "description": "Couleur du planning choisie par le **membre courant** pour un parent donn\u00e9 (cdc \u00a78.2).\n\n`GET` liste ses pr\u00e9f\u00e9rences ; `PUT` fait un upsert idempotent `{targetMembershipId, palette}`.\nM\u00eame forme que `OverlayPreference` (Lot 5) : c'est la m\u00eame nature de donn\u00e9e \u2014 une pr\u00e9f\u00e9rence\nd'affichage locale au spectateur, qui n'engage personne d'autre.",
+                "required": [
+                    "targetMembershipId",
+                    "palette"
+                ],
+                "properties": {
+                    "targetMembershipId": {
+                        "format": "uuid",
+                        "externalDocs": {
+                            "url": "https://schema.org/identifier"
+                        },
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "palette": {
+                        "enum": [
+                            "terracotta",
+                            "teal",
+                            "blue",
+                            "purple",
+                            "amber",
+                            "pink",
+                            "green",
+                            "slate"
+                        ],
+                        "description": "Palette ferm\u00e9e : une valeur hors catalogue est refus\u00e9e, jamais silencieusement ignor\u00e9e.",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "CustodyColor.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "targetMembershipId": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "palette": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "border": {
+                                "description": "Triplet effectif, pour que le client n'ait pas \u00e0 recopier la table du \u00a78.2.",
+                                "default": "",
+                                "type": "string"
+                            },
+                            "soft": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "ink": {
+                                "default": "",
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "description": "Couleur du planning choisie par le **membre courant** pour un parent donn\u00e9 (cdc \u00a78.2).\n\n`GET` liste ses pr\u00e9f\u00e9rences ; `PUT` fait un upsert idempotent `{targetMembershipId, palette}`.\nM\u00eame forme que `OverlayPreference` (Lot 5) : c'est la m\u00eame nature de donn\u00e9e \u2014 une pr\u00e9f\u00e9rence\nd'affichage locale au spectateur, qui n'engage personne d'autre."
+            },
             "CustodyDay": {
                 "type": "object",
                 "description": "Jour de garde effectif expos\u00e9 (US-CUST-5).",
@@ -6647,6 +6928,7 @@
                         }
                     },
                     "settings": {
+                        "description": "R\u00e9glages du mod\u00e8le `midweek_weekends` (US-CUST-1) : jours de week-end, parent de chaque jour\nde semaine, parent qui ouvre l'alternance des week-ends.",
                         "type": "object",
                         "nullable": true,
                         "additionalProperties": true,
@@ -6717,6 +6999,7 @@
                         }
                     },
                     "settings": {
+                        "description": "R\u00e9glages du mod\u00e8le `midweek_weekends` (US-CUST-1) : jours de week-end, parent de chaque jour\nde semaine, parent qui ouvre l'alternance des week-ends.",
                         "type": "object",
                         "nullable": true,
                         "additionalProperties": true,
@@ -6789,6 +7072,7 @@
                                 }
                             },
                             "settings": {
+                                "description": "R\u00e9glages du mod\u00e8le `midweek_weekends` (US-CUST-1) : jours de week-end, parent de chaque jour\nde semaine, parent qui ouvre l'alternance des week-ends.",
                                 "type": "object",
                                 "nullable": true,
                                 "additionalProperties": true,
@@ -8795,6 +9079,20 @@
                         "description": "Vrai s'il s'agit du membre correspondant \u00e0 l'utilisateur courant.",
                         "default": false,
                         "type": "boolean"
+                    },
+                    "partnerMembershipId": {
+                        "description": "Couple parent \u2194 beau-parent (E1). Le champ est rendu **des deux c\u00f4t\u00e9s** : le beau-parent porte\nla relation, le parent la voit en miroir \u2014 sans quoi la moiti\u00e9 des \u00e9crans devrait faire la\njointure elle-m\u00eame.",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "partnerName": {
+                        "description": "Nom \ud83d\udd12 d\u00e9chiffr\u00e9 du conjoint, ou son e-mail \u00e0 d\u00e9faut ; `null` sans association.",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     }
                 }
             },
@@ -8831,6 +9129,17 @@
                     },
                     "displayColor": {
                         "pattern": "^(#[0-9A-Fa-f]{6})$",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "partnerMembershipId": {
+                        "format": "uuid",
+                        "description": "Parent que ce beau-parent accompagne (E1). `null` explicite = dissocier \u2014 la cl\u00e9 doit \u00eatre\n**pr\u00e9sente** dans le corps pour \u00eatre appliqu\u00e9e, comme les autres champs de ce PATCH partiel.",
+                        "externalDocs": {
+                            "url": "https://schema.org/identifier"
+                        },
                         "type": [
                             "string",
                             "null"
@@ -8903,6 +9212,20 @@
                                 "description": "Vrai s'il s'agit du membre correspondant \u00e0 l'utilisateur courant.",
                                 "default": false,
                                 "type": "boolean"
+                            },
+                            "partnerMembershipId": {
+                                "description": "Couple parent \u2194 beau-parent (E1). Le champ est rendu **des deux c\u00f4t\u00e9s** : le beau-parent porte\nla relation, le parent la voit en miroir \u2014 sans quoi la moiti\u00e9 des \u00e9crans devrait faire la\njointure elle-m\u00eame.",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "partnerName": {
+                                "description": "Nom \ud83d\udd12 d\u00e9chiffr\u00e9 du conjoint, ou son e-mail \u00e0 d\u00e9faut ; `null` sans association.",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
                             }
                         }
                     }
@@ -10325,6 +10648,10 @@
         {
             "name": "Child",
             "description": "Profil enfant expos\u00e9 (US-CH-1/4/5). `age` est **calcul\u00e9** (jamais stock\u00e9) au fuseau famille."
+        },
+        {
+            "name": "CustodyColor",
+            "description": "Couleur du planning choisie par le **membre courant** pour un parent donn\u00e9 (cdc \u00a78.2).\n\n`GET` liste ses pr\u00e9f\u00e9rences ; `PUT` fait un upsert idempotent `{targetMembershipId, palette}`.\nM\u00eame forme que `OverlayPreference` (Lot 5) : c'est la m\u00eame nature de donn\u00e9e \u2014 une pr\u00e9f\u00e9rence\nd'affichage locale au spectateur, qui n'engage personne d'autre."
         },
         {
             "name": "CustodyDay",

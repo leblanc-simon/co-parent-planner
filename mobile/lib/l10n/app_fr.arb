@@ -110,6 +110,14 @@
   "membersRoleParent": "Parent",
   "membersRoleStepParent": "Beau-parent",
   "membersRoleChild": "Enfant",
+  "membersPartnerOf": "Conjoint·e de {name}",
+  "@membersPartnerOf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "membersAdminBadge": "admin",
   "membersInvite": "Inviter une personne",
   "membersPending": "Invitations en attente",

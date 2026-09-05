@@ -20,6 +20,7 @@ _$MemberUpdateMembershipRequestJsonMergePatchFromJson(
     (k, e) => MapEntry(k, e as String),
   ),
   displayColor: json['displayColor'] as String?,
+  partnerMembershipId: json['partnerMembershipId'] as String?,
 );
 
 Map<String, dynamic> _$MemberUpdateMembershipRequestJsonMergePatchToJson(
@@ -29,4 +30,5 @@ Map<String, dynamic> _$MemberUpdateMembershipRequestJsonMergePatchToJson(
   'isAdmin': instance.isAdmin,
   'rights': instance.rights,
   'displayColor': instance.displayColor,
+  'partnerMembershipId': instance.partnerMembershipId,
 };

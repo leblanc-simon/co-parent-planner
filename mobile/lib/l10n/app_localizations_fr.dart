@@ -311,6 +311,11 @@ class AppL10nFr extends AppL10n {
   String get membersRoleChild => 'Enfant';
 
   @override
+  String membersPartnerOf(String name) {
+    return 'Conjoint·e de $name';
+  }
+
+  @override
   String get membersAdminBadge => 'admin';
 
   @override

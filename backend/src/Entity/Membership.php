@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\Attribute\PersonalData;
 use App\Entity\Concern\TimestampableTrait;
+use App\Enum\DataCategory;
 use App\Enum\MembershipRole;
 use App\Enum\MembershipStatus;
 use App\Enum\RightDomain;
@@ -22,6 +24,9 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Entity(repositoryClass: MembershipRepository::class)]
 #[ORM\Table(name: 'memberships')]
 #[ORM\UniqueConstraint(name: 'uniq_membership_user_family', columns: ['user_id', 'family_id'])]
+// 1 ↔ 1 : deux beaux-parents ne peuvent pas désigner le même parent (E1). L'unicité du porteur est
+// acquise par construction — une ligne par membership.
+#[ORM\UniqueConstraint(name: 'uniq_membership_partner', columns: ['partner_membership_id'])]
 #[ORM\HasLifecycleCallbacks]
 class Membership
 {
@@ -54,6 +59,26 @@ class Membership
 
     #[ORM\Column(length: 16, nullable: true)]
     private ?string $displayColor = null;
+
+    /**
+     * Parent que ce beau-parent accompagne dans la famille (évolution E1, `specs/evolutions-2026-09.md`).
+     *
+     * Portée par le **beau-parent** : source de vérité unique. Écrire la relation des deux côtés
+     * imposerait de tenir deux colonnes cohérentes à chaque mutation, et la première divergence
+     * serait invisible. La vue inverse (« Sophie · conjointe : Bob ») se déduit par requête.
+     *
+     * `SET NULL` au retrait du parent : l'association disparaît, le membre reste.
+     */
+    #[PersonalData(
+        category: DataCategory::Identity,
+        purpose: 'Situer un beau-parent par rapport au parent qu\'il accompagne (affichage, foyer de garde, droits proposés).',
+        legalBasis: 'Exécution du contrat (coordination du foyer recomposé).',
+        retention: 'Durée de vie du membership ; effacée avec lui (SET NULL au retrait du parent visé).',
+        recipients: 'Membres de la famille habilités à voir la liste des membres.',
+    )]
+    #[ORM\ManyToOne(targetEntity: self::class)]
+    #[ORM\JoinColumn(name: 'partner_membership_id', nullable: true, onDelete: 'SET NULL')]
+    private ?self $partnerMembership = null;
 
     #[ORM\Column(length: 16, enumType: MembershipStatus::class, options: ['default' => 'active'])]
     private MembershipStatus $status = MembershipStatus::Active;
@@ -129,6 +154,18 @@ class Membership
     public function setChildId(?Uuid $childId): static
     {
         $this->childId = $childId;
+
+        return $this;
+    }
+
+    public function getPartnerMembership(): ?self
+    {
+        return $this->partnerMembership;
+    }
+
+    public function setPartnerMembership(?self $partner): self
+    {
+        $this->partnerMembership = $partner;
 
         return $this;
     }

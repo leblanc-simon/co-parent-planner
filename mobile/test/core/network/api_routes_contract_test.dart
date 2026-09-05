@@ -67,6 +67,9 @@ const Map<String, bool> expectedFamilyScoped = {
   '/api/families/{familyId}/links/{linkId}/activate': true,
   '/api/families/{familyId}/members': true,
   '/api/families/{familyId}/overlay-preferences': true,
+  // Préférence de couleur du planning, par spectateur (cdc §8.2, évolution E4) : scopée famille
+  // comme toute ressource métier — elle désigne un membre de la famille active.
+  '/api/families/{familyId}/custody-colors': true,
   '/api/children/{childId}/access': true,
   '/api/children/{childId}/notes': true,
   '/api/children/{id}': true,

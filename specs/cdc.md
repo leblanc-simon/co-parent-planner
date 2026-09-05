@@ -555,6 +555,40 @@ Verrouillé par : `WebPagesTest::testGardeCarriesNonColourParentMarker`, le test
 non chromatique », et l'E2E `lot3-garde.spec.ts` (présence, distinction A≠B, survie sous contraste
 forcé).
 
+### 8.2 Couleurs de garde personnalisables — AMENDEMENT (décision produit, 2026-09-05)
+
+`--accent` (parent A) et `--positive` (parent B) **restent les valeurs par défaut** du planning de
+garde : sans préférence, l'écran est exactement celui décrit ci-dessus, et c'est ce que voit tout
+nouvel utilisateur. L'amendement ouvre une seule chose : **chaque membre peut, pour son propre
+affichage, réattribuer ces deux teintes** (évolution B, `specs/evolutions-2026-09.md`).
+
+- **La préférence est locale au spectateur.** Elle ne modifie ni la couleur d'identité du membre
+  observé (`Membership.display_color`, vue par tous), ni l'écran de qui que ce soit d'autre. Deux
+  parents peuvent voir le même planning dans deux jeux de couleurs sans jamais se gêner.
+- **Portée : le planning de garde seulement** — cases du calendrier, mini-semaine et carte héro de
+  l'accueil, fiche de jour, légendes. Les catégories d'agenda, la couleur de famille liée `#9C6FB0`
+  et les couleurs d'identité restent normatives et non configurables.
+- **Palette fermée de 8 teintes** (ci-dessous), pas de sélecteur libre. Chaque teinte est un triplet
+  *bordure / fond doux / encre* dont le contraste a été mesuré pour que **l'initiale du parent reste
+  lisible** sur le fond de case. Un sélecteur libre laisserait choisir un fond sur lequel ce marqueur
+  — celui-là même qu'impose le §8.1 — deviendrait illisible.
+- **Le §8.1 s'applique intégralement et sans exception.** Les marqueurs non chromatiques (initiales
+  des parents dans les cases, dans la légende et dans la mini-semaine) restent affichés quelle que
+  soit la palette choisie : ce sont eux qui portent l'information, la couleur ne fait que la
+  renforcer. Personnaliser les couleurs ne dispense de rien.
+- **Deux slots doivent rester distincts** : la même teinte pour A et B est refusée.
+
+| Teinte | Bordure | Fond doux | Encre | Note |
+|---|---|---|---|---|
+| Terracotta | `#C2643D` | `#F6E7DE` | `#A8512B` | défaut du parent A |
+| Teal | `#2E7D71` | `#DCECE8` | `#226B60` | défaut du parent B |
+| Bleu | `#5E7CB8` | `#E4EAF5` | `#48628F` | |
+| Violet | `#8E63A8` | `#EDE4F2` | `#6F4A86` | distinct du `#9C6FB0` de la famille liée |
+| Ambre | `#B8862F` | `#F6EDDA` | `#8E671F` | |
+| Rose | `#B85C7E` | `#F7E4EA` | `#8F4460` | |
+| Vert | `#5E8C55` | `#E5EFE2` | `#456B3E` | |
+| Ardoise | `#5F6B7A` | `#E7EAEE` | `#47515E` | |
+
 **Cibles & layout** :
 - **Web (Symfony UX)** : recréation directe du HTML/CSS des maquettes en **Twig + CSS**, interactivité via **Stimulus**, navigation via **Turbo**. Médium identique à la maquette ⇒ rendu fidèle naturel.
 - **Desktop** : sidebar fixe (252px, sombre) + zone principale ; gabarit de référence 1320×840 ; grilles 2 colonnes pour Accueil/Garde/Dépenses ; master-détail pour Enfants/Échanges/Paramètres. Responsive : la sidebar se replie en navigation compacte sous un breakpoint.

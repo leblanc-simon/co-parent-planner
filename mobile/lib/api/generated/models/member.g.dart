@@ -15,6 +15,8 @@ Member _$MemberFromJson(Map<String, dynamic> json) => Member(
   rights: (json['rights'] as Map<String, dynamic>?)?.map(
     (k, e) => MapEntry(k, e as String),
   ),
+  partnerMembershipId: json['partnerMembershipId'] as String?,
+  partnerName: json['partnerName'] as String?,
   id: json['id'] as String? ?? '',
   userId: json['userId'] as String? ?? '',
   role: json['role'] as String? ?? '',
@@ -34,4 +36,6 @@ Map<String, dynamic> _$MemberToJson(Member instance) => <String, dynamic>{
   'childId': instance.childId,
   'rights': instance.rights,
   'self': instance.self,
+  'partnerMembershipId': instance.partnerMembershipId,
+  'partnerName': instance.partnerName,
 };

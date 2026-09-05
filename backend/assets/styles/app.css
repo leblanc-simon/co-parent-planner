@@ -381,6 +381,7 @@ a:hover { text-decoration: underline; }
 .member-row__head > div { min-width: 0; }
 .member-row__head small { display: block; color: var(--muted); overflow-wrap: anywhere; }
 .member-row__badge { margin-left: auto; font-size: 11px; font-weight: 600; padding: 5px 11px; border-radius: var(--radius-pill); background: var(--surface); color: var(--ink-2); white-space: nowrap; }
+.member-row__partner { margin: .4rem 0 0; font-size: .85rem; color: var(--muted); }
 /* Les badges de role portaient `accent` et `positive`, c'est-a-dire les couleurs que le §8 reserve
    au parent A et au parent B de la GARDE : « Beau-parent » se lisait comme « parent B ». Le role
    n'est pas un slot de garde — le badge redevient neutre, le libelle porte l'information. */

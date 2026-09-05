@@ -71,8 +71,11 @@ test('Échanges : discussion + message, décision + bascule, marqueur « en reta
   await expect(disc).toHaveCount(1);
 
   // ---- Ouvrir + poster un message ----
+  // Ouvrir une carte est une NAVIGATION, pas une mutation : attendre une confirmation de succès
+  // n'attendait en réalité que le message resté à l'écran depuis la création précédente, et ne
+  // passait que si l'assertion devançait la navigation. On attend le volet de détail lui-même.
   await disc.first().click();
-  await waitForSaved(page);
+  await expect(page.locator('.exchange-detail__head')).toBeVisible();
   await page.fill('.note-form textarea', 'On part en juillet ?');
   await page.locator('.note-form button[type="submit"]').click();
   await waitForSaved(page);
@@ -90,7 +93,7 @@ test('Échanges : discussion + message, décision + bascule, marqueur « en reta
   await waitForSaved(page);
 
   await page.locator('.exchange-card').filter({ hasText: 'Choix du centre aéré' }).first().click();
-  await waitForSaved(page);
+  await expect(page.locator('.exchange-detail__head')).toContainText('Choix du centre aéré');
   await page.locator('button[data-action="exchanges#decide"]').first().click();
   await waitForSaved(page);
   await expect(page.locator('.exchange-decided-banner')).toBeVisible();

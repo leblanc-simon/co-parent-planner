@@ -59,9 +59,24 @@ class MemberResource
     /** Vrai s'il s'agit du membre correspondant à l'utilisateur courant. */
     public bool $self = false;
 
-    public static function fromMembership(Membership $membership, bool $self): self
+    /**
+     * Couple parent ↔ beau-parent (E1). Le champ est rendu **des deux côtés** : le beau-parent porte
+     * la relation, le parent la voit en miroir — sans quoi la moitié des écrans devrait faire la
+     * jointure elle-même.
+     */
+    public ?string $partnerMembershipId = null;
+    /** Nom 🔒 déchiffré du conjoint, ou son e-mail à défaut ; `null` sans association. */
+    public ?string $partnerName = null;
+
+    /**
+     * @param Membership|null $partner conjoint résolu par l'appelant : porté par le beau-parent, il
+     *                                 doit être recherché en miroir pour un parent (le provider le
+     *                                 fait une fois pour toute la collection)
+     */
+    public static function fromMembership(Membership $membership, bool $self, ?Membership $partner = null): self
     {
         $user = $membership->getUser();
+        $partner ??= $membership->getPartnerMembership();
 
         $dto = new self();
         $dto->id = (string) $membership->getId();
@@ -74,6 +89,10 @@ class MemberResource
         $dto->phone = $user->getPhone();
         $dto->childId = $membership->getChildId() ? (string) $membership->getChildId() : null;
         $dto->self = $self;
+        if (null !== $partner) {
+            $dto->partnerMembershipId = (string) $partner->getId();
+            $dto->partnerName = $partner->getUser()->getFullName() ?: $partner->getUser()->getEmail();
+        }
 
         $rights = [];
         foreach (RightDomain::cases() as $domain) {

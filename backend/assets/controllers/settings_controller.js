@@ -71,6 +71,11 @@ export default class extends ApiController {
         if (admin && !admin.disabled) body.isAdmin = admin.checked;
         const color = form.querySelector('[name="displayColor"]');
         if (color && !color.disabled) body.displayColor = color.value;
+        // Couple parent ↔ beau-parent (E1). La chaîne vide vaut « dissocier » : la clé doit être
+        // PRÉSENTE dans le corps pour être appliquée — c'est ce qui distingue « je retire
+        // l'association » de « je ne touche pas à ce champ » dans un PATCH partiel.
+        const partner = form.querySelector('[name="partnerMembershipId"]');
+        if (partner && !partner.disabled) body.partnerMembershipId = partner.value || null;
         const rights = this._rights(form);
         if (Object.keys(rights).length) body.rights = rights;
         this._send('PATCH', `/api/memberships/${id}`, body, { event, notice: 'Droits du membre enregistrés.' });

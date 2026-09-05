@@ -669,6 +669,12 @@ abstract class AppL10n {
   /// **'Enfant'**
   String get membersRoleChild;
 
+  /// No description provided for @membersPartnerOf.
+  ///
+  /// In fr, this message translates to:
+  /// **'Conjoint·e de {name}'**
+  String membersPartnerOf(String name);
+
   /// No description provided for @membersAdminBadge.
   ///
   /// In fr, this message translates to:

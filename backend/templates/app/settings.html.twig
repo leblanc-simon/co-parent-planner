@@ -205,6 +205,15 @@
                 </div>
                 <span class="member-row__badge member-row__badge--{{ m.role.value }}">{{ roleLabel[m.role.value] ?? m.role.value }}{{ m.isAdmin ? ' · admin' }}</span>
             </div>
+            {# Couple parent ↔ beau-parent (E1) : rien n'exprimait jusqu'ici QUEL parent un
+               beau-parent accompagne. La mention se lit des deux côtés — la relation n'est stockée
+               qu'une fois, côté beau-parent. #}
+            {# `~ ''` force l'UUID en chaîne : la clé de l'index est une chaîne, et un accès par
+               objet ne rapproche rien — il rendrait `null` sans le moindre message. #}
+            {% set partner = partnerOf[m.id ~ ''] is defined ? partnerOf[m.id ~ ''] : null %}
+            {% if partner %}
+            <p class="member-row__partner">Conjoint·e de {{ partner.user.fullName ?: partner.user.email }}</p>
+            {% endif %}
 
             <details class="member-row__edit">
             <summary>Modifier les droits</summary>
@@ -221,6 +230,19 @@
                     <input type="color" name="displayColor" value="{{ m.displayColor ?: '#C2643D' }}"
                            {{ (isAdmin or m.user.id == activeMembership.user.id) ? '' : 'disabled' }}>
                 </label>
+                {# Le couple se déclare depuis l'une ou l'autre ligne : le serveur accepte les deux
+                   sens de saisie, l'admin n'a pas à savoir de quel côté la relation est portée. #}
+                {% if m.role.value in ['parent', 'step_parent'] %}
+                {% set eligible = members|filter(o => o.id != m.id and o.role.value == (m.role.value == 'parent' ? 'step_parent' : 'parent')) %}
+                <label>Conjoint·e
+                    <select name="partnerMembershipId" {{ isAdmin ? '' : 'disabled' }}>
+                        <option value="">— aucun·e —</option>
+                        {% for o in eligible %}
+                        <option value="{{ o.id }}" {{ partner and partner.id == o.id ? 'selected' }}>{{ o.user.fullName ?: o.user.email }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                {% endif %}
             </div>
 
             {% set memberRights = m.effectiveRights %}

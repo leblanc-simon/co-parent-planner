@@ -91,14 +91,27 @@ final class SettingsController extends AbstractController
             $tab = 'compte';
         }
 
+        // Couple parent ↔ beau-parent (E1) : la relation n'est stockée que du côté du beau-parent ;
+        // l'index miroir permet de l'afficher AUSSI sur la ligne du parent, sans requête par membre.
+        $members = $this->memberships->findActiveByFamily($family);
+        $partnerOf = [];
+        foreach ($members as $member) {
+            $partner = $member->getPartnerMembership();
+            if (null !== $partner) {
+                $partnerOf[(string) $member->getId()] = $partner;
+                $partnerOf[(string) $partner->getId()] = $member;
+            }
+        }
+
         return $this->render('app/settings.html.twig', [
             'tab' => $tab,
+            'partnerOf' => $partnerOf,
             'hasCustody' => $hasCustody,
             'memberships' => $allMemberships,
             'activeMembership' => $active,
             'family' => $family,
             'isAdmin' => $isAdmin,
-            'members' => $this->memberships->findActiveByFamily($family),
+            'members' => $members,
             'invitations' => $isAdmin ? $this->invitations->findPendingForFamily($family) : [],
             'links' => $this->links->findForFamily($family),
             'domains' => RightDomain::cases(),

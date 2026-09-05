@@ -316,4 +316,58 @@ void main() {
       },
     );
   });
+
+  testWidgets('E1 — la mention « conjoint·e de X » se lit sur les deux lignes', (
+    tester,
+  ) async {
+    // Rien n'exprimait jusqu'ici QUEL parent un beau-parent accompagne. Le serveur rend la
+    // relation des deux côtés bien qu'elle ne soit stockée qu'une fois, côté beau-parent.
+    when(() => repo.listMembers('fam-1')).thenAnswer(
+      (_) async => const [
+        api.Member(
+          id: 'm1',
+          role: 'parent',
+          isAdmin: true,
+          self: true,
+          fullName: 'Sophie Martin',
+          partnerMembershipId: 'm2',
+          partnerName: 'Bob Beau',
+        ),
+        api.Member(
+          id: 'm2',
+          role: 'step_parent',
+          fullName: 'Bob Beau',
+          partnerMembershipId: 'm1',
+          partnerName: 'Sophie Martin',
+        ),
+      ],
+    );
+    when(() => repo.listInvitations('fam-1')).thenAnswer((_) async => const []);
+
+    await pumpScreen(tester, const MembersScreen(), overrides: overrides());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Conjoint·e de Bob Beau'), findsOneWidget);
+    expect(find.text('Conjoint·e de Sophie Martin'), findsOneWidget);
+  });
+
+  testWidgets('sans association, aucune mention de conjoint', (tester) async {
+    when(() => repo.listMembers('fam-1')).thenAnswer(
+      (_) async => const [
+        api.Member(
+          id: 'm1',
+          role: 'parent',
+          isAdmin: true,
+          self: true,
+          fullName: 'Sophie',
+        ),
+      ],
+    );
+    when(() => repo.listInvitations('fam-1')).thenAnswer((_) async => const []);
+
+    await pumpScreen(tester, const MembersScreen(), overrides: overrides());
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Conjoint'), findsNothing);
+  });
 }

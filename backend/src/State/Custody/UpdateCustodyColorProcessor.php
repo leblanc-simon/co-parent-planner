@@ -9,11 +9,13 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Dto\Custody\CustodyColorResource;
 use App\Dto\Custody\UpdateCustodyColorRequest;
 use App\Entity\CustodyColorPreference;
+use App\Entity\Family;
 use App\Entity\Membership;
 use App\Enum\CustodyPalette;
 use App\Exception\CustodyInputException;
 use App\Exception\MembershipNotFoundException;
 use App\Repository\CustodyColorPreferenceRepository;
+use App\Repository\CustodyPatternRepository;
 use App\Repository\MembershipRepository;
 use App\Security\Custody\CustodyAccess;
 use Doctrine\ORM\EntityManagerInterface;
@@ -35,6 +37,7 @@ final class UpdateCustodyColorProcessor implements ProcessorInterface
         private readonly CustodyAccess $access,
         private readonly MembershipRepository $memberships,
         private readonly CustodyColorPreferenceRepository $preferences,
+        private readonly CustodyPatternRepository $patterns,
     ) {
     }
 
@@ -49,10 +52,13 @@ final class UpdateCustodyColorProcessor implements ProcessorInterface
         // Les deux slots doivent rester distincts (§8.2) : sans cette règle, un membre pourrait
         // peindre les deux parents de la même teinte et rendre son propre planning illisible — la
         // couleur ne porte pas seule l'information (§8.1), mais elle ne doit pas la contredire.
-        foreach ($this->preferences->findForViewer($ctx->membership) as $other) {
-            if ($other->getPalette() === $palette && !$other->getTarget()->getId()->equals($target->getId())) {
-                throw new CustodyInputException('custody.error.color_conflict');
-            }
+        //
+        // La comparaison porte sur les teintes **effectives**, défauts du §8 compris. Ne regarder
+        // que les préférences ENREGISTRÉES laissait passer le cas le plus courant : sur un planning
+        // encore vierge, peindre le parent B en terracotta alors que le parent A l'est par défaut
+        // — deux slots identiques, exactement ce que la règle interdit (constat E2E, E5).
+        if (\in_array($palette, $this->effectivePalettes($ctx->membership, $ctx->family, $target), true)) {
+            throw new CustodyInputException('custody.error.color_conflict');
         }
 
         $preference = $this->preferences->findOneFor($ctx->membership, $target);
@@ -65,6 +71,32 @@ final class UpdateCustodyColorProcessor implements ProcessorInterface
         $this->em->flush();
 
         return CustodyColorResource::fromEntity($preference);
+    }
+
+    /**
+     * Teintes déjà employées, du point de vue de ce spectateur, **hors** le membre qu'il est en
+     * train de repeindre.
+     *
+     * @return list<CustodyPalette>
+     */
+    private function effectivePalettes(Membership $viewer, Family $family, Membership $target): array
+    {
+        $taken = [];
+        foreach ($this->preferences->findForViewer($viewer) as $preference) {
+            $taken[(string) $preference->getTarget()->getId()] = $preference->getPalette();
+        }
+
+        // Un parent du rythme sans préférence porte la teinte par défaut du §8 : c'est bien celle
+        // que l'écran affiche, elle compte donc comme prise.
+        $pattern = $this->patterns->findOneByFamily($family);
+        foreach ([[$pattern?->getParentA(), CustodyPalette::DEFAULT_A], [$pattern?->getParentB(), CustodyPalette::DEFAULT_B]] as [$parent, $default]) {
+            if ($parent instanceof Membership && !isset($taken[(string) $parent->getId()])) {
+                $taken[(string) $parent->getId()] = $default;
+            }
+        }
+        unset($taken[(string) $target->getId()]);
+
+        return array_values($taken);
     }
 
     private function loadInFamily(string $id, Membership $viewer): Membership

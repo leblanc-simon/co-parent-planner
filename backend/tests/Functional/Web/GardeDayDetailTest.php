@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Web;
 
 use App\Entity\Child;
+use App\Entity\CustodyColorPreference;
 use App\Entity\CustodyDay;
 use App\Entity\CustodyException;
 use App\Entity\CustodyPattern;
@@ -16,6 +17,7 @@ use App\Entity\Right;
 use App\Entity\SchoolHoliday;
 use App\Entity\User;
 use App\Enum\CustodyDaySource;
+use App\Enum\CustodyPalette;
 use App\Enum\CustodyPatternKind;
 use App\Enum\EventCategory;
 use App\Enum\FamilyType;
@@ -541,6 +543,133 @@ final class GardeDayDetailTest extends WebTestCase
         $em->flush();
 
         return [$slotA, $parentB];
+    }
+
+    /**
+     * Beau-parent actif associé à [$parent] (évolution E1). La relation est portée par le
+     * beau-parent — c'est la source de vérité unique, la vue inverse se déduit.
+     */
+    // ───────────────────────── Foyer (E2) et couleurs du planning (E5) ─────────────────────────
+
+    /**
+     * Foyer (E2) : le beau-parent associé au parent accompagne les jours de « son » parent.
+     *
+     * C'est une mention de **présentation** : le jour reste attribué au seul parent, rien n'est
+     * compté au conjoint et le moteur de garde ignore la relation (invariant `CLAUDE.md`).
+     */
+    public function testDaySheetNamesTheHousehold(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        [$slotA] = $this->seedFamily();
+        $this->seedPartner($slotA, 'Bob Martin');
+        $this->login($client);
+
+        // Le 1er du mois est attribué au parent A par le jeu de données.
+        $client->request('GET', '/garde/jour/'.$this->monthStart()->format('Y-m-d'));
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+
+        self::assertStringContainsString('day-sheet__partner', $html);
+        self::assertStringContainsString('avec Bob Martin', $html);
+    }
+
+    /** Le jour du parent SANS conjoint ne porte aucune mention : elle serait vide de sens. */
+    public function testDaySheetOmitsHouseholdWithoutPartner(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        [$slotA] = $this->seedFamily();
+        $this->seedPartner($slotA, 'Bob Martin');
+        $this->login($client);
+
+        // Le 2 du mois revient au parent B, qui n'a pas de conjoint.
+        $client->request('GET', '/garde/jour/'.$this->monthStart()->modify('+1 day')->format('Y-m-d'));
+        self::assertResponseIsSuccessful();
+        self::assertStringNotContainsString('day-sheet__partner', (string) $client->getResponse()->getContent());
+    }
+
+    /**
+     * Couleurs du planning (E5) : sans préférence, les variables valent les deux teintes par défaut
+     * du §8 — l'écran est celui d'avant la personnalisation.
+     */
+    public function testCustodyPaletteDefaultsToSectionEightColours(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedFamily();
+        $this->login($client);
+
+        $client->request('GET', '/garde');
+        $html = (string) $client->getResponse()->getContent();
+
+        self::assertStringContainsString('--slot-a:#C2643D', $html);
+        self::assertStringContainsString('--slot-b:#2E7D71', $html);
+    }
+
+    /**
+     * La préférence enregistrée repeint le planning **du seul spectateur** : les variables posées
+     * sur le conteneur applicatif changent, celles de l'autre parent restent celles du §8.
+     */
+    public function testCustodyPaletteFollowsTheViewerPreference(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        [$slotA, $parentB] = $this->seedFamily();
+        $em = $this->em();
+        $viewer = $em->getRepository(Membership::class)->find($slotA->getId());
+        self::assertInstanceOf(Membership::class, $viewer);
+        $target = $em->getRepository(Membership::class)->find($parentB->getId());
+        self::assertInstanceOf(Membership::class, $target);
+        $em->persist(new CustodyColorPreference($viewer, $target, CustodyPalette::Purple));
+        $em->flush();
+
+        $this->login($client);
+        $client->request('GET', '/garde');
+        $html = (string) $client->getResponse()->getContent();
+
+        self::assertStringContainsString('--slot-b:#8E63A8', $html, 'le parent B est repeint en violet');
+        self::assertStringContainsString('--slot-a:#C2643D', $html, 'le parent A garde la teinte par défaut');
+        // §8.1 sans exception : l'initiale reste affichée quelle que soit la palette.
+        self::assertStringContainsString('garde-day__parent', $html);
+    }
+
+    /**
+     * Le choix des couleurs relève de `custody ≥ view` (cdc §8.2), contrairement au rythme : un
+     * beau-parent en lecture doit y accéder, sans quoi la préférence serait réservée à ceux qui
+     * peuvent déjà tout changer.
+     */
+    public function testColourChoiceIsOfferedToAViewOnlyMember(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedFamily(custody: RightLevel::View, agenda: RightLevel::View);
+        $this->login($client);
+
+        $client->request('GET', '/settings?tab=garde');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+
+        self::assertStringContainsString('id="sec-colors"', $html);
+        self::assertStringContainsString('custody-color-A', $html);
+        // …mais pas le formulaire de rythme, qui reste sous `custody:edit`.
+        self::assertStringNotContainsString('garde#savePattern', $html);
+    }
+
+    private function seedPartner(Membership $parent, string $fullName): Membership
+    {
+        $em = $this->em();
+        $user = (new User())->setEmail('web-step@example.com')->setFullName($fullName)
+            ->setStatus(UserStatus::Active)->setEmailVerifiedAt(Clock::get()->now());
+        $user->setPasswordHash('x');
+        $step = (new Membership())->setUser($user)->setFamily($parent->getFamily())
+            ->setRole(MembershipRole::StepParent)->setStatus(MembershipStatus::Active)
+            ->setPartnerMembership($parent);
+        $em->persist($user);
+        $em->persist($step);
+        $em->flush();
+
+        return $step;
     }
 
     private function seedEvent(

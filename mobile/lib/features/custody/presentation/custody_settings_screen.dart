@@ -11,6 +11,7 @@ import '../../../core/widgets/error_banner.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../family/application/family_context.dart';
 import '../../members/data/members_repository.dart';
+import '../application/custody_palette.dart';
 import '../data/custody_repository.dart';
 
 /// US-CUST-1/2/9 + US-SET-3 — Paramètres › Garde : builder de rythme (dont
@@ -216,6 +217,7 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
               .where((m) => m.role == 'parent')
               .toList(growable: false);
           _prefill(patternAsync.valueOrNull, parents);
+
           return _form(l, parents);
         },
       ),
@@ -223,6 +225,11 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
   }
 
   Widget _form(AppL10n l, List<api.Member> parents) {
+    // Le rythme demande `custody:edit` ; le CHOIX DES COULEURS, non (cdc §8.2) — c'est une
+    // préférence personnelle d'affichage, offerte à quiconque voit le planning, un beau-parent en
+    // lecture compris. L'écran porte donc les deux sections sous deux droits différents, exactement
+    // comme l'onglet « Planning de garde » du web.
+    final canEdit = ref.watch(custodyCanEditProvider);
     final weekdays = <int, String>{
       0: l.weekdaySunday,
       1: l.weekdayMonday,
@@ -243,148 +250,164 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
           ErrorBanner(_error!),
           const SizedBox(height: 12),
         ],
-        DropdownButtonFormField<String>(
-          key: const ValueKey('custody-kind'),
-          initialValue: _kind,
-          decoration: InputDecoration(labelText: l.custodyKind),
-          items: [
-            DropdownMenuItem(
-              value: 'alternating',
-              child: Text(l.custodyKindAlternating),
-            ),
-            DropdownMenuItem(
-              value: 'pattern_2_2_3',
-              child: Text(l.custodyKind223),
-            ),
-            DropdownMenuItem(
-              value: 'midweek_weekends',
-              child: Text(l.custodyKindMidweek),
-            ),
-            DropdownMenuItem(value: 'custom', child: Text(l.custodyKindCustom)),
-          ],
-          onChanged: (v) => setState(() => _kind = v ?? _kind),
-        ),
-        const SizedBox(height: 12),
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(l.custodyAnchorDate),
-          subtitle: Text(_fmtDate(_anchor)),
-          trailing: const Icon(Icons.calendar_today, size: 18),
-          onTap: () async {
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: _anchor,
-              firstDate: DateTime(2020),
-              lastDate: DateTime(2035),
-            );
-            if (picked != null) setState(() => _anchor = picked);
-          },
-        ),
-        DropdownButtonFormField<int>(
-          key: const ValueKey('custody-weekday'),
-          initialValue: _weekday,
-          decoration: InputDecoration(labelText: l.custodyHandoverWeekday),
-          items: [
-            for (final e in weekdays.entries)
-              DropdownMenuItem(value: e.key, child: Text(e.value)),
-          ],
-          onChanged: (v) => setState(() => _weekday = v ?? _weekday),
-        ),
-        const SizedBox(height: 12),
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          title: Text(l.custodyHandoverTime),
-          subtitle: Text(_fmtTime(_time)),
-          trailing: const Icon(Icons.schedule, size: 18),
-          onTap: () async {
-            final picked = await showTimePicker(
-              context: context,
-              initialTime: _time,
-            );
-            if (picked != null) setState(() => _time = picked);
-          },
-        ),
-        DropdownButtonFormField<String>(
-          key: const ValueKey('custody-parent-a'),
-          initialValue: _parentA,
-          decoration: InputDecoration(labelText: l.custodyParentA),
-          items: [
-            for (final m in parents)
-              DropdownMenuItem(value: m.id, child: Text(parentLabel(m))),
-          ],
-          onChanged: (v) => setState(() => _parentA = v),
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<String>(
-          key: const ValueKey('custody-parent-b'),
-          initialValue: _parentB,
-          decoration: InputDecoration(labelText: l.custodyParentB),
-          items: [
-            for (final m in parents)
-              DropdownMenuItem(value: m.id, child: Text(parentLabel(m))),
-          ],
-          onChanged: (v) => setState(() => _parentB = v),
-        ),
-        if (_kind == 'custom') ...[
-          const SizedBox(height: 16),
-          Text(l.custodyCustomPattern, style: AppTypography.eyebrow),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [for (var i = 0; i < 14; i++) _customChip(i)],
-          ),
-        ],
-        if (_kind == 'midweek_weekends') ...[
-          const SizedBox(height: 16),
-          Text(l.custodyMidweekTitle, style: AppTypography.eyebrow),
-          const SizedBox(height: 4),
-          Text(
-            l.custodyMidweekHint,
-            style: const TextStyle(fontSize: 12.5, color: AppColors.muted),
-          ),
-          const SizedBox(height: 8),
-          // Semaine affichée lundi → dimanche comme le calendrier, alors que la
-          // convention serveur numérote à partir du dimanche.
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              for (final d in [1, 2, 3, 4, 5, 6, 0]) _midweekChip(l, d),
+        if (canEdit) ...[
+          DropdownButtonFormField<String>(
+            key: const ValueKey('custody-kind'),
+            initialValue: _kind,
+            decoration: InputDecoration(labelText: l.custodyKind),
+            items: [
+              DropdownMenuItem(
+                value: 'alternating',
+                child: Text(l.custodyKindAlternating),
+              ),
+              DropdownMenuItem(
+                value: 'pattern_2_2_3',
+                child: Text(l.custodyKind223),
+              ),
+              DropdownMenuItem(
+                value: 'midweek_weekends',
+                child: Text(l.custodyKindMidweek),
+              ),
+              DropdownMenuItem(
+                value: 'custom',
+                child: Text(l.custodyKindCustom),
+              ),
             ],
+            onChanged: (v) => setState(() => _kind = v ?? _kind),
           ),
           const SizedBox(height: 12),
-          Text(l.custodyWeekendStart, style: AppTypography.eyebrow),
-          const SizedBox(height: 6),
-          SegmentedButton<String>(
-            key: const ValueKey('custody-weekend-start'),
-            segments: [
-              ButtonSegment(
-                value: 'A',
-                label: Text(_parentName(parents, _parentA, l.custodyParentA)),
-              ),
-              ButtonSegment(
-                value: 'B',
-                label: Text(_parentName(parents, _parentB, l.custodyParentB)),
-              ),
-            ],
-            selected: {_weekendStart},
-            onSelectionChanged: (v) => setState(() => _weekendStart = v.first),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l.custodyAnchorDate),
+            subtitle: Text(_fmtDate(_anchor)),
+            trailing: const Icon(Icons.calendar_today, size: 18),
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _anchor,
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2035),
+              );
+              if (picked != null) setState(() => _anchor = picked);
+            },
           ),
+          DropdownButtonFormField<int>(
+            key: const ValueKey('custody-weekday'),
+            initialValue: _weekday,
+            decoration: InputDecoration(labelText: l.custodyHandoverWeekday),
+            items: [
+              for (final e in weekdays.entries)
+                DropdownMenuItem(value: e.key, child: Text(e.value)),
+            ],
+            onChanged: (v) => setState(() => _weekday = v ?? _weekday),
+          ),
+          const SizedBox(height: 12),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l.custodyHandoverTime),
+            subtitle: Text(_fmtTime(_time)),
+            trailing: const Icon(Icons.schedule, size: 18),
+            onTap: () async {
+              final picked = await showTimePicker(
+                context: context,
+                initialTime: _time,
+              );
+              if (picked != null) setState(() => _time = picked);
+            },
+          ),
+          DropdownButtonFormField<String>(
+            key: const ValueKey('custody-parent-a'),
+            initialValue: _parentA,
+            decoration: InputDecoration(labelText: l.custodyParentA),
+            items: [
+              for (final m in parents)
+                DropdownMenuItem(value: m.id, child: Text(parentLabel(m))),
+            ],
+            onChanged: (v) => setState(() => _parentA = v),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            key: const ValueKey('custody-parent-b'),
+            initialValue: _parentB,
+            decoration: InputDecoration(labelText: l.custodyParentB),
+            items: [
+              for (final m in parents)
+                DropdownMenuItem(value: m.id, child: Text(parentLabel(m))),
+            ],
+            onChanged: (v) => setState(() => _parentB = v),
+          ),
+          if (_kind == 'custom') ...[
+            const SizedBox(height: 16),
+            Text(l.custodyCustomPattern, style: AppTypography.eyebrow),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [for (var i = 0; i < 14; i++) _customChip(i)],
+            ),
+          ],
+          if (_kind == 'midweek_weekends') ...[
+            const SizedBox(height: 16),
+            Text(l.custodyMidweekTitle, style: AppTypography.eyebrow),
+            const SizedBox(height: 4),
+            Text(
+              l.custodyMidweekHint,
+              style: const TextStyle(fontSize: 12.5, color: AppColors.muted),
+            ),
+            const SizedBox(height: 8),
+            // Semaine affichée lundi → dimanche comme le calendrier, alors que la
+            // convention serveur numérote à partir du dimanche.
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final d in [1, 2, 3, 4, 5, 6, 0]) _midweekChip(l, d),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(l.custodyWeekendStart, style: AppTypography.eyebrow),
+            const SizedBox(height: 6),
+            SegmentedButton<String>(
+              key: const ValueKey('custody-weekend-start'),
+              segments: [
+                ButtonSegment(
+                  value: 'A',
+                  label: Text(_parentName(parents, _parentA, l.custodyParentA)),
+                ),
+                ButtonSegment(
+                  value: 'B',
+                  label: Text(_parentName(parents, _parentB, l.custodyParentB)),
+                ),
+              ],
+              selected: {_weekendStart},
+              onSelectionChanged: (v) =>
+                  setState(() => _weekendStart = v.first),
+            ),
+          ],
+          const SizedBox(height: 24),
+          FilledButton(
+            key: const ValueKey('custody-save'),
+            onPressed: _saving ? null : _save,
+            child: Text(l.custodySave),
+          ),
+          if (_saving) ...[
+            const SizedBox(height: 8),
+            Text(
+              l.custodyPatternSaving,
+              style: const TextStyle(color: AppColors.muted),
+            ),
+          ],
+          const SizedBox(height: 28),
         ],
-        const SizedBox(height: 24),
-        FilledButton(
-          key: const ValueKey('custody-save'),
-          onPressed: _saving ? null : _save,
-          child: Text(l.custodySave),
-        ),
-        if (_saving) ...[
-          const SizedBox(height: 8),
+        // Sans droit d'édition NI rythme configuré, la section des couleurs n'a aucun parent à
+        // colorer : l'écran serait entièrement blanc. On dit ce qui manque plutôt que rien.
+        if (!canEdit &&
+            ref.watch(familyCustodyPatternProvider).valueOrNull == null)
           Text(
-            l.custodyPatternSaving,
+            l.custodyNoPattern,
             style: const TextStyle(color: AppColors.muted),
           ),
-        ],
+        _CustodyColorsSection(parents: parents),
       ],
     );
   }
@@ -416,15 +439,16 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
     };
     final isWeekend = _weekendDays.contains(day);
     final slot = isWeekend ? null : (_weekdayParents[day] ?? 'A');
-    final (fg, bg, border) = switch (slot) {
-      'A' => (AppColors.accentStrong, AppColors.accentSoft2, AppColors.accent),
-      'B' => (
-        AppColors.positiveStrong,
-        AppColors.positiveSoft,
-        AppColors.positive,
-      ),
-      _ => (AppColors.ink2, AppColors.card, AppColors.border2),
-    };
+    // Le builder de rythme montre les deux mêmes parents que le calendrier : il suit la palette du
+    // spectateur (cdc §8.2), sans quoi la légende et les nuits se contrediraient à l'écran.
+    final palette = ref.watch(custodyPaletteProvider);
+    final (fg, bg, border) = slot == null
+        ? (AppColors.ink2, AppColors.card, AppColors.border2)
+        : (
+            palette.forSlot(slot).ink,
+            palette.forSlot(slot).soft,
+            palette.forSlot(slot).border,
+          );
 
     return InkWell(
       key: ValueKey('custody-mw-$day'),
@@ -470,6 +494,7 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
   Widget _customChip(int i) {
     final slot = _custom[i];
     final isA = slot == 'A';
+    final customTint = ref.watch(custodyPaletteProvider).forSlot(slot);
     return InkWell(
       key: ValueKey('custody-custom-$i'),
       borderRadius: BorderRadius.circular(8),
@@ -479,17 +504,173 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
         height: 36,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isA ? AppColors.accentSoft2 : AppColors.positiveSoft,
+          color: customTint.soft,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isA ? AppColors.accent : AppColors.positive,
-          ),
+          border: Border.all(color: customTint.border),
         ),
         child: Text(
           slot,
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            color: isA ? AppColors.accentStrong : AppColors.positiveStrong,
+          style: TextStyle(fontWeight: FontWeight.w700, color: customTint.ink),
+        ),
+      ),
+    );
+  }
+}
+
+/// Choix des couleurs du planning (cdc §8.2, évolution E5).
+///
+/// Sous `custody ≥ view` : la préférence n'écrit rien de la famille et ne modifie l'écran de
+/// personne d'autre. Elle est **clé sur le parent observé**, jamais sur le slot A/B — un changement
+/// de rythme peut échanger les titulaires, et la couleur « de Sophie » sauterait alors sur Marc.
+class _CustodyColorsSection extends ConsumerStatefulWidget {
+  const _CustodyColorsSection({required this.parents});
+
+  final List<api.Member> parents;
+
+  @override
+  ConsumerState<_CustodyColorsSection> createState() =>
+      _CustodyColorsSectionState();
+}
+
+class _CustodyColorsSectionState extends ConsumerState<_CustodyColorsSection> {
+  bool _busy = false;
+  String? _error;
+
+  Future<void> _choose(String targetMembershipId, String palette) async {
+    final family = ref.read(familyContextProvider);
+    if (family == null || _busy) return;
+    final l = AppL10n.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final providers = context.providers;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await ref
+          .read(custodyRepositoryProvider)
+          .setColor(
+            family.familyId,
+            targetMembershipId: targetMembershipId,
+            palette: palette,
+          );
+      // Le serveur est l'autorité : on relit la préférence enregistrée plutôt que de peindre
+      // localement une teinte qu'il aurait pu refuser (deux parents de la même couleur).
+      providers.invalidate(custodyColorsProvider);
+      messenger.showSnackBar(SnackBar(content: Text(l.custodyColorsSaved)));
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _error = e.localized(l));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppL10n.of(context);
+    final pattern = ref.watch(familyCustodyPatternProvider).valueOrNull;
+    final palette = ref.watch(custodyPaletteProvider);
+    final parentA = pattern?.parentAMembershipId;
+    final parentB = pattern?.parentBMembershipId;
+    // Sans rythme, aucun parent n'est désigné : il n'y a rien à colorer, et proposer un choix sans
+    // cible mènerait droit à un 404.
+    if (parentA == null || parentB == null) return const SizedBox.shrink();
+
+    String nameOf(String id, String fallback) {
+      for (final m in widget.parents) {
+        if (m.id == id) {
+          return (m.fullName?.isNotEmpty ?? false)
+              ? m.fullName!
+              : (m.email ?? fallback);
+        }
+      }
+
+      return fallback;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l.custodyColorsTitle, style: AppTypography.textTheme.titleMedium),
+        const SizedBox(height: 4),
+        Text(
+          l.custodyColorsHint,
+          style: const TextStyle(fontSize: 13, color: AppColors.muted),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: 10),
+          ErrorBanner(_error!),
+        ],
+        for (final (slot, id, fallback) in [
+          ('A', parentA, l.custodyParentA),
+          ('B', parentB, l.custodyParentB),
+        ]) ...[
+          const SizedBox(height: 14),
+          Text(
+            nameOf(id, fallback),
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Semantics(
+            label: l.custodyColorFor(nameOf(id, fallback)),
+            container: true,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final tint in CustodyPalette.tints)
+                  _TintChip(
+                    key: ValueKey('custody-color-$slot-${tint.value}'),
+                    tint: tint,
+                    selected: palette.forSlot(slot).value == tint.value,
+                    onTap: _busy ? null : () => _choose(id, tint.value),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Pastille de teinte : elle reproduit l'aspect d'une case du calendrier et porte le NOM de la
+/// couleur — une grille de huit carrés ne se choisit pas sans lui (cdc §8.1, même raison que le
+/// marqueur des parents). La sélection est un anneau, pas un simple changement de teinte.
+class _TintChip extends StatelessWidget {
+  const _TintChip({
+    super.key,
+    required this.tint,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final CustodyTint tint;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      selected: selected,
+      button: true,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          decoration: BoxDecoration(
+            color: tint.soft,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: tint.border, width: selected ? 3 : 1),
+          ),
+          child: Text(
+            tint.label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: tint.ink,
+            ),
           ),
         ),
       ),

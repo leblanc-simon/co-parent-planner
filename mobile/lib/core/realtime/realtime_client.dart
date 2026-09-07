@@ -37,9 +37,9 @@ class RealtimeClient {
     final hub = ticket.hub ?? '';
     if (hub.isEmpty || topics.isEmpty) return;
 
-    final url = Uri.parse(hub).replace(
-      queryParameters: <String, dynamic>{'topic': topics},
-    );
+    final url = Uri.parse(
+      hub,
+    ).replace(queryParameters: <String, dynamic>{'topic': topics});
 
     final response = await _dio.getUri<ResponseBody>(
       url,
@@ -75,7 +75,8 @@ class RealtimeClient {
     while (!(cancelToken?.isCancelled ?? false)) {
       try {
         await for (final _ in connect(topics, cancelToken: cancelToken)) {
-          attempt = 0; // la connexion vit : le prochain incident repart d'une attente courte
+          attempt =
+              0; // la connexion vit : le prochain incident repart d'une attente courte
           yield null;
         }
       } on DioException catch (e) {
@@ -91,5 +92,6 @@ class RealtimeClient {
 }
 
 final realtimeClientProvider = Provider<RealtimeClient>(
-  (ref) => RealtimeClient(ref.watch(apiClientsProvider), ref.watch(dioProvider)),
+  (ref) =>
+      RealtimeClient(ref.watch(apiClientsProvider), ref.watch(dioProvider)),
 );

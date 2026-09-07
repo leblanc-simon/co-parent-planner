@@ -40,7 +40,12 @@
 {# Lien d'évitement (WCAG 2.4.1) : la barre latérale porte huit liens, retraversés à chaque page
    par qui navigue au clavier ou au lecteur d'écran. Visible dès qu'il reçoit le focus. #}
 <a class="skip-link" href="#main">Aller au contenu</a>
-<div class="app-shell">
+{# Couleurs du planning de garde du spectateur (cdc §8.2, évolution E5). Posées ici, sur le
+   conteneur applicatif : l'accueil, le calendrier, la fiche de jour chargée dans son `<turbo-frame>`
+   et les aperçus de la page Paramètres en héritent d'un seul coup. Chaîne vide — donc rien — sans
+   droit `custody`, ou pour une famille unie. #}
+{% set custodyPalette = custody_palette_style() %}
+<div class="app-shell"{% if custodyPalette %} style="{{ custodyPalette }}"{% endif %}>
     <aside class="sidebar">
         <div class="sidebar__brand">
             <img class="sidebar__logo" src="{{ asset('icons/logo.png') }}" width="32" height="32" alt="" aria-hidden="true">

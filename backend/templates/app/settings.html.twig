@@ -7,7 +7,10 @@
 
 {% set pAName = 'Parent A' %}
 {% set pBName = 'Parent B' %}
-{% for m in parents %}
+{# Résolus sur `members` et non sur `parents` : ce dernier n'est peuplé que pour un membre
+   `custody:edit`, alors que le choix des couleurs est offert dès `custody:view` (cdc §8.2) — sans
+   quoi la section afficherait « Parent A » / « Parent B » à un beau-parent en lecture. #}
+{% for m in members %}
     {% if m.id == parentAId %}{% set pAName = m.user.fullName ?: m.user.email %}{% endif %}
     {% if m.id == parentBId %}{% set pBName = m.user.fullName ?: m.user.email %}{% endif %}
 {% endfor %}
@@ -246,6 +249,16 @@
             </div>
 
             {% set memberRights = m.effectiveRights %}
+            {# Même commodité que dans le formulaire d'invitation, une fois le couple déclaré : les
+               droits du parent sont RECOPIÉS dans les sélecteurs ci-dessous, puis soumis comme
+               n'importe quelle autre modification. Rien n'est accordé tant que le formulaire n'est
+               pas enregistré, et le serveur plafonne au rôle. #}
+            {% if isAdmin and partner and m.role.value == 'step_parent' %}
+            <button type="button" class="btn btn--ghost member-row__copy" data-action="settings#copyRights"
+                    data-rights="{{ partner.effectiveRights|json_encode }}">
+                Reprendre les droits de {{ partner.user.fullName ?: partner.user.email }}
+            </button>
+            {% endif %}
             <div class="member-row__rights">
                 {% for domain in editableDomains %}
                     <label>{{ rightDomainLabel[domain] ?? domain }}
@@ -293,6 +306,26 @@
                 </select>
             </div>
         </div>
+        {# Foyer (E2) : proposer les droits du parent que la personne invitée accompagne. C'est une
+           COMMODITÉ DE SAISIE, jamais une autorisation — le serveur normalise ensuite selon le rôle
+           (`RightsNormalizer::capForRole` : `family_settings` reste `none` pour un beau-parent, un
+           enfant reste plafonné à `view`). Le champ n'est pas envoyé : `invite()` ne lit que
+           l'e-mail, le rôle et les droits.
+           L'association elle-même n'est pas posée ici : elle relie deux MEMBERSHIPS, et celui de la
+           personne invitée n'existera qu'à l'acceptation. Elle se déclare depuis la liste des
+           membres, une fois l'invitation acceptée. #}
+        {% set inviteParents = members|filter(o => o.role.value == 'parent') %}
+        {% if inviteParents|length %}
+        <div class="field invite-copy">
+            <label for="i-copy">Reprendre les droits de</label>
+            <select id="i-copy" data-action="change->settings#copyRights">
+                <option value="">— partir de zéro —</option>
+                {% for o in inviteParents %}
+                <option value="{{ o.id }}" data-rights="{{ o.effectiveRights|json_encode }}">{{ o.user.fullName ?: o.user.email }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
         <div class="invite-rights" data-settings-target="inviteRights">
             {% for domain in editableDomains %}
                 <label>{{ rightDomainLabel[domain] ?? domain }}
@@ -622,6 +655,45 @@
         {% endif %}
     </section>
 </div>
+{% endif %}
+
+{# ───────────── Couleurs du planning (cdc §8.2, évolution E5) ─────────────
+   Sous `custody ≥ view`, contrairement aux sections ci-dessus : choisir ses couleurs est une
+   PRÉFÉRENCE PERSONNELLE, offerte à quiconque voit le planning — un beau-parent en lecture
+   comprise. Elle ne modifie l'écran de personne d'autre. #}
+{% set custodyColors = canViewCustody ? custody_palette_catalog() : null %}
+{% if custodyColors and parentAId and parentBId %}
+<section class="card" id="sec-colors" data-controller="custody-colors"
+         data-custody-colors-family-id-value="{{ family.id }}">
+    <h2 class="settings-section__title">Couleurs du planning</h2>
+    <p class="settings-section__sub">
+        Ces teintes ne changent que <strong>votre</strong> affichage : l'autre parent garde les siennes.
+        L'initiale de chaque parent reste affichée sur les cases quelles que soient les couleurs choisies,
+        pour que le planning se lise aussi sans elles.
+    </p>
+    <p class="form-error" data-custody-colors-target="error" role="alert" hidden></p>
+    <p class="form-success" data-custody-colors-target="notice" role="status" aria-live="polite" hidden></p>
+
+    {% for slot in ['A', 'B'] %}
+    {% set slotId = slot == 'A' ? parentAId : parentBId %}
+    <fieldset class="palette">
+        <legend class="palette__legend">{{ slot == 'A' ? pAName : pBName }}</legend>
+        <div class="palette__swatches">
+            {% for c in custodyColors.palette %}
+            <label class="palette__swatch">
+                {# La teinte est NOMMÉE et non seulement montrée : une liste de huit pastilles ne
+                   se choisit pas sans distinguer les couleurs (cdc §8.1). #}
+                <input type="radio" name="custody-color-{{ slot }}" value="{{ c.value }}"
+                       data-custody-colors-target="choice" data-target-id="{{ slotId }}"
+                       {{ custodyColors.current[slot] == c.value ? 'checked' }}
+                       data-action="change->custody-colors#choose">
+                <span class="palette__chip" style="--chip-border:{{ c.border }};--chip-soft:{{ c.soft }};--chip-ink:{{ c.ink }}">{{ c.label }}</span>
+            </label>
+            {% endfor %}
+        </div>
+    </fieldset>
+    {% endfor %}
+</section>
 {% endif %}
 {% endif %}{# /garde #}
 

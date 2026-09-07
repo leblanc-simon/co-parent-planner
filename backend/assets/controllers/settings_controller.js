@@ -280,6 +280,38 @@ export default class extends ApiController {
         this.summaryTarget.textContent = parts.length ? `Droits proposés — ${parts.join(', ')}.` : 'Aucun droit accordé (membre en lecture seule de rien).';
     }
 
+    /**
+     * Recopie dans les sélecteurs de droits du formulaire courant ceux d'un parent du foyer (E2) :
+     * depuis le `<select>` « Reprendre les droits de » du formulaire d'invitation, ou depuis le
+     * bouton de la ligne d'un beau-parent associé.
+     *
+     * PROPOSITION DE SAISIE, jamais une autorisation : rien n'est accordé tant que le formulaire
+     * n'est pas soumis, et le serveur normalise ensuite selon le rôle (`RightsNormalizer`) — un
+     * beau-parent n'obtiendra pas `family_settings` parce qu'un parent l'a.
+     */
+    copyRights(event) {
+        const source = event.currentTarget;
+        // `<select>` : les droits sont portés par l'option choisie ; `<button>` : par lui-même.
+        const holder = 'SELECT' === source.tagName ? source.selectedOptions[0] : source;
+        let rights;
+        try {
+            rights = JSON.parse(holder?.dataset.rights ?? '');
+        } catch {
+            return; // « — partir de zéro — » (option sans droits) : ne rien toucher.
+        }
+        const form = source.closest('form');
+        if (!form || !rights) return;
+        form.querySelectorAll('select[name^="rights["]').forEach((sel) => {
+            if (sel.disabled) return;
+            const domain = sel.name.replace(/^rights\[(.+)\]$/, '$1');
+            const level = rights[domain];
+            // Un niveau absent du catalogue de ce sélecteur (domaine non éditable ici) est ignoré
+            // plutôt que d'y écrire une valeur que le `<select>` n'offre pas.
+            if (level && [...sel.options].some((o) => o.value === level)) sel.value = level;
+        });
+        this.refreshSummary();
+    }
+
     // ---- Helpers ----
     _rights(form) {
         const rights = {};

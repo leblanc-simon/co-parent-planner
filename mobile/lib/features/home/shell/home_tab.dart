@@ -15,6 +15,7 @@ import '../../agenda/data/agenda_repository.dart';
 import '../../agenda/presentation/agenda_screen.dart' show CategoryPill;
 import '../../auth/application/auth_controller.dart';
 import '../../custody/application/current_custody.dart';
+import '../../custody/application/custody_palette.dart';
 import '../../auth/application/auth_state.dart';
 import '../../exchanges/data/exchanges_repository.dart';
 import '../../exchanges/presentation/exchanges_screen.dart';
@@ -201,11 +202,10 @@ class _CustodyHeroCard extends ConsumerWidget {
       _ => slot == 'B' ? l.custodyParentB : l.custodyParentA,
     };
 
-    final stripe = switch (slot) {
-      'A' => AppColors.accent,
-      'B' => AppColors.positive,
-      _ => AppColors.border,
-    };
+    // Liseré à la couleur du parent qui a les enfants, dans la palette DU SPECTATEUR (cdc §8.2).
+    final stripe = slot == null
+        ? AppColors.border
+        : ref.watch(custodyPaletteProvider).forSlot(slot).border;
     final message = switch (slot) {
       null => l.custodyOpen,
       _ when custody!.isSelf => l.homeCustodyWithYou,

@@ -17,6 +17,7 @@ import '../../agenda/data/overlay_repository.dart';
 import '../../agenda/presentation/agenda_screen.dart'
     show CategoryPill, agendaCategoryColor;
 import '../../family/application/family_context.dart';
+import '../application/custody_palette.dart';
 import '../application/day_detail.dart';
 import '../data/custody_repository.dart';
 import 'custody_activities.dart';
@@ -53,28 +54,28 @@ class CustodyScreen extends ConsumerWidget {
     }
 
     final patternAsync = ref.watch(familyCustodyPatternProvider);
-    final canEdit = ref.watch(custodyCanEditProvider);
 
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // U-08 : grand titre inline « Planning de garde » + accès au rythme
-            // (réservé à `custody:edit` : le formulaire se soldait sinon par un 403).
+            // U-08 : grand titre inline « Planning de garde » + accès aux réglages.
+            // Ouvert dès `custody:view` depuis l'évolution E5 : l'écran porte désormais AUSSI le
+            // choix des couleurs, qui est une préférence personnelle (cdc §8.2). Le formulaire de
+            // rythme, lui, reste réservé à `custody:edit` — il s'y masque de lui-même, plutôt que
+            // d'être offert pour se solder par un 403.
             LargeTitleHeader(
               title: l.custodyScreenTitle,
-              trailing: canEdit
-                  ? IconButton(
-                      key: const ValueKey('custody-settings-action'),
-                      icon: const Icon(Icons.tune),
-                      tooltip: l.custodySettingsTitle,
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const CustodySettingsScreen(),
-                        ),
-                      ),
-                    )
-                  : null,
+              trailing: IconButton(
+                key: const ValueKey('custody-settings-action'),
+                icon: const Icon(Icons.tune),
+                tooltip: l.custodySettingsTitle,
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const CustodySettingsScreen(),
+                  ),
+                ),
+              ),
             ),
             Expanded(
               child: patternAsync.when(
@@ -532,11 +533,11 @@ class _DayCell extends ConsumerWidget {
     final isException = day?.source == 'exception';
     final isHoliday = day?.source == 'holiday';
 
-    final (bg, borderColor) = switch (slot) {
-      'A' => (AppColors.accentSoft2, AppColors.accent),
-      'B' => (AppColors.positiveSoft, AppColors.positive),
-      _ => (AppColors.surface, AppColors.border),
-    };
+    // Palette du SPECTATEUR (cdc §8.2) : chacun peint son propre planning, sans rien changer chez
+    // l'autre. Sans préférence, ce sont les deux teintes par défaut du §8.
+    final palette = ref.watch(custodyPaletteProvider);
+    final tint = slot == null ? custodyUnassignedTint : palette.forSlot(slot);
+    final (bg, borderColor) = (tint.soft, tint.border);
 
     // U-04 : numéro centré dans une pastille 25×25 r13 (fond accentué aujourd'hui).
     final numberPill = Container(
@@ -705,6 +706,7 @@ class _Legend extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = AppL10n.of(context);
     final markers = ref.watch(parentMarkersProvider);
+    final palette = ref.watch(custodyPaletteProvider);
     return Wrap(
       spacing: 16,
       runSpacing: 6,
@@ -712,14 +714,14 @@ class _Legend extends ConsumerWidget {
         // Le nom réel du parent dès que les membres sont chargés ; sinon « Parent A »/« Parent B »,
         // que les marqueurs « A »/« B » accompagnent alors naturellement.
         _LegendItem(
-          color: AppColors.accent,
-          fill: AppColors.accentSoft2,
+          color: palette.a.border,
+          fill: palette.a.soft,
           marker: markers.markerA,
           label: markers.nameA.isNotEmpty ? markers.nameA : l.custodyParentA,
         ),
         _LegendItem(
-          color: AppColors.positive,
-          fill: AppColors.positiveSoft,
+          color: palette.b.border,
+          fill: palette.b.soft,
           marker: markers.markerB,
           label: markers.nameB.isNotEmpty ? markers.nameB : l.custodyParentB,
         ),
@@ -1335,6 +1337,7 @@ class _CustodyDaySheetState extends ConsumerState<CustodyDaySheet> {
     final slot = detail.slot;
     final canEdit = ref.watch(custodyCanEditProvider);
     final canSeeAgenda = ref.watch(agendaCanViewProvider);
+    final sheetTint = ref.watch(custodyPaletteProvider).forSlot(slot);
 
     String nameOf(String s) {
       final name = markers.nameForSlot(s);
@@ -1365,13 +1368,9 @@ class _CustodyDaySheetState extends ConsumerState<CustodyDaySheet> {
                 height: 34,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: slot == 'A'
-                      ? AppColors.accentSoft2
-                      : AppColors.positiveSoft,
+                  color: sheetTint.soft,
                   borderRadius: BorderRadius.circular(11),
-                  border: Border.all(
-                    color: slot == 'A' ? AppColors.accent : AppColors.positive,
-                  ),
+                  border: Border.all(color: sheetTint.border),
                 ),
                 child: Text(
                   markers.markerForSlot(slot),
@@ -1393,6 +1392,18 @@ class _CustodyDaySheetState extends ConsumerState<CustodyDaySheet> {
                       key: const ValueKey('custody-day-parent'),
                       style: AppTypography.textTheme.bodyLarge,
                     ),
+                    // Foyer (E2) : le beau-parent associé accompagne le parent ce
+                    // jour-là. Sous le nom et en retrait — l'attributaire du jour
+                    // reste le parent, et la hiérarchie doit le dire.
+                    if (markers.partnerForSlot(slot).isNotEmpty)
+                      Text(
+                        l.custodyWithPartner(markers.partnerForSlot(slot)),
+                        key: const ValueKey('custody-day-partner'),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.muted,
+                        ),
+                      ),
                   ],
                 ),
               ),

@@ -84,7 +84,11 @@
                     <select id="a-cat" name="category">{% for c in categories %}<option value="{{ c.value }}">{{ catLabel[c.value] }}</option>{% endfor %}</select>
                 </div>
                 <div class="field"><label for="a-resp">Responsable</label>
-                    <select id="a-resp" name="responsibleMembershipId">{% for m in parents %}<option value="{{ m.id }}">{{ m.user.fullName ?: m.user.email }}</option>{% endfor %}</select>
+                    {# Foyer (E2) : un beau-parent est présenté avec le parent qu'il accompagne. Sans
+                       cette mention, une liste de quatre adultes ne dit pas de quel côté chacun se
+                       range, et le responsable d'une activité se choisit au jugé. La relation est
+                       portée par le beau-parent, d'où la lecture directe (sans requête inverse). #}
+                    <select id="a-resp" name="responsibleMembershipId">{% for m in parents %}<option value="{{ m.id }}">{{ m.user.fullName ?: m.user.email }}{% if m.partnerMembership %} · conjoint·e de {{ m.partnerMembership.user.fullName ?: m.partnerMembership.user.email }}{% endif %}</option>{% endfor %}</select>
                 </div>
                 <div class="field"><label for="a-loc">Lieu</label><input id="a-loc" name="location" maxlength="255"></div>
             </div>

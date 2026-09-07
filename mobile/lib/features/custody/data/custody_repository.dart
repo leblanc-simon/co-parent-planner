@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
 import '../../../core/network/api_clients.dart';
+import '../../../core/session/session_scope.dart';
+import '../../../core/sync/read_cache.dart';
 import '../../../core/util/civil_date.dart';
 import '../../family/application/family_context.dart';
 import '../../members/data/members_repository.dart';
@@ -16,9 +18,10 @@ import '../../members/data/members_repository.dart';
 /// de l'écran ne pouvaient rien faire d'autre que d'être inertes (revue mobile
 /// 2026-08, constat C27).
 class CustodyRepository {
-  CustodyRepository(this._clients);
+  CustodyRepository(this._clients, this._cache);
 
   final ApiClients _clients;
+  final ReadCache _cache;
 
   /// Rythme de garde, ou `null` si aucun n'est configuré (404).
   Future<api.CustodyPattern?> getPattern(String familyId) async {
@@ -150,6 +153,49 @@ class CustodyRepository {
     }
   }
 
+  /// Couleurs du planning choisies par le **membre courant** (cdc §8.2, évolution E5).
+  ///
+  /// Lecture avec repli **cache local** : sans lui, le planning changerait de couleurs en mode
+  /// avion — c'est-à-dire au moment où l'utilisateur a le moins de moyens de comprendre pourquoi.
+  Future<List<api.CustodyColor>> listColors(
+    String userId,
+    String familyId,
+  ) async {
+    final result = await _cache.list<api.CustodyColor>(
+      userId: userId,
+      familyId: familyId,
+      endpoint: 'custody-colors',
+      networkCall: () => _clients.custodyColors
+          .apiFamiliesFamilyIdcustodyColorsGetCollection(familyId: familyId),
+      toJson: (c) => c.toJson(),
+      fromJson: api.CustodyColor.fromJson,
+    );
+
+    return result.items;
+  }
+
+  /// Upsert idempotent d'une couleur : `custody ≥ view` suffit, la préférence n'engageant que
+  /// l'affichage de son auteur.
+  Future<api.CustodyColor> setColor(
+    String familyId, {
+    required String targetMembershipId,
+    required String palette,
+  }) async {
+    try {
+      return await _clients.custodyColors.apiFamiliesFamilyIdcustodyColorsPut(
+        familyId: familyId,
+        body: api.CustodyColorUpdateCustodyColorRequest(
+          targetMembershipId: targetMembershipId,
+          palette: api.CustodyColorUpdateCustodyColorRequestPalette.fromJson(
+            palette,
+          ),
+        ),
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
   Future<List<api.SchoolHoliday>> listHolidays(String familyId) async {
     try {
       return await _clients.holidays.apiFamiliesFamilyIdholidaysGetCollection(
@@ -173,7 +219,10 @@ class CustodyRepository {
 }
 
 final custodyRepositoryProvider = Provider<CustodyRepository>(
-  (ref) => CustodyRepository(ref.watch(apiClientsProvider)),
+  (ref) => CustodyRepository(
+    ref.watch(apiClientsProvider),
+    ref.watch(readCacheProvider),
+  ),
 );
 
 /// Rythme de la famille active (recalculé à la bascule de famille).
@@ -183,6 +232,22 @@ final familyCustodyPatternProvider = FutureProvider<api.CustodyPattern?>((
   final family = ref.watch(familyContextProvider);
   if (family == null || family.isIntact) return null;
   return ref.watch(custodyRepositoryProvider).getPattern(family.familyId);
+});
+
+/// Préférences de couleur du membre courant pour la famille active (cdc §8.2).
+///
+/// Recalculé à la bascule de compte comme de famille : une préférence est propre au couple
+/// (spectateur, famille), et rejouer celle du compte précédent peindrait le mauvais planning.
+final custodyColorsProvider = FutureProvider<List<api.CustodyColor>>((
+  ref,
+) async {
+  final family = ref.watch(familyContextProvider);
+  final userId = ref.watch(currentUserIdProvider);
+  if (family == null || userId == null || family.isIntact) return const [];
+
+  return ref
+      .watch(custodyRepositoryProvider)
+      .listColors(userId, family.familyId);
 });
 
 /// Mois affiché par l'écran Garde (US-CUST-5, « navigation période »).

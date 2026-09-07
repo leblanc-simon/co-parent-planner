@@ -22,6 +22,7 @@ use App\Service\Agenda\Occurrence;
 use App\Service\Agenda\OverlayReader;
 use App\Service\Custody\CustodyStatsCalculator;
 use App\Service\Custody\DayDetailReader;
+use App\Service\Family\Household;
 use App\Web\ActiveFamilyResolver;
 use App\Web\FrenchDate;
 use App\Web\MercureSubscription;
@@ -60,6 +61,7 @@ final class GardeController extends AbstractController
         private readonly HubInterface $hub,
         private readonly MercureSubscription $mercure,
         private readonly ParentInitials $parentInitials,
+        private readonly Household $household,
     ) {
     }
 
@@ -234,6 +236,10 @@ final class GardeController extends AbstractController
             'handoverDateLabel' => null !== $detail->handoverDate ? FrenchDate::longDate($detail->handoverDate) : null,
             'parentNames' => $parentNames,
             'initials' => $this->parentInitials->pair($parentNames['A'], $parentNames['B']),
+            // Foyer du parent attributaire (E2) : le beau-parent associé est présent les jours de
+            // « son » parent. C'est une mention de PRÉSENTATION — le jour reste attribué au seul
+            // parent, et rien n'est compté au conjoint (invariant du moteur de garde).
+            'partnerName' => $this->household->displayName($this->household->partnerOf($detail->parent)),
             'canEdit' => $active->can(RightDomain::Custody, RightLevel::Edit),
             'canAgenda' => $canAgenda,
             'events' => $canAgenda ? $this->dayOccurrences($family, $parsed) : [],

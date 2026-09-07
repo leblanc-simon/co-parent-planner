@@ -60,6 +60,16 @@ email:
         custody_changed:
             subject: "Planning de garde modifié"
             body: "Le planning de garde de votre famille a été modifié. Consultez-le dans l'application."
+            # Variante nommée (E3), employée quand la modification porte sur UN jour identifié :
+            # `{household}` est « Sophie » ou « Sophie et Bob » selon l'association parent ↔
+            # beau-parent, composée par `Household` à partir du catalogue (`household.pair`).
+            body_day: "Le {date} est désormais chez {household}. Consultez le planning dans l'application."
+
+household:
+    # Nomme le foyer d'un parent associé à un beau-parent (évolutions E2/E3). Composée ICI et non en
+    # PHP : la conjonction et l'ordre des deux noms changent d'une langue à l'autre.
+    pair: '{parent} et {partner}'
+
 
 auth:
     error:

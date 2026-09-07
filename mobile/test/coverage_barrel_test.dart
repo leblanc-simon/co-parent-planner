@@ -84,6 +84,7 @@ import 'package:coparentplanner/features/children/data/children_repository.dart'
 import 'package:coparentplanner/features/children/presentation/child_detail_screen.dart';
 import 'package:coparentplanner/features/children/presentation/children_screen.dart';
 import 'package:coparentplanner/features/custody/application/current_custody.dart';
+import 'package:coparentplanner/features/custody/application/custody_palette.dart';
 import 'package:coparentplanner/features/custody/application/day_detail.dart';
 import 'package:coparentplanner/features/custody/data/custody_repository.dart';
 import 'package:coparentplanner/features/custody/presentation/custody_activities.dart';

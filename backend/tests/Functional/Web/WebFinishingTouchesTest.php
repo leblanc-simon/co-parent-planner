@@ -406,6 +406,98 @@ final class WebFinishingTouchesTest extends WebTestCase
         return $membership;
     }
 
+    // ───────────────────────── Foyer (E2) : les droits du parent, proposés ─────────────────────────
+
+    /**
+     * Préremplissage des droits (E2) : à l'invitation, l'admin peut reprendre ceux d'un parent —
+     * **commodité de saisie, jamais une autorisation**. Le serveur normalise ensuite selon le rôle
+     * (`RightsNormalizer::capForRole`), et le champ n'est même pas envoyé.
+     *
+     * L'association elle-même n'est pas posée là : elle relie deux memberships, or celui de la
+     * personne invitée n'existe qu'à l'acceptation. Elle se déclare depuis la liste des membres.
+     */
+    public function testInviteFormOffersToCopyAParentRights(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->createUser();
+        $this->login($client);
+
+        $crawler = $client->request('GET', '/settings?tab=famille');
+        self::assertResponseIsSuccessful();
+
+        $copy = $crawler->filter('#i-copy option[data-rights]');
+        self::assertSame(1, $copy->count(), 'le seul parent de la famille est proposé');
+        $rights = json_decode((string) $copy->attr('data-rights'), true);
+        self::assertIsArray($rights);
+        // Le rôle `parent` force `edit` partout : c'est bien ce que l'écran propose de reprendre.
+        self::assertSame('edit', $rights['custody'] ?? null);
+    }
+
+    /**
+     * Une fois le couple déclaré, la ligne du beau-parent offre de reprendre les droits de « son »
+     * parent. Rien n'est accordé tant que le formulaire n'est pas enregistré.
+     */
+    public function testStepParentRowOffersToCopyThePartnerRights(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $user = $this->createUser();
+        $this->seedPartnerOf($user);
+        $this->login($client);
+
+        $crawler = $client->request('GET', '/settings?tab=famille');
+        self::assertResponseIsSuccessful();
+
+        $button = $crawler->filter('.member-row__copy');
+        self::assertSame(1, $button->count(), 'seule la ligne du beau-parent porte la reprise');
+        self::assertStringContainsString('Alice Web', $button->text());
+    }
+
+    /**
+     * Sélecteur de responsable d'une activité (E2) : un beau-parent y est présenté avec le parent
+     * qu'il accompagne. Sans cette mention, une liste de quatre adultes ne dit pas de quel côté
+     * chacun se range. La mention ne figure QUE sur la ligne du beau-parent : la porter aussi sur
+     * celle du parent inverserait le foyer.
+     */
+    public function testAgendaResponsibleSelectNamesTheHousehold(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $user = $this->createUser();
+        $this->seedPartnerOf($user);
+        $this->login($client);
+
+        $crawler = $client->request('GET', '/agenda');
+        self::assertResponseIsSuccessful();
+
+        $options = $crawler->filter('#a-resp option');
+        self::assertSame(2, $options->count());
+        $texts = $options->each(static fn ($node): string => trim($node->text()));
+        self::assertContains('Alice Web', $texts, 'le parent est nommé seul');
+        self::assertContains('Bob Martin · conjoint·e de Alice Web', $texts);
+    }
+
+    /** Beau-parent actif associé au parent de [$user] (évolution E1). */
+    private function seedPartnerOf(User $user): void
+    {
+        $em = $this->em();
+        $parent = $em->getRepository(Membership::class)->findOneBy(['user' => $user]);
+        self::assertInstanceOf(Membership::class, $parent);
+
+        $stepUser = (new User())->setEmail('web-step@example.com')->setFullName('Bob Martin')
+            ->setStatus(UserStatus::Active)->setEmailVerifiedAt(Clock::get()->now());
+        $stepUser->setPasswordHash('x');
+        // La relation est portée par le beau-parent : la vue « conjoint·e de » côté parent se
+        // déduit d'un index miroir, jamais d'une seconde colonne à tenir cohérente.
+        $step = (new Membership())->setUser($stepUser)->setFamily($parent->getFamily())
+            ->setRole(MembershipRole::StepParent)->setStatus(MembershipStatus::Active)
+            ->setPartnerMembership($parent);
+        $em->persist($stepUser);
+        $em->persist($step);
+        $em->flush();
+    }
+
     private function createUser(): User
     {
         $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);

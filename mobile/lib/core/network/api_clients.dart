@@ -28,6 +28,7 @@ class ApiClients {
       custodyDays = api.CustodyDayClient(dio),
       custodyExceptions = api.CustodyExceptionClient(dio),
       custodyStats = api.CustodyStatsClient(dio),
+      custodyColors = api.CustodyColorClient(dio),
       holidays = api.SchoolHolidayClient(dio),
       events = api.EventClient(dio),
       overlayPreferences = api.OverlayPreferenceClient(dio),
@@ -55,6 +56,7 @@ class ApiClients {
   final api.CustodyDayClient custodyDays;
   final api.CustodyExceptionClient custodyExceptions;
   final api.CustodyStatsClient custodyStats;
+  final api.CustodyColorClient custodyColors;
   final api.SchoolHolidayClient holidays;
   final api.EventClient events;
   final api.OverlayPreferenceClient overlayPreferences;

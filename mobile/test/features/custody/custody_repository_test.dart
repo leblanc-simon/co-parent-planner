@@ -1,7 +1,10 @@
 import 'package:coparentplanner/core/error/api_exception.dart';
 import 'package:coparentplanner/core/network/api_clients.dart';
+import 'package:coparentplanner/core/storage/drift/database.dart';
+import 'package:coparentplanner/core/sync/read_cache.dart';
 import 'package:coparentplanner/features/custody/data/custody_repository.dart';
 import 'package:dio/dio.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/scripted_adapter.dart';
@@ -21,7 +24,10 @@ void main() {
     final dio = Dio(BaseOptions(baseUrl: 'http://test'))
       ..httpClientAdapter = adapter;
 
-    return CustodyRepository(ApiClients(dio));
+    final db = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(db.close);
+
+    return CustodyRepository(ApiClients(dio), ReadCache(db.cacheDao));
   }
 
   const pattern = {

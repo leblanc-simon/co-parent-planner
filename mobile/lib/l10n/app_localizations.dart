@@ -927,11 +927,53 @@ abstract class AppL10n {
   /// **'{date} — chez {parent}'**
   String custodyDaySemantics(String date, String parent);
 
+  /// No description provided for @custodyColorsTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Couleurs du planning'**
+  String get custodyColorsTitle;
+
+  /// No description provided for @custodyColorsHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ces teintes ne changent que votre affichage : l\'autre parent garde les siennes. L\'initiale de chaque parent reste affichée sur les cases.'**
+  String get custodyColorsHint;
+
+  /// No description provided for @custodyColorsSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Couleurs du planning enregistrées.'**
+  String get custodyColorsSaved;
+
+  /// Étiquette accessible du groupe de teintes d'un parent (cdc §8.2).
+  ///
+  /// In fr, this message translates to:
+  /// **'Couleur de {parent}'**
+  String custodyColorFor(String parent);
+
+  /// No description provided for @inviteCopyRightsFrom.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reprendre les droits de'**
+  String get inviteCopyRightsFrom;
+
+  /// No description provided for @inviteCopyRightsNone.
+  ///
+  /// In fr, this message translates to:
+  /// **'— partir de zéro —'**
+  String get inviteCopyRightsNone;
+
   /// No description provided for @custodyAtParent.
   ///
   /// In fr, this message translates to:
   /// **'Chez'**
   String get custodyAtParent;
+
+  /// Foyer (E2) : beau-parent associé au parent qui a la garde ce jour-là.
+  ///
+  /// In fr, this message translates to:
+  /// **'avec {partner}'**
+  String custodyWithPartner(String partner);
 
   /// No description provided for @custodyHandover.
   ///

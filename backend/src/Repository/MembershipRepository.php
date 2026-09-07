@@ -136,4 +136,28 @@ class MembershipRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    /**
+     * Conjoint d'un membre, **quel que soit le côté qui porte la relation** (évolution E1).
+     *
+     * La colonne `partner_membership_id` est portée par le beau-parent ; demander « qui accompagne
+     * ce parent ? » impose donc la requête inverse. Les appelants ne doivent pas avoir à savoir de
+     * quel côté ils se trouvent — c'est exactement l'erreur que `PartnerWriter` évite déjà en
+     * écriture.
+     *
+     * Seul un membre **actif** est rendu : nommer un foyer avec quelqu'un qui a quitté la famille
+     * dirait faux. (La suppression d'un membership passe le `SET NULL`, mais un statut non actif
+     * survivrait à la colonne.)
+     */
+    public function partnerOf(Membership $member): ?Membership
+    {
+        $partner = $member->getPartnerMembership()
+            ?? $this->findOneBy(['partnerMembership' => $member]);
+
+        if (!$partner instanceof Membership || MembershipStatus::Active !== $partner->getStatus()) {
+            return null;
+        }
+
+        return $partner;
+    }
 }

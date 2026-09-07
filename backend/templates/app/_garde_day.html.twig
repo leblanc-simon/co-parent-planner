@@ -67,6 +67,10 @@
         <div class="day-sheet__parent-main">
             <div class="eyebrow">Chez</div>
             <div class="day-sheet__parent-name">{{ parentName }}</div>
+            {# Foyer (E2) : le beau-parent associé au parent est présent ce jour-là. Mention
+               d'accompagnement, sur sa propre ligne — le jour reste attribué au seul parent, et
+               le nom en gros au-dessus reste celui de l'attributaire. #}
+            {% if partnerName %}<p class="day-sheet__partner">avec {{ partnerName }}</p>{% endif %}
         </div>
         {% if handoverDateLabel and handoverSlot and detail.handoverTime %}
             <p class="day-sheet__handover">Retour chez {{ parentNames[handoverSlot] }} le {{ handoverDateLabel }} à {{ detail.handoverTime }}</p>

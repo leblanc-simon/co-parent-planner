@@ -868,6 +868,24 @@ class _EventFormState extends ConsumerState<_EventForm> {
     super.dispose();
   }
 
+  /// Libellé d'un responsable possible : son nom, suivi du parent qu'il accompagne s'il est
+  /// beau-parent (foyer, évolution E2).
+  ///
+  /// La mention n'est portée que par le **beau-parent** : « Sophie · conjointe de Bob » sur la
+  /// ligne du parent inverserait le foyer, alors que l'API sert `partnerName` des deux côtés.
+  /// Sans elle, une liste de quatre adultes ne dit pas de quel côté chacun se range.
+  static String _responsibleLabel(AppL10n l, api.Member member) {
+    final name = (member.fullName?.isNotEmpty ?? false)
+        ? member.fullName!
+        : (member.email ?? member.id);
+    final partner = member.partnerName ?? '';
+    if (member.role != 'step_parent' || partner.isEmpty) {
+      return name;
+    }
+
+    return '$name · ${l.membersPartnerOf(partner)}';
+  }
+
   Future<void> _pickStart() async {
     final date = await showDatePicker(
       context: context,
@@ -997,15 +1015,18 @@ class _EventFormState extends ConsumerState<_EventForm> {
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
                 initialValue: _responsibleId,
+                // Le libellé porte désormais le foyer (« Bob · conjoint·e de Sophie ») : sans
+                // `isExpanded`, le menu se dimensionne sur le texte et DÉBORDE de l'écran dès
+                // qu'un couple a deux noms complets — la fin du libellé devient invisible.
+                isExpanded: true,
                 decoration: InputDecoration(labelText: l.agendaResponsible),
                 items: [
                   for (final m in members)
                     DropdownMenuItem(
                       value: m.id,
                       child: Text(
-                        (m.fullName?.isNotEmpty ?? false)
-                            ? m.fullName!
-                            : (m.email ?? m.id),
+                        _responsibleLabel(l, m),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                 ],

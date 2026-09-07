@@ -77,7 +77,12 @@ final class SettingsController extends AbstractController
         // en consultation seule. N'apparaît que pour une famille séparée et un membre `custody:edit`.
         $hasCustody = $family->getType()->hasCustody();
         $canEditCustody = $hasCustody && $active->can(RightDomain::Custody, RightLevel::Edit);
-        $pattern = $canEditCustody ? $this->patterns->findOneByFamily($family) : null;
+        // Le choix des couleurs (cdc §8.2, E5) relève de `custody ≥ view`, contrairement à ses
+        // voisines de l'onglet : c'est une préférence PERSONNELLE d'affichage, offerte à quiconque
+        // voit le planning — un beau-parent en lecture comprise. Le rythme est donc résolu dès
+        // `view` (il désigne les deux parents à colorer), et non plus seulement pour un éditeur.
+        $canViewCustody = $hasCustody && $active->can(RightDomain::Custody, RightLevel::View);
+        $pattern = $canViewCustody ? $this->patterns->findOneByFamily($family) : null;
         $parents = $canEditCustody ? array_values(array_filter(
             $this->memberships->findActiveByFamily($family),
             static fn ($m) => 'parent' === $m->getRole()->value,
@@ -119,6 +124,7 @@ final class SettingsController extends AbstractController
             'quietHoursStart' => $user->getQuietHoursStart(),
             'quietHoursEnd' => $user->getQuietHoursEnd(),
             'canEditCustody' => $canEditCustody,
+            'canViewCustody' => $canViewCustody,
             'pattern' => $pattern,
             'parents' => $parents,
             'parentAId' => $pattern?->getParentA()?->getId(),

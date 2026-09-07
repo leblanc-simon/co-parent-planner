@@ -59,7 +59,24 @@ final class CreateExceptionProcessor implements ProcessorInterface
         $this->generator->applyException($exception);
         $this->publisher->publish($ctx->family);
         // Notification e-mail (Lot 7) : changement de garde → membres habilités custody (hors auteur).
-        $this->notifier->emit(NotificationType::CustodyChanged, $ctx->family, $ctx->membership, (string) $exception->getId());
+        //
+        // Le corps NOMME le foyer désormais attributaire (E3) : « Le 12 septembre 2026 est chez
+        // Sophie et Bob » vaut mieux que « le planning a été modifié », qui oblige à ouvrir
+        // l'application pour savoir ce qui a changé. Ne sont passés ici que des IDENTIFIANTS : le
+        // nom, chiffré au repos (`full_name` 🔒), est résolu à l'envoi — un payload Messenger vit en
+        // clair dans `messenger_messages`, et l'y recopier ferait fuiter l'identité qu'on chiffre
+        // partout ailleurs.
+        $refs = [];
+        $parent = $exception->getParentMembership();
+        if (null !== $parent && $exception->getStartDate() == $exception->getEndDate()) {
+            // Un seul jour : la phrase est exacte. Sur une période, la formulation « le {date} »
+            // serait fausse, et le message générique reste juste.
+            $refs = [
+                'date' => $exception->getStartDate()->format('Y-m-d'),
+                'membershipId' => (string) $parent->getId(),
+            ];
+        }
+        $this->notifier->emit(NotificationType::CustodyChanged, $ctx->family, $ctx->membership, (string) $exception->getId(), $refs);
 
         return CustodyExceptionResource::fromException($exception);
     }

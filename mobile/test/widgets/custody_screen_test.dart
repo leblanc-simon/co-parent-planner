@@ -83,6 +83,9 @@ void main() {
         to: any(named: 'to'),
       ),
     ).thenAnswer((_) async => const CachedResult<api.Event>.fresh([]));
+    // Palette du planning (cdc §8.2) : aucune préférence enregistrée → les deux teintes par
+    // défaut du §8, c'est-à-dire l'écran d'avant la personnalisation.
+    when(() => repo.listColors(any(), any())).thenAnswer((_) async => const []);
   });
 
   List<Override> overrides({bool intact = false}) => [
@@ -266,9 +269,16 @@ void main() {
     tester,
   ) async {
     when(() => repo.getPattern('fam-1')).thenAnswer((_) async => _pattern);
+    // Le formulaire de rythme est sous `custody:edit` (E5) : l'écran vérifie le droit lui-même.
     when(() => membersRepo.listMembers('fam-1')).thenAnswer(
       (_) async => const [
-        api.Member(id: 'mA', role: 'parent', fullName: 'Alice'),
+        api.Member(
+          id: 'mA',
+          role: 'parent',
+          fullName: 'Alice',
+          self: true,
+          rights: {'custody': 'edit'},
+        ),
         api.Member(id: 'mB', role: 'parent', fullName: 'Bob'),
         api.Member(id: 'mC', role: 'child', fullName: 'Léa'),
       ],
@@ -310,65 +320,74 @@ void main() {
     ).called(1);
   });
 
-  testWidgets(
-    'paramètres : motif personnalisé → bascule une nuit et enregistre',
-    (tester) async {
-      when(() => repo.getPattern('fam-1')).thenAnswer(
-        (_) async => api.CustodyPattern(
-          id: 'p1',
-          kind: 'custom',
-          anchorDate: '2026-06-21',
-          handoverWeekday: 0,
-          handoverTime: '19:00',
-          parentAMembershipId: 'mA',
-          parentBMembershipId: 'mB',
-          customPattern: List.filled(14, 'A'),
+  testWidgets('paramètres : motif personnalisé → bascule une nuit et enregistre', (
+    tester,
+  ) async {
+    when(() => repo.getPattern('fam-1')).thenAnswer(
+      (_) async => api.CustodyPattern(
+        id: 'p1',
+        kind: 'custom',
+        anchorDate: '2026-06-21',
+        handoverWeekday: 0,
+        handoverTime: '19:00',
+        parentAMembershipId: 'mA',
+        parentBMembershipId: 'mB',
+        customPattern: List.filled(14, 'A'),
+      ),
+    );
+    // L'écran de réglages porte désormais DEUX sections sous deux droits distincts (E5) : le
+    // rythme sous `custody:edit`, les couleurs dès `view`. Le membre courant doit donc être
+    // désigné avec son droit, comme sur l'écran Garde — l'écran ne se fie plus au chemin par
+    // lequel on l'a ouvert.
+    when(() => membersRepo.listMembers('fam-1')).thenAnswer(
+      (_) async => const [
+        api.Member(
+          id: 'mA',
+          role: 'parent',
+          fullName: 'Alice',
+          self: true,
+          rights: {'custody': 'edit'},
         ),
-      );
-      when(() => membersRepo.listMembers('fam-1')).thenAnswer(
-        (_) async => const [
-          api.Member(id: 'mA', role: 'parent', fullName: 'Alice'),
-          api.Member(id: 'mB', role: 'parent', fullName: 'Bob'),
-        ],
-      );
-      List<String>? sentCustom;
-      when(
-        () => repo.updatePattern(
-          any(),
-          kind: any(named: 'kind'),
-          anchorDate: any(named: 'anchorDate'),
-          handoverWeekday: any(named: 'handoverWeekday'),
-          handoverTime: any(named: 'handoverTime'),
-          parentAMembershipId: any(named: 'parentAMembershipId'),
-          parentBMembershipId: any(named: 'parentBMembershipId'),
-          customPattern: any(named: 'customPattern'),
-        ),
-      ).thenAnswer((inv) async {
-        sentCustom = inv.namedArguments[#customPattern] as List<String>?;
-        return const api.CustodyPattern();
-      });
+        api.Member(id: 'mB', role: 'parent', fullName: 'Bob'),
+      ],
+    );
+    List<String>? sentCustom;
+    when(
+      () => repo.updatePattern(
+        any(),
+        kind: any(named: 'kind'),
+        anchorDate: any(named: 'anchorDate'),
+        handoverWeekday: any(named: 'handoverWeekday'),
+        handoverTime: any(named: 'handoverTime'),
+        parentAMembershipId: any(named: 'parentAMembershipId'),
+        parentBMembershipId: any(named: 'parentBMembershipId'),
+        customPattern: any(named: 'customPattern'),
+      ),
+    ).thenAnswer((inv) async {
+      sentCustom = inv.namedArguments[#customPattern] as List<String>?;
+      return const api.CustodyPattern();
+    });
 
-      await pumpScreen(
-        tester,
-        const CustodySettingsScreen(),
-        overrides: overrides(),
-      );
-      await tester.pumpAndSettle();
+    await pumpScreen(
+      tester,
+      const CustodySettingsScreen(),
+      overrides: overrides(),
+    );
+    await tester.pumpAndSettle();
 
-      // La grille des 14 nuits est affichée ; on bascule la première (A → B).
-      expect(find.byKey(const ValueKey('custody-custom-0')), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('custody-custom-0')));
-      await tester.pump();
+    // La grille des 14 nuits est affichée ; on bascule la première (A → B).
+    expect(find.byKey(const ValueKey('custody-custom-0')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('custody-custom-0')));
+    await tester.pump();
 
-      await tester.tap(find.byKey(const ValueKey('custody-save')));
-      await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('custody-save')));
+    await tester.pump();
 
-      expect(sentCustom, isNotNull);
-      expect(sentCustom!.length, 14);
-      expect(sentCustom![0], 'B');
-      expect(sentCustom![1], 'A');
-    },
-  );
+    expect(sentCustom, isNotNull);
+    expect(sentCustom!.length, 14);
+    expect(sentCustom![0], 'B');
+    expect(sentCustom![1], 'A');
+  });
 
   // ───────────────────────── Revue mobile 2026-08, étape 7 ─────────────────────
 
@@ -530,8 +549,7 @@ void main() {
     await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
     await tester.pumpAndSettle();
 
-    // Ni réglages du rythme, ni import des vacances sur l'écran…
-    expect(find.byKey(const ValueKey('custody-settings-action')), findsNothing);
+    // Pas d'import des vacances sur l'écran…
     expect(find.byKey(const ValueKey('custody-import-holidays')), findsNothing);
 
     // …ni « Échanger ce jour » dans la fiche, qui reste consultable.
@@ -539,6 +557,150 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('custody-day-parent')), findsOneWidget);
     expect(find.byKey(const ValueKey('custody-swap-day')), findsNothing);
+
+    // L'accès aux réglages, lui, n'est plus conditionné au droit d'édition : depuis E5, l'écran
+    // atteint porte AUSSI le choix des couleurs, qui est une préférence personnelle. Ce qu'il ne
+    // doit pas offrir — la mutation du rythme — est vérifié par le test suivant, là où le droit
+    // s'applique, plutôt qu'à l'entrée du chemin.
+  });
+
+  testWidgets('E5 — `custody=view` : les couleurs sont offertes, le rythme non', (
+    tester,
+  ) async {
+    when(() => repo.getPattern('fam-1')).thenAnswer((_) async => _pattern);
+    stubMembers(custody: 'view');
+
+    await pumpScreen(
+      tester,
+      const CustodySettingsScreen(),
+      overrides: overrides(),
+    );
+    await tester.pumpAndSettle();
+
+    // Aucune mutation du rythme : le formulaire se solderait par un 403 (C29).
+    expect(find.byKey(const ValueKey('custody-kind')), findsNothing);
+    expect(find.byKey(const ValueKey('custody-save')), findsNothing);
+
+    // Mais les huit teintes du §8.2 sont bien proposées, pour les deux parents : choisir ses
+    // couleurs n'écrit rien de la famille et ne change l'écran de personne d'autre.
+    expect(find.byKey(const ValueKey('custody-color-A-teal')), findsOneWidget);
+    expect(find.byKey(const ValueKey('custody-color-B-slate')), findsOneWidget);
+  });
+
+  // ───────────────────── Foyer (E2) et couleurs du planning (E5) ─────────────────────
+
+  testWidgets('E2 — la fiche de jour nomme le foyer du parent attributaire', (
+    tester,
+  ) async {
+    stubReads();
+    // Le parent A a un conjoint ; l'API sert `partnerName` des DEUX côtés (index miroir).
+    when(() => membersRepo.listMembers('fam-1')).thenAnswer(
+      (_) async => const [
+        api.Member(
+          id: 'mA',
+          role: 'parent',
+          fullName: 'Sophie Martin',
+          self: true,
+          rights: {'custody': 'view', 'agenda': 'view'},
+          partnerMembershipId: 'mS',
+          partnerName: 'Bob Martin',
+        ),
+        api.Member(id: 'mB', role: 'parent', fullName: 'Marc Durand'),
+        api.Member(
+          id: 'mS',
+          role: 'step_parent',
+          fullName: 'Bob Martin',
+          partnerMembershipId: 'mA',
+          partnerName: 'Sophie Martin',
+        ),
+      ],
+    );
+
+    await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+    await tester.pumpAndSettle();
+
+    // 1er juillet : chez le parent A.
+    await tester.tap(find.byKey(const ValueKey('garde-day-2026-07-01')));
+    await tester.pumpAndSettle();
+    expect(find.text('Sophie Martin'), findsWidgets);
+    expect(find.byKey(const ValueKey('custody-day-partner')), findsOneWidget);
+    expect(find.text('avec Bob Martin'), findsOneWidget);
+  });
+
+  testWidgets('E2 — sans conjoint, la fiche ne dit rien du foyer', (
+    tester,
+  ) async {
+    stubReads();
+    stubMembers();
+
+    await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('garde-day-2026-07-01')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('custody-day-partner')), findsNothing);
+  });
+
+  testWidgets(
+    'E5 — la préférence enregistrée repeint le calendrier du spectateur',
+    (tester) async {
+      stubReads();
+      stubMembers();
+      when(() => repo.listColors(any(), any())).thenAnswer(
+        (_) async => const [
+          api.CustodyColor(targetMembershipId: 'mB', palette: 'purple'),
+        ],
+      );
+
+      await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+
+      // La case du 2 juillet revient au parent B : violet (#8E63A8) au lieu du teal du §8.
+      final cell = tester.widget<Container>(
+        find
+            .descendant(
+              of: find.byKey(const ValueKey('garde-day-2026-07-02')),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      final decoration = cell.decoration! as BoxDecoration;
+      expect(decoration.color, const Color(0xFFEDE4F2));
+      expect((decoration.border! as Border).top.color, const Color(0xFF8E63A8));
+
+      // §8.1 sans exception : l'initiale reste affichée quelle que soit la palette.
+      expect(find.text('M'), findsWidgets);
+    },
+  );
+
+  testWidgets('E5 — choisir une teinte l\'enregistre pour ce membre-là', (
+    tester,
+  ) async {
+    when(() => repo.getPattern('fam-1')).thenAnswer((_) async => _pattern);
+    stubMembers(custody: 'view');
+    when(
+      () => repo.setColor(
+        any(),
+        targetMembershipId: any(named: 'targetMembershipId'),
+        palette: any(named: 'palette'),
+      ),
+    ).thenAnswer((_) async => const api.CustodyColor());
+
+    await pumpScreen(
+      tester,
+      const CustodySettingsScreen(),
+      overrides: overrides(),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('custody-color-B-amber')));
+    await tester.pumpAndSettle();
+
+    // Clé sur le membre OBSERVÉ, jamais sur le slot A/B : un changement de rythme peut
+    // échanger les titulaires, et la couleur suivrait la place au lieu de la personne.
+    verify(
+      () => repo.setColor('fam-1', targetMembershipId: 'mB', palette: 'amber'),
+    ).called(1);
   });
 
   testWidgets('C29 — un jour PASSÉ présente l\'échange inerte, pas absent', (

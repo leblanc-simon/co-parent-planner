@@ -194,7 +194,30 @@
       }
     }
   },
+  "custodyColorsTitle": "Couleurs du planning",
+  "custodyColorsHint": "Ces teintes ne changent que votre affichage : l'autre parent garde les siennes. L'initiale de chaque parent reste affichée sur les cases.",
+  "custodyColorsSaved": "Couleurs du planning enregistrées.",
+  "custodyColorFor": "Couleur de {parent}",
+  "@custodyColorFor": {
+    "description": "Étiquette accessible du groupe de teintes d'un parent (cdc §8.2).",
+    "placeholders": {
+      "parent": {
+        "type": "String"
+      }
+    }
+  },
+  "inviteCopyRightsFrom": "Reprendre les droits de",
+  "inviteCopyRightsNone": "— partir de zéro —",
   "custodyAtParent": "Chez",
+  "custodyWithPartner": "avec {partner}",
+  "@custodyWithPartner": {
+    "description": "Foyer (E2) : beau-parent associé au parent qui a la garde ce jour-là.",
+    "placeholders": {
+      "partner": {
+        "type": "String"
+      }
+    }
+  },
   "custodyHandover": "Retour chez {parent} le {date} à {time}",
   "@custodyHandover": {
     "placeholders": {

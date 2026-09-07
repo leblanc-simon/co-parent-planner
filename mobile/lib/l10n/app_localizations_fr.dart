@@ -459,7 +459,33 @@ class AppL10nFr extends AppL10n {
   }
 
   @override
+  String get custodyColorsTitle => 'Couleurs du planning';
+
+  @override
+  String get custodyColorsHint =>
+      'Ces teintes ne changent que votre affichage : l\'autre parent garde les siennes. L\'initiale de chaque parent reste affichée sur les cases.';
+
+  @override
+  String get custodyColorsSaved => 'Couleurs du planning enregistrées.';
+
+  @override
+  String custodyColorFor(String parent) {
+    return 'Couleur de $parent';
+  }
+
+  @override
+  String get inviteCopyRightsFrom => 'Reprendre les droits de';
+
+  @override
+  String get inviteCopyRightsNone => '— partir de zéro —';
+
+  @override
   String get custodyAtParent => 'Chez';
+
+  @override
+  String custodyWithPartner(String partner) {
+    return 'avec $partner';
+  }
 
   @override
   String custodyHandover(String parent, String date, String time) {

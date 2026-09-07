@@ -209,10 +209,10 @@ contact.
 | Lot | Contenu | Dépendances |
 |---|---|---|
 | **E1** ✅ | A — modèle, contrat, règles de validation, registre RGPD, affichage « conjoint·e de X » (web + mobile) | aucune |
-| **E2** | A — foyer : fiche de jour, responsable d'événement, préremplissage des droits | E1 |
-| **E3** | A — notifications : **nommage** du foyer dans les e-mails. La diffusion, elle, n'a rien à changer : la règle demandée est déjà celle du code (voir A-4 ci-dessus) | E1 |
+| **E2** ✅ | A — foyer : fiche de jour, responsable d'événement, préremplissage des droits | E1 |
+| **E3** ✅ | A — notifications : **nommage** du foyer dans les e-mails. La diffusion, elle, n'a rien à changer : la règle demandée est déjà celle du code (voir A-4 ci-dessus) | E1 |
 | **E4** ✅ | B — amendement du §8, palette encadrée, modèle + contrat de la préférence | aucune (parallélisable avec E1) |
-| **E5** | B — rendu web (variables CSS) et mobile (provider), choix de couleurs, hors-ligne | E4 |
+| **E5** ✅ | B — rendu web (variables CSS) et mobile (provider), choix de couleurs, hors-ligne | E4 |
 
 **DoD par lot** (identique aux lots produits) : tests unitaires + fonctionnels API + E2E web
 Playwright + tests Flutter, migration fournie, OpenAPI ré-exporté et client Dart régénéré sans drift,
@@ -287,3 +287,89 @@ régénéré ; **E2E 23/23**. OpenAPI ré-exporté, deux migrations fournies, re
 
 **Reste** : E2 (foyer), E3 (nommage du foyer dans les e-mails) et E5 (rendu des couleurs, web et
 mobile, avec le choix dans Paramètres › Planning de garde sous `custody ≥ view`).
+
+### 2026-09-08 — E2, E3 et E5 livrés : les cinq lots sont clos
+
+**E2 — le foyer.** Un service unique, `Household`, nomme le foyer d'un parent (« Sophie », ou
+« Sophie et Bob ») et répond à « qui accompagne ce parent ? » **quel que soit le côté qui porte la
+relation** — la colonne vit sur le beau-parent, la question se pose le plus souvent depuis le
+parent. Trois surfaces l'emploient : la **fiche de jour** (« Chez Sophie » / « avec Bob », web et
+mobile), le **sélecteur de responsable** d'une activité (« Bob · conjoint·e de Sophie », qui situe
+enfin les quatre adultes d'un foyer recomposé), et le **préremplissage des droits**.
+
+> **L'invariant du moteur de garde n'a pas bougé d'un octet.** `CustodyDay` continue de désigner le
+> seul parent, la priorité exception > vacances > base est intacte, et les statistiques restent
+> calculées sur les jours effectifs. Le rattachement du beau-parent est de la **présentation** :
+> rien n'est compté au conjoint.
+
+Le préremplissage est resté **strictement une commodité de saisie** : à l'invitation, un sélecteur
+« Reprendre les droits de » recopie ceux d'un parent dans le formulaire ; sur la ligne d'un
+beau-parent associé, un bouton fait de même. Rien n'est accordé tant que le formulaire n'est pas
+soumis, et `RightsNormalizer::capForRole` plafonne ensuite côté serveur. Côté mobile, la reprise
+**rabaisse elle-même** `edit` à `view` pour un rôle enfant : sans cela, la commodité aurait contourné
+le constat C50 (« l'écran doit montrer ce qui sera réellement appliqué »).
+
+> **Limite assumée, à décider si elle gêne** : l'association elle-même n'est **pas** posée à
+> l'invitation. Elle relie deux *memberships*, or celui de la personne invitée n'existe qu'à
+> l'acceptation ; la déclarer d'avance demanderait de porter le champ sur `Invitation`, de le
+> revalider à l'acceptation (le parent visé peut avoir été retiré ou déjà pris entre-temps) et
+> d'étendre le contrat. Le document ne le demandait pas ; l'admin déclare donc le couple depuis la
+> liste des membres, une fois l'invitation acceptée.
+
+**E3 — nommer le foyer dans l'e-mail.** L'e-mail de garde disait « le planning de votre famille a
+été modifié », ce qui oblige à ouvrir l'application pour savoir quoi. Quand la modification porte
+sur **un jour identifié** (un échange de journée), le corps dit désormais « Le 12 septembre 2026 est
+désormais chez Sophie et Bob ». Sur une période de plusieurs jours ou un changement de rythme, la
+phrase serait fausse : le corps générique est conservé.
+
+> **Le payload ne transporte que des identifiants.** Le nom est résolu **à l'envoi**, pas à
+> l'émission : un payload Messenger vit en clair dans `messenger_messages`, et y recopier un
+> `full_name` 🔒 le ferait fuiter dans un dump SQL brut — ce que le §7 interdit précisément. La date
+> est formatée par ICU dans la langue du destinataire et le fuseau de la famille, jamais par un
+> format PHP écrit à la main.
+
+Conformément à l'arbitrage A-3, **aucune ligne de diffusion n'a été écrite** : `RecipientResolver`
+retenait déjà tous les membres actifs ayant `view` sur le domaine, sans distinction de rôle.
+
+**E5 — le rendu des couleurs.** Le web lit désormais `--slot-a*` / `--slot-b*` au lieu des tokens
+`--accent` / `--positive`, posés **côté serveur** sur le conteneur applicatif par
+`CustodyPaletteExtension`. Conséquence heureuse : la page mise en cache par le service worker embarque
+déjà ses couleurs, et le planning ne change pas d'apparence en mode avion — l'exigence hors-ligne est
+satisfaite sans une ligne de JavaScript. Le mobile a son `custodyPaletteProvider` et son cache de
+lecture. Le choix vit dans **Paramètres › Planning de garde** sous `custody ≥ view` (arbitrage B-3),
+des deux côtés : côté mobile, l'écran de réglages porte donc deux sections sous **deux droits
+différents**, et le formulaire de rythme s'y masque de lui-même — le droit est vérifié là où il
+s'applique, plutôt qu'à l'entrée du chemin.
+
+**Trois défauts trouvés par les garde-fous, et c'est ce qu'on leur demande :**
+
+> **La règle « deux slots distincts » ne tenait pas sur un planning vierge.** Elle ne comparait
+> qu'aux préférences **enregistrées** : sur une famille neuve, peindre le parent B en terracotta
+> alors que le parent A l'est **par défaut** passait sans broncher — deux slots identiques, exactement
+> ce que le §8.2 interdit. C'est l'E2E, au premier choix de couleur, qui l'a montré. La comparaison
+> porte désormais sur les teintes **effectives**, défauts du §8 compris, et un test API la verrouille.
+>
+> **Le sélecteur de responsable débordait de 74 px** dès que le libellé portait le foyer : un
+> `DropdownButtonFormField` se dimensionne sur son contenu, l'ellipse ne joue pas sans `isExpanded`.
+> Trouvé par le test widget, pas à l'œil.
+>
+> **Deux tests de l'écran de réglages mobile ne déclaraient aucun droit** : ils passaient parce que
+> l'écran n'était atteignable que par un chemin réservé à `custody:edit`. En vérifiant le droit dans
+> l'écran lui-même, ils se sont mis à échouer — le test était plus faible que ce qu'il prétendait.
+
+**Écart de rendu assumé, écrit au cdc §8.2.** La table des huit teintes devient la **source unique**
+(CSS, enum PHP, catalogue Dart). Elle donne au fond du parent A `#F6E7DE` là où le token historique
+valait `#FBF4EE`, presque blanc — le parent B, lui, était franchement teinté : les deux n'avaient pas
+le même poids visuel. Le fond de A est donc légèrement plus soutenu qu'avant, ce qui **égalise** les
+deux slots. Contrastes mesurés sur ce fond : initiale à **6,8:1** (seuil AA 4,5:1), chiffre de
+statistique à **4,5:1** (texte large, seuil AA 3:1). L'alternative — deux jeux de valeurs pour une
+même couleur — aurait divergé au premier ajustement.
+
+Le §8.1 s'applique **sans exception** : l'initiale de chaque parent reste affichée quelle que soit la
+palette, et trois tests le vérifient explicitement (web, mobile, E2E sous contraste forcé).
+
+**Portes** : backend **457 tests / 4 074 assertions** (445 avant), couverture **87,3 %**, PHPStan 0,
+cs-fixer 0, Twig 38 ; mobile **431 tests**, couverture **83,3 %**, `dart analyze` 0, format 0 ;
+**E2E 23/23** (51,9 s). **Contrat OpenAPI inchangé** — E2, E3 et E5 n'exposent aucun champ nouveau,
+le client Dart n'a donc pas été régénéré. Aucun champ personnel introduit : le registre est
+inchangé. Aucune dépendance ajoutée : `INSTALL.md` est inchangé.

@@ -558,16 +558,32 @@ forcé).
 ### 8.2 Couleurs de garde personnalisables — AMENDEMENT (décision produit, 2026-09-05)
 
 `--accent` (parent A) et `--positive` (parent B) **restent les valeurs par défaut** du planning de
-garde : sans préférence, l'écran est exactement celui décrit ci-dessus, et c'est ce que voit tout
-nouvel utilisateur. L'amendement ouvre une seule chose : **chaque membre peut, pour son propre
-affichage, réattribuer ces deux teintes** (évolution B, `specs/evolutions-2026-09.md`).
+garde : sans préférence, l'écran est celui décrit ci-dessus, et c'est ce que voit tout nouvel
+utilisateur. L'amendement ouvre une seule chose : **chaque membre peut, pour son propre affichage,
+réattribuer ces deux teintes** (évolution B, `specs/evolutions-2026-09.md`).
+
+> **Écart assumé au rendu (livraison E5, 2026-09-07).** La table ci-dessous est la **source unique**
+> des teintes : le CSS (`--slot-a*` / `--slot-b*`), l'enum PHP `CustodyPalette` et le
+> `CustodyPalette` Dart en dérivent tous. Elle donne au fond du parent A `#F6E7DE`, là où le token
+> historique `--accent-soft` valait `#FBF4EE` — presque blanc, quand le fond du parent B était
+> franchement teinté : les deux parents n'avaient pas le même poids visuel. Le fond du parent A est
+> donc **légèrement plus soutenu** qu'avant, ce qui égalise les deux slots. Contrastes vérifiés sur
+> ce fond : initiale `--ink-2` **6,8:1** (seuil AA texte 4,5:1) et chiffre de statistique en
+> `--slot-a-ink` **4,5:1** (texte large, seuil AA 3:1). L'alternative — deux jeux de valeurs pour
+> une même couleur — aurait fait diverger la table et le rendu au premier ajustement.
+>
+> `--accent` et `--positive` restent inchangés partout ailleurs (boutons, liens, catégories) :
+> personnaliser la garde ne repeint pas l'application.
 
 - **La préférence est locale au spectateur.** Elle ne modifie ni la couleur d'identité du membre
   observé (`Membership.display_color`, vue par tous), ni l'écran de qui que ce soit d'autre. Deux
   parents peuvent voir le même planning dans deux jeux de couleurs sans jamais se gêner.
 - **Portée : le planning de garde seulement** — cases du calendrier, mini-semaine et carte héro de
-  l'accueil, fiche de jour, légendes. Les catégories d'agenda, la couleur de famille liée `#9C6FB0`
-  et les couleurs d'identité restent normatives et non configurables.
+  l'accueil, fiche de jour, légendes, **et le builder de rythme** de Paramètres › Planning de garde
+  (les « nuits » y désignent les deux mêmes parents et jouxtent les pastilles de légende : les
+  laisser sur les tokens fixes aurait affiché une légende terracotta à côté d'une nuit repeinte).
+  Les catégories d'agenda, la couleur de famille liée `#9C6FB0` et les couleurs d'identité restent
+  normatives et non configurables.
 - **Palette fermée de 8 teintes** (ci-dessous), pas de sélecteur libre. Chaque teinte est un triplet
   *bordure / fond doux / encre* dont le contraste a été mesuré pour que **l'initiale du parent reste
   lisible** sur le fond de case. Un sélecteur libre laisserait choisir un fond sur lequel ce marqueur

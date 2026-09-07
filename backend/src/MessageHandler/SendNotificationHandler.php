@@ -12,9 +12,11 @@ use App\Enum\NotificationStatus;
 use App\Enum\NotificationType;
 use App\Message\SendNotification;
 use App\Repository\FamilyRepository;
+use App\Repository\MembershipRepository;
 use App\Repository\NotificationDispatchRepository;
 use App\Repository\UserRepository;
 use App\Security\Auth\AuditLogger;
+use App\Service\Family\Household;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Clock\ClockInterface;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
@@ -41,6 +43,8 @@ final class SendNotificationHandler
         private readonly UserRepository $users,
         private readonly FamilyRepository $families,
         private readonly NotificationDispatchRepository $dispatches,
+        private readonly MembershipRepository $memberships,
+        private readonly Household $household,
         private readonly \App\Service\Notification\QuietHours $quietHours,
         private readonly \App\Service\Notification\LocaleResolver $localeResolver,
         private readonly MailerInterface $mailer,
@@ -90,7 +94,7 @@ final class SendNotificationHandler
         }
 
         $locale = $this->localeResolver->resolve($user, $family);
-        $email = $this->compose($message, $type, $user->getEmail(), $locale);
+        $email = $this->compose($message, $type, $user->getEmail(), $locale, $tz);
 
         $dispatch->setStatus(NotificationStatus::Sending);
         $this->em->flush();
@@ -107,11 +111,13 @@ final class SendNotificationHandler
         $this->em->flush();
     }
 
-    private function compose(SendNotification $message, NotificationType $type, string $to, string $locale): TemplatedEmail
+    private function compose(SendNotification $message, NotificationType $type, string $to, string $locale, \DateTimeZone $tz): TemplatedEmail
     {
         $title = $message->payloadRefs['title'] ?? '';
         $subject = $this->translator->trans('email.notif.'.$type->value.'.subject', ['title' => $title], 'messages', $locale);
-        $body = $this->translator->trans('email.notif.'.$type->value.'.body', ['title' => $title], 'messages', $locale);
+
+        [$bodyKey, $bodyParams] = $this->body($type, $message->payloadRefs, $locale, $tz);
+        $body = $this->translator->trans($bodyKey, $bodyParams + ['title' => $title], 'messages', $locale);
 
         return (new TemplatedEmail())
             ->from(new Address($this->fromAddress, 'CoParentPlanner'))
@@ -128,6 +134,60 @@ final class SendNotificationHandler
                 'actionUrl' => $this->link($type, $message->payloadRefs),
                 'actionLabel' => $this->translator->trans('email.notif.cta', [], 'messages', $locale),
             ]);
+    }
+
+    /**
+     * Choisit la variante du corps et ses paramètres.
+     *
+     * **Nommage du foyer (E3)** : quand la notification de garde porte sur un jour identifié, le
+     * corps dit « Le {date} est désormais chez {household} » — « Sophie », ou « Sophie et Bob » si
+     * un beau-parent lui est associé. Le nom est résolu ICI, depuis l'identifiant transporté : le
+     * payload d'un message Messenger vit en clair en base, et y recopier un `full_name` 🔒 le
+     * ferait fuiter dans un dump SQL brut, ce que le §7 interdit.
+     *
+     * Toute ref manquante (membre retiré depuis, période de plusieurs jours) fait retomber sur le
+     * corps générique : un e-mail moins précis vaut mieux qu'une phrase à trous.
+     *
+     * @param array<string, string> $refs
+     *
+     * @return array{0: string, 1: array<string, string>}
+     */
+    private function body(NotificationType $type, array $refs, string $locale, \DateTimeZone $tz): array
+    {
+        $key = 'email.notif.'.$type->value.'.body';
+        if (NotificationType::CustodyChanged !== $type
+            || !isset($refs['date'], $refs['membershipId'])
+            || !Uuid::isValid($refs['membershipId'])) {
+            return [$key, []];
+        }
+
+        $parent = $this->memberships->find(Uuid::fromString($refs['membershipId']));
+        $household = $this->household->name($parent, $locale);
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $refs['date'], $tz);
+        if ('' === $household || !$date instanceof \DateTimeImmutable) {
+            return [$key, []];
+        }
+
+        return [$key.'_day', ['date' => $this->longDate($date, $locale, $tz), 'household' => $household]];
+    }
+
+    /**
+     * Date en toutes lettres dans la langue du destinataire (« 12 septembre 2026 »).
+     *
+     * Formatée par ICU plutôt que par un format PHP écrit à la main : l'ordre des éléments et le
+     * nom du mois changent avec la locale, et l'e-mail est le seul écran que l'application ne
+     * relit pas avant envoi.
+     */
+    private function longDate(\DateTimeImmutable $date, string $locale, \DateTimeZone $tz): string
+    {
+        $formatter = new \IntlDateFormatter(
+            $locale,
+            \IntlDateFormatter::LONG,
+            \IntlDateFormatter::NONE,
+            $tz,
+        );
+
+        return $formatter->format($date) ?: $date->format('Y-m-d');
     }
 
     /**

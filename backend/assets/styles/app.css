@@ -36,6 +36,17 @@
     --positive-soft: #DCECE8;
     --linked: #9C6FB0;          /* famille liée (overlay) */
 
+    /* Couleurs du PLANNING DE GARDE (cdc §8.2) : lues par les cases du calendrier, la mini-semaine
+       et la fiche de jour. Terracotta et teal restent les valeurs par défaut ; chaque membre peut
+       les réattribuer POUR SON PROPRE AFFICHAGE, et le gabarit les surcharge alors sur
+       `.app-shell` (voir `CustodyPaletteExtension`). Distinctes de `--accent`/`--positive`, qui
+       restent normatifs partout ailleurs (boutons, liens, catégories) : personnaliser la garde ne
+       doit pas repeindre l'application.
+       Le §8.1 continue de s'appliquer sans exception — l'initiale du parent reste affichée, quelle
+       que soit la palette, et c'est elle qui porte l'information. */
+    --slot-a: #C2643D;          --slot-a-soft: #F6E7DE;     --slot-a-ink: #A8512B;
+    --slot-b: #2E7D71;          --slot-b-soft: #DCECE8;     --slot-b-ink: #226B60;
+
     /* Catégories agenda */
     --cat-sport: #5E7CB8;       --cat-sport-bg: #E4EAF5;
     --cat-music: #9C6FB0;       --cat-music-bg: #EFE6F4;
@@ -134,8 +145,8 @@ a:hover { text-decoration: underline; }
    designait le parent A une semaine sur deux a celui qui avait pourtant les enfants (constat 6.5).
    `--none` (jour non materialise, hors horizon) reste neutre plutot que de trancher au hasard. */
 .home-hero {
-    &.home-hero--a { border-left-color: var(--accent); }
-    &.home-hero--b { border-left-color: var(--positive); }
+    &.home-hero--a { border-left-color: var(--slot-a); }
+    &.home-hero--b { border-left-color: var(--slot-b); }
     &.home-hero--none { border-left-color: var(--border-2); }
 
     & .home-hero__head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
@@ -296,8 +307,10 @@ a:hover { text-decoration: underline; }
 .home-custody { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: .3rem 0 .8rem; }
 .home-custody__legend { margin-bottom: .5rem; }
 .home-custody__day { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px; border-radius: 10px; background: var(--card); border: 1px solid var(--border); }
-.home-custody__day--a { background: var(--accent-soft); border-color: var(--accent-soft-2); }
-.home-custody__day--b { background: var(--positive-soft); border-color: #C9E0DA; }
+/* Bordure douce : la teinte du slot mêlée à son fond. `color-mix` évite d'ajouter une quatrième
+   valeur à chacune des huit teintes du §8.2 pour ce seul usage. */
+.home-custody__day--a { background: var(--slot-a-soft); border-color: color-mix(in srgb, var(--slot-a) 22%, var(--slot-a-soft)); }
+.home-custody__day--b { background: var(--slot-b-soft); border-color: color-mix(in srgb, var(--slot-b) 22%, var(--slot-b-soft)); }
 .home-custody__day--none { opacity: .55; }
 .home-custody__day.is-today { box-shadow: 0 0 0 2px var(--accent); border-color: transparent; }
 .home-custody__dow { font-size: 10px; font-weight: 700; letter-spacing: .05em; color: var(--muted-2); }
@@ -410,6 +423,60 @@ a:hover { text-decoration: underline; }
 .member-row__admin { flex-direction: row !important; align-items: center; gap: .35rem; }
 .member-row__actions { display: flex; gap: .5rem; }
 .invite-rights { display: flex; flex-wrap: wrap; gap: .75rem; margin: .5rem 0; }
+/* Reprise des droits d'un parent du foyer (E2) : proposition de saisie, placée AVANT les
+   sélecteurs qu'elle remplit pour que l'ordre de lecture corresponde à l'ordre d'action. */
+.invite-copy {
+    margin-top: .6rem;
+
+    /* `.field select` habille déjà le contrôle : seule la largeur est reprise, un sélecteur de
+       noms n'ayant aucune raison de s'étendre sur toute la carte. */
+    & select { max-width: 22rem; }
+}
+.member-row__copy { margin-bottom: .6rem; font-size: .8rem; }
+
+/* Choix des couleurs du planning (cdc §8.2, E5). Chaque pastille reproduit l'aspect d'une case du
+   calendrier — fond doux + bordure + encre — et porte le NOM de la teinte : une grille de huit
+   carrés de couleur ne se choisit pas sans lui (§8.1, même raison que la légende du calendrier). */
+.palette {
+    border: none; padding: 0; margin: 0 0 1rem;
+
+    & .palette__legend {
+        padding: 0; font-family: var(--font-title); font-size: 15px; font-weight: 700;
+        color: var(--ink); margin-bottom: .5rem;
+    }
+
+    & .palette__swatches { display: flex; flex-wrap: wrap; gap: .5rem; }
+
+    & .palette__swatch {
+        cursor: pointer;
+
+        /* Le bouton radio reste dans le flux (jamais `display:none`) : il doit garder le focus
+           clavier et son étiquette accessible, le rendu visuel étant porté par la pastille. */
+        & input {
+            position: absolute; width: 1px; height: 1px; overflow: hidden;
+            clip-path: inset(50%); white-space: nowrap;
+        }
+
+        & .palette__chip {
+            display: inline-block; padding: .4rem .7rem; border-radius: 10px;
+            font-size: .82rem; font-weight: 600;
+            background: var(--chip-soft); border: 1px solid var(--chip-border); color: var(--chip-ink);
+        }
+
+        /* Sélection : anneau épais, pas un simple changement de teinte — le contour survit au
+           contraste forcé et aux niveaux de gris, la couleur seule non. */
+        & input:checked + .palette__chip {
+            box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--chip-border);
+        }
+
+        & input:focus-visible + .palette__chip { outline: 2px solid var(--ink); outline-offset: 3px; }
+    }
+}
+
+@media (forced-colors: active) {
+    /* `box-shadow` est ignoré en contraste forcé : la sélection y serait invisible. */
+    .palette__swatch input:checked + .palette__chip { outline: 3px solid CanvasText; outline-offset: 2px; }
+}
 .invite-summary { color: var(--ink-2); font-size: .85rem; min-height: 1.2em; margin: .5rem 0; }
 .invitations, .links { list-style: none; padding: 0; margin: .5rem 0 0; display: flex; flex-direction: column; gap: .5rem; }
 .invitations li, .links li {
@@ -486,8 +553,8 @@ a:hover { text-decoration: underline; }
 .garde-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
 .garde-cal__dow { text-align: center; font-size: 12px; color: var(--muted-2); font-weight: 600; text-transform: uppercase; padding-bottom: .3rem; }
 .garde-day { position: relative; aspect-ratio: 1; border-radius: 13px; padding: 8px; background: var(--surface); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
-.garde-day--a { background: var(--accent-soft); border-color: var(--accent); }
-.garde-day--b { background: var(--positive-soft); border-color: var(--positive); }
+.garde-day--a { background: var(--slot-a-soft); border-color: var(--slot-a); }
+.garde-day--b { background: var(--slot-b-soft); border-color: var(--slot-b); }
 .garde-day--none { background: var(--surface); }
 .garde-day--out { opacity: .35; }
 .garde-day--exception { border-style: dashed; border-width: 2px; }
@@ -554,17 +621,17 @@ a:hover { text-decoration: underline; }
    n'explique rien à qui ne distingue pas les deux teintes — et le blanc sur `--accent` ne
    plafonnait qu'à 4,05:1, sous le seuil AA pour un texte de cette taille. Ici : 7,55:1 / 6,74:1. */
 .garde-dot { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 6px; vertical-align: middle; font-size: 10px; font-weight: 700; font-style: normal; color: var(--ink); }
-.garde-dot--a { background: var(--accent-soft); border: 1px solid var(--accent); }
-.garde-dot--b { background: var(--positive-soft); border: 1px solid var(--positive); }
+.garde-dot--a { background: var(--slot-a-soft); border: 1px solid var(--slot-a); }
+.garde-dot--b { background: var(--slot-b-soft); border: 1px solid var(--slot-b); }
 .garde-dot--exc { background: transparent; border: 2px dashed var(--ink-2); }
 .garde-stats { display: flex; gap: 10px; }
 .garde-stat { flex: 1; text-align: center; padding: 12px 0; border-radius: 12px; }
 .garde-stat strong { display: block; font-family: var(--font-title); font-size: 24px; font-weight: 700; line-height: 1.1; }
 .garde-stat span { font-size: 12px; color: var(--muted); }
-.garde-stat--a { background: var(--accent-soft); }
-.garde-stat--a strong { color: var(--accent-strong); }
-.garde-stat--b { background: var(--positive-soft); }
-.garde-stat--b strong { color: var(--positive-strong); }
+.garde-stat--a { background: var(--slot-a-soft); }
+.garde-stat--a strong { color: var(--slot-a-ink); }
+.garde-stat--b { background: var(--slot-b-soft); }
+.garde-stat--b strong { color: var(--slot-b-ink); }
 .garde-special { display: flex; flex-direction: column; gap: .6rem; }
 .garde-special__item { border: 1px solid var(--border); border-radius: 15px; padding: 14px; }
 .garde-special__head { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; }
@@ -609,8 +676,8 @@ a:hover { text-decoration: underline; }
     background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 15px; margin-top: 16px;
 }
 .day-sheet__parent::before { content: ''; position: absolute; left: 0; top: 0; width: 5px; height: 100%; }
-.day-sheet__parent--a::before { background: var(--accent); }
-.day-sheet__parent--b::before { background: var(--positive); }
+.day-sheet__parent--a::before { background: var(--slot-a); }
+.day-sheet__parent--b::before { background: var(--slot-b); }
 /* Fond doux + contour + encre sombre, et non la couleur pleine de la maquette : le blanc sur
    `--accent` ne vaut que 4,05:1 — c'est le même arbitrage que la pastille de légende (cdc §8.1). */
 .day-sheet__avatar {
@@ -618,10 +685,15 @@ a:hover { text-decoration: underline; }
     display: flex; align-items: center; justify-content: center;
     font-family: var(--font-title); font-size: 18px; font-weight: 700; color: var(--ink);
 }
-.day-sheet__parent--a .day-sheet__avatar { background: var(--accent-soft-2); border: 1px solid var(--accent); }
-.day-sheet__parent--b .day-sheet__avatar { background: var(--positive-soft); border: 1px solid var(--positive); }
+.day-sheet__parent--a .day-sheet__avatar { background: var(--slot-a-soft); border: 1px solid var(--slot-a); }
+.day-sheet__parent--b .day-sheet__avatar { background: var(--slot-b-soft); border: 1px solid var(--slot-b); }
 .day-sheet__parent-main { flex: 1; min-width: 0; }
-.day-sheet__parent-name { font-family: var(--font-title); font-size: 19px; font-weight: 700; overflow-wrap: anywhere; }
+.day-sheet__parent-name {
+    font-family: var(--font-title); font-size: 19px; font-weight: 700; overflow-wrap: anywhere;
+}
+/* Foyer (E2) : le beau-parent associé accompagne le parent ce jour-là. Discret et sous le nom —
+   l'attributaire du jour reste le parent, et la hiérarchie typographique doit le dire. */
+.day-sheet__partner { margin: .1rem 0 0; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
 /* Transmission sur sa propre ligne (la maquette la tasse à droite du bloc) : « Retour chez Benjamin
    Flechel le dimanche 13 septembre 2026 à 18:00 » ne tient pas dans une colonne de 140 px sans
    césure agressive, et c'est l'information que l'on vient chercher. */
@@ -709,13 +781,16 @@ a:hover { text-decoration: underline; }
 }
 .night:hover { transform: translateY(-1px); box-shadow: var(--shadow-soft); }
 .night:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.night--a { background: var(--accent-soft); border-color: var(--accent-soft-2); }
-.night--b { background: var(--positive-soft); border-color: #C9E0DA; }
+/* Le builder de rythme montre les mêmes deux parents que le calendrier, et jouxte les pastilles de
+   légende `.garde-dot--a/--b` : le laisser sur les tokens fixes afficherait une légende terracotta
+   à côté d'une nuit repeinte. Il suit donc la palette du spectateur (§8.2). */
+.night--a { background: var(--slot-a-soft); border-color: color-mix(in srgb, var(--slot-a) 22%, var(--slot-a-soft)); }
+.night--b { background: var(--slot-b-soft); border-color: color-mix(in srgb, var(--slot-b) 22%, var(--slot-b-soft)); }
 .night--we { background: repeating-linear-gradient(135deg, var(--surface), var(--surface) 6px, #ECE7DC 6px, #ECE7DC 12px); border-color: var(--border-3); border-style: dashed; }
 .night__dow { font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--muted-2); }
 .night__name { font-family: var(--font-title); font-weight: 700; font-size: 13.5px; line-height: 1.15; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.night--a .night__name { color: var(--accent-strong); }
-.night--b .night__name { color: var(--positive-strong); }
+.night--a .night__name { color: var(--slot-a-ink); }
+.night--b .night__name { color: var(--slot-b-ink); }
 .night--we .night__name { color: var(--muted); font-weight: 600; }
 
 /* Segmenté « le week-end commence chez ». */

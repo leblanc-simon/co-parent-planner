@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Tests\Functional;
 
 use ApiPlatform\Symfony\Bundle\Test\Client;
+use App\Entity\CustodyPattern;
 use App\Entity\Family;
 use App\Entity\Membership;
 use App\Entity\Right;
 use App\Entity\User;
 use App\Enum\CustodyPalette;
+use App\Enum\CustodyPatternKind;
 use App\Enum\MembershipRole;
 use App\Enum\MembershipStatus;
 use App\Enum\RightDomain;
@@ -261,6 +263,59 @@ final class PartnerAndCustodyColorTest extends ApiAuthTestCase
         $this->putColor($client, $auth, $familyId, $other, CustodyPalette::Blue->value);
         $res = $this->putColor($client, $auth, $familyId, $admin, CustodyPalette::Blue->value);
         self::assertSame(422, $res->getStatusCode());
+    }
+
+    /**
+     * Le conflit se juge sur les teintes **effectives**, défauts du §8 compris.
+     *
+     * Ne comparer qu'aux préférences enregistrées laissait passer le cas le plus courant : sur un
+     * planning encore vierge, peindre le parent B en terracotta alors que le parent A l'est **par
+     * défaut** donnait deux slots identiques — exactement ce que la règle interdit. Le défaut a été
+     * trouvé par l'E2E d'E5, sur le premier choix de couleur d'une famille neuve.
+     */
+    public function testTheDefaultColorOfTheOtherParentCountsAsTaken(): void
+    {
+        [$client, $auth, $familyId] = $this->adminWithFamily('color-default@example.com');
+        $admin = $this->adminMembership($client, $auth, $familyId);
+        $other = $this->addMember($familyId, 'color-default-b@example.com', MembershipRole::Parent);
+        $this->seedPattern($familyId, $admin, $other);
+
+        // Aucune préférence enregistrée : A est terracotta et B est teal, par le §8.
+        $res = $this->putColor($client, $auth, $familyId, $other, CustodyPalette::Terracotta->value);
+        self::assertSame(422, $res->getStatusCode(), 'la teinte par défaut du parent A est prise');
+
+        // Une teinte libre passe, et n'engage que l'affichage de son auteur.
+        $res = $this->putColor($client, $auth, $familyId, $other, CustodyPalette::Purple->value);
+        self::assertSame(200, $res->getStatusCode());
+
+        // Le parent A peut alors reprendre le teal que B vient de libérer.
+        $res = $this->putColor($client, $auth, $familyId, $admin, CustodyPalette::Teal->value);
+        self::assertSame(200, $res->getStatusCode());
+    }
+
+    /** Rythme minimal désignant les deux parents — sans lui, aucun slot n'a de teinte par défaut. */
+    private function seedPattern(string $familyId, string $parentAId, string $parentBId): void
+    {
+        $families = self::getContainer()->get(FamilyRepository::class);
+        self::assertInstanceOf(FamilyRepository::class, $families);
+        $family = $families->find(Uuid::fromString($familyId));
+        self::assertInstanceOf(Family::class, $family);
+
+        $memberships = $this->em()->getRepository(Membership::class);
+        $parentA = $memberships->find(Uuid::fromString($parentAId));
+        self::assertInstanceOf(Membership::class, $parentA);
+        $parentB = $memberships->find(Uuid::fromString($parentBId));
+        self::assertInstanceOf(Membership::class, $parentB);
+
+        $this->em()->persist((new CustodyPattern())
+            ->setFamily($family)
+            ->setKind(CustodyPatternKind::Alternating)
+            ->setAnchorDate(new \DateTimeImmutable('2026-06-21'))
+            ->setHandoverWeekday(0)
+            ->setHandoverTime('19:00')
+            ->setParentA($parentA)
+            ->setParentB($parentB));
+        $this->em()->flush();
     }
 
     /** Palette fermée : une teinte hors catalogue est refusée, jamais ignorée en silence. */

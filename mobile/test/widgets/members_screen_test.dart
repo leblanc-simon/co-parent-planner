@@ -243,6 +243,141 @@ void main() {
     );
   });
 
+  group('foyer (E2) — reprendre les droits d\'un parent', () {
+    testWidgets(
+      'le sélecteur propose les parents et préremplit les droits, sans rien accorder',
+      (tester) async {
+        when(() => repo.listMembers('fam-1')).thenAnswer(
+          (_) async => const [
+            api.Member(
+              id: 'mA',
+              role: 'parent',
+              fullName: 'Sophie Durand',
+              // Le rôle `parent` force `edit` partout : c'est ce que l'écran propose de
+              // reprendre. Le serveur plafonnera ensuite selon le rôle de l'invité·e —
+              // `family_settings` reste `none` pour un beau-parent.
+              rights: {
+                'custody': 'edit',
+                'agenda': 'edit',
+                'children_notes': 'edit',
+                'exchanges': 'view',
+              },
+            ),
+            api.Member(id: 'mS', role: 'step_parent', fullName: 'Bob Martin'),
+          ],
+        );
+        when(
+          () => repo.invite(
+            any(),
+            email: any(named: 'email'),
+            role: any(named: 'role'),
+            rights: any(named: 'rights'),
+            isAdmin: any(named: 'isAdmin'),
+          ),
+        ).thenAnswer(
+          (_) async => const api.Invitation(
+            id: 'i1',
+            email: 'x@e.fr',
+            role: 'step_parent',
+          ),
+        );
+
+        await pumpScreen(tester, const InviteScreen(), overrides: overrides());
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const ValueKey('invite-email')),
+          'x@e.fr',
+        );
+
+        // Seuls les PARENTS sont proposés : un beau-parent n'a rien à transmettre.
+        await tester.tap(find.byKey(const ValueKey('invite-copy-rights')));
+        await tester.pumpAndSettle();
+        expect(find.text('Bob Martin'), findsNothing);
+        await tester.tap(find.text('Sophie Durand').last);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const ValueKey('invite-send')));
+        await tester.pump();
+
+        final sent =
+            verify(
+                  () => repo.invite(
+                    'fam-1',
+                    email: 'x@e.fr',
+                    role: api.InvitationCreateInvitationRequestRole.stepParent,
+                    rights: captureAny(named: 'rights'),
+                    isAdmin: any(named: 'isAdmin'),
+                  ),
+                ).captured.single
+                as Map<String, String>?;
+        expect(sent, isNotNull);
+        expect(sent!['custody'], 'edit');
+        expect(sent['exchanges'], 'view');
+      },
+    );
+
+    testWidgets(
+      'un rôle enfant rabaisse la reprise : la commodité ne contourne pas le plafond',
+      (tester) async {
+        when(() => repo.listMembers('fam-1')).thenAnswer(
+          (_) async => const [
+            api.Member(
+              id: 'mA',
+              role: 'parent',
+              fullName: 'Sophie Durand',
+              rights: {'custody': 'edit', 'agenda': 'edit'},
+            ),
+          ],
+        );
+        when(
+          () => repo.invite(
+            any(),
+            email: any(named: 'email'),
+            role: any(named: 'role'),
+            rights: any(named: 'rights'),
+            isAdmin: any(named: 'isAdmin'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const api.Invitation(id: 'i1', email: 'x@e.fr', role: 'child'),
+        );
+
+        await pumpScreen(tester, const InviteScreen(), overrides: overrides());
+        await tester.pumpAndSettle();
+        await tester.enterText(
+          find.byKey(const ValueKey('invite-email')),
+          'x@e.fr',
+        );
+        await tester.tap(find.text('Enfant'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('invite-copy-rights')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Sophie Durand').last);
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const ValueKey('invite-send')));
+        await tester.pump();
+
+        final sent =
+            verify(
+                  () => repo.invite(
+                    'fam-1',
+                    email: 'x@e.fr',
+                    role: api.InvitationCreateInvitationRequestRole.child,
+                    rights: captureAny(named: 'rights'),
+                    isAdmin: any(named: 'isAdmin'),
+                  ),
+                ).captured.single
+                as Map<String, String>?;
+        expect(sent, isNotNull);
+        // `RightsNormalizer` rabaisserait de toute façon côté serveur (C50) : l'écran doit
+        // montrer ce qui sera RÉELLEMENT appliqué, pas ce qui a été cliqué.
+        expect(sent!['custody'], 'view');
+        expect(sent['agenda'], 'view');
+      },
+    );
+  });
+
   group('plafond du rôle enfant dans le formulaire d\'invitation (C50)', () {
     testWidgets('« Modifier » n\'est pas proposé pour un rôle enfant', (
       tester,

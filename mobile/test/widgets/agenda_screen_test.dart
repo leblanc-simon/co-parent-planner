@@ -172,6 +172,43 @@ void main() {
     ).called(1);
   });
 
+  testWidgets('E2 — le sélecteur de responsable situe le beau-parent dans son foyer', (
+    tester,
+  ) async {
+    stubEvents(repo, const []);
+    when(() => membersRepo.listMembers('fam-1')).thenAnswer(
+      (_) async => const [
+        api.Member(id: 'mA', role: 'parent', fullName: 'Sophie Durand'),
+        api.Member(
+          id: 'mS',
+          role: 'step_parent',
+          fullName: 'Bob Martin',
+          partnerMembershipId: 'mA',
+          // L'API sert `partnerName` des DEUX côtés ; c'est le RÔLE qui décide de la
+          // mention, sans quoi « Sophie · conjointe de Bob » inverserait le foyer.
+          partnerName: 'Sophie Durand',
+        ),
+      ],
+    );
+    when(
+      () => childrenRepo.listChildren('u-test', 'fam-1'),
+    ).thenAnswer((_) async => const []);
+
+    await pumpScreen(tester, const AgendaScreen(), overrides: overrides());
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('agenda-new')));
+    await tester.pumpAndSettle();
+
+    // Le sélecteur fermé n'affiche que l'élément retenu : il faut ouvrir la liste pour voir
+    // les deux libellés.
+    await tester.tap(find.byType(DropdownButtonFormField<String>).at(1));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Bob Martin · Conjoint·e de Sophie Durand'), findsWidgets);
+    // Le parent, lui, est nommé seul — la mention ne se lit que du côté du beau-parent.
+    expect(find.text('Sophie Durand'), findsWidgets);
+  });
+
   // ---- Régressions de la revue mobile 2026-08 (étape 6) ----
 
   group('fenêtre de lecture explicite (C37)', () {

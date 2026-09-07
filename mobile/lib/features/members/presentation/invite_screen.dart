@@ -33,6 +33,14 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
   bool _sending = false;
   String? _error;
 
+  /// Parent dont les droits ont été recopiés (foyer, évolution E2), `null` par défaut.
+  ///
+  /// **Commodité de saisie, jamais une autorisation** : le serveur normalise ensuite selon le rôle
+  /// (`RightsNormalizer::capForRole`), et rien n'est accordé avant l'envoi du formulaire.
+  /// L'association elle-même n'est pas posée ici : elle relie deux memberships, or celui de la
+  /// personne invitée n'existera qu'à l'acceptation — elle se déclare depuis la liste des membres.
+  String? _copyFrom;
+
   @override
   void dispose() {
     _email.dispose();
@@ -84,6 +92,14 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
     final l = AppL10n.of(context);
     final showRights =
         _role != api.InvitationCreateInvitationRequestRole.parent;
+    // Parents de la famille : ce sont eux dont les droits peuvent être repris (un parent a
+    // `edit` partout par son rôle, il n'y a donc rien à copier SUR lui).
+    final parents = ref
+        .watch(familyMembersProvider)
+        .maybeWhen(
+          data: (m) => m.where((x) => x.role == 'parent').toList(),
+          orElse: () => const <api.Member>[],
+        );
 
     return Scaffold(
       appBar: AppBar(title: Text(l.inviteTitle)),
@@ -126,6 +142,31 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
             ),
           if (showRights) ...[
             const SizedBox(height: 16),
+            if (parents.isNotEmpty) ...[
+              DropdownButtonFormField<String?>(
+                key: const ValueKey('invite-copy-rights'),
+                initialValue: _copyFrom,
+                // Un nom complet suffit à faire déborder le menu s'il se dimensionne sur son
+                // contenu ; `isExpanded` le contraint à la largeur du champ et l'ellipse joue.
+                isExpanded: true,
+                decoration: InputDecoration(labelText: l.inviteCopyRightsFrom),
+                items: [
+                  DropdownMenuItem(child: Text(l.inviteCopyRightsNone)),
+                  for (final m in parents)
+                    DropdownMenuItem(
+                      value: m.id,
+                      child: Text(
+                        (m.fullName?.isNotEmpty ?? false)
+                            ? m.fullName!
+                            : (m.email ?? m.id),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
+                onChanged: _sending ? null : (v) => _copyRights(v, parents),
+              ),
+              const SizedBox(height: 12),
+            ],
             if (_childRole) ...[
               Text(
                 l.inviteChildNoEdit,
@@ -165,8 +206,30 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
     );
   }
 
-  void _set(String domain, String level) =>
-      setState(() => _rights[domain] = level);
+  void _set(String domain, String level) => setState(() {
+    _rights[domain] = level;
+    // Une modification manuelle n'est plus « les droits de X » : le sélecteur repart à zéro
+    // plutôt que d'affirmer une reprise que le formulaire ne reflète plus.
+    _copyFrom = null;
+  });
+
+  /// Recopie les droits effectifs d'un parent dans le formulaire.
+  ///
+  /// Seuls les domaines proposés ici sont repris ; `family_settings` n'y figure pas et le serveur
+  /// le force de toute façon à `none` pour un beau-parent. Un rôle enfant rabaisse `edit` à `view`,
+  /// exactement comme le fait `_selectRole` — sans quoi la reprise contournerait le constat C50.
+  void _copyRights(String? membershipId, List<api.Member> parents) {
+    setState(() {
+      _copyFrom = membershipId;
+      if (membershipId == null) return;
+      final source = parents.where((m) => m.id == membershipId).firstOrNull;
+      if (source == null) return;
+      for (final domain in _rights.keys) {
+        final level = source.rights?[domain] ?? 'none';
+        _rights[domain] = (_childRole && level == 'edit') ? 'view' : level;
+      }
+    });
+  }
 
   /// Change le rôle et **rabaisse** les droits déjà saisis quand le nouveau rôle
   /// ne peut pas les porter — sans quoi un « Modifier » choisi avant de cocher

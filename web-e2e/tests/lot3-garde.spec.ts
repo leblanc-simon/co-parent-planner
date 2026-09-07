@@ -185,4 +185,49 @@ test('Garde : configurer un rythme → calendrier coloré → échanger un jour'
   // L'exception « Échange » figure dans la liste des exceptions, désormais sous Paramètres.
   await page.goto('/settings?tab=garde');
   await expect(page.locator('.garde-list')).toContainText('Échange');
+
+  // ---- Couleurs du planning choisies par le spectateur (cdc §8.2, évolution E5) ----
+  // Le planning part sur les deux teintes du §8 : terracotta pour A, teal pour B.
+  const slotOf = (name: string) =>
+    page
+      .locator('.app-shell')
+      .evaluate(
+        (el, prop) => getComputedStyle(el).getPropertyValue(prop).trim(),
+        name,
+      );
+  expect(await slotOf('--slot-a')).toBe('#C2643D');
+  expect(await slotOf('--slot-b')).toBe('#2E7D71');
+
+  // La section est rendue dans l'onglet « Planning de garde » ; chaque pastille porte le NOM de
+  // la teinte, seule façon de la choisir quand on ne distingue pas les couleurs (§8.1).
+  const colours = page.locator('#sec-colors');
+  await expect(colours).toBeVisible();
+  await expect(colours.locator('.palette__chip').first()).toContainText('Terracotta');
+
+  // Reprendre la teinte DÉJÀ portée par l'autre parent est refusé : deux slots identiques
+  // rendraient le planning illisible, et la sélection revient sur la valeur enregistrée.
+  // Le bouton radio est retiré du rendu (il reste focalisable mais invisible) : c'est la
+  // pastille, donc le <label>, que l'on clique — le geste réel de l'utilisateur.
+  await colours
+    .locator('label:has(input[name="custody-color-B"][value="terracotta"])')
+    .click();
+  await expect(page.locator('[data-custody-colors-target="error"]')).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(
+    colours.locator('input[name="custody-color-B"][value="teal"]'),
+  ).toBeChecked();
+
+  // Un choix valide repeint le planning — et seulement celui de ce membre-là.
+  await colours
+    .locator('label:has(input[name="custody-color-B"][value="purple"])')
+    .click();
+  await waitForSaved(page);
+  expect(await slotOf('--slot-b')).toBe('#8E63A8');
+  expect(await slotOf('--slot-a')).toBe('#C2643D');
+
+  await page.goto(`/garde?month=${nextMonth}`);
+  expect(await slotOf('--slot-b')).toBe('#8E63A8');
+  // §8.1 sans exception : l'initiale reste affichée quelle que soit la palette choisie.
+  await expect(page.locator('.garde-day--b .garde-day__parent').first()).not.toBeEmpty();
 });

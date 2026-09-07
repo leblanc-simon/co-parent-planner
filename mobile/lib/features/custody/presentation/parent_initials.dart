@@ -104,6 +104,8 @@ class ParentMarkers {
     required this.nameB,
     required this.markerA,
     required this.markerB,
+    this.partnerA = '',
+    this.partnerB = '',
   });
 
   final String nameA;
@@ -111,9 +113,18 @@ class ParentMarkers {
   final String markerA;
   final String markerB;
 
+  /// Beau-parent associé à chaque parent (foyer, évolution E2), vide s'il n'y en a pas.
+  ///
+  /// Information de **présentation** : le jour reste attribué au seul parent, rien n'est compté au
+  /// conjoint et le moteur de garde ignore cette relation.
+  final String partnerA;
+  final String partnerB;
+
   String nameForSlot(String slot) => slot == 'A' ? nameA : nameB;
 
   String markerForSlot(String slot) => slot == 'A' ? markerA : markerB;
+
+  String partnerForSlot(String slot) => slot == 'A' ? partnerA : partnerB;
 }
 
 /// Résout les marqueurs depuis le rythme (qui désigne les deux memberships) et la liste des membres
@@ -129,23 +140,33 @@ final parentMarkersProvider = Provider<ParentMarkers>((ref) {
       .watch(familyMembersProvider)
       .maybeWhen(data: (m) => m, orElse: () => const <api.Member>[]);
 
-  String nameOf(String? membershipId) {
+  api.Member? memberOf(String? membershipId) {
     if (membershipId == null) {
-      return '';
+      return null;
     }
     for (final m in members) {
       if (m.id == membershipId) {
-        return (m.fullName?.isNotEmpty ?? false)
-            ? m.fullName!
-            : (m.email ?? '');
+        return m;
       }
     }
 
-    return '';
+    return null;
   }
 
-  final nameA = nameOf(pattern?.parentAMembershipId);
-  final nameB = nameOf(pattern?.parentBMembershipId);
+  String nameOf(api.Member? member) {
+    if (member == null) {
+      return '';
+    }
+
+    return (member.fullName?.isNotEmpty ?? false)
+        ? member.fullName!
+        : (member.email ?? '');
+  }
+
+  final memberA = memberOf(pattern?.parentAMembershipId);
+  final memberB = memberOf(pattern?.parentBMembershipId);
+  final nameA = nameOf(memberA);
+  final nameB = nameOf(memberB);
   final pair = ParentInitials.pair(nameA, nameB);
 
   return ParentMarkers(
@@ -153,5 +174,10 @@ final parentMarkersProvider = Provider<ParentMarkers>((ref) {
     nameB: nameB,
     markerA: pair.a,
     markerB: pair.b,
+    // `partnerName` est servi des DEUX côtés par l'API (l'index miroir de
+    // `FamilyMembersProvider`) : le mobile n'a pas à savoir que la relation n'est stockée que
+    // sur la ligne du beau-parent.
+    partnerA: memberA?.partnerName ?? '',
+    partnerB: memberB?.partnerName ?? '',
   );
 });

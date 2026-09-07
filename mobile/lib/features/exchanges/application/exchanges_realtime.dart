@@ -40,13 +40,15 @@ final exchangeDetailSignalProvider = StreamProvider.autoDispose
       final family = ref.watch(familyContextProvider);
       if (family == null) return const Stream<void>.empty();
 
-      return _watch(ref, [
-        '/families/${family.familyId}/exchanges/$exchangeId',
-      ], () {
-        ref
-          ..invalidate(exchangeDetailProvider(exchangeId))
-          ..invalidate(familyExchangesProvider);
-      });
+      return _watch(
+        ref,
+        ['/families/${family.familyId}/exchanges/$exchangeId'],
+        () {
+          ref
+            ..invalidate(exchangeDetailProvider(exchangeId))
+            ..invalidate(familyExchangesProvider);
+        },
+      );
     });
 
 /// Ouvre l'abonnement, appelle [onSignal] à chaque signal, et se ferme avec le provider.

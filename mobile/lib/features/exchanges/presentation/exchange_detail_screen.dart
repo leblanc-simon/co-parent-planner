@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
 import '../../../core/error/error_text.dart';
+import '../../../core/theme/button_styles.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
@@ -548,6 +549,7 @@ class _Options extends StatelessWidget {
               const SizedBox(width: 8),
               OutlinedButton(
                 key: const ValueKey('exchange-settle'),
+                style: AppButtonStyles.outlinedInRow(),
                 onPressed: chosen == null || busy
                     ? null
                     : () => onSettle(

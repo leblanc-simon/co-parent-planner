@@ -53,7 +53,11 @@ String? computeRedirect({
             ? null
             : Routes.onboarding;
       }
-      if (isPublic || location.startsWith(Routes.onboarding)) {
+      // `splash` est cite explicitement : il n'est plus dans `Routes.public`,
+      // mais reste un ecran dont il faut sortir des que la session est connue.
+      if (isPublic ||
+          location == Routes.splash ||
+          location.startsWith(Routes.onboarding)) {
         return Routes.home;
       }
       return null;

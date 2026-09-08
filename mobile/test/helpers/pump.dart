@@ -1,3 +1,4 @@
+import 'package:coparentplanner/core/theme/app_theme.dart';
 import 'package:coparentplanner/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +23,13 @@ Future<void> pumpScreen(
     ProviderScope(
       overrides: overrides,
       child: MaterialApp(
+        // Le theme reel, et non celui de Material par defaut : sans lui, les
+        // ecrans etaient montes sous des regles differentes de la production,
+        // et une classe entiere de defauts restait invisible. `AppTheme.light()`
+        // donne par exemple aux boutons une `minimumSize` de largeur infinie —
+        // un bouton pose nu dans une `Row` fait alors echouer tout le layout,
+        // ecran blanc a l'appui, sans qu'aucun test ne bronche.
+        theme: AppTheme.light(),
         localizationsDelegates: AppL10n.localizationsDelegates,
         supportedLocales: AppL10n.supportedLocales,
         locale: const Locale('fr', 'FR'),

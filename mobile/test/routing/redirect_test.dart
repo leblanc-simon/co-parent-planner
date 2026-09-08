@@ -155,5 +155,42 @@ void main() {
         Routes.home,
       );
     });
+
+    test('session restaurée sans jeton : le splash renvoie à la connexion', () {
+      // Sur appareil réel, `restoreSession()` rend la main *après* le premier
+      // build : le guard a déjà envoyé sur le splash. Comptée parmi les routes
+      // publiques, celui-ci devenait absorbant et l'app restait bloquée sur le
+      // spinner au lieu d'afficher l'écran de connexion.
+      expect(
+        computeRedirect(
+          auth: const AuthUnauthenticated(),
+          family: null,
+          location: Routes.splash,
+        ),
+        Routes.login,
+      );
+    });
+
+    test('session restaurée sans famille : le splash mène à l\'onboarding', () {
+      expect(
+        computeRedirect(
+          auth: const AuthAuthenticated(_user),
+          family: null,
+          location: Routes.splash,
+        ),
+        Routes.onboarding,
+      );
+    });
+
+    test('e-mail non vérifié (D1) : le splash mène à « vérifiez »', () {
+      expect(
+        computeRedirect(
+          auth: const AuthPendingVerification('a@b.fr'),
+          family: null,
+          location: Routes.splash,
+        ),
+        Routes.checkEmail,
+      );
+    });
   });
 }

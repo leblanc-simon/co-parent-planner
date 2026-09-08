@@ -19,8 +19,12 @@ abstract final class Routes {
   static const String children = '/children';
 
   /// Routes publiques (accessibles non connecte).
+  ///
+  /// `splash` n'en fait **pas** partie : c'est un ecran transitoire, pas une
+  /// destination. L'y compter le rendait absorbant — arrive sur le splash
+  /// pendant `AuthRestoring`, un visiteur deconnecte y restait indefiniment,
+  /// le guard considerant la route « publique donc legitime ».
   static const Set<String> public = {
-    splash,
     login,
     register,
     checkEmail,

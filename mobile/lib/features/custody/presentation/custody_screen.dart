@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
 import '../../../core/error/error_text.dart';
+import '../../../core/theme/button_styles.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_shapes.dart';
 import '../../../core/theme/app_typography.dart';
@@ -215,8 +216,15 @@ class _CustodyBody extends ConsumerWidget {
                 ),
         ),
         const SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        // `Wrap` et non `Row` : cote a cote, le titre de section et le libelle
+        // « importer les vacances officielles » debordaient de 13 px en
+        // francais. Les serrer sur une ligne tronquait le titre (« Vacances
+        // scola… ») ; ici le bouton passe dessous quand la place manque, ce qui
+        // tient aussi pour une traduction plus longue.
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 8,
           children: [
             Text(l.custodyHolidaysTitle, style: AppTypography.eyebrow),
             if (ref.watch(custodyCanEditProvider)) _ImportHolidaysButton(),
@@ -1464,6 +1472,7 @@ class _CustodyDaySheetState extends ConsumerState<CustodyDaySheet> {
               if (slot != null) const SizedBox(width: 10),
               OutlinedButton(
                 key: const ValueKey('custody-day-settings'),
+                style: AppButtonStyles.outlinedInRow(),
                 onPressed: () {
                   Navigator.of(context).pop();
                   Navigator.of(context).push(

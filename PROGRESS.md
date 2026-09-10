@@ -5,7 +5,9 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-09-10** — **Import des vacances scolaires : l'horizon, pas la seule année en cours.** L'import n'interrogeait la source que pour l'année scolaire retournée par `currentSchoolYear()` (bascule en septembre) : lancé en été, il ramenait l'année qui s'achève — d'où le « ça récupère les anciennes vacances ». Il couvre désormais toutes les années traversées par l'horizon glissant de 18 mois, une année non publiée renvoyant une liste vide (mise en cache 1 jour au lieu de 7, et sans jamais balayer les périodes déjà importées). Deux effets de bord du même symptôme corrigés : les périodes révolues, qui ouvraient la liste des réglages, sont repliées à part ; et l'onglet « garde » des réglages s'abonne au topic temps réel `/families/{id}/custody`, faute de quoi le rechargement qui suit le 202 de l'import précédait toujours la fin du worker. Enfin, l'été n'apparaissait pas non plus : tant que la rentrée suivante n'est pas fixée, la source ne publie qu'un marqueur ponctuel « Début des Vacances d'Été » (`start == end`), écarté comme période vide — il est désormais matérialisé jusqu'au 31 août sous son libellé définitif, fin provisoire que le prochain import rectifiera sans détruire la règle de garde. Détail : §6, entrée du 2026-09-10.
+Dernière mise à jour : **2026-09-10** — **Session web : une heure d'inactivité tolérée.** Le JWT d'accès vivait 15 min *depuis la connexion* : une navigation après une pause — ou même après 15 min de lecture — renvoyait à `/login`, sans rattrapage possible (le cookie `refresh_token` est limité au chemin `/api/auth/refresh`, il n'accompagne donc pas un GET de page ; seules les mutations JS savaient rejouer après un refresh). `ACCESS_TOKEN_TTL` passe à **3600 s** et, surtout, `SlidingSessionSubscriber` **ré-émet le JWT à chaque navigation** authentifiée : le délai se compte désormais depuis la **dernière activité**, pas depuis la connexion. Le refresh token n'est **pas** tourné au passage (deux onglets parallèles seraient pris pour un rejeu et invalideraient toute la famille de jetons). Détail : §6, entrée du 2026-09-10.
+
+Antérieur : **2026-09-10** — **Import des vacances scolaires : l'horizon, pas la seule année en cours.** L'import n'interrogeait la source que pour l'année scolaire retournée par `currentSchoolYear()` (bascule en septembre) : lancé en été, il ramenait l'année qui s'achève — d'où le « ça récupère les anciennes vacances ». Il couvre désormais toutes les années traversées par l'horizon glissant de 18 mois, une année non publiée renvoyant une liste vide (mise en cache 1 jour au lieu de 7, et sans jamais balayer les périodes déjà importées). Deux effets de bord du même symptôme corrigés : les périodes révolues, qui ouvraient la liste des réglages, sont repliées à part ; et l'onglet « garde » des réglages s'abonne au topic temps réel `/families/{id}/custody`, faute de quoi le rechargement qui suit le 202 de l'import précédait toujours la fin du worker. Enfin, l'été n'apparaissait pas non plus : tant que la rentrée suivante n'est pas fixée, la source ne publie qu'un marqueur ponctuel « Début des Vacances d'Été » (`start == end`), écarté comme période vide — il est désormais matérialisé jusqu'au 31 août sous son libellé définitif, fin provisoire que le prochain import rectifiera sans détruire la règle de garde. Détail : §6, entrée du 2026-09-10.
 
 Antérieur : **2026-09-08** — **Évolutions E2, E3 et E5 livrées : les cinq lots de `specs/evolutions-2026-09.md` sont clos**. **`E2` — le foyer** : un service unique, `Household`, nomme le foyer d'un parent (« Sophie », ou « Sophie et Bob ») et répond à « qui accompagne ce parent ? » **quel que soit le côté qui porte la relation** — la colonne vit sur le beau-parent, la question se pose depuis le parent. Trois surfaces : fiche de jour (« Chez Sophie » / « avec Bob »), sélecteur de responsable d'activité (« Bob · conjoint·e de Sophie », qui situe enfin les quatre adultes d'un foyer recomposé) et préremplissage des droits. **Le moteur de garde n'a pas bougé** : `CustodyDay` désigne toujours le seul parent, la priorité exception > vacances > base est intacte, les statistiques restent sur les jours effectifs — le rattachement est de la présentation, rien n'est compté au conjoint. Le préremplissage reste **une commodité de saisie** : rien n'est accordé avant soumission, `RightsNormalizer::capForRole` plafonne, et côté mobile la reprise rabaisse elle-même `edit` à `view` pour un rôle enfant (sans quoi elle contournerait C50). **Limite assumée** : l'association n'est pas posée à l'invitation — elle relie deux memberships, celui de l'invité·e n'existe qu'à l'acceptation ; elle se déclare depuis la liste des membres. **`E3` — nommer le foyer dans l'e-mail** : quand la modification porte sur **un jour identifié**, le corps dit « Le 12 septembre 2026 est désormais chez Sophie et Bob » au lieu du générique ; sur une période ou un changement de rythme, la phrase serait fausse, le corps générique est conservé. **Le payload ne transporte que des identifiants** : le nom est résolu à l'envoi, un payload Messenger vivant en clair dans `messenger_messages` — y recopier un `full_name` 🔒 le ferait fuiter dans un dump SQL brut. Aucune ligne de diffusion écrite (arbitrage A-3 : `RecipientResolver` satisfaisait déjà la règle). **`E5` — le rendu des couleurs** : le web lit `--slot-a*`/`--slot-b*`, posés **côté serveur** sur le conteneur applicatif ; conséquence heureuse, la page mise en cache par le service worker embarque ses couleurs et le planning ne change pas d'apparence en mode avion — l'exigence hors-ligne satisfaite sans une ligne de JS. Mobile : `custodyPaletteProvider` + cache de lecture. Choix dans **Paramètres › Planning de garde sous `custody ≥ view`** des deux côtés ; côté mobile l'écran porte deux sections sous **deux droits différents**, le formulaire de rythme s'y masque lui-même — le droit est vérifié là où il s'applique, pas à l'entrée du chemin. **Trois défauts trouvés par les garde-fous** : la règle « deux slots distincts » ne comparait qu'aux préférences **enregistrées**, si bien que sur un planning vierge on pouvait peindre B en terracotta alors que A l'est par défaut (trouvé par l'E2E ; la comparaison porte désormais sur les teintes **effectives**) ; le sélecteur de responsable **débordait de 74 px** faute d'`isExpanded` (trouvé par le test widget) ; deux tests de l'écran de réglages mobile **ne déclaraient aucun droit** et ne passaient que parce que le chemin d'accès était réservé à `custody:edit`. **Écart de rendu assumé, écrit au cdc §8.2** : la table des huit teintes devient la source unique (CSS, enum PHP, catalogue Dart) ; le fond du parent A passe de `#FBF4EE` (presque blanc) à `#F6E7DE`, ce qui **égalise** les deux slots — initiale à 6,8:1, chiffre de statistique à 4,5:1 en texte large. Le §8.1 s'applique sans exception : l'initiale reste affichée quelle que soit la palette (vérifié web, mobile et E2E sous contraste forcé). Portes : backend **457 tests / 4 074 assertions**, couverture **87,3 %**, PHPStan 0, cs-fixer 0, Twig 38 ; mobile **431 tests**, couverture **83,3 %**, analyze 0, format 0 ; **E2E 23/23**. **Contrat OpenAPI inchangé** (aucun champ nouveau) — client Dart non régénéré ; registre des données inchangé ; aucune dépendance ajoutée, `INSTALL.md` inchangé.
 
@@ -466,6 +468,57 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-09-10 — Session web glissante : une heure d'inactivité tolérée
+
+**Demande** : « augmente la durée de vie des sessions utilisateur, il faut accepter au moins 1 h
+d'inactivité ».
+
+Deux choses se cachaient derrière le symptôme, et le TTL n'en couvre qu'une :
+
+1. **La durée était absolue, pas une inactivité.** `ACCESS_TOKEN_TTL` (900 s) borne la vie du JWT
+   **depuis son émission** : quelqu'un connecté depuis 14 min était déconnecté au clic suivant,
+   qu'il vienne d'agir ou non. Le porter à 1 h aurait juste déplacé le couperet.
+2. **La navigation web n'avait aucun rattrapage.** Le rejeu après `POST /api/auth/refresh` vit dans
+   `api_base.js` : il ne protège que les **mutations JS**. Un simple GET de page ne peut pas s'en
+   servir — le cookie `refresh_token` est volontairement limité au chemin `/api/auth/refresh` et
+   n'est donc pas envoyé avec la requête. Le JWT périmé ⇒ visiteur anonyme ⇒ redirection `/login`.
+
+**Correctif** — `SlidingSessionSubscriber` (`kernel.response`, priorité 8, avant
+`AuthCookieSubscriber`) : sur toute **navigation** web authentifiée (GET/HEAD, hors `^/api`,
+cookie `access_token` présent, réponse < 400), le JWT d'accès est ré-émis et le cookie reposé. Le
+TTL devient une **tolérance d'inactivité** : `ACCESS_TOKEN_TTL=3600` garantit l'heure demandée,
+comptée depuis la dernière page vue. Cohérent avec le cookie d'abonnement Mercure, déjà à 1 h et
+déjà renouvelé à chaque écran (`MercureSubscription::TTL_SECONDS`).
+
+Ce que le correctif **ne** fait **pas**, délibérément :
+
+- **Pas de rotation du refresh token par navigation.** `RefreshTokenManager::rotate()` traite tout
+  rejeu d'un jeton déjà tourné comme un vol et invalide la famille entière. Deux onglets ouverts en
+  parallèle, ou un préchargement Turbo, suffiraient à déclencher ce faux positif : le remède aurait
+  déconnecté plus souvent que le mal. Seul le JWT d'accès, sans état, est renouvelé.
+- **Pas de renouvellement sur `POST`** (la déconnexion doit effacer le cookie, pas le reposer),
+  **ni sur `^/api`** (le mobile porte un Bearer et gère son propre refresh rotatif single-flight),
+  **ni quand la réponse pose ou efface déjà les cookies** (connexion, refresh, déconnexion font
+  autorité).
+
+`AuthCookieSubscriber` accepte désormais un `_auth_tokens` **sans clé `refresh`** — les cookies
+restent posés en un seul endroit.
+
+**Portée sécurité** : la fenêtre d'exploitation d'un cookie d'accès volé passe de 15 min à 1 h. Le
+reste du modèle est inchangé — cookie HttpOnly/SameSite=Lax (Secure en prod), JWT porteur de la
+seule identité, **autorisation revérifiée en base à chaque requête** (§4.11), donc un retrait de
+droits ou de membership reste immédiat.
+
+**Tests** : `tests/Functional/Web/SlidingSessionTest.php` (5 tests) — ré-émission sur navigation
+(cookie HttpOnly/path `/`/SameSite Lax, `exp - iat >= 3600`, jeton réutilisable), refresh token
+**non** tourné, pas de cookie sur `/api/me`, rien sur page anonyme, déconnexion non contrariée.
+Suite backend **465 tests verts**, PHPStan 8 et php-cs-fixer propres.
+
+**Fichiers** : `backend/src/EventSubscriber/SlidingSessionSubscriber.php` (nouveau),
+`backend/src/EventSubscriber/AuthCookieSubscriber.php`, `backend/.env`,
+`backend/config/packages/lexik_jwt_authentication.yaml`, `backend/assets/api_base.js`,
+`infra/docker-compose.yml`, `infra/INSTALL.md`.
 
 ### 2026-09-10 — Import des vacances scolaires : l'horizon, pas l'année en cours
 

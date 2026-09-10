@@ -207,7 +207,7 @@ php bin/console api:openapi:export --output=../contracts/openapi.json   # contra
 | `JWT_PASSPHRASE` | passphrase de la clé privée JWT | dev-only (`.env`) |
 | `MERCURE_JWT_SECRET` | secret de signature des JWT Mercure | dev-only |
 | `MAILER_DSN` | transport e-mail | `smtp://127.0.0.1:1025` |
-| `ACCESS_TOKEN_TTL` / `REFRESH_TOKEN_TTL` / `ONE_TIME_TOKEN_TTL` | durées de vie (s) | 900 / 2592000 / 3600 |
+| `ACCESS_TOKEN_TTL` / `REFRESH_TOKEN_TTL` / `ONE_TIME_TOKEN_TTL` | durées de vie (s) ; `ACCESS_TOKEN_TTL` = tolérance d'inactivité du web (session glissante : chaque navigation ré-émet le JWT) | 3600 / 2592000 / 3600 |
 | `COOKIE_SECURE` | force le flag Secure des cookies d'auth | `false` (dev) — **`true` en prod** |
 | `TRUSTED_PROXIES` | proxies de confiance (CIDR) | vide — **à définir derrière un LB** |
 | `RGPD_EXPORT_DIR` | répertoire des archives d'export RGPD (hors web-root) | `%kernel.project_dir%/var/exports` — **prod : stockage objet UE** |

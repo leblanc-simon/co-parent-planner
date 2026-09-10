@@ -17,6 +17,8 @@ use Symfony\Component\HttpKernel\KernelEvents;
  *
  * - `_auth_tokens` => ['access' => …, 'refresh' => …] : pose access_token (path /) et
  *    refresh_token (path /api/auth/refresh), HttpOnly, SameSite=Lax, Secure si HTTPS.
+ *    La clé `refresh` est **facultative** : la session glissante ({@see SlidingSessionSubscriber})
+ *    ne ré-émet que le JWT d'accès, sans faire tourner le refresh token.
  * - `_auth_clear_cookies` => true : efface les deux cookies (déconnexion).
  */
 #[AsEventListener(event: KernelEvents::RESPONSE)]
@@ -44,17 +46,18 @@ final class AuthCookieSubscriber
         $secure = $this->forceSecure || $request->isSecure();
         $now = Clock::get()->now()->getTimestamp();
 
-        /** @var array{access: string, refresh: string}|null $tokens */
         $tokens = $request->attributes->get('_auth_tokens');
-        if (\is_array($tokens)) {
+        if (\is_array($tokens) && \is_string($tokens['access'] ?? null)) {
             $response->headers->setCookie(
                 Cookie::create(self::ACCESS_COOKIE, $tokens['access'], $now + $this->accessTokenTtl)
                     ->withHttpOnly(true)->withSecure($secure)->withSameSite(Cookie::SAMESITE_LAX)->withPath('/'),
             );
-            $response->headers->setCookie(
-                Cookie::create(self::REFRESH_COOKIE, $tokens['refresh'], $now + $this->refreshTokenTtl)
-                    ->withHttpOnly(true)->withSecure($secure)->withSameSite(Cookie::SAMESITE_LAX)->withPath(self::REFRESH_PATH),
-            );
+            if (\is_string($tokens['refresh'] ?? null)) {
+                $response->headers->setCookie(
+                    Cookie::create(self::REFRESH_COOKIE, $tokens['refresh'], $now + $this->refreshTokenTtl)
+                        ->withHttpOnly(true)->withSecure($secure)->withSameSite(Cookie::SAMESITE_LAX)->withPath(self::REFRESH_PATH),
+                );
+            }
         }
 
         if (true === $request->attributes->get('_auth_clear_cookies')) {

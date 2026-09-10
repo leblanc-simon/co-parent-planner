@@ -10,7 +10,7 @@ import { Controller } from '@hotwired/stimulus';
  *
  *  - l'état « occupé » du déclencheur (bouton désactivé + `aria-busy`) → plus de double soumission,
  *    qui produisait des doublons irréversibles (aucune suppression de note ni de message côté web) ;
- *  - le rattrapage du 401 : l'access token vit 15 min, le refresh 30 jours — on rejoue une fois
+ *  - le rattrapage du 401 : l'access token vit 1 h, le refresh 30 jours — on rejoue une fois
  *    après `POST /api/auth/refresh` (la saisie est donc conservée), et on ne redirige vers /login
  *    que si le rafraîchissement échoue vraiment ;
  *  - la confirmation de succès, transportée par `sessionStorage` pour survivre au rechargement

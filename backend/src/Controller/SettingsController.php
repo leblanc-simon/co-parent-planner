@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\SchoolHoliday;
 use App\Entity\User;
 use App\Enum\NotificationCategory;
 use App\Enum\RightDomain;
@@ -16,12 +17,15 @@ use App\Repository\MembershipRepository;
 use App\Repository\NotificationPrefRepository;
 use App\Repository\SchoolHolidayRepository;
 use App\Web\ActiveFamilyResolver;
+use App\Web\MercureSubscription;
 use App\Web\NextTarget;
+use Psr\Clock\ClockInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
+use Symfony\Component\Mercure\HubInterface;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
@@ -43,6 +47,9 @@ final class SettingsController extends AbstractController
         private readonly CustodyPatternRepository $patterns,
         private readonly CustodyExceptionRepository $exceptions,
         private readonly SchoolHolidayRepository $holidays,
+        private readonly ClockInterface $clock,
+        private readonly MercureSubscription $mercure,
+        private readonly HubInterface $hub,
     ) {
     }
 
@@ -108,7 +115,11 @@ final class SettingsController extends AbstractController
             }
         }
 
-        return $this->render('app/settings.html.twig', [
+        // Les périodes de vacances révolues ne se paramètrent plus : elles sont repliées à part,
+        // sinon un import récent se lit comme « il a récupéré les vacances de l'an dernier ».
+        $holidays = $this->splitHolidays($canEditCustody ? $this->holidays->findByFamily($family) : []);
+
+        $response = $this->render('app/settings.html.twig', [
             'tab' => $tab,
             'partnerOf' => $partnerOf,
             'hasCustody' => $hasCustody,
@@ -130,7 +141,41 @@ final class SettingsController extends AbstractController
             'parentAId' => $pattern?->getParentA()?->getId(),
             'parentBId' => $pattern?->getParentB()?->getId(),
             'custodyExceptions' => $canEditCustody ? $this->exceptions->findByFamily($family) : [],
-            'holidays' => $canEditCustody ? $this->holidays->findByFamily($family) : [],
+            'holidays' => $holidays['upcoming'],
+            'pastHolidays' => $holidays['past'],
+            'mercureHub' => $this->hub->getPublicUrl(),
+            'custodyTopic' => $canViewCustody ? \sprintf('/families/%s/custody', $family->getId()) : null,
         ]);
+
+        // L'import des vacances et la régénération sont **asynchrones** : sans abonnement, l'écran
+        // rechargé juste après le 202 montre encore l'état d'avant et se lit comme un import raté.
+        // Même topic que /garde — le worker y pousse un `turbo-stream refresh` en fin de traitement.
+        if ($canViewCustody) {
+            $this->mercure->attach($response, [\sprintf('/families/%s/custody', $family->getId())]);
+        }
+
+        return $response;
+    }
+
+    /**
+     * Sépare les périodes en cours / à venir des périodes terminées (bornes incluses, Europe/Paris).
+     *
+     * @param list<SchoolHoliday> $holidays
+     *
+     * @return array{upcoming: list<SchoolHoliday>, past: list<SchoolHoliday>}
+     */
+    private function splitHolidays(array $holidays): array
+    {
+        $today = $this->clock->now()->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d');
+        $upcoming = $past = [];
+        foreach ($holidays as $holiday) {
+            if ($holiday->getEndDate()->format('Y-m-d') >= $today) {
+                $upcoming[] = $holiday;
+            } else {
+                $past[] = $holiday;
+            }
+        }
+
+        return ['upcoming' => $upcoming, 'past' => $past];
     }
 }

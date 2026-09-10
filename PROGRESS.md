@@ -5,7 +5,7 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-09-09** — **Test de l'app mobile sur appareil réel (Pixel 6, Android 17) contre l'instance de test `co-parent-planner.t.leblanc-simon.fr` : trois défauts bloquants qu'aucune porte qualité ne voyait, et la raison pour laquelle elle ne les voyait pas.** **Le splash était absorbant** : `Routes.public` comptait `/` parmi les routes publiques, si bien qu'un visiteur déconnecté arrivé sur l'écran d'attente n'en repartait jamais — le guard jugeait la route « publique donc légitime » et ne redirigeait plus. Le défaut ne se manifeste que si `restoreSession()` rend la main **après** le premier build, ce qui est le cas sur un appareil réel et jamais sur une machine de dev rapide : l'app restait indéfiniment sur le spinner. Splash retiré de `public`, sortie explicite ajoutée pour l'état authentifié, quatre tests de régression sur `computeRedirect`. **Trois écrans restaient blancs** — fiche enfant, feuille de jour du planning, détail d'échange : `AppTheme.light()` donne aux boutons une `minimumSize: Size.fromHeight(50)`, c'est-à-dire une **largeur infinie** — c'est ce qui produit les boutons pleine largeur des formulaires. Posé nu dans une `Row`, un bouton réclame alors l'infini, le layout lève `BoxConstraints forces an infinite width` et **tout l'écran cesse de se peindre**, sans message pour l'utilisateur. `AppButtonStyles` (`lib/core/theme/button_styles.dart`) documente le piège et rend au bouton sa largeur intrinsèque ; le titre « Vacances scolaires » et son bouton d'import, qui débordaient de 13 px, passent de `Row` à `Wrap` — le bouton descend d'une ligne plutôt que de tronquer le titre, ce qui tient aussi pour une traduction plus longue. **La cause de l'angle mort** : `test/helpers/pump.dart` montait les écrans dans un `MaterialApp` **sans `theme:`**, donc sous les règles de Material par défaut et non celles de la production — un test tapait littéralement sur le bouton fautif sans rien voir. Le thème réel est désormais monté par le harnais : preuve faite en retirant un correctif, **sept tests tombent là où zéro tombait**. Portes : mobile **434 tests** verts, `dart analyze` 0. **Relevé, non corrigé** : les vacances scolaires listées sont celles de l'année 2025-2026 alors qu'on est en septembre 2026 (à vérifier côté `SchoolHolidaysProvider` / import) ; états vides pauvres sur les échanges ; le FAB « Nouvel événement » recouvre la dernière carte de l'agenda ; pas de bascule afficher/masquer sur le champ mot de passe ; **hors-ligne non testé** (l'appareil est relié en ADB sans fil, couper le réseau coupe le lien de debug). ⚠️ **Poste de dev** : tous les JBR JetBrains de la machine sont passés en **Java 25**, que Gradle 8.14 / AGP 8.11.1 ne savent pas parser — le build Android échoue sur un `FAILURE: … 25.0.3` opaque. Contournement local : Temurin **JDK 21** dans `~/.jdks/` + `flutter config --jdk-dir`.
+Dernière mise à jour : **2026-09-10** — **Import des vacances scolaires : l'horizon, pas la seule année en cours.** L'import n'interrogeait la source que pour l'année scolaire retournée par `currentSchoolYear()` (bascule en septembre) : lancé en été, il ramenait l'année qui s'achève — d'où le « ça récupère les anciennes vacances ». Il couvre désormais toutes les années traversées par l'horizon glissant de 18 mois, une année non publiée renvoyant une liste vide (mise en cache 1 jour au lieu de 7, et sans jamais balayer les périodes déjà importées). Deux effets de bord du même symptôme corrigés : les périodes révolues, qui ouvraient la liste des réglages, sont repliées à part ; et l'onglet « garde » des réglages s'abonne au topic temps réel `/families/{id}/custody`, faute de quoi le rechargement qui suit le 202 de l'import précédait toujours la fin du worker. Enfin, l'été n'apparaissait pas non plus : tant que la rentrée suivante n'est pas fixée, la source ne publie qu'un marqueur ponctuel « Début des Vacances d'Été » (`start == end`), écarté comme période vide — il est désormais matérialisé jusqu'au 31 août sous son libellé définitif, fin provisoire que le prochain import rectifiera sans détruire la règle de garde. Détail : §6, entrée du 2026-09-10.
 
 Antérieur : **2026-09-08** — **Évolutions E2, E3 et E5 livrées : les cinq lots de `specs/evolutions-2026-09.md` sont clos**. **`E2` — le foyer** : un service unique, `Household`, nomme le foyer d'un parent (« Sophie », ou « Sophie et Bob ») et répond à « qui accompagne ce parent ? » **quel que soit le côté qui porte la relation** — la colonne vit sur le beau-parent, la question se pose depuis le parent. Trois surfaces : fiche de jour (« Chez Sophie » / « avec Bob »), sélecteur de responsable d'activité (« Bob · conjoint·e de Sophie », qui situe enfin les quatre adultes d'un foyer recomposé) et préremplissage des droits. **Le moteur de garde n'a pas bougé** : `CustodyDay` désigne toujours le seul parent, la priorité exception > vacances > base est intacte, les statistiques restent sur les jours effectifs — le rattachement est de la présentation, rien n'est compté au conjoint. Le préremplissage reste **une commodité de saisie** : rien n'est accordé avant soumission, `RightsNormalizer::capForRole` plafonne, et côté mobile la reprise rabaisse elle-même `edit` à `view` pour un rôle enfant (sans quoi elle contournerait C50). **Limite assumée** : l'association n'est pas posée à l'invitation — elle relie deux memberships, celui de l'invité·e n'existe qu'à l'acceptation ; elle se déclare depuis la liste des membres. **`E3` — nommer le foyer dans l'e-mail** : quand la modification porte sur **un jour identifié**, le corps dit « Le 12 septembre 2026 est désormais chez Sophie et Bob » au lieu du générique ; sur une période ou un changement de rythme, la phrase serait fausse, le corps générique est conservé. **Le payload ne transporte que des identifiants** : le nom est résolu à l'envoi, un payload Messenger vivant en clair dans `messenger_messages` — y recopier un `full_name` 🔒 le ferait fuiter dans un dump SQL brut. Aucune ligne de diffusion écrite (arbitrage A-3 : `RecipientResolver` satisfaisait déjà la règle). **`E5` — le rendu des couleurs** : le web lit `--slot-a*`/`--slot-b*`, posés **côté serveur** sur le conteneur applicatif ; conséquence heureuse, la page mise en cache par le service worker embarque ses couleurs et le planning ne change pas d'apparence en mode avion — l'exigence hors-ligne satisfaite sans une ligne de JS. Mobile : `custodyPaletteProvider` + cache de lecture. Choix dans **Paramètres › Planning de garde sous `custody ≥ view`** des deux côtés ; côté mobile l'écran porte deux sections sous **deux droits différents**, le formulaire de rythme s'y masque lui-même — le droit est vérifié là où il s'applique, pas à l'entrée du chemin. **Trois défauts trouvés par les garde-fous** : la règle « deux slots distincts » ne comparait qu'aux préférences **enregistrées**, si bien que sur un planning vierge on pouvait peindre B en terracotta alors que A l'est par défaut (trouvé par l'E2E ; la comparaison porte désormais sur les teintes **effectives**) ; le sélecteur de responsable **débordait de 74 px** faute d'`isExpanded` (trouvé par le test widget) ; deux tests de l'écran de réglages mobile **ne déclaraient aucun droit** et ne passaient que parce que le chemin d'accès était réservé à `custody:edit`. **Écart de rendu assumé, écrit au cdc §8.2** : la table des huit teintes devient la source unique (CSS, enum PHP, catalogue Dart) ; le fond du parent A passe de `#FBF4EE` (presque blanc) à `#F6E7DE`, ce qui **égalise** les deux slots — initiale à 6,8:1, chiffre de statistique à 4,5:1 en texte large. Le §8.1 s'applique sans exception : l'initiale reste affichée quelle que soit la palette (vérifié web, mobile et E2E sous contraste forcé). Portes : backend **457 tests / 4 074 assertions**, couverture **87,3 %**, PHPStan 0, cs-fixer 0, Twig 38 ; mobile **431 tests**, couverture **83,3 %**, analyze 0, format 0 ; **E2E 23/23**. **Contrat OpenAPI inchangé** (aucun champ nouveau) — client Dart non régénéré ; registre des données inchangé ; aucune dépendance ajoutée, `INSTALL.md` inchangé.
 
@@ -466,6 +466,65 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-09-10 — Import des vacances scolaires : l'horizon, pas l'année en cours
+
+**Symptôme** : « lorsque j'importe, ça récupère les anciennes vacances (pas 2026/2027) ».
+`SchoolHolidayImporter::import()` n'interrogeait la source que pour **une** année scolaire, celle
+retournée par `currentSchoolYear()` — qui bascule en septembre. Un import lancé le 28 août 2026 (cas
+constaté en base de la stack `infra` : six périodes `2025-2026`, aucune `2026-2027`) ramenait donc
+l'année scolaire **qui s'achève**, alors que le calendrier suivant est publié depuis le printemps.
+Le rafraîchissement mensuel planifié (`RefreshSchoolHolidays`) souffrait du même plafond : sur un
+horizon de garde de 18 mois, les règles de vacances de l'année à venir n'étaient jamais
+paramétrables avant septembre.
+
+Trois causes s'additionnaient, les trois sont traitées :
+
+1. **Une seule année importée.** Sans année explicite, l'import couvre désormais toutes les années
+   scolaires **traversées par l'horizon glissant** (`schoolYearsInHorizon()`, 18 mois, aligné sur
+   `CustodyGenerator`). Une année non encore publiée renvoie une liste vide, sans dommage — et son
+   absence de résultat n'est mise en cache qu'**un jour** (contre sept), pour qu'elle apparaisse dès
+   sa publication. Garde-fou ajouté : une réponse vide ne déclenche **jamais** le balayage des
+   périodes déjà en base (sinon un calendrier importé, et ses règles, disparaîtraient sur un simple
+   trou de source).
+2. **Les périodes révolues trônaient en tête de liste** (tri par date croissante) : après un import
+   réussi, l'écran de réglages ouvrait sur les vacances de l'an dernier. Elles sont conservées
+   (historique, statistiques) mais repliées dans un `<details>` sous la liste active.
+3. **L'écran de réglages ne s'abonnait pas au temps réel.** L'import répond 202 et le Stimulus
+   recharge aussitôt : le worker n'avait pas fini, la page revenait identique et se lisait comme un
+   import raté. L'onglet « garde » des réglages s'abonne maintenant au topic
+   `/families/{id}/custody` — celui-là même où `RegenerateCustody` pousse un `turbo-stream refresh`
+   en fin d'import.
+
+4. **Les grandes vacances annoncées mais pas encore bornées étaient perdues.** Tant que la rentrée
+   suivante n'est pas fixée, la source ne publie pour l'été qu'un **marqueur ponctuel**
+   (`start_date == end_date`, libellé « Début des Vacances d'Été » — vérifié : c'est le seul
+   enregistrement d'été de 2026-2027, contre une période complète « Vacances d'Été » pour
+   2024-2025 et 2025-2026). La convention de fin exclusive en faisait une période vide, écartée :
+   l'été 2027 — deux mois, la plus longue période à répartir entre deux parents — manquait au
+   planning et y serait resté des mois. Le marqueur est désormais matérialisé jusqu'au **31 août**,
+   fin provisoire exacte à un jour près en métropole (la rentrée y tombe le 1er ou le 2 septembre),
+   sous le libellé **normalisé** que la source emploiera une fois l'année complète : la clé
+   naturelle d'upsert (label + start_date) coïncidera alors, la vraie fin remplacera la provisoire,
+   et la règle de garde attachée survivra — là où un libellé différent aurait fait balayer la
+   période comme obsolète, sa règle avec elle. La dérivation est bornée aux étés de l'hémisphère
+   nord (début en juin ou juillet) : un « Début des Vacances d'Hiver austral » (Réunion) ou un été
+   calédonien de décembre ne s'en déduit pas, et le périmètre applicatif (zones A/B/C) est de toute
+   façon métropolitain. Les autres marqueurs non bornés — un `Pont de l'Ascension` encore
+   provisoire, par exemple — restent ignorés, en `info` et non plus en `warning` : la source les
+   précisera, aucune durée n'est inventée.
+
+Le repli des périodes révolues est livré **web et mobile** (`_HolidaysList` dans
+`custody_screen.dart`, jumeau du `<details>` de `settings.html.twig`).
+
+Tests : `SchoolHolidayImporterTest` couvre la traversée de l'horizon et le non-balayage sur réponse
+vide ; le double `FakeSchoolHolidaysProvider` ne publie plus qu'une année, comme la source réelle ;
+un test widget vérifie le repli mobile. Deux fixtures datées de l'été 2026 — le test E2E
+`lot3-garde-advanced` et le test widget C30 — venaient de basculer dans le passé : dates rendues
+relatives (E2E) ou portées à un millésime lointain (widget), pour qu'elles cessent de dépendre du
+calendrier du poste. Portes vertes : backend **460 tests**, couverture 87,3 % ; E2E web **23 tests** ;
+mobile **435 tests**, couverture 83,9 % ; PHPStan niveau 8, php-cs-fixer et `dart analyze` propres ;
+OpenAPI inchangé (aucun changement de contrat).
 
 ### 2026-08-28 — Fusion des chantiers `web-review` et revue mobile
 

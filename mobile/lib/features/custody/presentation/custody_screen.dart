@@ -234,17 +234,7 @@ class _CustodyBody extends ConsumerWidget {
         holidaysAsync.when(
           loading: () => const SizedBox.shrink(),
           error: (e, _) => ErrorBanner(errorText(context, e)),
-          data: (holidays) => holidays.isEmpty
-              ? Text(l.custodyHolidaysEmpty)
-              : Column(
-                  children: [
-                    for (final h in holidays)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: _HolidayCard(holiday: h),
-                      ),
-                  ],
-                ),
+          data: (holidays) => _HolidaysList(holidays: holidays),
         ),
       ],
     );
@@ -1058,6 +1048,66 @@ class _RuleBanner extends StatelessWidget {
 }
 
 /// U-03 : période spéciale (vacances) en carte autonome.
+/// Périodes de vacances : celles en cours ou à venir d'abord, les révolues repliées.
+///
+/// L'import ramène des années scolaires entières et ne supprime pas les périodes
+/// passées (historique, statistiques) : listées à la suite, elles ouvraient la
+/// section sur les vacances de l'an dernier — au point de faire passer un import
+/// réussi pour un import qui « récupère les anciennes vacances ». Jumeau du
+/// `<details>` du gabarit web (`settings.html.twig`).
+class _HolidaysList extends StatelessWidget {
+  const _HolidaysList({required this.holidays});
+
+  final List<api.SchoolHoliday> holidays;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppL10n.of(context);
+    final today = CivilDate.format(DateTime.now());
+    final upcoming = <api.SchoolHoliday>[];
+    final past = <api.SchoolHoliday>[];
+    for (final h in holidays) {
+      // Dates civiles `AAAA-MM-JJ` du contrat : l'ordre lexicographique est l'ordre chronologique.
+      (h.endDate.compareTo(today) >= 0 ? upcoming : past).add(h);
+    }
+
+    if (upcoming.isEmpty && past.isEmpty) return Text(l.custodyHolidaysEmpty);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (upcoming.isEmpty)
+          Text(l.custodyHolidaysEmpty)
+        else
+          for (final h in upcoming)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _HolidayCard(holiday: h),
+            ),
+        if (past.isNotEmpty)
+          ExpansionTile(
+            key: const ValueKey('custody-past-holidays'),
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: EdgeInsets.zero,
+            shape: const Border(),
+            collapsedShape: const Border(),
+            title: Text(
+              l.custodyHolidaysPast(past.length),
+              style: const TextStyle(fontSize: 13, color: AppColors.muted),
+            ),
+            children: [
+              for (final h in past)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _HolidayCard(holiday: h),
+                ),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
 class _HolidayCard extends StatelessWidget {
   const _HolidayCard({required this.holiday});
 

@@ -863,19 +863,23 @@ void main() {
     (tester) async {
       stubReads();
       stubMembers();
+      // Millésime volontairement lointain : les périodes révolues sont repliées dans
+      // « N périodes passées » et ne sont plus rendues à plat. Une fixture datée de
+      // l'année en cours bascule dans ce repli le jour où elle se termine, et le test
+      // ne mesurerait plus que le calendrier du poste qui l'exécute.
       when(() => repo.listHolidays('fam-1')).thenAnswer(
         (_) async => const [
           api.SchoolHoliday(
             id: 'h1',
             label: "Vacances d'été",
-            startDate: '2026-07-04',
-            endDate: '2026-08-31',
+            startDate: '2099-07-04',
+            endDate: '2099-08-31',
           ),
           api.SchoolHoliday(
             id: 'h2',
             label: 'Toussaint',
-            startDate: '2026-10-17',
-            endDate: '2026-11-02',
+            startDate: '2099-10-17',
+            endDate: '2099-11-02',
             ruleKind: 'eve_alternating',
           ),
         ],
@@ -893,7 +897,43 @@ void main() {
       expect(find.textContaining('eve_alternating'), findsNothing);
       expect(find.text('Réveillons en alternance'), findsOneWidget);
       // Dates en toutes lettres, plus les bornes ISO du contrat (C58).
-      expect(find.text('4 juil. → 31 août 2026'), findsOneWidget);
+      expect(find.text('4 juil. → 31 août 2099'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'les périodes de vacances révolues sont repliées, pas listées en tête',
+    (tester) async {
+      stubReads();
+      stubMembers();
+      when(() => repo.listHolidays('fam-1')).thenAnswer(
+        (_) async => const [
+          api.SchoolHoliday(
+            id: 'old',
+            label: 'Toussaint révolue',
+            startDate: '2020-10-17',
+            endDate: '2020-11-02',
+          ),
+          api.SchoolHoliday(
+            id: 'next',
+            label: 'Toussaint à venir',
+            startDate: '2099-10-17',
+            endDate: '2099-11-02',
+          ),
+        ],
+      );
+
+      await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+
+      // La période à venir est visible ; la révolue attend derrière son résumé.
+      expect(find.text('Toussaint à venir'), findsOneWidget);
+      expect(find.text('Toussaint révolue'), findsNothing);
+      expect(find.text('1 période passée'), findsOneWidget);
+
+      await tester.tap(find.text('1 période passée'));
+      await tester.pumpAndSettle();
+      expect(find.text('Toussaint révolue'), findsOneWidget);
     },
   );
 

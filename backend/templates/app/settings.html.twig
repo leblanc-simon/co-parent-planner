@@ -409,6 +409,12 @@
 {% endif %}{# /famille #}
 
 {% if tab == 'garde' %}
+{# Abonnement temps réel au topic garde de la famille (même topic que `/garde`). L'import des
+   vacances et la régénération sont asynchrones : le worker pousse un `turbo-stream refresh` en fin
+   de traitement, qui remplit la liste des périodes sans que l'utilisateur ait à recharger. #}
+{% if custodyTopic %}
+<turbo-mercure-stream-source private data-controller="realtime" src="{{ mercureHub }}?topic={{ custodyTopic|url_encode }}"></turbo-mercure-stream-source>
+{% endif %}
 {# ───────────── Rythme de garde + exceptions + vacances (US-CUST-1/2/9) ─────────────
    Rapatriés depuis l'écran Garde (qui reste en consultation). Édition réservée à custody:edit.
    Les mutations passent par l'API via le contrôleur Stimulus `garde`, scopées X-Family-Id. #}
@@ -652,6 +658,17 @@
             </li>
             {% endfor %}
         </ul>
+        {% endif %}
+        {% if pastHolidays|length %}
+        {# Périodes révolues : conservées (historique, stats) mais repliées — elles ne se paramètrent plus. #}
+        <details class="garde-holidays-past">
+            <summary>{{ 'custody.holidays.past'|trans({'count': pastHolidays|length}) }}</summary>
+            <ul class="garde-list">
+                {% for h in pastHolidays %}
+                <li><span>{{ h.label }} · {{ h.startDate|date('d/m/Y') }}→{{ h.endDate|date('d/m/Y') }}</span></li>
+                {% endfor %}
+            </ul>
+        </details>
         {% endif %}
     </section>
 </div>

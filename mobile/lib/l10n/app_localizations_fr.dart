@@ -678,6 +678,17 @@ class AppL10nFr extends AppL10n {
   String get custodyHolidaysImported => 'Import des vacances lancé.';
 
   @override
+  String custodyHolidaysPast(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count périodes passées',
+      one: '$count période passée',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get custodySettingsTitle => 'Rythme de garde';
 
   @override

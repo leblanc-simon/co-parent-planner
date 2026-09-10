@@ -182,6 +182,8 @@ custody:
         holidays_settings_required: "Zone scolaire et académie requises pour l'import (réglages famille)."
         rule_kind_invalid: 'Genre de règle de vacances invalide.'
         rule_params_invalid: 'Les paramètres de la règle de vacances sont invalides.'
+    holidays:
+        past: '{count, plural, one {# période passée} other {# périodes passées}}'
 
 agenda:
     error:

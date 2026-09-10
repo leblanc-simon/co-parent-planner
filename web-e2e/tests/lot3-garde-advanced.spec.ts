@@ -101,10 +101,17 @@ test('Garde avancée : rythme custom 14 jours, vacances manuelle + règle, excep
   await page.goto('/settings?tab=garde');
 
   // ---- Vacances saisie manuellement (pas d'import réseau) ----
+  // Dates dynamiques dans le futur proche : les périodes révolues sont repliées à part et n'offrent
+  // plus de formulaire de règle — une date en dur finit par y basculer et emporter le test avec.
+  const isoDay = (offsetDays: number) => {
+    const d = new Date(Date.now() + offsetDays * 86_400_000);
+    // Composantes LOCALES : `toISOString()` bascule d'un jour dès que l'heure locale dépasse UTC.
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
   const holidayForm = page.locator('form:has(input[name="label"])');
   await holidayForm.locator('[name="label"]').fill('Vacances test');
-  await holidayForm.locator('[name="startDate"]').fill('2026-07-13');
-  await holidayForm.locator('[name="endDate"]').fill('2026-07-20');
+  await holidayForm.locator('[name="startDate"]').fill(isoDay(10));
+  await holidayForm.locator('[name="endDate"]').fill(isoDay(17));
   await holidayForm.locator('button[type="submit"]').click();
   await expect(page.locator('.garde-list')).toContainText('Vacances test', { timeout: 15_000 });
 
@@ -124,8 +131,7 @@ test('Garde avancée : rythme custom 14 jours, vacances manuelle + règle, excep
 
   // ---- Exception ajoutée puis supprimée via la liste ----
   // Date dynamique dans le futur proche : le moteur fige le passé, une date en dur finit par périmer.
-  const exc = new Date(Date.now() + 3 * 86_400_000);
-  const excDate = `${exc.getFullYear()}-${String(exc.getMonth() + 1).padStart(2, '0')}-${String(exc.getDate()).padStart(2, '0')}`;
+  const excDate = isoDay(3);
   const excForm = page.locator('form:has(input[name="reason"])');
   await excForm.locator('[name="startDate"]').fill(excDate);
   await excForm.locator('[name="endDate"]').fill(excDate);

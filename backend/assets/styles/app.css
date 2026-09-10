@@ -646,6 +646,23 @@ a:hover { text-decoration: underline; }
 .garde-list li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; padding: .6rem .8rem; background: var(--surface); border-radius: 12px; }
 .garde-holidays-actions { margin-bottom: .8rem; }
 
+/* Périodes de vacances révolues : repliées sous la liste active, en retrait visuel. */
+.garde-holidays-past {
+    margin-top: .8rem;
+    font-size: .85rem;
+
+    & > summary {
+        cursor: pointer;
+        color: var(--muted);
+        padding: .2rem 0;
+    }
+
+    & .garde-list {
+        margin-top: .5rem;
+        opacity: .75;
+    }
+}
+
 /* ---------- Lot 3 : Garde — fiche de jour (US-CUST-6, maquette `:828-868`) ----------
    Modale portée par un `<dialog>` natif : le fond modal (`::backdrop`), le piège à focus, le
    retour du focus à la fermeture et la touche Échap viennent du navigateur. `padding: 0` sur le

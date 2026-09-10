@@ -302,6 +302,14 @@
   "custodyHolidaysEmpty": "Aucune période de vacances.",
   "custodyImportHolidays": "Importer les vacances officielles",
   "custodyHolidaysImported": "Import des vacances lancé.",
+  "custodyHolidaysPast": "{count, plural, one{{count} période passée} other{{count} périodes passées}}",
+  "@custodyHolidaysPast": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
   "custodySettingsTitle": "Rythme de garde",
   "custodyKind": "Modèle",
   "custodyKindAlternating": "Une semaine sur deux",

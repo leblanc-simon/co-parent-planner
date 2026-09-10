@@ -1317,6 +1317,12 @@ abstract class AppL10n {
   /// **'Import des vacances lancé.'**
   String get custodyHolidaysImported;
 
+  /// No description provided for @custodyHolidaysPast.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{{count} période passée} other{{count} périodes passées}}'**
+  String custodyHolidaysPast(num count);
+
   /// No description provided for @custodySettingsTitle.
   ///
   /// In fr, this message translates to:

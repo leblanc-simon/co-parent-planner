@@ -77,4 +77,51 @@ final class OpendatasoftSchoolHolidaysProviderTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $provider->fetch('A', 'Bordeaux', '2025-2026');
     }
+
+    /**
+     * Année scolaire encore incomplète : la source n'annonce que le **début** des grandes vacances
+     * (`start == end`, « Début des Vacances d'Été ») parce que la rentrée suivante n'est pas fixée.
+     * La période est matérialisée jusqu'au 31 août sous le libellé définitif — sans quoi l'été,
+     * la plus longue période à répartir, manquerait au planning pendant des mois.
+     */
+    public function testAnnouncedSummerHolidaysGetAProvisionalEnd(): void
+    {
+        $payload = [
+            'total_count' => 2,
+            'results' => [
+                [
+                    'description' => "Début des Vacances d'Été",
+                    'population' => '-',
+                    // Marqueur ponctuel : 22:00 UTC = 3 juillet 2027 à Paris, début et fin identiques.
+                    'start_date' => '2027-07-02T22:00:00+00:00',
+                    'end_date' => '2027-07-02T22:00:00+00:00',
+                    'location' => 'Lille',
+                    'zones' => 'Zone B',
+                    'annee_scolaire' => '2026-2027',
+                ],
+                [
+                    // Autre marqueur non borné : aucune durée à en déduire, il est ignoré.
+                    'description' => "Pont de l'Ascension",
+                    'population' => '-',
+                    'start_date' => '2027-05-06T22:00:00+00:00',
+                    'end_date' => '2027-05-06T22:00:00+00:00',
+                    'location' => 'Lille',
+                    'zones' => 'Zone B',
+                    'annee_scolaire' => '2026-2027',
+                ],
+            ],
+        ];
+
+        $http = new MockHttpClient([new MockResponse(json_encode($payload, \JSON_THROW_ON_ERROR))]);
+        $provider = new OpendatasoftSchoolHolidaysProvider($http, new ArrayAdapter(), new NullLogger());
+
+        $result = $provider->fetch('B', 'Lille', '2026-2027');
+
+        self::assertCount(1, $result);
+        // Libellé normalisé vers celui de la source une fois l'année complète : la clé naturelle
+        // d'upsert coïncidera, la vraie fin remplacera la provisoire sans détruire la règle.
+        self::assertSame("Vacances d'Été", $result[0]->label);
+        self::assertSame('2027-07-03', $result[0]->startDate->format('Y-m-d'));
+        self::assertSame('2027-08-31', $result[0]->endDate->format('Y-m-d'));
+    }
 }

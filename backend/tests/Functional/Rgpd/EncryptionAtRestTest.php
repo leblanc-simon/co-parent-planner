@@ -20,9 +20,10 @@ use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Clock\Clock;
 
 /**
- * US-RGPD-6 — un dump SQL BRUT ne révèle ni identités ni contenus : les 5 champs 🔒 (User.fullName,
- * User.phone, Message.text, Note.text, Invitation.email) sont stockés en ciphertext AES-256-GCM. On
- * persiste via l'ORM puis on relit les colonnes en SQL brut (DBAL), hors ORM, pour prouver le repos.
+ * US-RGPD-6 — un dump SQL BRUT ne révèle ni identités ni contenus : les 8 champs 🔒 (User.fullName,
+ * User.phone, Message.text, Note.text, Invitation.email, et les trois champs d'enfant Child.firstName,
+ * Child.schoolLabel, Child.info) sont stockés en ciphertext AES-256-GCM. On persiste via l'ORM puis
+ * on relit les colonnes en SQL brut (DBAL), hors ORM, pour prouver le repos.
  */
 final class EncryptionAtRestTest extends KernelTestCase
 {
@@ -39,7 +40,11 @@ final class EncryptionAtRestTest extends KernelTestCase
             ->setFullName('Jean-CLEARNAME-Dupont')
             ->setPhone('+3360CLEARPHONE');
         $user->setPasswordHash('unused');
-        $child = (new Child())->setFamily($family)->setFirstName('Zoé');
+        $child = (new Child())
+            ->setFamily($family)
+            ->setFirstName('Zoé-CLEARCHILD')
+            ->setSchoolLabel('CM2 - École CLEARSCHOOL')
+            ->setInfo([['label' => 'Pointure', 'value' => '34-CLEARINFO']]);
         $exchange = (new Exchange())->setFamily($family)->setTitle('Sujet');
         $note = (new Note())->setChild($child)->setText('NOTE-CLEAR-CONTENT')->setNoteDate(new \DateTimeImmutable('2026-06-01'));
         $message = (new Message())->setExchange($exchange)->setText('MESSAGE-CLEAR-CONTENT')->setSentAt(Clock::get()->now());
@@ -58,6 +63,7 @@ final class EncryptionAtRestTest extends KernelTestCase
         $em->flush();
 
         $userId = (string) $user->getId();
+        $childId = (string) $child->getId();
         $noteId = (string) $note->getId();
         $messageId = (string) $message->getId();
         $invitationId = (string) $invitation->getId();
@@ -71,6 +77,11 @@ final class EncryptionAtRestTest extends KernelTestCase
             ['SELECT text FROM notes WHERE id = ?', $noteId, 'NOTE-CLEAR'],
             ['SELECT text FROM messages WHERE id = ?', $messageId, 'MESSAGE-CLEAR'],
             ['SELECT email FROM invitations WHERE id = ?', $invitationId, 'invitee-CLEAR'],
+            // Données de mineurs (décision PO 2026-08-27) : le prénom, l'établissement et les infos
+            // pratiques étaient les derniers champs à laisser un dump brut lisible.
+            ['SELECT first_name FROM children WHERE id = ?', $childId, 'CLEARCHILD'],
+            ['SELECT school_label FROM children WHERE id = ?', $childId, 'CLEARSCHOOL'],
+            ['SELECT info FROM children WHERE id = ?', $childId, 'CLEARINFO'],
         ];
         foreach ($cases as [$sql, $id, $clearFragment]) {
             $raw = $conn->fetchOne($sql, [$id]);
@@ -89,5 +100,47 @@ final class EncryptionAtRestTest extends KernelTestCase
         self::assertInstanceOf(User::class, $reloaded);
         self::assertSame('Jean-CLEARNAME-Dupont', $reloaded->getFullName());
         self::assertSame('+3360CLEARPHONE', $reloaded->getPhone());
+
+        $reloadedChild = $em->getRepository(Child::class)->find($childId);
+        self::assertInstanceOf(Child::class, $reloadedChild);
+        self::assertSame('Zoé-CLEARCHILD', $reloadedChild->getFirstName());
+        self::assertSame('CM2 - École CLEARSCHOOL', $reloadedChild->getSchoolLabel());
+        // La structure de `info` survit au passage par le JSON chiffré (et pas seulement son texte).
+        self::assertSame([['label' => 'Pointure', 'value' => '34-CLEARINFO']], $reloadedChild->getInfo());
+    }
+
+    /**
+     * Le ciphertext change à chaque écriture (nonce aléatoire). Si la détection de changement de
+     * l'ORM portait sur la valeur stockée plutôt que sur la valeur PHP, tout `flush()` réécrirait les
+     * champs 🔒 et incrémenterait le verrou optimiste de l'enfant — le prochain PATCH concurrent
+     * serait rejeté en 409 sans que personne n'ait rien modifié.
+     */
+    public function testUnchangedEncryptedFieldsLeaveTheOptimisticLockAlone(): void
+    {
+        self::bootKernel();
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        self::assertInstanceOf(EntityManagerInterface::class, $em);
+
+        $family = (new Family())->setName('Famille Verrou')->setType(FamilyType::Separated);
+        $child = (new Child())
+            ->setFamily($family)
+            ->setFirstName('Ambre')
+            ->setSchoolLabel('CE1')
+            ->setInfo([['label' => 'Pointure', 'value' => '30']]);
+        $em->persist($family);
+        $em->persist($child);
+        $em->flush();
+        $childId = (string) $child->getId();
+        $em->clear();
+
+        $loaded = $em->getRepository(Child::class)->find($childId);
+        self::assertInstanceOf(Child::class, $loaded);
+        $version = $loaded->getVersion();
+
+        // Réécriture des mêmes valeurs : rien n'a changé du point de vue métier.
+        $loaded->setInfo([['label' => 'Pointure', 'value' => '30']])->setFirstName('Ambre');
+        $em->flush();
+
+        self::assertSame($version, $loaded->getVersion());
     }
 }

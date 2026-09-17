@@ -34,26 +34,32 @@ Dernière mise à jour : 2026-07-10 (Lot 8 — RGPD Manager actif).
 
 | Champ | Catégorie | Sensibilité | Base légale | Finalité | Conservation | Destinataires |
 |---|---|---|---|---|---|---|
-| `Child.firstName` | Identité (mineur) | ⏳ **À chiffrer** (décision PO 2026-08-27 ; en clair tant que non livré) | Exécution du contrat | Identifier/afficher l'enfant | Durée de vie du profil ; purge RGPD (Lot 8) | Membres habilités de la famille |
-| `Child.info` | Contenu | ⏳ **À chiffrer** (paires libres, **aucune donnée de santé** ; décision PO 2026-08-27) | Exécution du contrat | Informations pratiques libres | Durée de vie du profil ; purge RGPD (Lot 8) | Membres habilités de la famille |
+| `Child.firstName` | Identité (mineur) | 🔒 Chiffré | Exécution du contrat | Identifier/afficher l'enfant | Durée de vie du profil ; purge RGPD (Lot 8) | Membres habilités de la famille |
+| `Child.schoolLabel` | Identité (mineur) | 🔒 Chiffré | Exécution du contrat | Situer l'enfant (classe, établissement) pour la garde et l'agenda | Durée de vie du profil ; purge RGPD (Lot 8) | Membres habilités de la famille |
+| `Child.info` | Contenu | 🔒 Chiffré (paires libres, **aucune donnée de santé**) | Exécution du contrat | Informations pratiques libres | Durée de vie du profil ; purge RGPD (Lot 8) | Membres habilités de la famille |
 | `Note.text` | Contenu | 🔒 Chiffré | Exécution du contrat | Partage d'informations entre co-parents | Durée de vie de la note ; anonymisation auteur / purge (Lot 8) | Membres habilités (children_notes ≥ view) |
 
 > `Child.birthDate` (date de naissance) : donnée d'un mineur ; portée par l'entité `Child` au même
 > titre que `firstName`/`info` ci-dessus (non marquée `#[PersonalData]` séparément car simple date,
 > couverte par la finalité du profil). Aucun champ médical typé n'est créé (invariant permanent).
 
-> **⏳ Décision PO du 2026-08-27, implémentation différée — chiffrer les informations sur les enfants.**
-> `Child.firstName`, `Child.schoolLabel` et `Child.info` passent en 🔒 (AES-256-GCM applicatif, comme
-> `User.fullName` ou `Note.text`) : ce sont des données de **mineurs**, et elles étaient les dernières
-> à rendre un dump SQL brut lisible. Cela **révise la décision §5.4 #4** (« non chiffré, tri/recherche
-> serveur conservés »). À prévoir au moment de l'implémentation : type Doctrine `encrypted_string`
-> (et variante pour le `jsonb` de `info`), migration de **chiffrement des lignes existantes**,
-> `encrypted: true` dans les attributs `#[PersonalData]`, `schoolLabel` **ajouté au registre** (il n'y
-> figure pas aujourd'hui), et surtout la perte du **tri/filtre SQL sur le prénom** — le tri
-> `['firstName' => 'ASC']` des requêtes enfants devra passer côté PHP ou par un index aveugle
-> (`BlindIndexHasher`, déjà utilisé pour `Invitation.emailHash`). Tant que ce n'est pas livré, la
-> sensibilité affichée ci-dessus est « à chiffrer » et non « chiffré » : le registre ne doit pas
-> promettre une protection qui n'existe pas encore.
+> **Décision PO du 2026-08-27, livrée le 2026-09-17 — les informations sur les enfants sont
+> chiffrées au repos.** `Child.firstName`, `Child.schoolLabel` et `Child.info` sont en 🔒
+> (AES-256-GCM applicatif, comme `User.fullName` ou `Note.text`) : ce sont des données de **mineurs**,
+> et elles étaient les dernières à rendre un dump SQL brut lisible. Cela **révise la décision §5.4 #4**
+> (« non chiffré, tri/recherche serveur conservés »). Ce que la livraison a demandé :
+>
+> - le type Doctrine `encrypted_string` pour les deux chaînes, et un type `encrypted_json`
+>   (`App\Doctrine\Type\EncryptedJsonType`) pour `info` — le JSON est sérialisé **puis** chiffré,
+>   et la colonne devient du TEXT ; les opérateurs JSON de PostgreSQL sont perdus sur cette colonne,
+>   qu'aucune requête n'interrogeait ;
+> - une migration qui **reprend les lignes existantes** (`Version20260917204656`, `postUp()` chiffre,
+>   `preDown()` déchiffre) : sans elle, une base déjà peuplée serait restée en clair ;
+> - **le tri sur le prénom**, seul vrai point dur : `ORDER BY first_name` trierait désormais des
+>   ciphertexts. Il passe en PHP (`App\Service\Child\ChildSorter`, `Collator` de la locale active,
+>   identifiant en départage), et `ChildRepository::findByFamily()` devient le point de passage unique
+>   pour lister les enfants d'une famille. Un index aveugle (`BlindIndexHasher`) n'aurait pas convenu :
+>   un HMAC répond à l'égalité, pas à l'ordre — et aucune requête ne cherche un enfant par son prénom.
 
 ## Champs (Lot 4 — Agenda)
 
@@ -161,7 +167,8 @@ les références (`SET NULL`) sans casser les liens/audits :
 ## Champs à venir (rappel, autres lots)
 
 - `Note.text` 🔒 (Lot 2 — contenu), `Message.text` 🔒 (Lot 6 — contenu).
-- `Child.*` (Lot 2 — infos pratiques libres ; **aucune donnée de santé typée**, cf. invariant).
+- `Child.firstName` / `Child.schoolLabel` / `Child.info` 🔒 (Lot 2 — infos pratiques libres ;
+  **aucune donnée de santé typée**, cf. invariant) : chiffrés depuis le 2026-09-17.
 
 > À chaque introduction, ajouter l'attribut `#[PersonalData]` + une ligne ci-dessus (DoD du lot).
 

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Attribute\PersonalData;
+use App\Doctrine\Type\EncryptedJsonType;
+use App\Doctrine\Type\EncryptedStringType;
 use App\Entity\Concern\TimestampableTrait;
 use App\Enum\DataCategory;
 use App\Repository\ChildRepository;
@@ -16,13 +18,12 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Profil d'un enfant (cdc §2.3, Lot 2). Informations pratiques **libres** (paires label/valeur) —
- * **aucun champ médical typé** (invariant « pas de données de santé »). `first_name` est inscrit au
- * registre (identité d'un mineur).
+ * **aucun champ médical typé** (invariant « pas de données de santé »).
  *
- * ⏳ **Décision PO du 2026-08-27, non encore implémentée** : `firstName`, `schoolLabel` et `info`
- * doivent passer **chiffrés au repos** (🔒, cdc §5.2), ce qui révise la décision §5.4 #4 qui les
- * laissait en clair. Voir `docs/registre-donnees.md` pour le périmètre exact et le point d'attention
- * du tri SQL sur le prénom. En l'état, ces champs sont **en clair** en base.
+ * `firstName`, `schoolLabel` et `info` sont **chiffrés au repos** 🔒 (AES-256-GCM applicatif, cdc
+ * §5.2) : ce sont des données de **mineurs**, et elles étaient les dernières à rendre un dump SQL
+ * brut lisible. Cela révise la décision §5.4 #4, qui les laissait en clair pour conserver le tri
+ * serveur — tri désormais assuré par {@see \App\Service\Child\ChildSorter}.
  */
 #[ORM\Entity(repositoryClass: ChildRepository::class)]
 #[ORM\Table(name: 'children')]
@@ -45,9 +46,9 @@ class Child
         legalBasis: 'Exécution du contrat (coordination parentale).',
         retention: 'Durée de vie du profil ; anonymisé/supprimé via le RGPD Manager (Lot 8).',
         recipients: 'Membres habilités de la famille.',
-        encrypted: false,
+        encrypted: true,
     )]
-    #[ORM\Column(length: 120)]
+    #[ORM\Column(type: EncryptedStringType::NAME)]
     private string $firstName;
 
     #[ORM\Column(length: 16, options: ['default' => '#C2643D'])]
@@ -56,7 +57,15 @@ class Child
     #[ORM\Column(type: 'date_immutable', nullable: true)]
     private ?\DateTimeImmutable $birthDate = null;
 
-    #[ORM\Column(length: 120, nullable: true)]
+    #[PersonalData(
+        category: DataCategory::Identity,
+        purpose: 'Situer l\'enfant (classe, établissement) pour organiser la garde et l\'agenda.',
+        legalBasis: 'Exécution du contrat (coordination parentale).',
+        retention: 'Durée de vie du profil ; purge RGPD (Lot 8).',
+        recipients: 'Membres habilités de la famille.',
+        encrypted: true,
+    )]
+    #[ORM\Column(type: EncryptedStringType::NAME, nullable: true)]
     private ?string $schoolLabel = null;
 
     /**
@@ -71,9 +80,9 @@ class Child
         legalBasis: 'Exécution du contrat (coordination parentale).',
         retention: 'Durée de vie du profil ; purge RGPD (Lot 8).',
         recipients: 'Membres habilités de la famille.',
-        encrypted: false,
+        encrypted: true,
     )]
-    #[ORM\Column(type: 'json', options: ['default' => '[]'])]
+    #[ORM\Column(type: EncryptedJsonType::NAME)]
     private array $info = [];
 
     /** Verrou optimiste : protège `info` (jsonb) de l'écrasement concurrent (§4.2). */

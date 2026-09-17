@@ -12,6 +12,7 @@ doctrine:
         types:
             citext: App\Doctrine\Type\CitextType
             encrypted_string: App\Doctrine\Type\EncryptedStringType
+            encrypted_json: App\Doctrine\Type\EncryptedJsonType
         # Introspection : la colonne PostgreSQL `citext` correspond à notre type `citext`
         mapping_types:
             citext: citext

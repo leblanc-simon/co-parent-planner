@@ -5,7 +5,9 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-09-11** — **La garde se compte désormais en heures, plus en journées.** « Échanger ce jour » demande *quand* : jour et heure de début (la veille ou le jour même), jour et heure de fin (le jour même ou le lendemain), **préremplis avec le créneau que la famille vivrait** — prolongation depuis la transmission de la veille quand le parent avait déjà les enfants, reprise le matin même sinon (nouvelle heure de famille `day_start_time`, 08:00 par défaut). Le moteur **matérialise le découpage horaire** de chaque journée (`CustodyDay.segments`) : une case porte une, deux ou trois teintes, avec un filet par frontière. **Convention de transmission révisée** : elle se lit sur la **dernière** case d'un bloc — « A jusqu'au 25, B du 26 au 28, échange 18:00 » met les enfants chez A jusqu'au 25 à 18:00, et c'est la case du **25** qui est bicolore (la version d'hier décalait le planning d'un jour). La journée est **comptée au parent majoritaire en heures** (initiale de la case et statistiques). Amendements écrits au **cdc §3.3 (US-CUST-10), §5.2 et §8.3**. Détail : §6, entrée du 2026-09-11.
+Dernière mise à jour : **2026-09-17** — **Les informations sur les enfants sont chiffrées au repos.** `Child.firstName`, `Child.schoolLabel` et `Child.info` passent en 🔒 (AES-256-GCM applicatif) : ce sont des données de **mineurs**, et elles étaient les dernières à rendre un dump SQL brut lisible. La décision PO du 2026-08-27 attendait depuis trois semaines parce qu'elle bute sur un vrai point dur — **le tri sur le prénom**, qu'un `ORDER BY` ne peut plus rendre. Il passe en PHP (`ChildSorter`, `Collator` de la locale active) et `ChildRepository::findByFamily()` devient le **point de passage unique** pour lister les enfants ; l'index aveugle, envisagé dans le registre, a été écarté — un HMAC répond à l'égalité, pas à l'ordre. Nouveau type Doctrine `encrypted_json` pour `info` (JSON sérialisé **puis** chiffré, colonne TEXT). Migration `Version20260917204656` avec **reprise des lignes existantes**, aller-retour vérifié sur 191 enfants réels. Détail : §6, entrée du 2026-09-17.
+
+Antérieur : **2026-09-11** — **La garde se compte désormais en heures, plus en journées.** « Échanger ce jour » demande *quand* : jour et heure de début (la veille ou le jour même), jour et heure de fin (le jour même ou le lendemain), **préremplis avec le créneau que la famille vivrait** — prolongation depuis la transmission de la veille quand le parent avait déjà les enfants, reprise le matin même sinon (nouvelle heure de famille `day_start_time`, 08:00 par défaut). Le moteur **matérialise le découpage horaire** de chaque journée (`CustodyDay.segments`) : une case porte une, deux ou trois teintes, avec un filet par frontière. **Convention de transmission révisée** : elle se lit sur la **dernière** case d'un bloc — « A jusqu'au 25, B du 26 au 28, échange 18:00 » met les enfants chez A jusqu'au 25 à 18:00, et c'est la case du **25** qui est bicolore (la version d'hier décalait le planning d'un jour). La journée est **comptée au parent majoritaire en heures** (initiale de la case et statistiques). Amendements écrits au **cdc §3.3 (US-CUST-10), §5.2 et §8.3**. Détail : §6, entrée du 2026-09-11.
 
 Antérieur : **2026-09-10** — **Ré-échanger un jour DÉFAIT l'échange au lieu de l'empiler.** « Échanger ce jour » créait une exception d'un jour ; le refaire sur la même date en créait une **seconde**, en sens inverse : deux exceptions contradictoires que seul l'ordre d'application du moteur départageait, et que l'écran Réglages listait toutes les deux. La fiche de jour propose désormais **« Annuler l'échange »** quand le jour tient son attribution d'une exception qui ne porte que lui — l'exception est **retirée**, le jour revient au rythme (ou à sa règle de vacances). Garde-fou côté serveur, pour tout client : une création d'exception sur une plage **déjà** occupée par une exception de plage identique la **remplace**, et un rejeu à l'identique (même plage, même parent) rend l'existante au lieu d'une jumelle. Une exception de **plusieurs** jours n'est pas annulable depuis la fiche d'un seul — la retirer là toucherait des dates non regardées. Détail : §6, entrée du 2026-09-10.
 
@@ -152,6 +154,11 @@ nouvelle revue, non d'un reste à solder.
 - Après une **fusion** (ou tout changement de branche), `symfony console cache:clear` en `dev` **et**
   en `--env=test` avant d'exporter l'OpenAPI ou de lancer PHPUnit : des métadonnées API Platform
   périmées amputent le contrat et font échouer des tests fonctionnels à tort.
+- **Suite E2E sur un cache dev froid** : la première requête vers une route lourde recompile Twig et
+  le conteneur, ce qui dépasse les 15 s d'attente de `waitForSaved()` — un à trois tests échouent
+  alors sans qu'aucun code soit en cause (observé le 2026-09-17, les mêmes tests passant seuls puis
+  à cache chaud). Après un `cache:clear` en dev, **lancer la suite deux fois** ou chauffer les routes
+  avant de conclure à une régression.
 
 ### Point de reprise du chantier web (au 2026-08-27)
 
@@ -183,13 +190,10 @@ La revue `specs/revue-web-2026-08.md` est **close** ; reprendre sur les **7 cons
 ci-dessous, en commençant par la vague 2 de l'étape 6 (6.8, 6.10, 6.6). (Portes à jour : voir le
 point de reprise en tête de section.)
 
-**⏳ Chantier décidé, non commencé — chiffrer les informations sur les enfants** (décision PO du
-2026-08-27, cdc §5.2 mis à jour) : `Child.firstName`, `Child.schoolLabel`, `Child.info` passent 🔒.
-Ce n'est pas qu'un changement de type : il faut une **migration qui chiffre les lignes existantes**,
-`schoolLabel` **ajouté au registre** (absent aujourd'hui), et une réponse au seul vrai point dur — le
-**tri/filtre SQL sur le prénom** (`['firstName' => 'ASC']` dans les requêtes enfants, et le tri des
-listes) qui ne survit pas au chiffrement : tri côté PHP, ou index aveugle façon
-`Invitation.emailHash` (`BlindIndexHasher` existe déjà). Détail dans `backend/docs/registre-donnees.md`.
+**✅ Chantier livré le 2026-09-17 — chiffrer les informations sur les enfants** (décision PO du
+2026-08-27) : `Child.firstName`, `Child.schoolLabel`, `Child.info` sont 🔒, migration avec reprise des
+lignes existantes, `schoolLabel` ajouté au registre, tri du prénom passé en PHP (`ChildSorter`).
+Détail : §6, entrée du 2026-09-17.
 
 Deux tâches héritées de la revue d'août, à planifier :
 **(a)** un test E2E qui **exerce** une mise à jour temps réel de bout en bout (le hub tourne
@@ -474,6 +478,62 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-09-17 — Les informations sur les enfants passent chiffrées au repos
+
+**Décision PO du 2026-08-27, restée trois semaines sans code** — non par oubli, mais parce qu'elle
+bute sur une vraie question : `Child.firstName`, `Child.schoolLabel` et `Child.info` décrivent des
+**mineurs** et étaient les derniers champs à rendre un dump SQL brut lisible
+(`Léa | CM2 - École Jules Ferry | [{"label":"Pointure"…`), en contradiction avec l'objectif « ni
+identités ni contenus » du §7.
+
+**Le point dur était le tri, et le registre proposait une fausse piste.** Il suggérait « tri côté
+PHP, ou index aveugle façon `Invitation.emailHash` ». L'index aveugle ne convient pas : un HMAC
+répond à l'**égalité**, jamais à l'**ordre** — et la vérification préalable a montré qu'aucune
+requête ne cherche un enfant par son prénom, donc il n'aurait rien servi du tout. Le tri passe donc
+en PHP (`App\Service\Child\ChildSorter`), ce que la volumétrie autorise sans réserve : quelques
+enfants par famille, tous déjà chargés. L'ordre suit le `Collator` de la **locale active**, donc
+« Élise » se range avec les E et ajouter une langue ne demande aucun changement de code ;
+l'identifiant départage les homonymes, sans quoi deux enfants du même prénom changeraient de place
+d'un affichage à l'autre, l'ordre de lecture SQL n'étant pas garanti.
+
+**Trois appelants triaient, dont deux le refaisaient à la main** (`AgendaController` et
+`ExchangeController` portaient leur propre `['firstName' => 'ASC']`). `ChildRepository::findByFamily()`
+devient le **point de passage unique** pour lister les enfants d'une famille : un tri dupliqué est un
+tri qu'on oublie de corriger.
+
+**Un type Doctrine de plus** : `encrypted_json` (`App\Doctrine\Type\EncryptedJsonType`) pour
+`info`, seule colonne JSON porteuse de contenu personnel — la valeur est sérialisée **puis** chiffrée,
+et la colonne devient du TEXT. Contrepartie assumée : les opérateurs JSON de PostgreSQL sont perdus
+sur cette colonne, qu'aucune requête n'interrogeait (`info` n'est lu qu'entier, par l'ORM). Les deux
+types partagent désormais un encryptor unique, donc une seule clé.
+
+**La migration reprend les lignes existantes** (`Version20260917204656`) : le DDL élargit les colonnes,
+`postUp()` chiffre chaque ligne, `preDown()` refait le chemin inverse pendant que les colonnes sont
+encore du TEXT — sans quoi un rollback laisserait en base des valeurs illisibles. La passe est
+idempotente (une valeur déjà préfixée `enc:v1:` est laissée telle quelle). **Aller-retour vérifié sur
+les 191 enfants de la base de dev** : 191/191 chiffrés à la montée, texte clair identique à la
+descente.
+
+**Un garde-fou que le chiffrement rendait nécessaire** : le ciphertext change à chaque écriture
+(nonce aléatoire). Si la détection de changement de l'ORM portait sur la valeur stockée plutôt que
+sur la valeur PHP, tout `flush()` réécrirait les champs 🔒 et incrémenterait le **verrou optimiste**
+de l'enfant — le PATCH concurrent suivant serait rejeté en 409 sans que personne n'ait rien modifié.
+Un test le fixe.
+
+**Conformité** : `schoolLabel` **entre au registre** (il n'y figurait pas), les trois champs passent
+de « à chiffrer » à 🔒, et `EncryptionAtRestTest` couvre les trois nouvelles colonnes — le test de
+cohérence CI refuse depuis toujours une colonne chiffrée sans entrée de registre, et il connaît
+maintenant les deux types. L'invariant de `CLAUDE.md` gagne son corollaire : **aucun `ORDER BY` ni
+`WHERE` SQL sur un champ 🔒**.
+
+**Contrat et mobile inchangés** : les types exposés ne bougent pas (`firstName` reste une chaîne),
+l'OpenAPI ré-exporté est identique au commité, donc ni régénération du client Dart ni retouche
+mobile. `ext-intl` est déclaré dans `composer.json` (`Collator`) — il figurait déjà dans
+`INSTALL.md` et dans les deux CI, qui restent inchangés.
+
+Portes : backend **490 tests / 4 314 assertions**, couverture **87,9 %**, PHPStan 0, cs-fixer 0,
+Twig 38, `lint:container` OK, schéma en sync ; **E2E 23/23** ; OpenAPI sans drift.
 
 ### 2026-09-11 — La garde à l'heure près : échanges partiels et journées découpées
 

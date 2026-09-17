@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Rgpd;
 
 use App\Attribute\PersonalData;
+use App\Doctrine\Type\EncryptedJsonType;
 use App\Doctrine\Type\EncryptedStringType;
 use App\Entity\User;
 use Doctrine\ORM\Mapping\Column;
@@ -16,7 +17,7 @@ use Doctrine\ORM\Mapping\Entity;
  * Source de vérité : les attributs {@see PersonalData} posés sur les propriétés d'entité.
  * Sert au test de cohérence CI (App\Tests\Rgpd\PersonalDataRegistryTest) qui garantit que :
  *  1. tout champ marqué personnel a une entrée dans `docs/registre-donnees.md` ;
- *  2. tout champ **chiffré** 🔒 (type Doctrine encrypted_string) est marqué personnel.
+ *  2. tout champ **chiffré** 🔒 (types Doctrine encrypted_string / encrypted_json) est marqué personnel.
  */
 final class PersonalDataRegistry
 {
@@ -47,7 +48,7 @@ final class PersonalDataRegistry
     }
 
     /**
-     * Champs dont la colonne est chiffrée (encrypted_string) mais qui ne portent PAS #[PersonalData].
+     * Champs dont la colonne est chiffrée mais qui ne portent PAS #[PersonalData].
      * Un dump SQL chiffré sans entrée de registre serait une fuite de conformité → échec CI.
      *
      * @return list<string> clés « Entité.champ »
@@ -75,7 +76,7 @@ final class PersonalDataRegistry
         foreach ($property->getAttributes(Column::class) as $attr) {
             /** @var Column $column */
             $column = $attr->newInstance();
-            if (EncryptedStringType::NAME === $column->type) {
+            if (\in_array($column->type, [EncryptedStringType::NAME, EncryptedJsonType::NAME], true)) {
                 return true;
             }
         }

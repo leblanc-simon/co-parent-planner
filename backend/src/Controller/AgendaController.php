@@ -118,7 +118,7 @@ final class AgendaController extends AbstractController
             'categories' => EventCategory::cases(),
             'activeCategories' => array_map(static fn (EventCategory $c) => $c->value, $categories),
             'parents' => $parents,
-            'children' => $this->children->findBy(['family' => $family], ['firstName' => 'ASC']),
+            'children' => $this->children->findByFamily($family),
             'overlayLinks' => $overlayLinks,
             'overlayActive' => [] !== $enabledFamilyIds,
             'overlayCount' => \count($overlayEvents),

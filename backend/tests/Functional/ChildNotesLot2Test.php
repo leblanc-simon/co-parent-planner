@@ -91,6 +91,31 @@ final class ChildNotesLot2Test extends ApiAuthTestCase
         self::assertSame('Pointure', $body['info'][0]['label']);
     }
 
+    /**
+     * Le prénom étant chiffré, la liste ne peut plus être triée par SQL : ce test garde l'ordre
+     * alphabétique que `ORDER BY first_name` assurait, accents compris.
+     */
+    public function testChildrenAreListedAlphabeticallyDespiteEncryption(): void
+    {
+        [$client, $auth, $familyId] = $this->adminWithFamily('c-order@example.com');
+        $scoped = $auth + ['X-Family-Id' => $familyId];
+
+        foreach (['Zoé', 'Ambre', 'Élise'] as $firstName) {
+            $created = $client->request('POST', '/api/families/'.$familyId.'/children', [
+                'json' => ['firstName' => $firstName],
+                'headers' => $scoped,
+            ]);
+            self::assertSame(201, $created->getStatusCode());
+        }
+
+        $list = $client->request('GET', '/api/families/'.$familyId.'/children', ['headers' => $scoped]);
+        self::assertSame(200, $list->getStatusCode());
+        self::assertSame(
+            ['Ambre', 'Élise', 'Zoé'],
+            array_map(static fn (array $child): string => $child['firstName'], $list->toArray()),
+        );
+    }
+
     public function testAddAndListNotesEncrypted(): void
     {
         [$client, $auth, $familyId] = $this->adminWithFamily('c-admin2@example.com');

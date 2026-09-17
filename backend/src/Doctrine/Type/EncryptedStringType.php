@@ -27,7 +27,11 @@ final class EncryptedStringType extends Type
         self::$encryptor = $encryptor;
     }
 
-    private static function encryptor(): FieldEncryptor
+    /**
+     * Encryptor partagé par tous les types chiffrés (cf. {@see EncryptedJsonType}) : une seule
+     * instance, donc une seule clé, quel que soit le nombre de types.
+     */
+    public static function sharedEncryptor(): FieldEncryptor
     {
         return self::$encryptor ??= FieldEncryptor::fromEnv();
     }
@@ -43,7 +47,7 @@ final class EncryptedStringType extends Type
             return null;
         }
 
-        return self::encryptor()->encrypt((string) $value);
+        return self::sharedEncryptor()->encrypt((string) $value);
     }
 
     public function convertToPHPValue(mixed $value, AbstractPlatform $platform): ?string
@@ -52,7 +56,7 @@ final class EncryptedStringType extends Type
             return null;
         }
 
-        return self::encryptor()->decrypt((string) $value);
+        return self::sharedEncryptor()->decrypt((string) $value);
     }
 
     public function getName(): string

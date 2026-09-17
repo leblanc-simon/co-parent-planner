@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Child;
 use App\Entity\Family;
+use App\Service\Child\ChildSorter;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -22,6 +23,10 @@ class ChildRepository extends ServiceEntityRepository
     /**
      * Enfants de la famille (scopé), triés par prénom.
      *
+     * Le tri est fait **en PHP** : `first_name` est chiffré au repos, un `ORDER BY` SQL trierait donc
+     * des ciphertexts (cf. {@see ChildSorter}). Point de passage unique pour lister les enfants d'une
+     * famille — les appelants qui triaient eux-mêmes reproduisaient le défaut.
+     *
      * @return list<Child>
      */
     public function findByFamily(Family $family): array
@@ -30,10 +35,9 @@ class ChildRepository extends ServiceEntityRepository
         $result = $this->createQueryBuilder('c')
             ->andWhere('c.family = :family')
             ->setParameter('family', $family)
-            ->orderBy('c.firstName', 'ASC')
             ->getQuery()
             ->getResult();
 
-        return $result;
+        return ChildSorter::byFirstName($result);
     }
 }

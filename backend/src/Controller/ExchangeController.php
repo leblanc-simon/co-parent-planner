@@ -103,7 +103,7 @@ final class ExchangeController extends AbstractController
             // 02:21 (Paris) comme « 00:21 ».
             'timezone' => $family->getTimezone(),
             'statusFilter' => null !== $statusFilter ? $statusFilter->value : '',
-            'children' => $this->children->findBy(['family' => $family], ['firstName' => 'ASC']),
+            'children' => $this->children->findByFamily($family),
             'mercureHub' => $this->hub->getPublicUrl(),
             'listTopic' => $topics[0],
             'detailTopic' => $topics[1] ?? null,

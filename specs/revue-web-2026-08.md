@@ -464,8 +464,9 @@ Impact faible et, en l'état, largement théorique — la déconnexion ne décon
 
 ## Point d'attention produit (arbitrage PO, pas un défaut d'implémentation)
 
-> **Arbitrage rendu le 2026-08-27 : on chiffre. Implémentation dans un second temps** — le cdc §5.2
-> marque désormais les trois champs 🔒 et le registre porte la mention « à chiffrer ».
+> **Arbitrage rendu le 2026-08-27 : on chiffre. Livré le 2026-09-17** — le cdc §5.2 marque les trois
+> champs 🔒, le registre les donne pour chiffrés, et le tri du prénom est passé en PHP
+> (`ChildSorter`), un `ORDER BY` n'ayant plus de sens sur un ciphertext.
 
 `children.first_name`, `children.school_label` et `children.info` (champ libre) étaient stockés **en
 clair** — conforme au cdc §5.2 **d'alors**, qui ne les marquait pas 🔒. Mais l'objectif énoncé dans

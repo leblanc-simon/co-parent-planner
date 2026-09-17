@@ -36,6 +36,17 @@ class CustodyException
     #[ORM\Column(type: 'date_immutable')]
     private \DateTimeImmutable $endDate;
 
+    /**
+     * Heures locales (HH:MM) bornant l'exception : elle court de `startDate startTime` (inclus) à
+     * `endDate endTime` (exclu). `null` des deux côtés = journées entières, le comportement
+     * d'origine — un échange partiel (« du 25 à 18:00 au 26 à 18:00 ») les renseigne.
+     */
+    #[ORM\Column(length: 5, nullable: true)]
+    private ?string $startTime = null;
+
+    #[ORM\Column(length: 5, nullable: true)]
+    private ?string $endTime = null;
+
     #[ORM\ManyToOne(targetEntity: Membership::class)]
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Membership $parentMembership = null;
@@ -89,6 +100,30 @@ class CustodyException
     public function setEndDate(\DateTimeImmutable $endDate): static
     {
         $this->endDate = $endDate;
+
+        return $this;
+    }
+
+    public function getStartTime(): ?string
+    {
+        return $this->startTime;
+    }
+
+    public function setStartTime(?string $startTime): static
+    {
+        $this->startTime = $startTime;
+
+        return $this;
+    }
+
+    public function getEndTime(): ?string
+    {
+        return $this->endTime;
+    }
+
+    public function setEndTime(?string $endTime): static
+    {
+        $this->endTime = $endTime;
 
         return $this;
     }

@@ -13,6 +13,7 @@ CustodyPatternUpdatePatternRequest _$CustodyPatternUpdatePatternRequestFromJson(
   anchorDate: json['anchorDate'] as String?,
   handoverWeekday: (json['handoverWeekday'] as num?)?.toInt(),
   handoverTime: json['handoverTime'] as String?,
+  dayStartTime: json['dayStartTime'] as String?,
   customPattern: (json['customPattern'] as List<dynamic>?)
       ?.map((e) => e as String)
       .toList(),
@@ -28,6 +29,7 @@ Map<String, dynamic> _$CustodyPatternUpdatePatternRequestToJson(
   'anchorDate': instance.anchorDate,
   'handoverWeekday': instance.handoverWeekday,
   'handoverTime': instance.handoverTime,
+  'dayStartTime': instance.dayStartTime,
   'customPattern': instance.customPattern,
   'settings': instance.settings,
   'parentAMembershipId': instance.parentAMembershipId,

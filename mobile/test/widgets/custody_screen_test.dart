@@ -45,14 +45,32 @@ const _pattern = api.CustodyPattern(
   parentBMembershipId: 'mB',
 );
 
+// Jours tels que le moteur les matérialise (cdc §3.4) : le 1er est le DERNIER jour de Sophie,
+// c'est donc lui qui porte la transmission de 19:00 ; les suivants sont unis. `parentMembershipId`
+// est le parent majoritaire, celui à qui la journée est comptée.
 const _days = [
-  api.CustodyDay(date: '2026-07-01', parentMembershipId: 'mA', source: 'base'),
+  api.CustodyDay(
+    date: '2026-07-01',
+    parentMembershipId: 'mA',
+    source: 'base',
+    segments: [
+      {'from': '00:00', 'to': '19:00', 'parent': 'mA', 'source': 'base'},
+      {'from': '19:00', 'to': '24:00', 'parent': 'mB', 'source': 'base'},
+    ],
+  ),
   api.CustodyDay(date: '2026-07-02', parentMembershipId: 'mB', source: 'base'),
+  // Dernier jour de Marc, et exception sur sa partie de journée : deux tranches, dont la
+  // transmission de 19:00 qui rend les enfants à Sophie.
   api.CustodyDay(
     date: '2026-07-03',
     parentMembershipId: 'mB',
     source: 'exception',
+    segments: [
+      {'from': '00:00', 'to': '19:00', 'parent': 'mB', 'source': 'exception'},
+      {'from': '19:00', 'to': '24:00', 'parent': 'mA', 'source': 'base'},
+    ],
   ),
+  api.CustodyDay(date: '2026-07-04', parentMembershipId: 'mA', source: 'base'),
 ];
 
 const _stats = api.CustodyStats(
@@ -237,6 +255,8 @@ void main() {
           any(),
           startDate: any(named: 'startDate'),
           endDate: any(named: 'endDate'),
+          startTime: any(named: 'startTime'),
+          endTime: any(named: 'endTime'),
           parentMembershipId: any(named: 'parentMembershipId'),
           reason: any(named: 'reason'),
         ),
@@ -245,23 +265,110 @@ void main() {
       await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
       await tester.pumpAndSettle();
 
-      // Le 1er juillet est attribué au parent A → l'échange vise le parent B.
-      await tester.tap(find.byKey(const ValueKey('garde-day-2026-07-01')));
+      // Le 2 juillet est attribué au parent B → l'échange vise le parent A. La veille (le 1er)
+      // est comptée à A : l'échange PROLONGE donc sa garde depuis la transmission de 19:00,
+      // jusqu'à celle du 2 (cdc §3.4).
+      await tester.tap(find.byKey(const ValueKey('garde-day-2026-07-02')));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('custody-swap-day')), findsOneWidget);
 
       await tester.tap(find.byKey(const ValueKey('custody-swap-day')));
       await tester.pumpAndSettle();
 
+      // La feuille propose le créneau ; l'utilisateur confirme sans rien changer.
+      expect(
+        find.byKey(const ValueKey('custody-swap-start-time')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const ValueKey('custody-swap-confirm')));
+      await tester.pumpAndSettle();
+
       verify(
         () => repo.createException(
           'fam-1',
           startDate: '2026-07-01',
-          endDate: '2026-07-01',
-          parentMembershipId: 'mB',
+          startTime: '19:00',
+          endDate: '2026-07-02',
+          endTime: '19:00',
+          parentMembershipId: 'mA',
           reason: 'Échange',
         ),
       ).called(1);
+    },
+  );
+
+  // Ré-échanger un jour déjà échangé DÉFAIT l'échange : l'exception d'un jour est
+  // retirée et la date revient au rythme. Empiler une exception inverse laissait deux
+  // exceptions contradictoires sur la même date. Pendant web : `garde#revertDay`.
+  testWidgets(
+    'détail du jour déjà échangé → « Annuler l\'échange » retire l\'exception',
+    (tester) async {
+      stubReads();
+      stubMembers();
+      when(() => repo.listExceptions('fam-1')).thenAnswer(
+        (_) async => const [
+          api.CustodyException(
+            id: 'e1',
+            startDate: '2026-07-03',
+            endDate: '2026-07-03',
+            parentMembershipId: 'mB',
+            reason: 'Échange',
+          ),
+        ],
+      );
+      when(() => repo.deleteException(any(), any())).thenAnswer((_) async {});
+
+      await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+
+      // Le 3 juillet est attribué à mB PAR une exception d'un seul jour.
+      await tester.tap(find.byKey(const ValueKey('garde-day-2026-07-03')));
+      await tester.pumpAndSettle();
+      expect(find.text("Annuler l'échange"), findsOneWidget);
+      expect(find.text('Échanger ce jour'), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey('custody-swap-day')));
+      await tester.pumpAndSettle();
+
+      verify(() => repo.deleteException('fam-1', 'e1')).called(1);
+      verifyNever(
+        () => repo.createException(
+          any(),
+          startDate: any(named: 'startDate'),
+          endDate: any(named: 'endDate'),
+          parentMembershipId: any(named: 'parentMembershipId'),
+          reason: any(named: 'reason'),
+        ),
+      );
+    },
+  );
+
+  // Une exception de PLUSIEURS jours ne s'annule pas depuis la fiche d'un seul : la
+  // retirer ici toucherait des dates que l'utilisateur ne regarde pas.
+  testWidgets(
+    'détail du jour : exception de plusieurs jours → l\'échange reste offert',
+    (tester) async {
+      stubReads();
+      stubMembers();
+      when(() => repo.listExceptions('fam-1')).thenAnswer(
+        (_) async => const [
+          api.CustodyException(
+            id: 'e2',
+            startDate: '2026-07-03',
+            endDate: '2026-07-06',
+            parentMembershipId: 'mB',
+          ),
+        ],
+      );
+
+      await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('garde-day-2026-07-03')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Échanger ce jour'), findsOneWidget);
+      expect(find.text("Annuler l'échange"), findsNothing);
     },
   );
 
@@ -290,6 +397,7 @@ void main() {
         anchorDate: any(named: 'anchorDate'),
         handoverWeekday: any(named: 'handoverWeekday'),
         handoverTime: any(named: 'handoverTime'),
+        dayStartTime: any(named: 'dayStartTime'),
         parentAMembershipId: any(named: 'parentAMembershipId'),
         parentBMembershipId: any(named: 'parentBMembershipId'),
         customPattern: any(named: 'customPattern'),
@@ -313,6 +421,7 @@ void main() {
         anchorDate: '2026-06-21',
         handoverWeekday: 0,
         handoverTime: '19:00',
+        dayStartTime: '08:00',
         parentAMembershipId: 'mA',
         parentBMembershipId: 'mB',
         customPattern: null,
@@ -359,6 +468,7 @@ void main() {
         anchorDate: any(named: 'anchorDate'),
         handoverWeekday: any(named: 'handoverWeekday'),
         handoverTime: any(named: 'handoverTime'),
+        dayStartTime: any(named: 'dayStartTime'),
         parentAMembershipId: any(named: 'parentAMembershipId'),
         parentBMembershipId: any(named: 'parentBMembershipId'),
         customPattern: any(named: 'customPattern'),
@@ -408,10 +518,12 @@ void main() {
       expect(find.text('août 2026'), findsOneWidget);
       // Les jours ET les statistiques portent sur la MÊME fenêtre : les afficher
       // sur deux périodes différentes serait pire qu'une navigation absente.
+      // La fenêtre des JOURS démarre la veille du 1er : elle porte l'attributaire dont le 1er
+      // prend la suite, sans lequel un 1er tombant un jour d'échange se peindrait plein.
       verify(
         () => repo.listDays(
           'fam-1',
-          from: DateTime(2026, 8),
+          from: DateTime(2026, 7, 31),
           to: DateTime(2026, 8, 31),
         ),
       ).called(1);
@@ -425,35 +537,128 @@ void main() {
     },
   );
 
-  testWidgets(
-    'C55 — la case est annoncée avec le NOM du parent, pas son initiale seule',
-    (tester) async {
-      stubReads();
-      stubMembers();
+  testWidgets('C55 — la case est annoncée avec le NOM du parent, pas son initiale seule', (
+    tester,
+  ) async {
+    stubReads();
+    stubMembers();
 
-      await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
-      await tester.pumpAndSettle();
+    await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+    await tester.pumpAndSettle();
 
-      // cdc §8.1 : « les lecteurs d'écran reçoivent le nom en clair, jamais
-      // l'initiale seule ». Jumeau du garde-fou web
-      // `WebPagesTest::testGardeCarriesNonColourParentMarker`.
-      expect(
-        find.bySemanticsLabel(RegExp(r'1 juillet 2026 — chez Sophie Martin')),
-        findsOneWidget,
-      );
-      expect(
-        find.bySemanticsLabel(RegExp(r'2 juillet 2026 — chez Marc Durand')),
-        findsOneWidget,
-      );
-      // Le 3 est une exception : l'annonce le dit, la case ne portant qu'un liseré.
-      expect(
-        find.bySemanticsLabel(
-          RegExp(r'3 juillet 2026 — chez Marc Durand, Exceptionnel'),
+    // cdc §8.1 : « les lecteurs d'écran reçoivent le nom en clair, jamais
+    // l'initiale seule ». Jumeau du garde-fou web
+    // `WebPagesTest::testGardeCarriesNonColourParentMarker`.
+    expect(
+      find.bySemanticsLabel(RegExp(r'2 juillet 2026 — chez Marc Durand')),
+      findsOneWidget,
+    );
+    // Le 1er est le dernier jour de Sophie : la transmission tombe dedans, l'annonce
+    // énumère donc les deux tranches avec leurs heures. La proportion, elle, ne vit que
+    // dans la couleur — la case ouvre une fiche qui la redit en toutes lettres.
+    expect(
+      find.bySemanticsLabel(
+        RegExp(
+          r'1 juillet 2026 — chez Sophie Martin de 00:00 à 19:00, chez Marc Durand de 19:00 à 24:00',
         ),
-        findsOneWidget,
-      );
-    },
-  );
+      ),
+      findsOneWidget,
+    );
+    // Le 3 est une exception ET une journée partagée : l'annonce énumère les tranches puis
+    // dit l'exception, que la case ne porte que par un liseré.
+    expect(
+      find.bySemanticsLabel(
+        RegExp(
+          r'3 juillet 2026 — chez Marc Durand de 00:00 à 19:00, chez Sophie Martin de 19:00 à 24:00, Exceptionnel',
+        ),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets("un jour d'échange porte les deux teintes, au prorata de l'heure", (
+    tester,
+  ) async {
+    stubReads();
+    stubMembers();
+
+    await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+    await tester.pumpAndSettle();
+
+    // Le 1er juillet est le dernier jour de Sophie (A) : les enfants passent chez Marc (B) à
+    // 19:00, soit 79,2 % de la case à Sophie.
+    final cell = tester.widget<Container>(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey('garde-day-2026-07-01')),
+            matching: find.byType(Container),
+          )
+          .first,
+    );
+    final gradient =
+        (cell.decoration! as BoxDecoration).gradient! as LinearGradient;
+    expect(gradient.colors.first, const Color(0xFFF6E7DE)); // terracotta doux
+    expect(gradient.colors.last, const Color(0xFFDCECE8)); // teal doux
+    expect(gradient.stops![1], closeTo(19 / 24, 1e-9));
+    // Le filet : seul canal du partage en niveaux de gris et en contraste forcé (§8.1).
+    expect(
+      find.byKey(const ValueKey('garde-day-split-2026-07-01')),
+      findsOneWidget,
+    );
+    // La légende l'explique.
+    expect(
+      find.text(
+        "Journée partagée : le filet marque l'heure du passage d'un parent à l'autre",
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('une journée sans changement de foyer garde une seule teinte', (
+    tester,
+  ) async {
+    stubReads();
+    stubMembers();
+
+    await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+    await tester.pumpAndSettle();
+
+    // Le 2 juillet est en plein bloc de Marc : personne ne bouge, la case reste pleine.
+    expect(
+      find.byKey(const ValueKey('garde-day-split-2026-07-02')),
+      findsNothing,
+    );
+    final cell = tester.widget<Container>(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey('garde-day-2026-07-02')),
+            matching: find.byType(Container),
+          )
+          .first,
+    );
+    final decoration = cell.decoration! as BoxDecoration;
+    expect(decoration.gradient, isNull);
+    expect(decoration.color, const Color(0xFFDCECE8)); // teal doux, chez Marc
+  });
+
+  testWidgets("la fiche du jour dit le partage, avec l'heure", (tester) async {
+    stubReads();
+    stubMembers();
+
+    await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('garde-day-2026-07-01')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('custody-day-shared')), findsOneWidget);
+    expect(
+      find.text(
+        'Journée partagée · chez Sophie Martin de 00:00 à 19:00, '
+        'chez Marc Durand de 19:00 à 24:00',
+      ),
+      findsOneWidget,
+    );
+  });
 
   testWidgets('C32 — la fiche de jour nomme le parent et dit la transmission', (
     tester,
@@ -464,25 +669,25 @@ void main() {
     await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('garde-day-2026-07-01')));
+    await tester.tap(find.byKey(const ValueKey('garde-day-2026-07-02')));
     await tester.pumpAndSettle();
 
     // Titre en toutes lettres, plus la date ISO du contrat (C58).
-    expect(find.text('mercredi 1 juillet 2026'), findsOneWidget);
-    // Le nom réel, comme la légende — plus « Parent A ».
+    expect(find.text('jeudi 2 juillet 2026'), findsOneWidget);
+    // Le nom réel, comme la légende — plus « Parent B ».
     expect(
       tester
           .widget<Text>(find.byKey(const ValueKey('custody-day-parent')))
           .data,
-      'Sophie Martin',
+      'Marc Durand',
     );
-    // « Retour chez {Parent} le {date} à {heure} » (US-CUST-6), dérivé du premier
-    // jour matérialisé attribué à l'autre parent.
+    // « Retour chez {Parent} le {date} à {heure} » (US-CUST-6), lu sur les TRANCHES des jours
+    // suivants : la transmission du 3 tombe à 19:00, comme le rythme le prévoit.
     expect(
       tester
           .widget<Text>(find.byKey(const ValueKey('custody-day-handover')))
           .data,
-      'Retour chez Marc Durand le 2 juil. 2026 à 19:00',
+      'Retour chez Sophie Martin le 3 juil. 2026 à 19:00',
     );
   });
 
@@ -505,7 +710,7 @@ void main() {
       when(
         () => repo.listDays(
           'fam-1',
-          from: DateTime(2026, 7),
+          from: DateTime(2026, 6, 30),
           to: DateTime(2026, 7, 31),
         ),
       ).thenAnswer(
@@ -641,37 +846,54 @@ void main() {
     expect(find.byKey(const ValueKey('custody-day-partner')), findsNothing);
   });
 
-  testWidgets(
-    'E5 — la préférence enregistrée repeint le calendrier du spectateur',
-    (tester) async {
-      stubReads();
-      stubMembers();
-      when(() => repo.listColors(any(), any())).thenAnswer(
-        (_) async => const [
-          api.CustodyColor(targetMembershipId: 'mB', palette: 'purple'),
-        ],
-      );
+  testWidgets('E5 — la préférence enregistrée repeint le calendrier du spectateur', (
+    tester,
+  ) async {
+    stubReads();
+    stubMembers();
+    when(() => repo.listColors(any(), any())).thenAnswer(
+      (_) async => const [
+        api.CustodyColor(targetMembershipId: 'mB', palette: 'purple'),
+      ],
+    );
 
-      await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
-      await tester.pumpAndSettle();
+    await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+    await tester.pumpAndSettle();
 
-      // La case du 2 juillet revient au parent B : violet (#8E63A8) au lieu du teal du §8.
-      final cell = tester.widget<Container>(
-        find
-            .descendant(
-              of: find.byKey(const ValueKey('garde-day-2026-07-02')),
-              matching: find.byType(Container),
-            )
-            .first,
-      );
-      final decoration = cell.decoration! as BoxDecoration;
-      expect(decoration.color, const Color(0xFFEDE4F2));
-      expect((decoration.border! as Border).top.color, const Color(0xFF8E63A8));
+    // Le 1er juillet finit chez le parent B : violet (#8E63A8) au lieu du teal du §8. C'est une
+    // journée partagée, donc un dégradé : la part de droite — celle du parent qui prend la
+    // suite — doit suivre la préférence.
+    final cell = tester.widget<Container>(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey('garde-day-2026-07-01')),
+            matching: find.byType(Container),
+          )
+          .first,
+    );
+    final decoration = cell.decoration! as BoxDecoration;
+    expect(decoration.gradient, isA<LinearGradient>());
+    expect(
+      (decoration.gradient! as LinearGradient).colors.last,
+      const Color(0xFFEDE4F2),
+    );
+    // La bordure d'une case pleine du parent B suit aussi la préférence.
+    final plain = tester.widget<Container>(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey('garde-day-2026-07-02')),
+            matching: find.byType(Container),
+          )
+          .first,
+    );
+    expect(
+      ((plain.decoration! as BoxDecoration).border! as Border).top.color,
+      const Color(0xFF8E63A8),
+    );
 
-      // §8.1 sans exception : l'initiale reste affichée quelle que soit la palette.
-      expect(find.text('M'), findsWidgets);
-    },
-  );
+    // §8.1 sans exception : l'initiale reste affichée quelle que soit la palette.
+    expect(find.text('M'), findsWidgets);
+  });
 
   testWidgets('E5 — choisir une teinte l\'enregistre pour ce membre-là', (
     tester,
@@ -966,6 +1188,7 @@ void main() {
         anchorDate: any(named: 'anchorDate'),
         handoverWeekday: any(named: 'handoverWeekday'),
         handoverTime: any(named: 'handoverTime'),
+        dayStartTime: any(named: 'dayStartTime'),
         parentAMembershipId: any(named: 'parentAMembershipId'),
         parentBMembershipId: any(named: 'parentBMembershipId'),
         customPattern: any(named: 'customPattern'),

@@ -312,6 +312,30 @@ a:hover { text-decoration: underline; }
 .home-custody__day--a { background: var(--slot-a-soft); border-color: color-mix(in srgb, var(--slot-a) 22%, var(--slot-a-soft)); }
 .home-custody__day--b { background: var(--slot-b-soft); border-color: color-mix(in srgb, var(--slot-b) 22%, var(--slot-b-soft)); }
 .home-custody__day--none { opacity: .55; }
+/* Journée d'échange : mêmes deux teintes au prorata que les cases de `/garde` (voir le commentaire
+   de `.garde-day--split`), filet compris — sans lui, la case perdrait l'information en niveaux de
+   gris et en contraste forcé. La case est en flux (`position: static`) : le filet la met en
+   `relative`, ce que le calendrier faisait déjà de son côté. */
+.home-custody__day {
+    &.home-custody__day--split {
+        position: relative; overflow: hidden;
+        background: linear-gradient(to right, var(--split-stops));
+    }
+
+    /* La bordure reste celle du parent majoritaire, posée par `--a`/`--b` : c'est à lui que la
+       journée est comptée, et le liseré de `.is-today` doit continuer de primer. */
+    &.home-custody__day--split::after {
+        content: ''; position: absolute; top: 0; bottom: 0; left: var(--split-share);
+        width: 0; border-left: 2px solid var(--ink-2); transform: translateX(-1px);
+        pointer-events: none;
+    }
+
+    &.home-custody__day--split-3::before {
+        content: ''; position: absolute; top: 0; bottom: 0; left: var(--split-share-2);
+        width: 0; border-left: 2px solid var(--ink-2); transform: translateX(-1px);
+        pointer-events: none;
+    }
+}
 .home-custody__day.is-today { box-shadow: 0 0 0 2px var(--accent); border-color: transparent; }
 .home-custody__dow { font-size: 10px; font-weight: 700; letter-spacing: .05em; color: var(--muted-2); }
 .home-custody__num { font-family: var(--font-title); font-weight: 700; font-size: 15px; color: var(--ink); }
@@ -556,6 +580,32 @@ a:hover { text-decoration: underline; }
 .garde-day--a { background: var(--slot-a-soft); border-color: var(--slot-a); }
 .garde-day--b { background: var(--slot-b-soft); border-color: var(--slot-b); }
 .garde-day--none { background: var(--surface); }
+/* ── Journée partagée : la case porte les teintes des parents qui s'y succèdent ──
+   Le moteur matérialise le découpage horaire de chaque journée (cdc §3.4) : jusqu'à trois tranches
+   quand un échange partiel est encadré par le rythme (« B jusqu'à 8h, A jusqu'à 18h, B ensuite »).
+   Le gabarit pose `--split-stops` — les arrêts du dégradé, teintes de la palette du spectateur
+   comprises (§8.2) — et une position de filet par frontière.
+   Le filet est un pseudo-élément à BORDURE, non un fond : `forced-colors` écrase les fonds — et
+   avec eux le dégradé — mais force les bordures à la couleur de texte du système. C'est donc le
+   seul canal qui dit encore « journée partagée » en contraste forcé et en niveaux de gris, où les
+   deux teintes se confondent (cdc §8.1, WCAG 1.4.1). */
+.garde-day {
+    &.garde-day--split { background: linear-gradient(to right, var(--split-stops)); }
+
+    &.garde-day--split::after {
+        content: ''; position: absolute; top: 0; bottom: 0; left: var(--split-share);
+        width: 0; border-left: 2px solid var(--ink-2); transform: translateX(-1px);
+        pointer-events: none;
+    }
+
+    /* Seconde frontière (trois tranches) : `::before` est libre sur la case, dont le numéro et les
+       pastilles sont de vrais éléments. */
+    &.garde-day--split-3::before {
+        content: ''; position: absolute; top: 0; bottom: 0; left: var(--split-share-2);
+        width: 0; border-left: 2px solid var(--ink-2); transform: translateX(-1px);
+        pointer-events: none;
+    }
+}
 .garde-day--out { opacity: .35; }
 .garde-day--exception { border-style: dashed; border-width: 2px; }
 .garde-day[role="button"] { cursor: pointer; }
@@ -607,6 +657,18 @@ a:hover { text-decoration: underline; }
     & .garde-legend__tag {
         font-size: .65rem; font-style: normal; color: var(--muted);
         border: 1px solid var(--border-2); border-radius: 6px; padding: 0 .25rem;
+    }
+
+    /* Puce de journée partagée : les deux fonds et le filet, dans l'ordre où la case les montre. */
+    & .garde-legend__split {
+        display: inline-block; width: 22px; height: 13px; border-radius: 4px; vertical-align: -2px;
+        border: 1px solid var(--border-2); position: relative; overflow: hidden;
+        background: linear-gradient(to right, var(--slot-a-soft) 0 65%, var(--slot-b-soft) 65% 100%);
+
+        &::after {
+            content: ''; position: absolute; top: 0; bottom: 0; left: 65%;
+            width: 0; border-left: 2px solid var(--ink-2); transform: translateX(-1px);
+        }
     }
 
     & .garde-legend__ring {
@@ -714,6 +776,30 @@ a:hover { text-decoration: underline; }
 /* Transmission sur sa propre ligne (la maquette la tasse à droite du bloc) : « Retour chez Benjamin
    Flechel le dimanche 13 septembre 2026 à 18:00 » ne tient pas dans une colonne de 140 px sans
    césure agressive, et c'est l'information que l'on vient chercher. */
+/* Journée d'échange : la répartition, en toutes lettres. Au-dessus de la transmission et un peu
+   plus affirmée qu'elle — c'est le jour affiché qu'elle décrit, pas le suivant. */
+.day-sheet__split { flex: 1 1 100%; margin: .3rem 0 0; font-size: 13.5px; color: var(--ink-2); }
+/* Formulaire d'échange : replié derrière son bouton, il ne pousse la fiche que si on l'ouvre —
+   le geste courant reste « j'accepte le créneau proposé ». Le `<summary>` porte l'apparence d'un
+   bouton, marqueur natif retiré (il ferait doublon avec le libellé). */
+.day-sheet__swap {
+    & > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; }
+    & > summary::-webkit-details-marker { display: none; }
+
+    & .day-sheet__swap-form {
+        display: flex; flex-direction: column; gap: .45rem;
+        margin-top: .6rem; padding: .7rem; border-radius: 12px;
+        background: var(--surface); border: 1px solid var(--border);
+    }
+
+    & .day-sheet__swap-intro { margin: 0; font-size: 13px; color: var(--ink-2); }
+
+    & .day-sheet__swap-row {
+        display: flex; flex-wrap: wrap; gap: .4rem;
+
+        & select, & input[type="time"] { flex: 1 1 8rem; min-width: 0; }
+    }
+}
 .day-sheet__handover { flex: 1 1 100%; margin: .2rem 0 0; padding-top: .6rem; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted); }
 .day-sheet__section { margin: 18px 2px 9px; }
 .day-sheet__events { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }

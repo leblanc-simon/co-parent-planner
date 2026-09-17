@@ -72,6 +72,12 @@
                le nom en gros au-dessus reste celui de l'attributaire. #}
             {% if partnerName %}<p class="day-sheet__partner">avec {{ partnerName }}</p>{% endif %}
         </div>
+        {# Journée partagée : les enfants n'y passent qu'une partie du temps chez le parent
+           majoritaire. La case du calendrier le montre par ses teintes ; la fiche le DIT, avec les
+           heures — un partage lu sur une couleur ne se vérifie nulle part ailleurs. #}
+        {% if segments|length > 1 %}
+            <p class="day-sheet__split">Journée partagée · {{ segments|map(seg => 'chez ' ~ (seg.slot ? parentNames[seg.slot] : 'personne') ~ ' de ' ~ seg.from ~ ' à ' ~ seg.to)|join(', ') }}</p>
+        {% endif %}
         {% if handoverDateLabel and handoverSlot and detail.handoverTime %}
             <p class="day-sheet__handover">Retour chez {{ parentNames[handoverSlot] }} le {{ handoverDateLabel }} à {{ detail.handoverTime }}</p>
         {% endif %}
@@ -113,12 +119,49 @@
        `custody=edit` seulement (US-CUST-6) : un membre en lecture voit l'information, pas les
        actions — les lui présenter pour se solder par un 403 était le défaut relevé côté mobile. #}
     {% if canEdit %}
+    {# Ré-échanger un jour déjà échangé DÉFAIT l'échange : l'exception d'un jour est retirée et la
+       date revient au rythme (ou à la règle de vacances). Empiler une seconde exception en sens
+       inverse laissait deux exceptions contradictoires sur la même date dans les réglages. #}
+    {% set revertible = detail.revertibleException %}
     <div class="day-sheet__actions">
-        {% if slot and not detail.isPast %}
-            <button type="button" class="btn btn--ghost" data-action="garde#swapDay"
-                    data-date="{{ dateValue }}" data-slot="{{ slot }}" data-date-label="{{ detail.date|date('d/m/Y') }}">
-                Échanger ce jour
+        {% if slot and revertible %}
+            <button type="button" class="btn btn--ghost" data-action="garde#revertDay"
+                    data-exception-id="{{ revertible.id }}" data-date-label="{{ detail.date|date('d/m/Y') }}">
+                Annuler l'échange
             </button>
+        {% elseif slot and swap and not detail.isPast %}
+            {# Un échange se négocie en heures, pas en journées de minuit à minuit : le formulaire
+               propose le créneau que la famille vivrait (prolongation depuis la transmission de la
+               veille, ou reprise le matin même — cdc §3.4), et laisse tout corriger. Il est replié
+               derrière le bouton : le geste courant reste « j'accepte ce qui est proposé ». #}
+            <details class="day-sheet__swap">
+                <summary class="btn btn--ghost">Échanger ce jour</summary>
+                <form class="day-sheet__swap-form" data-action="submit->garde#swapDay"
+                      data-date-label="{{ detail.date|date('d/m/Y') }}" data-target-name="{{ swapTargetName }}">
+                    <p class="day-sheet__swap-intro">Confier ce jour à <strong>{{ swapTargetName }}</strong>, de :</p>
+                    <input type="hidden" name="parentMembershipId" value="{{ swapTargetId }}">
+                    <div class="day-sheet__swap-row">
+                        <label class="sr-only" for="swap-start-date">Jour de début</label>
+                        <select id="swap-start-date" name="startDate">
+                            <option value="{{ previousDayValue }}" {{ swap.startDate == previousDayValue ? 'selected' }}>la veille ({{ previousDayLabel }})</option>
+                            <option value="{{ dateValue }}" {{ swap.startDate == dateValue ? 'selected' }}>le jour même ({{ detail.date|date('d/m') }})</option>
+                        </select>
+                        <label class="sr-only" for="swap-start-time">Heure de début</label>
+                        <input id="swap-start-time" type="time" name="startTime" value="{{ swap.startTime }}" required>
+                    </div>
+                    <p class="day-sheet__swap-intro">jusqu'à :</p>
+                    <div class="day-sheet__swap-row">
+                        <label class="sr-only" for="swap-end-date">Jour de fin</label>
+                        <select id="swap-end-date" name="endDate">
+                            <option value="{{ dateValue }}" {{ swap.endDate == dateValue ? 'selected' }}>le jour même ({{ detail.date|date('d/m') }})</option>
+                            <option value="{{ nextDayValue }}" {{ swap.endDate == nextDayValue ? 'selected' }}>le lendemain ({{ nextDayLabel }})</option>
+                        </select>
+                        <label class="sr-only" for="swap-end-time">Heure de fin</label>
+                        <input id="swap-end-time" type="time" name="endTime" value="{{ swap.endTime }}" required>
+                    </div>
+                    <button type="submit" class="btn btn--primary">Confirmer l'échange</button>
+                </form>
+            </details>
         {% elseif slot %}
             {# L'API refuse une exception dans le passé (422) : le bouton est présenté inerte avec sa
                raison, plutôt que d'offrir une action qui échoue. #}

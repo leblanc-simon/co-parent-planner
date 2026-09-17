@@ -47,6 +47,10 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
   DateTime _anchor = DateTime(2026);
   int _weekday = 0; // 0 = dimanche (convention serveur)
   TimeOfDay _time = const TimeOfDay(hour: 19, minute: 0);
+
+  /// Heure à laquelle « la journée commence » : défaut des échanges qui ne prolongent pas la
+  /// garde de la veille (cdc §3.4).
+  TimeOfDay _dayStart = const TimeOfDay(hour: 8, minute: 0);
   String? _parentA;
   String? _parentB;
   List<String> _custom = List.filled(14, 'A');
@@ -72,13 +76,8 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
         _anchor = DateTime.parse(pattern.anchorDate!);
       }
       _weekday = pattern.handoverWeekday;
-      final parts = pattern.handoverTime.split(':');
-      if (parts.length >= 2) {
-        _time = TimeOfDay(
-          hour: int.tryParse(parts[0]) ?? 19,
-          minute: int.tryParse(parts[1]) ?? 0,
-        );
-      }
+      _time = _parseTime(pattern.handoverTime) ?? _time;
+      _dayStart = _parseTime(pattern.dayStartTime) ?? _dayStart;
       _parentA = pattern.parentAMembershipId;
       _parentB = pattern.parentBMembershipId;
       if (pattern.customPattern != null &&
@@ -140,6 +139,17 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
   String _fmtDate(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
+  /// `HH:MM` du contrat → `TimeOfDay` ; `null` si la chaîne n'en est pas un.
+  TimeOfDay? _parseTime(String raw) {
+    final parts = raw.split(':');
+    if (parts.length < 2) return null;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null || hour > 23 || minute > 59) return null;
+
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
   String _fmtTime(TimeOfDay t) =>
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
@@ -178,6 +188,7 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
             anchorDate: _fmtDate(_anchor),
             handoverWeekday: _weekday,
             handoverTime: _fmtTime(_time),
+            dayStartTime: _fmtTime(_dayStart),
             parentAMembershipId: _parentA!,
             parentBMembershipId: _parentB!,
             customPattern: _kind == 'custom' ? _custom : null,
@@ -305,7 +316,7 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(l.custodyHandoverTime),
-            subtitle: Text(_fmtTime(_time)),
+            subtitle: Text(l.custodyHandoverTimeHint(_fmtTime(_time))),
             trailing: const Icon(Icons.schedule, size: 18),
             onTap: () async {
               final picked = await showTimePicker(
@@ -313,6 +324,23 @@ class _CustodySettingsScreenState extends ConsumerState<CustodySettingsScreen> {
                 initialTime: _time,
               );
               if (picked != null) setState(() => _time = picked);
+            },
+          ),
+          // Heure de « début de journée » (cdc §3.4) : proposée par défaut quand un échange
+          // ponctuel ne peut pas s'adosser à la transmission de la veille — le parent vient
+          // alors chercher les enfants le matin même.
+          ListTile(
+            key: const ValueKey('custody-day-start'),
+            contentPadding: EdgeInsets.zero,
+            title: Text(l.custodyDayStartTime),
+            subtitle: Text(l.custodyDayStartTimeHint(_fmtTime(_dayStart))),
+            trailing: const Icon(Icons.wb_twilight, size: 18),
+            onTap: () async {
+              final picked = await showTimePicker(
+                context: context,
+                initialTime: _dayStart,
+              );
+              if (picked != null) setState(() => _dayStart = picked);
             },
           ),
           DropdownButtonFormField<String>(

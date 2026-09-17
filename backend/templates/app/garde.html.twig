@@ -100,6 +100,12 @@
                     <span><i class="garde-dot garde-dot--a" aria-hidden="true">{{ pAInitial }}</i> {{ pAName }}</span>
                     <span><i class="garde-dot garde-dot--b" aria-hidden="true">{{ pBInitial }}</i> {{ pBName }}</span>
                     <span><i class="garde-legend__tag" aria-hidden="true">vac.</i> Vacances scolaires</span>
+                    {# Le filet vertical d'une case partagée ne s'explique pas de lui-même — et il
+                       est le seul canal qui survit aux niveaux de gris, où les deux teintes de la
+                       case se confondent (cdc §8.1). #}
+                    {% if hasSplit %}
+                    <span><i class="garde-legend__split" aria-hidden="true"></i> Journée partagée : le filet marque l'heure du passage d'un parent à l'autre</span>
+                    {% endif %}
                     {% if overlayBadges is defined and overlayBadges|length %}
                     <span><i class="garde-legend__ring" aria-hidden="true"></i> Famille liée</span>
                     {% endif %}
@@ -123,10 +129,19 @@
             {% for week in weeks %}
                 {% for cell in week %}
                     {% set cellEvents = dayEvents[cell.date]|default([]) %}
+                    {# Journée partagée : la case porte les DEUX teintes (trois tranches au plus),
+                       au prorata du temps passé chez chacun. Le découpage vient du moteur, qui l'a
+                       matérialisé (cdc §3.4) ; le jour reste compté ENTIER au parent majoritaire —
+                       les statistiques ne connaissent pas les demi-journées. #}
+                    {% set paint = cell.paint %}
+                    {% set shared = paint ? ' — ' ~ cell.segments|map(seg => 'chez ' ~ (seg.slot == 'A' ? pAName : (seg.slot == 'B' ? pBName : 'personne')) ~ ' de ' ~ seg.from ~ ' à ' ~ seg.to)|join(', ') : '' %}
                     <div class="garde-day garde-day--{{ cell.slot == 'A' ? 'a' : (cell.slot == 'B' ? 'b' : 'none') }}
+                                {{ paint ? 'garde-day--split' }}
+                                {{ paint and paint.boundaries|length > 1 ? 'garde-day--split-3' }}
                                 {{ cell.source == 'exception' ? 'garde-day--exception' }}
                                 {{ cell.isToday and cell.inMonth ? 'garde-day--today' }}
                                 {{ not cell.inMonth ? 'garde-day--out' }}"
+                         {% if paint %}style="--split-stops: {{ paint.stops }}; --split-share: {{ paint.boundaries|first }}{% if paint.boundaries|length > 1 %}; --split-share-2: {{ paint.boundaries[1] }}{% endif %}"{% endif %}
                          {% if cell.inMonth %}
                             {# Le clic ouvre la FICHE DU JOUR (US-CUST-6) et non plus l'échange direct :
                                une case portait auparavant un `swapDay` qui réattribuait durablement un
@@ -136,7 +151,7 @@
                             data-action="click->garde#openDay keydown.enter->garde#openDay keydown.space->garde#openDay"
                             data-day-url="{{ path('app_garde_day', { date: cell.date }) }}"
                             role="button" tabindex="0" title="Voir le détail de ce jour"
-                            aria-label="{{ cell.date|date('d/m/Y') }}{% if cell.slot %} — chez {{ cell.slot == 'A' ? pAName : pBName }}{% endif %}{{ cell.source == 'exception' ? ' (exception)' }}{{ cell.source == 'holiday' ? ' (vacances scolaires)' }}{% if cellEvents is not empty %} · {{ cellEvents|length }} activité{{ cellEvents|length > 1 ? 's' : '' }}{% endif %}. Voir le détail de ce jour."
+                            aria-label="{{ cell.date|date('d/m/Y') }}{% if paint %}{{ shared }}{% elseif cell.slot %} — chez {{ cell.slot == 'A' ? pAName : pBName }}{% endif %}{{ cell.source == 'exception' ? ' (exception)' }}{{ cell.source == 'holiday' ? ' (vacances scolaires)' }}{% if cellEvents is not empty %} · {{ cellEvents|length }} activité{{ cellEvents|length > 1 ? 's' : '' }}{% endif %}. Voir le détail de ce jour."
                          {% endif %}>
                         <span class="garde-day__num">{{ cell.day }}</span>
                         {# ── Pastilles d'activité de la famille (maquette `:236-238`) ──

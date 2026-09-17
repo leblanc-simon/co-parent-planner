@@ -459,6 +459,25 @@ class AppL10nFr extends AppL10n {
   }
 
   @override
+  String custodyDaySplitSemantics(String date, String slices) {
+    return '$date — $slices';
+  }
+
+  @override
+  String custodyDaySlice(String parent, String from, String to) {
+    return 'chez $parent de $from à $to';
+  }
+
+  @override
+  String get custodySharedDay =>
+      'Journée partagée : le filet marque l\'heure du passage d\'un parent à l\'autre';
+
+  @override
+  String custodySharedDayDetail(String slices) {
+    return 'Journée partagée · $slices';
+  }
+
+  @override
   String get custodyColorsTitle => 'Couleurs du planning';
 
   @override
@@ -627,6 +646,55 @@ class AppL10nFr extends AppL10n {
 
   @override
   String get custodySwapped => 'Jour échangé.';
+
+  @override
+  String get custodyRevertSwap => 'Annuler l\'échange';
+
+  @override
+  String custodySwapIntro(String parent) {
+    return 'Confier ce jour à $parent, sur le créneau de votre choix.';
+  }
+
+  @override
+  String get custodyDayStartTime => 'Heure de début de journée';
+
+  @override
+  String custodyDayStartTimeHint(String time) {
+    return '$time — proposée lorsqu\'un jour est échangé sans reprendre la garde de la veille.';
+  }
+
+  @override
+  String custodyHandoverTimeHint(String time) {
+    return '$time — les enfants changent de foyer à cette heure-là, le dernier jour de chaque période.';
+  }
+
+  @override
+  String get custodySwapFrom => 'Début';
+
+  @override
+  String get custodySwapTo => 'Fin';
+
+  @override
+  String get custodySwapConfirm => 'Confirmer l\'échange';
+
+  @override
+  String custodySwapDayBefore(String date) {
+    return 'la veille ($date)';
+  }
+
+  @override
+  String custodySwapSameDay(String date) {
+    return 'le jour même ($date)';
+  }
+
+  @override
+  String custodySwapDayAfter(String date) {
+    return 'le lendemain ($date)';
+  }
+
+  @override
+  String get custodyReverted =>
+      'Échange annulé — le jour revient au rythme habituel.';
 
   @override
   String get custodySwapUnavailable =>

@@ -31,9 +31,18 @@ void main() {
     parentBMembershipId: 'mB',
     handoverTime: '19:00',
   );
+  // Jours tels que le moteur les matérialise (cdc §3.4) : le 24 est le dernier jour de Marc, il
+  // porte donc la transmission de 19:00 qui rend les enfants à Alice.
   const days = [
     api.CustodyDay(date: '2026-06-23', parentMembershipId: 'mB'),
-    api.CustodyDay(date: '2026-06-24', parentMembershipId: 'mB'),
+    api.CustodyDay(
+      date: '2026-06-24',
+      parentMembershipId: 'mB',
+      segments: [
+        {'from': '00:00', 'to': '19:00', 'parent': 'mB', 'source': 'base'},
+        {'from': '19:00', 'to': '24:00', 'parent': 'mA', 'source': 'base'},
+      ],
+    ),
     api.CustodyDay(date: '2026-06-25', parentMembershipId: 'mA'),
   ];
 
@@ -94,7 +103,7 @@ void main() {
     expect(custody!.slot, 'B');
     expect(custody.parentName, 'Marc Durand');
     expect(custody.isSelf, isFalse);
-    expect(custody.handoverDate, '2026-06-25');
+    expect(custody.handoverDate, '2026-06-24');
     expect(custody.handoverName, 'Alice Martin');
     expect(custody.handoverTime, '19:00');
   });

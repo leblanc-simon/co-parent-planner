@@ -12,6 +12,8 @@ _$CustodyExceptionCreateExceptionRequestFromJson(Map<String, dynamic> json) =>
       startDate: json['startDate'] as String?,
       endDate: json['endDate'] as String?,
       parentMembershipId: json['parentMembershipId'] as String?,
+      startTime: json['startTime'] as String?,
+      endTime: json['endTime'] as String?,
       reason: json['reason'] as String?,
     );
 
@@ -20,6 +22,8 @@ Map<String, dynamic> _$CustodyExceptionCreateExceptionRequestToJson(
 ) => <String, dynamic>{
   'startDate': instance.startDate,
   'endDate': instance.endDate,
+  'startTime': instance.startTime,
+  'endTime': instance.endTime,
   'parentMembershipId': instance.parentMembershipId,
   'reason': instance.reason,
 };

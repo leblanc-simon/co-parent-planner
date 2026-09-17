@@ -165,6 +165,196 @@ final class CustodyApiLot3Test extends ApiAuthTestCase
         self::assertSame(204, $client->request('DELETE', '/api/families/'.$familyId.'/custody/exceptions/'.$excId, ['headers' => $h])->getStatusCode());
     }
 
+    /**
+     * Ré-échanger la MÊME date remplace l'exception au lieu de l'empiler.
+     *
+     * Deux exceptions contradictoires sur un même jour laissaient l'ordre d'application du moteur
+     * — non l'utilisateur — décider chez qui l'enfant dort, et l'écran Réglages en listait deux.
+     */
+    public function testSecondExceptionOnSameRangeReplacesTheFirst(): void
+    {
+        static::mockTime(new \DateTimeImmutable('2026-06-23 10:00', new \DateTimeZone('Europe/Paris')));
+        [$client, $h, $familyId, $parentA, $parentB] = $this->separatedFamilyWithTwoParents('cust-swap@example.com');
+        $this->putPattern($client, $h, $familyId, $parentA, $parentB);
+        $this->runGeneration($familyId);
+
+        $first = $client->request('POST', '/api/families/'.$familyId.'/custody/exceptions', [
+            'json' => ['startDate' => '2026-07-15', 'endDate' => '2026-07-15', 'parentMembershipId' => $parentB, 'reason' => 'Échange'],
+            'headers' => $h,
+        ]);
+        self::assertSame(201, $first->getStatusCode());
+        $firstId = $first->toArray()['id'];
+
+        // Même plage, même parent : rien de neuf — l'existante est rendue telle quelle.
+        $replay = $client->request('POST', '/api/families/'.$familyId.'/custody/exceptions', [
+            'json' => ['startDate' => '2026-07-15', 'endDate' => '2026-07-15', 'parentMembershipId' => $parentB, 'reason' => 'Échange'],
+            'headers' => $h,
+        ]);
+        self::assertSame($firstId, $replay->toArray()['id'], 'un rejeu à l\'identique ne crée pas de jumelle');
+
+        // Même plage, même parent, motif corrigé : l'existante est mise à jour, pas doublée.
+        $amended = $client->request('POST', '/api/families/'.$familyId.'/custody/exceptions', [
+            'json' => ['startDate' => '2026-07-15', 'endDate' => '2026-07-15', 'parentMembershipId' => $parentB, 'reason' => 'Stage de foot'],
+            'headers' => $h,
+        ]);
+        self::assertSame($firstId, $amended->toArray()['id']);
+        self::assertSame('Stage de foot', $amended->toArray()['reason']);
+
+        // Ré-échange (retour chez A) : l'ancienne exception disparaît, une seule subsiste.
+        $second = $client->request('POST', '/api/families/'.$familyId.'/custody/exceptions', [
+            'json' => ['startDate' => '2026-07-15', 'endDate' => '2026-07-15', 'parentMembershipId' => $parentA, 'reason' => 'Échange'],
+            'headers' => $h,
+        ]);
+        self::assertSame(201, $second->getStatusCode());
+        self::assertNotSame($firstId, $second->toArray()['id']);
+
+        $list = $client->request('GET', '/api/families/'.$familyId.'/custody/exceptions', ['headers' => $h])->toArray();
+        $onJuly15 = array_values(array_filter($list, static fn ($e) => '2026-07-15' === $e['startDate']));
+        self::assertCount(1, $onJuly15, 'une seule exception sur la date ré-échangée');
+        self::assertSame($parentA, $onJuly15[0]['parentMembershipId']);
+
+        $july15 = array_values(array_filter(
+            $client->request('GET', '/api/families/'.$familyId.'/custody/days?from=2026-07-15&to=2026-07-15', ['headers' => $h])->toArray(),
+            static fn ($d) => '2026-07-15' === $d['date'],
+        ))[0];
+        self::assertSame($parentA, $july15['parentMembershipId']);
+
+        // Une exception d'une AUTRE plage n'est pas touchée par le remplacement.
+        $other = $client->request('POST', '/api/families/'.$familyId.'/custody/exceptions', [
+            'json' => ['startDate' => '2026-07-20', 'endDate' => '2026-07-22', 'parentMembershipId' => $parentB],
+            'headers' => $h,
+        ]);
+        self::assertSame(201, $other->getStatusCode());
+        $client->request('POST', '/api/families/'.$familyId.'/custody/exceptions', [
+            'json' => ['startDate' => '2026-07-15', 'endDate' => '2026-07-15', 'parentMembershipId' => $parentB],
+            'headers' => $h,
+        ]);
+        $after = $client->request('GET', '/api/families/'.$familyId.'/custody/exceptions', ['headers' => $h])->toArray();
+        self::assertCount(2, $after, 'seule l\'exception de plage identique est remplacée');
+    }
+
+    /**
+     * Échange à l'heure près (cdc §3.4) — les deux exemples de la demande du 2026-09-11, joués de
+     * bout en bout : les jours matérialisés doivent porter le découpage annoncé, et la journée
+     * revenir au parent **majoritaire**.
+     */
+    public function testHourlySwapSlicesTheMaterialisedDays(): void
+    {
+        static::mockTime(new \DateTimeImmutable('2026-06-23 10:00', new \DateTimeZone('Europe/Paris')));
+        [$client, $h, $familyId, $parentA, $parentB] = $this->separatedFamilyWithTwoParents('cust-hourly@example.com');
+        // Rythme personnalisé : A le 25/09, B les 26, 27 et 28, A le 29 — la séquence de l'exemple.
+        // L'ancre tombe un dimanche, le motif est donc lu à partir de ce jour-là.
+        $put = $client->request('PUT', '/api/families/'.$familyId.'/custody/pattern', [
+            'json' => [
+                'kind' => 'custom',
+                'anchorDate' => '2026-06-21',
+                'handoverWeekday' => 0,
+                'handoverTime' => '18:00',
+                'dayStartTime' => '08:00',
+                'parentAMembershipId' => $parentA,
+                'parentBMembershipId' => $parentB,
+                // 96 jours séparent l'ancre du 25/09, soit l'index 12 du cycle de 14 : le motif est
+                // écrit pour que 25 → A, 26/27/28 → B et 29 → A (indices 12, 13, 0, 1, 2).
+                'customPattern' => ['B', 'B', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'B'],
+            ],
+            'headers' => $h + ['Content-Type' => 'application/json'],
+        ]);
+        self::assertSame(200, $put->getStatusCode());
+        $this->runGeneration($familyId);
+
+        $daysOf = static function (string $from, string $to) use ($client, $h, $familyId): array {
+            $out = [];
+            foreach ($client->request('GET', '/api/families/'.$familyId.'/custody/days?from='.$from.'&to='.$to, ['headers' => $h])->toArray() as $day) {
+                $out[$day['date']] = $day;
+            }
+
+            return $out;
+        };
+
+        // Le dernier jour d'un bloc porte la transmission : il est déjà partagé avant tout échange.
+        $before = $daysOf('2026-09-25', '2026-09-29');
+        self::assertSame(
+            [['from' => '00:00', 'to' => '18:00'], ['from' => '18:00', 'to' => '24:00']],
+            array_map(static fn (array $s) => ['from' => $s['from'], 'to' => $s['to']], $before['2026-09-25']['segments']),
+            'le 25 est le dernier jour de A : il se partage à 18:00',
+        );
+        self::assertCount(1, $before['2026-09-26']['segments'], 'un jour en plein bloc reste uni');
+
+        // Exemple 1 — « le 26 pour A » : du 25 à 18:00 au 26 à 18:00.
+        $client->request('POST', '/api/families/'.$familyId.'/custody/exceptions', [
+            'json' => [
+                'startDate' => '2026-09-25', 'startTime' => '18:00',
+                'endDate' => '2026-09-26', 'endTime' => '18:00',
+                'parentMembershipId' => $parentA, 'reason' => 'Échange',
+            ],
+            'headers' => $h,
+        ]);
+
+        $after = $daysOf('2026-09-25', '2026-09-29');
+        // Le 25 redevient uni : A ne rend plus les enfants ce soir-là.
+        self::assertCount(1, $after['2026-09-25']['segments']);
+        self::assertSame($parentA, $after['2026-09-25']['parentMembershipId']);
+        // Le 26 passe à A jusqu'à 18:00, puis revient à B.
+        self::assertSame(
+            [
+                ['from' => '00:00', 'to' => '18:00', 'parent' => $parentA],
+                ['from' => '18:00', 'to' => '24:00', 'parent' => $parentB],
+            ],
+            array_map(static fn (array $s) => ['from' => $s['from'], 'to' => $s['to'], 'parent' => $s['parent']], $after['2026-09-26']['segments']),
+        );
+        // 18 h sur 24 chez A : la journée lui est comptée.
+        self::assertSame($parentA, $after['2026-09-26']['parentMembershipId']);
+        self::assertSame('exception', $after['2026-09-26']['source']);
+
+        // Exemple 2 — « le 28 pour A », sans veille à prolonger : du 28 à 08:00 au 28 à 18:00.
+        $client->request('POST', '/api/families/'.$familyId.'/custody/exceptions', [
+            'json' => [
+                'startDate' => '2026-09-28', 'startTime' => '08:00',
+                'endDate' => '2026-09-28', 'endTime' => '18:00',
+                'parentMembershipId' => $parentA, 'reason' => 'Échange',
+            ],
+            'headers' => $h,
+        ]);
+
+        $final = $daysOf('2026-09-25', '2026-09-29');
+        // « B jusqu'à 8h, A ensuite » : la tranche d'échange fusionne avec le rythme qui suit.
+        self::assertSame(
+            [
+                ['from' => '00:00', 'to' => '08:00', 'parent' => $parentB],
+                ['from' => '08:00', 'to' => '24:00', 'parent' => $parentA],
+            ],
+            array_map(static fn (array $s) => ['from' => $s['from'], 'to' => $s['to'], 'parent' => $s['parent']], $final['2026-09-28']['segments']),
+        );
+        self::assertSame($parentA, $final['2026-09-28']['parentMembershipId']);
+        // Le 29 reste entièrement chez A, comme avant l'échange.
+        self::assertCount(1, $final['2026-09-29']['segments']);
+        self::assertSame($parentA, $final['2026-09-29']['parentMembershipId']);
+    }
+
+    /** Heure illisible ou créneau vide : refus 422 plutôt qu'un échange sans effet. */
+    public function testHourlySwapRejectsUnreadableOrEmptyWindow(): void
+    {
+        static::mockTime(new \DateTimeImmutable('2026-06-23 10:00', new \DateTimeZone('Europe/Paris')));
+        [$client, $h, $familyId, $parentA, $parentB] = $this->separatedFamilyWithTwoParents('cust-hourly2@example.com');
+        $this->putPattern($client, $h, $familyId, $parentA, $parentB);
+
+        $bad = $client->request('POST', '/api/families/'.$familyId.'/custody/exceptions', [
+            'json' => ['startDate' => '2026-07-15', 'startTime' => '25:61', 'endDate' => '2026-07-15', 'parentMembershipId' => $parentA],
+            'headers' => $h,
+        ]);
+        self::assertSame(422, $bad->getStatusCode());
+
+        $empty = $client->request('POST', '/api/families/'.$familyId.'/custody/exceptions', [
+            'json' => [
+                'startDate' => '2026-07-15', 'startTime' => '18:00',
+                'endDate' => '2026-07-15', 'endTime' => '08:00',
+                'parentMembershipId' => $parentA,
+            ],
+            'headers' => $h,
+        ]);
+        self::assertSame(422, $empty->getStatusCode(), 'un créneau qui finit avant de commencer est refusé');
+    }
+
     /** @param array<string, string> $h */
     private function putPattern(Client $client, array $h, string $familyId, string $pa, string $pb): void
     {

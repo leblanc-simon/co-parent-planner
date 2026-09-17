@@ -7,6 +7,7 @@ import '../../members/data/members_repository.dart';
 import '../data/custody_repository.dart';
 import '../presentation/parent_initials.dart';
 import 'day_detail.dart';
+import 'day_segments.dart';
 
 /// Garde du **jour**, telle que l'accueil l'annonce (US-HOME-1, maquette U1-07).
 ///
@@ -92,8 +93,12 @@ final currentCustodyProvider = FutureProvider<CurrentCustody?>((ref) async {
   final markers = ref.watch(parentMarkersProvider);
   final parentId = day?.parentMembershipId;
   final slot = slotOf(parentId, pattern);
-  final handover = nextHandover(days, todayKey, parentId);
-  final handoverSlot = slotOf(handover?.parentMembershipId, pattern);
+  // La transmission se lit sur les TRANCHES : c'est de chez le parent qui termine la journée que
+  // les enfants repartiront, et l'heure peut être celle d'un échange plutôt que celle du rythme.
+  final segments = DaySegments.of(day).segments;
+  final lastParentId = segments.isEmpty ? parentId : segments.last.parentId;
+  final handover = nextHandover(days, todayKey, lastParentId);
+  final handoverSlot = slotOf(handover?.segment.parentId, pattern);
 
   final members =
       ref.watch(familyMembersProvider).valueOrNull ?? const <api.Member>[];
@@ -106,10 +111,12 @@ final currentCustodyProvider = FutureProvider<CurrentCustody?>((ref) async {
     slot: slot,
     parentName: slot == null ? '' : markers.nameForSlot(slot),
     isSelf: isSelf,
-    handoverDate: handover?.date,
+    // Les trois informations de la transmission vont ensemble : sans parent identifiable (pas de
+    // rythme configuré), il n'y a rien à annoncer, pas même une heure.
+    handoverDate: handoverSlot == null ? null : handover?.day.date,
     handoverName: handoverSlot == null
         ? null
         : markers.nameForSlot(handoverSlot),
-    handoverTime: pattern?.handoverTime,
+    handoverTime: handoverSlot == null ? null : handover?.segment.fromTime,
   );
 });

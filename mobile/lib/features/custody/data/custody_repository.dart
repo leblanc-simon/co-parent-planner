@@ -82,13 +82,15 @@ class CustodyRepository {
     }
   }
 
-  /// US-CUST-4 — crée une exception (priorité maximale). « Échanger ce jour »
-  /// passe par ici avec `startDate == endDate`.
+  /// US-CUST-4 — crée une exception (priorité maximale). « Échanger ce jour » passe par ici avec
+  /// le créneau choisi : les bornes peuvent déborder sur la veille ou le lendemain (cdc §3.4).
   Future<api.CustodyException> createException(
     String familyId, {
     required String startDate,
     required String endDate,
     required String parentMembershipId,
+    String? startTime,
+    String? endTime,
     String? reason,
   }) async {
     try {
@@ -98,6 +100,9 @@ class CustodyRepository {
             body: api.CustodyExceptionCreateExceptionRequest(
               startDate: startDate,
               endDate: endDate,
+              // Heures absentes = journées entières : la forme d'avant qu'elles existent.
+              startTime: startTime,
+              endTime: endTime,
               parentMembershipId: parentMembershipId,
               reason: reason,
             ),
@@ -126,6 +131,7 @@ class CustodyRepository {
     required String anchorDate,
     required int handoverWeekday,
     required String handoverTime,
+    String? dayStartTime,
     required String parentAMembershipId,
     required String parentBMembershipId,
     List<String>? customPattern,
@@ -139,6 +145,7 @@ class CustodyRepository {
           anchorDate: anchorDate,
           handoverWeekday: handoverWeekday,
           handoverTime: handoverTime,
+          dayStartTime: dayStartTime,
           parentAMembershipId: parentAMembershipId,
           parentBMembershipId: parentBMembershipId,
           customPattern: customPattern,
@@ -281,12 +288,23 @@ class CustodyMonthController extends Notifier<DateTime> {
   to: DateTime(month.year, month.month + 1, 0),
 );
 
+/// Fenêtre des **jours chargés** : le mois affiché plus la **veille du 1er**.
+///
+/// Cette veille ne s'affiche pas — les cases de complément de semaine restent grises. Elle porte
+/// l'attributaire dont le 1er prend la suite, sans lequel un 1er tombant un jour d'échange se
+/// peindrait comme une journée pleine. Les statistiques, elles, gardent [custodyWindow] : elles
+/// comptent le mois, pas un jour de plus.
+({DateTime from, DateTime to}) custodyDaysWindow(DateTime month) => (
+  from: DateTime(month.year, month.month, 0),
+  to: DateTime(month.year, month.month + 1, 0),
+);
+
 final familyCustodyDaysProvider = FutureProvider<List<api.CustodyDay>>((
   ref,
 ) async {
   final family = ref.watch(familyContextProvider);
   if (family == null || family.isIntact) return const [];
-  final window = custodyWindow(ref.watch(custodyMonthProvider));
+  final window = custodyDaysWindow(ref.watch(custodyMonthProvider));
   return ref
       .watch(custodyRepositoryProvider)
       .listDays(family.familyId, from: window.from, to: window.to);

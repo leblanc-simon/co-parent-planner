@@ -13,6 +13,8 @@ class CustodyExceptionCreateExceptionRequest {
     required this.startDate,
     required this.endDate,
     required this.parentMembershipId,
+    this.startTime,
+    this.endTime,
     this.reason,
   });
   
@@ -20,6 +22,12 @@ class CustodyExceptionCreateExceptionRequest {
   
   final String? startDate;
   final String? endDate;
+
+  /// Bornes horaires (HH:MM) de l'échange. Omises = journées entières, comme avant qu'elles.
+  /// existent ; renseignées, l'exception court de `startDate startTime` (inclus) à.
+  /// `endDate endTime` (exclu).
+  final String? startTime;
+  final String? endTime;
   final String? parentMembershipId;
   final String? reason;
 

@@ -19,6 +19,7 @@ CustodyPattern _$CustodyPatternFromJson(Map<String, dynamic> json) =>
       kind: json['kind'] as String? ?? '',
       handoverWeekday: (json['handoverWeekday'] as num?)?.toInt() ?? 0,
       handoverTime: json['handoverTime'] as String? ?? '',
+      dayStartTime: json['dayStartTime'] as String? ?? '',
     );
 
 Map<String, dynamic> _$CustodyPatternToJson(CustodyPattern instance) =>
@@ -28,6 +29,7 @@ Map<String, dynamic> _$CustodyPatternToJson(CustodyPattern instance) =>
       'anchorDate': instance.anchorDate,
       'handoverWeekday': instance.handoverWeekday,
       'handoverTime': instance.handoverTime,
+      'dayStartTime': instance.dayStartTime,
       'customPattern': instance.customPattern,
       'settings': instance.settings,
       'parentAMembershipId': instance.parentAMembershipId,

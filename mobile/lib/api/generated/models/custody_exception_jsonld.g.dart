@@ -15,6 +15,8 @@ CustodyExceptionJsonld _$CustodyExceptionJsonldFromJson(
   startDate: json['startDate'] as String? ?? '',
   endDate: json['endDate'] as String? ?? '',
   object5: json['@context'],
+  startTime: json['startTime'] as String?,
+  endTime: json['endTime'] as String?,
   parentMembershipId: json['parentMembershipId'] as String?,
   reason: json['reason'] as String?,
 );
@@ -28,6 +30,8 @@ Map<String, dynamic> _$CustodyExceptionJsonldToJson(
   'id': instance.id,
   'startDate': instance.startDate,
   'endDate': instance.endDate,
+  'startTime': instance.startTime,
+  'endTime': instance.endTime,
   'parentMembershipId': instance.parentMembershipId,
   'reason': instance.reason,
 };

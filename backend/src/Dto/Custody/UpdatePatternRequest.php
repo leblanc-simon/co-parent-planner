@@ -16,6 +16,8 @@ final class UpdatePatternRequest
     public ?string $anchorDate = null;
     public ?int $handoverWeekday = null;
     public ?string $handoverTime = null;
+    /** Heure de « début de journée » (HH:MM) ; omise = inchangée (08:00 à la création). */
+    public ?string $dayStartTime = null;
     /** @var list<string>|null */
     public ?array $customPattern = null;
     /**

@@ -28,6 +28,8 @@ use App\Enum\MembershipStatus;
 use App\Enum\RightDomain;
 use App\Enum\RightLevel;
 use App\Enum\UserStatus;
+use App\Service\Custody\DaySegment;
+use App\Service\Custody\DaySegments;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -139,6 +141,82 @@ final class GardeDayDetailTest extends WebTestCase
         self::assertStringNotContainsString('activité', $html);
     }
 
+    // ───────────────────────── Journées d'échange partagées ─────────────────────────
+
+    /**
+     * Un jour d'échange n'est pas une journée pleine : à 19:00, les enfants ont passé 79,2 % du
+     * jour chez le parent qui les rend. La case porte donc les DEUX teintes, dans cette
+     * proportion, et l'annonce aux lecteurs d'écran nomme les deux parents avec l'heure — la
+     * proportion, elle, ne se lit que sur la couleur, et ne peut pas être le seul canal.
+     *
+     * Le jeu de données alterne chaque jour : toutes les cases du mois sont des jours d'échange.
+     */
+    public function testCalendarSplitsHandoverDaysProportionally(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedFamily();
+        $this->login($client);
+
+        $client->request('GET', '/garde');
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+
+        // 19:00 = 1 140 min sur 1 440 → 79,2 % de la case au parent du jour, le reste à celui qui
+        // prend la suite : la transmission se lit sur la DERNIÈRE case du bloc (cdc §3.4).
+        self::assertStringContainsString('--split-share: 79.2%', $html);
+        self::assertStringContainsString('--split-stops: var(--slot-a-soft) 0% 79.2%, var(--slot-b-soft) 79.2% 100%', $html);
+        self::assertStringContainsString('--split-stops: var(--slot-b-soft) 0% 79.2%, var(--slot-a-soft) 79.2% 100%', $html);
+        // L'annonce dit chez qui les enfants sont, et de quand à quand.
+        self::assertStringContainsString(
+            'chez web@example.com de 00:00 à 19:00, chez web-b@example.com de 19:00 à 24:00',
+            $html,
+        );
+        // La légende explique le filet — seul canal du partage en niveaux de gris (cdc §8.1).
+        self::assertStringContainsString('garde-legend__split', $html);
+        self::assertStringContainsString('le filet marque l\'heure du passage d\'un parent à l\'autre', $html);
+    }
+
+    /**
+     * Le dernier jour généré n'a pas de lendemain matérialisé : on ne devine pas à qui il rend les
+     * enfants, la case reste unie. C'est la situation réelle du bout de l'horizon glissant.
+     */
+    public function testCalendarDoesNotSplitWhenTheNextDayIsUnknown(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedFamily();
+        $this->login($client);
+
+        $lastGenerated = $this->monthStart()->modify('+'.(self::GENERATED_DAYS - 1).' days');
+        $client->request('GET', '/garde?month='.$lastGenerated->format('Y-m'));
+        self::assertResponseIsSuccessful();
+        $crawler = $client->getCrawler();
+
+        $last = $crawler->filter('[data-day-url$="'.$lastGenerated->format('Y-m-d').'"]');
+        self::assertCount(1, $last);
+        self::assertStringNotContainsString('garde-day--split', (string) $last->attr('class'));
+    }
+
+    /** La fiche du jour DIT le partage, avec l'heure : une couleur ne se vérifie nulle part. */
+    public function testDaySheetDescribesTheSharedDay(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        $this->seedFamily();
+        $this->login($client);
+        $day = $this->futureDay();
+
+        $client->request('GET', '/garde/jour/'.$day->format('Y-m-d'));
+        self::assertResponseIsSuccessful();
+        $html = (string) $client->getResponse()->getContent();
+
+        self::assertStringContainsString(
+            'Journée partagée · chez '.$this->expectedParentEmail($day).' de 00:00 à 19:00, chez '.$this->otherParentEmail($day).' de 19:00 à 24:00',
+            $html,
+        );
+    }
+
     // ───────────────────────── Fiche de jour ─────────────────────────
 
     public function testDayDetailShowsParentOriginHandoverAndActivities(): void
@@ -159,19 +237,22 @@ final class GardeDayDetailTest extends WebTestCase
         // Chez quel parent — en clair, ce que la case seule ne disait pas.
         self::assertStringContainsString($this->expectedParentEmail($day), $html);
         self::assertStringContainsString('Rythme habituel', $html);
-        // Transmission « Retour chez {Parent} le {date} à {handoverTime} » (US-CUST-6) : le jeu de
-        // données alterne chaque jour, la bascule est donc le lendemain.
-        self::assertStringContainsString('Retour chez '.$this->otherParentEmail($day).' le', $html);
+        // Transmission « Retour chez {Parent} le {date} à {heure} » (US-CUST-6) : la journée finit
+        // déjà chez l'autre parent (transmission à 19:00), le prochain changement est donc celui du
+        // lendemain soir — qui ramène les enfants chez le parent du jour consulté.
+        self::assertStringContainsString('Retour chez '.$this->expectedParentEmail($day).' le', $html);
         self::assertStringContainsString('à 19:00', $html);
         // Activités du jour, avec l'horaire dans le fuseau de la famille et la catégorie nommée.
         self::assertStringContainsString('Activités du jour', $html);
         self::assertStringContainsString('Cours de guitare', $html);
         self::assertStringContainsString('17:30', $html);
         self::assertStringContainsString('Musique', $html);
-        // Actions (`custody:edit`). L'échange est vérifié par son `data-action` et non par son
-        // libellé : le bouton inerte d'un jour passé porte le même texte.
-        self::assertStringContainsString('data-action="garde#swapDay"', $html);
+        // Actions (`custody:edit`). L'échange est un FORMULAIRE : jour et heure de début, jour et
+        // heure de fin, préremplis avec le créneau que la famille vivrait (cdc §3.4).
+        self::assertStringContainsString('data-action="submit->garde#swapDay"', $html);
         self::assertStringContainsString('Échanger ce jour', $html);
+        self::assertStringContainsString('name="startTime"', $html);
+        self::assertStringContainsString('name="endTime"', $html);
         self::assertStringContainsString('Modifier la garde', $html);
     }
 
@@ -201,6 +282,42 @@ final class GardeDayDetailTest extends WebTestCase
 
         self::assertStringContainsString('Exception', $html);
         self::assertStringContainsString('Anniversaire', $html);
+        // Jour DÉJÀ échangé : l'action défait l'échange (l'exception d'un jour est retirée) plutôt
+        // que d'en empiler une seconde en sens inverse sur la même date.
+        self::assertStringContainsString('data-action="garde#revertDay"', $html);
+        self::assertStringContainsString("Annuler l'échange", $html);
+        self::assertStringNotContainsString('garde#swapDay', $html);
+    }
+
+    /**
+     * Une exception couvrant PLUSIEURS jours ne s'annule pas depuis la fiche d'un seul : la retirer
+     * ici toucherait des dates que l'utilisateur ne regarde pas. L'échange du jour reste offert.
+     */
+    public function testDayDetailKeepsSwapWhenTheExceptionSpansSeveralDays(): void
+    {
+        $client = static::createClient();
+        $client->disableReboot();
+        [$parentA, $parentB] = $this->seedFamily();
+        $this->login($client);
+
+        $day = $this->futureDay();
+        $em = $this->em();
+        $custodyDay = $em->getRepository(CustodyDay::class)->findOneBy(['date' => $day]);
+        self::assertInstanceOf(CustodyDay::class, $custodyDay);
+        $custodyDay->setParentMembership($parentB)->setSource(CustodyDaySource::Exception);
+        $em->persist((new CustodyException())
+            ->setFamily($parentA->getFamily())
+            ->setStartDate($day)
+            ->setEndDate($day->modify('+3 days'))
+            ->setParentMembership($parentB)
+            ->setReason('Vacances chez les grands-parents'));
+        $em->flush();
+
+        $client->request('GET', '/garde/jour/'.$day->format('Y-m-d'));
+        $html = (string) $client->getResponse()->getContent();
+
+        self::assertStringContainsString('data-action="submit->garde#swapDay"', $html);
+        self::assertStringNotContainsString('data-action="garde#revertDay"', $html);
     }
 
     /**
@@ -310,7 +427,7 @@ final class GardeDayDetailTest extends WebTestCase
         $html = (string) $client->getResponse()->getContent();
 
         self::assertStringContainsString('Un jour passé ne peut plus être échangé', $html);
-        self::assertStringNotContainsString('data-action="garde#swapDay"', $html);
+        self::assertStringNotContainsString('garde#swapDay', $html);
     }
 
     /** Un jour hors de la période générée n'invente ni parent ni transmission. */
@@ -328,7 +445,7 @@ final class GardeDayDetailTest extends WebTestCase
 
         self::assertStringContainsString("Ce jour n'est pas encore attribué", $html);
         self::assertStringNotContainsString('Retour chez', $html);
-        self::assertStringNotContainsString('data-action="garde#swapDay"', $html);
+        self::assertStringNotContainsString('garde#swapDay', $html);
     }
 
     /**
@@ -532,12 +649,27 @@ final class GardeDayDetailTest extends WebTestCase
             ->setParentA($slotA)
             ->setParentB($parentB));
 
+        // Jours matérialisés comme le ferait le moteur : alternance quotidienne, donc CHAQUE jour
+        // est un dernier jour de bloc et porte le découpage « parent du jour jusqu'à 19:00, parent
+        // du lendemain ensuite » (cdc §3.4). Le dernier jour généré n'a pas de lendemain connu : il
+        // reste uni, comme en bout d'horizon glissant.
+        $parentOf = static fn (int $i): Membership => 0 === $i % 2 ? $slotA : $parentB;
         for ($i = 0; $i < self::GENERATED_DAYS; ++$i) {
+            $next = $i + 1 < self::GENERATED_DAYS ? (string) $parentOf($i + 1)->getId() : null;
+            $segments = DaySegments::nominal(
+                (string) $parentOf($i)->getId(),
+                $next,
+                DaySegment::minutesOf('19:00'),
+                CustodyDaySource::Base,
+                CustodyDaySource::Base,
+            );
             $em->persist((new CustodyDay())
                 ->setFamily($family)
                 ->setDate($monthStart->modify("+{$i} day"))
-                ->setParentMembership(0 === $i % 2 ? $slotA : $parentB)
-                ->setSource(CustodyDaySource::Base));
+                // 19:00 : le parent du jour en garde 79,2 %, c'est donc lui le majoritaire.
+                ->setParentMembership($parentOf($i))
+                ->setSource(CustodyDaySource::Base)
+                ->setSegments($segments->isUniform() ? null : $segments->toArray()));
         }
 
         $em->flush();

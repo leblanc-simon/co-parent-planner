@@ -107,6 +107,7 @@ export default class extends ApiController {
             anchorDate: form.querySelector('[name="anchorDate"]').value,
             handoverWeekday: parseInt(form.querySelector('[name="handoverWeekday"]').value, 10),
             handoverTime: form.querySelector('[name="handoverTime"]').value,
+            dayStartTime: form.querySelector('[name="dayStartTime"]').value,
             parentAMembershipId: form.querySelector('[name="parentAMembershipId"]').value,
             parentBMembershipId: form.querySelector('[name="parentBMembershipId"]').value,
         };
@@ -181,36 +182,67 @@ export default class extends ApiController {
      * clic sur la case du calendrier — qui réattribuait durablement un jour de garde derrière un
      * simple `confirm()`, y compris par mégarde en parcourant le planning au clavier.
      */
+    /**
+     * Échange d'un jour depuis sa fiche : le formulaire porte le créneau — jour de début (la veille
+     * ou le jour même) et heure, jour de fin (le jour même ou le lendemain) et heure. Les valeurs
+     * proposées viennent du serveur, qui seul connaît le rythme et l'heure de début de journée de
+     * la famille (cdc §3.4) ; l'utilisateur les corrige avant de confirmer.
+     */
     swapDay(event) {
-        event.preventDefault(); // évite le défilement sur la touche Espace
-        const cell = event.currentTarget;
-        const date = cell.dataset.date;
-        const fromA = 'A' === cell.dataset.slot;
-        const target = fromA ? this.parentBValue : this.parentAValue;
-        if (!date || !target) return;
-
-        const toName = fromA ? this.pbNameValue : this.paNameValue;
-        const label = cell.dataset.dateLabel || date;
-        if (!window.confirm(`Attribuer le ${label} à ${toName || 'l\'autre parent'} ?`)) return;
+        event.preventDefault();
+        const form = event.currentTarget;
+        const value = (name) => form.querySelector(`[name="${name}"]`).value;
+        const label = form.dataset.dateLabel || 'ce jour';
+        const toName = form.dataset.targetName || "l'autre parent";
 
         this._send('POST', `/api/families/${this.familyIdValue}/custody/exceptions`, {
-            startDate: date,
-            endDate: date,
-            parentMembershipId: target,
+            startDate: value('startDate'),
+            startTime: value('startTime'),
+            endDate: value('endDate'),
+            endTime: value('endTime'),
+            parentMembershipId: value('parentMembershipId'),
             reason: 'Échange',
         }, {
             event,
-            notice: `Le ${label} est désormais attribué à ${toName || 'l\'autre parent'}.`,
+            notice: `Le ${label} est échangé : les enfants sont chez ${toName} du ${this._moment(value('startDate'), value('startTime'))} au ${this._moment(value('endDate'), value('endTime'))}.`,
             idempotent: true,
+        });
+    }
+
+    /** « 2026-09-25 » + « 18:00 » → « 25/09 à 18:00 », pour une confirmation qui se relit. */
+    _moment(date, time) {
+        const [year, month, day] = String(date).split('-');
+        return year ? `${day}/${month} à ${time}` : `${date} ${time}`;
+    }
+
+    /**
+     * Ré-échange d'un jour déjà échangé : l'exception d'un jour est RETIRÉE, le jour revient au
+     * rythme habituel (ou à la règle de vacances). Créer une exception en sens inverse en aurait
+     * laissé deux sur la même date — c'est le moteur, non l'utilisateur, qui aurait tranché.
+     */
+    revertDay(event) {
+        event.preventDefault();
+        const btn = event.currentTarget;
+        const label = btn.dataset.dateLabel || 'ce jour';
+        if (!window.confirm(`Annuler l'échange du ${label} ? Le jour reviendra au rythme habituel.`)) return;
+
+        this._send('DELETE', `/api/families/${this.familyIdValue}/custody/exceptions/${btn.dataset.exceptionId}`, null, {
+            event,
+            notice: `L'échange du ${label} est annulé — le jour revient au rythme habituel.`,
         });
     }
 
     addException(event) {
         event.preventDefault();
         const f = event.currentTarget;
+        // Heures laissées vides = journées entières : on envoie `null`, pas une chaîne vide, pour
+        // que le serveur lise bien « pas d'heure » et non « heure illisible » (422).
+        const time = (name) => f.querySelector(`[name="${name}"]`).value || null;
         this._send('POST', `/api/families/${this.familyIdValue}/custody/exceptions`, {
             startDate: f.querySelector('[name="startDate"]').value,
+            startTime: time('startTime'),
             endDate: f.querySelector('[name="endDate"]').value,
+            endTime: time('endTime'),
             parentMembershipId: f.querySelector('[name="parentMembershipId"]').value,
             reason: f.querySelector('[name="reason"]').value || null,
         }, { event, notice: 'Exception ajoutée.', idempotent: true });

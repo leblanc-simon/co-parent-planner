@@ -15,6 +15,7 @@ CustodyPatternJsonld _$CustodyPatternJsonldFromJson(
   kind: json['kind'] as String? ?? '',
   handoverWeekday: (json['handoverWeekday'] as num?)?.toInt() ?? 0,
   handoverTime: json['handoverTime'] as String? ?? '',
+  dayStartTime: json['dayStartTime'] as String? ?? '',
   object5: json['@context'],
   anchorDate: json['anchorDate'] as String?,
   customPattern: (json['customPattern'] as List<dynamic>?)
@@ -36,6 +37,7 @@ Map<String, dynamic> _$CustodyPatternJsonldToJson(
   'anchorDate': instance.anchorDate,
   'handoverWeekday': instance.handoverWeekday,
   'handoverTime': instance.handoverTime,
+  'dayStartTime': instance.dayStartTime,
   'customPattern': instance.customPattern,
   'settings': instance.settings,
   'parentAMembershipId': instance.parentAMembershipId,

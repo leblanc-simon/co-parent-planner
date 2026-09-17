@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -19,6 +20,8 @@ import '../../agenda/presentation/agenda_screen.dart'
     show CategoryPill, agendaCategoryColor;
 import '../../family/application/family_context.dart';
 import '../application/custody_palette.dart';
+import '../application/day_segments.dart';
+import '../application/swap_defaults.dart';
 import '../application/day_detail.dart';
 import '../data/custody_repository.dart';
 import 'custody_activities.dart';
@@ -189,7 +192,16 @@ class _CustodyBody extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 12),
-        _Legend(showActivity: canSeeAgenda),
+        _Legend(
+          showActivity: canSeeAgenda,
+          // La légende n'explique le filet que s'il se voit : un mois sans journée partagée n'a
+          // rien à commenter.
+          hasSharedDay: anyHandoverDay(
+            pattern,
+            daysAsync.valueOrNull ?? const [],
+            ref.watch(custodyMonthProvider),
+          ),
+        ),
         const SizedBox(height: 20),
         statsAsync.maybeWhen(
           data: (stats) =>
@@ -352,13 +364,20 @@ class _Calendar extends ConsumerWidget {
       // générée doit rester une case du mois (sans couleur d'attribution) plutôt que
       // de passer pour une case de remplissage.
       final inMonth = cursor.month == month.month && cursor.year == month.year;
+      final slot = slotOf(day?.parentMembershipId, pattern);
+      // Jour d'échange : la case porte les DEUX teintes, au prorata du temps passé chez chacun
+      // (échange à 18:00 ⇒ trois quarts au parent qui rend les enfants). Le jour reste attribué
+      // au seul arrivant — c'est un partage d'affichage, les statistiques comptent des jours
+      // entiers. Les cases de complément de semaine ne sont pas colorées, donc pas découpées non
+      // plus.
       cells.add(
         _DayCell(
           dateKey: key,
           dayNumber: cursor.day,
           inMonth: inMonth,
           day: day,
-          slot: _slotFor(day),
+          slot: slot,
+          segments: inMonth ? DaySegments.of(day).segments : const [],
           isToday: key == todayKey,
           // Marqueurs conditionnés à l'appartenance au mois, pas à la présence d'un
           // jour matérialisé : une activité tombant sur un jour non planifié doit
@@ -423,15 +442,27 @@ class _Calendar extends ConsumerWidget {
       ],
     );
   }
+}
 
-  /// 'A' / 'B' / null selon l'appartenance au parent A/B du rythme.
-  String? _slotFor(api.CustodyDay? day) {
-    final pid = day?.parentMembershipId;
-    if (pid == null) return null;
-    if (pid == pattern.parentAMembershipId) return 'A';
-    if (pid == pattern.parentBMembershipId) return 'B';
-    return null;
+/// Le mois affiché contient-il au moins une **journée d'échange** ?
+///
+/// La légende n'explique le filet que s'il se voit : un mois entièrement attribué à un seul
+/// parent (règle de vacances) n'a aucune case partagée à commenter. Miroir du `hasSplit` calculé
+/// par le `GardeController` du web.
+bool anyHandoverDay(
+  api.CustodyPattern pattern,
+  List<api.CustodyDay> days,
+  DateTime month,
+) {
+  for (final day in days) {
+    final date = CivilDate.of(day.date);
+    if (date == null || date.year != month.year || date.month != month.month) {
+      continue;
+    }
+    if (DaySegments.of(day).isShared) return true;
   }
+
+  return false;
 }
 
 class _DowHeader extends StatelessWidget {
@@ -499,6 +530,16 @@ class _MonthNavButton extends StatelessWidget {
   }
 }
 
+/// Nom en clair d'un slot : celui du membre, ou « Parent A »/« Parent B » tant que les membres
+/// ne sont pas chargés. Partagé par la case et la fiche — un même parent doit être nommé de la
+/// même façon des deux côtés.
+String nameForSlot(AppL10n l, ParentMarkers markers, String slot) {
+  final name = markers.nameForSlot(slot);
+  if (name.isNotEmpty) return name;
+
+  return slot == 'A' ? l.custodyParentA : l.custodyParentB;
+}
+
 class _DayCell extends ConsumerWidget {
   const _DayCell({
     required this.dateKey,
@@ -506,6 +547,7 @@ class _DayCell extends ConsumerWidget {
     required this.inMonth,
     required this.day,
     required this.slot,
+    this.segments = const [],
     this.isToday = false,
     this.hasOverlay = false,
     this.activities = const [],
@@ -519,6 +561,11 @@ class _DayCell extends ConsumerWidget {
 
   final api.CustodyDay? day;
   final String? slot;
+
+  /// Tranches horaires de la journée, telles que le moteur les a matérialisées : une seule pour
+  /// une journée unie, deux ou trois quand les enfants changent de foyer en cours de route.
+  final List<CustodySegment> segments;
+
   final bool isToday;
   final bool hasOverlay;
 
@@ -536,6 +583,38 @@ class _DayCell extends ConsumerWidget {
     final palette = ref.watch(custodyPaletteProvider);
     final tint = slot == null ? custodyUnassignedTint : palette.forSlot(slot);
     final (bg, borderColor) = (tint.soft, tint.border);
+    // Journée partagée : dégradé à arêtes franches, une teinte par tranche. La bordure reste celle
+    // du parent majoritaire — c'est à lui que la journée est comptée.
+    final pattern = ref.watch(familyCustodyPatternProvider).valueOrNull;
+    final shared = inMonth && segments.length > 1;
+    final boundaries = <double>[];
+    final gradient = !shared
+        ? null
+        : () {
+            final colors = <Color>[];
+            final stops = <double>[];
+            var cursor = 0.0;
+            for (var i = 0; i < segments.length; i++) {
+              final segment = segments[i];
+              final segmentTint = segment.parentId == null
+                  ? custodyUnassignedTint
+                  : palette.forSlot(slotOf(segment.parentId, pattern));
+              final end = i == segments.length - 1
+                  ? 1.0
+                  : cursor + segment.share;
+              colors.addAll([segmentTint.soft, segmentTint.soft]);
+              stops.addAll([cursor, end]);
+              if (end < 1.0) boundaries.add(end);
+              cursor = end;
+            }
+
+            return LinearGradient(
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+              colors: colors,
+              stops: stops,
+            );
+          }();
 
     // U-04 : numéro centré dans une pastille 25×25 r13 (fond accentué aujourd'hui).
     final numberPill = Container(
@@ -560,7 +639,10 @@ class _DayCell extends ConsumerWidget {
 
     final cell = Container(
       decoration: BoxDecoration(
-        color: inMonth ? bg : Colors.transparent,
+        // `BoxDecoration` refuse `color` et `gradient` ensemble : les jours d'échange n'ont
+        // que le dégradé.
+        color: gradient != null ? null : (inMonth ? bg : Colors.transparent),
+        gradient: gradient,
         borderRadius: BorderRadius.circular(12),
         // U-06 : l'exception n'a pas de bordure pleine — un liseré pointillé
         // (#857E71) est peint par-dessus ; sinon bordure pleine.
@@ -578,6 +660,25 @@ class _DayCell extends ConsumerWidget {
                 painter: _DashedRRectPainter(
                   color: AppColors.muted,
                   radius: 12,
+                ),
+              ),
+            ),
+          // Filet du partage : le SEUL canal qui dise « journée d'échange » en niveaux de gris et
+          // en contraste forcé, où les deux teintes de la case se confondent (cdc §8.1, WCAG
+          // 1.4.1). Débordé de la marge intérieure pour toucher les deux bords, comme le fait le
+          // filet du web. Le nom des deux parents et l'heure vivent dans le `Semantics` de la
+          // case et dans la fiche qu'elle ouvre.
+          if (gradient != null)
+            Positioned(
+              left: -4,
+              right: -4,
+              top: -4,
+              bottom: -4,
+              child: CustomPaint(
+                key: ValueKey('garde-day-split-$dateKey'),
+                painter: _SplitDividerPainter(
+                  shares: boundaries,
+                  color: AppColors.ink2,
                 ),
               ),
             ),
@@ -656,17 +757,34 @@ class _DayCell extends ConsumerWidget {
     // l'app) : VoiceOver/TalkBack annonçaient « 23, So » (constat C55).
     // `excludeSemantics` joue le rôle de l'`aria-hidden` du gabarit web.
     final markers = ref.watch(parentMarkersProvider);
-    final name = slot == null
-        ? null
-        : (markers.nameForSlot(slot!).isNotEmpty
-              ? markers.nameForSlot(slot!)
-              : (slot == 'A' ? l.custodyParentA : l.custodyParentB));
+    final name = slot == null ? null : nameForSlot(l, markers, slot!);
     final dayDate = CivilDate.of(dateKey);
     final dateLabel = dayDate == null
         ? dateKey
         : DateLabels.longDate(l.localeName, dayDate);
+    // Journée partagée : l'annonce énumère les tranches, comme le fait l'`aria-label` du web —
+    // une proportion lue sur une couleur ne se vérifie nulle part ailleurs.
+    final slices = !shared
+        ? const <String>[]
+        : [
+            for (final segment in segments)
+              l.custodyDaySlice(
+                segment.parentId == null
+                    ? l.custodyNoParent
+                    : nameForSlot(
+                        l,
+                        markers,
+                        slotOf(segment.parentId, pattern) ?? 'A',
+                      ),
+                segment.fromTime,
+                segment.toTime,
+              ),
+          ];
     final semantics = <String>[
-      name == null ? dateLabel : l.custodyDaySemantics(dateLabel, name),
+      if (slices.isNotEmpty)
+        l.custodyDaySplitSemantics(dateLabel, slices.join(', '))
+      else
+        name == null ? dateLabel : l.custodyDaySemantics(dateLabel, name),
       if (day?.source == 'exception') l.custodyExceptional,
       if (day?.source == 'holiday') l.custodyHoliday,
       if (activities.isNotEmpty) l.custodyActivity,
@@ -695,10 +813,15 @@ class _DayCell extends ConsumerWidget {
 }
 
 class _Legend extends ConsumerWidget {
-  const _Legend({this.showActivity = true});
+  const _Legend({this.showActivity = true, this.hasSharedDay = false});
 
   /// La pastille d'activité n'est expliquée que si elle peut apparaître (droit `agenda`).
   final bool showActivity;
+
+  /// Heure d'échange, quand le mois affiché contient au moins une journée partagée ; `null`
+  /// sinon — une légende n'explique pas un marqueur absent.
+  /// Le mois affiché contient au moins une journée partagée : le filet mérite son explication.
+  final bool hasSharedDay;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -723,6 +846,14 @@ class _Legend extends ConsumerWidget {
           marker: markers.markerB,
           label: markers.nameB.isNotEmpty ? markers.nameB : l.custodyParentB,
         ),
+        // Journée d'échange : les deux teintes séparées par le filet, dans l'ordre de la case.
+        if (hasSharedDay)
+          _LegendItem(
+            color: palette.a.border,
+            fill: palette.a.soft,
+            splitFill: palette.b.soft,
+            label: l.custodySharedDay,
+          ),
         // U-06 : exception = liseré pointillé (pas d'icône).
         _LegendItem(
           color: AppColors.muted,
@@ -779,6 +910,35 @@ class _ActivityDot extends StatelessWidget {
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
+}
+
+/// Peint le filet vertical d'une journée d'échange, à la frontière des deux parents.
+///
+/// Jumeau du `.garde-day--split::after` du web : un trait de 2 px à `share` de la largeur. C'est
+/// une **forme**, non une couleur — elle survit aux niveaux de gris et au contraste forcé, où les
+/// deux teintes de la case se confondent (cdc §8.1).
+class _SplitDividerPainter extends CustomPainter {
+  _SplitDividerPainter({required this.shares, required this.color});
+
+  /// Positions des changements de foyer dans la journée, entre 0 et 1 — une par frontière, donc
+  /// deux au plus (un échange partiel encadré par le rythme).
+  final List<double> shares;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 2;
+    for (final share in shares) {
+      final x = size.width * share;
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SplitDividerPainter old) =>
+      !listEquals(old.shares, shares) || old.color != color;
 }
 
 /// Peint un liseré arrondi en pointillés (marqueur d'échange exceptionnel, U-06).
@@ -897,6 +1057,7 @@ class _LegendItem extends StatelessWidget {
     this.ring = false,
     this.marker,
     this.fill,
+    this.splitFill,
   });
 
   final Color color;
@@ -911,6 +1072,10 @@ class _LegendItem extends StatelessWidget {
 
   /// Fond de la puce quand elle reproduit l'aspect d'une case (bordure [color] + ce fond doux).
   final Color? fill;
+
+  /// Second fond : la puce reproduit alors une **case partagée** — [fill] à gauche, celui-ci à
+  /// droite, séparés par le filet.
+  final Color? splitFill;
 
   @override
   Widget build(BuildContext context) {
@@ -933,6 +1098,30 @@ class _LegendItem extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(4),
           border: Border.all(color: color, width: 1.5),
+        ),
+      );
+    } else if (splitFill != null) {
+      // Puce reproduisant une case partagée : les deux fonds et le filet, dans l'ordre où la
+      // case les montre. La part est illustrative — c'est le libellé qui porte l'heure.
+      const share = 0.65;
+      swatch = Container(
+        width: 22,
+        height: 13,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: color),
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [fill!, fill!, splitFill!, splitFill!],
+            stops: const [0, share, share, 1],
+          ),
+        ),
+        child: CustomPaint(
+          painter: _SplitDividerPainter(
+            shares: const [share],
+            color: AppColors.ink2,
+          ),
         ),
       );
     } else if (marker != null) {
@@ -1305,19 +1494,60 @@ class _CustodyDaySheetState extends ConsumerState<CustodyDaySheet> {
         : '${l.custodyRuleHabitual} · ${l.custodyRuleDuring(holiday.label)}';
   }
 
-  Future<void> _swap(String slot) async {
+  /// Ré-échange d'un jour déjà échangé : l'exception d'un jour est RETIRÉE, le jour
+  /// revient au rythme habituel (ou à la règle de vacances). Créer une exception en sens
+  /// inverse en aurait laissé deux sur la même date, que seul l'ordre d'application du
+  /// moteur départage. Pendant web : `garde#revertDay`.
+  Future<void> _revert(String exceptionId) async {
     final family = ref.read(familyContextProvider);
-    final pattern = ref.read(familyCustodyPatternProvider).value;
-    if (family == null || pattern == null) return;
-    // Slot courant A → cible = parent B, et inversement.
-    final target = slot == 'A'
-        ? pattern.parentBMembershipId
-        : pattern.parentAMembershipId;
+    if (family == null) return;
     final l = AppL10n.of(context);
-    if (target == null) {
-      setState(() => _error = l.custodySwapUnavailable);
-      return;
+
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    final providers = context.providers;
+    final revertedMsg = l.custodyReverted;
+    try {
+      await ref
+          .read(custodyRepositoryProvider)
+          .deleteException(family.familyId, exceptionId);
+      providers
+        ..invalidate(familyCustodyDaysProvider)
+        ..invalidate(familyCustodyStatsProvider)
+        ..invalidate(familyCustodyExceptionsProvider);
+      if (navigator.canPop()) navigator.pop();
+      messenger.showSnackBar(SnackBar(content: Text(revertedMsg)));
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() => _error = e.localized(l));
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// Échange d'un jour : le créneau est **négocié en heures**, pas en journées de minuit à
+  /// minuit (cdc §3.4). La feuille propose le créneau que la famille vivrait — prolongation
+  /// depuis la transmission de la veille, ou reprise le matin même — et laisse tout corriger.
+  Future<void> _swap(SwapDefaults defaults, String targetId) async {
+    final family = ref.read(familyContextProvider);
+    if (family == null) return;
+    final l = AppL10n.of(context);
+
+    final chosen = await showModalBottomSheet<SwapDefaults>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _SwapSheet(
+        defaults: defaults,
+        dateKey: widget.date,
+        targetName: _swapTargetName(l),
+      ),
+    );
+    if (chosen == null || !mounted) return;
 
     setState(() {
       _busy = true;
@@ -1333,9 +1563,11 @@ class _CustodyDaySheetState extends ConsumerState<CustodyDaySheet> {
           .read(custodyRepositoryProvider)
           .createException(
             family.familyId,
-            startDate: widget.date,
-            endDate: widget.date,
-            parentMembershipId: target,
+            startDate: chosen.startDate,
+            startTime: chosen.startTime,
+            endDate: chosen.endDate,
+            endTime: chosen.endTime,
+            parentMembershipId: targetId,
             reason: reason,
           );
       providers
@@ -1351,6 +1583,17 @@ class _CustodyDaySheetState extends ConsumerState<CustodyDaySheet> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// Nom du parent qui récupérerait la journée, pour l'annoncer dans la feuille d'échange.
+  String _swapTargetName(AppL10n l) {
+    final detail = ref.read(custodyDayDetailProvider(widget.date)).valueOrNull;
+    final pattern = ref.read(familyCustodyPatternProvider).valueOrNull;
+    final slot = slotOf(detail?.swapTargetId, pattern);
+
+    return slot == null
+        ? l.custodyNoParent
+        : nameForSlot(l, ref.read(parentMarkersProvider), slot);
   }
 
   @override
@@ -1396,13 +1639,12 @@ class _CustodyDaySheetState extends ConsumerState<CustodyDaySheet> {
     final canEdit = ref.watch(custodyCanEditProvider);
     final canSeeAgenda = ref.watch(agendaCanViewProvider);
     final sheetTint = ref.watch(custodyPaletteProvider).forSlot(slot);
+    final pattern = ref.watch(familyCustodyPatternProvider).valueOrNull;
+    // Jour déjà échangé : le geste d'échange se change en annulation (cf.
+    // `CustodyDayDetail.revertibleException`).
+    final revertible = detail.revertibleException;
 
-    String nameOf(String s) {
-      final name = markers.nameForSlot(s);
-      return name.isNotEmpty
-          ? name
-          : (s == 'A' ? l.custodyParentA : l.custodyParentB);
-    }
+    String nameOf(String s) => nameForSlot(l, markers, s);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -1467,6 +1709,30 @@ class _CustodyDaySheetState extends ConsumerState<CustodyDaySheet> {
               ),
             ],
           ),
+          // Journée partagée : les enfants n'y passent qu'une partie du temps chez le
+          // parent majoritaire. La case du calendrier le montre par ses teintes ; la
+          // fiche le DIT, avec les heures — un partage lu sur une couleur ne se vérifie
+          // nulle part ailleurs.
+          if (detail.isShared) ...[
+            const SizedBox(height: 8),
+            Text(
+              l.custodySharedDayDetail(
+                detail.segments
+                    .map(
+                      (seg) => l.custodyDaySlice(
+                        seg.parentId == null
+                            ? l.custodyNoParent
+                            : nameOf(slotOf(seg.parentId, pattern) ?? 'A'),
+                        seg.fromTime,
+                        seg.toTime,
+                      ),
+                    )
+                    .join(', '),
+              ),
+              key: const ValueKey('custody-day-shared'),
+              style: const TextStyle(fontSize: 13, color: AppColors.muted),
+            ),
+          ],
           // « Retour chez {Parent} le {date} à {heure} » (US-CUST-6), dérivée des
           // jours **matérialisés** qui suivent. En bout d'horizon glissant aucun
           // changement ne suit : la phrase est alors omise plutôt qu'inventée.
@@ -1513,9 +1779,25 @@ class _CustodyDaySheetState extends ConsumerState<CustodyDaySheet> {
                       // action qui échoue.
                       onPressed: _busy || detail.isPast
                           ? null
-                          : () => _swap(slot),
-                      icon: const Icon(Icons.swap_horiz),
-                      label: Text(l.custodySwapDay),
+                          // Jour déjà échangé : le geste DÉFAIT l'échange au lieu
+                          // d'empiler une exception inverse — et le dit.
+                          : revertible != null
+                          ? () => _revert(revertible.id)
+                          : (detail.swapDefaults == null ||
+                                detail.swapTargetId == null)
+                          ? null
+                          : () => _swap(
+                              detail.swapDefaults!,
+                              detail.swapTargetId!,
+                            ),
+                      icon: Icon(
+                        revertible != null ? Icons.undo : Icons.swap_horiz,
+                      ),
+                      label: Text(
+                        revertible != null
+                            ? l.custodyRevertSwap
+                            : l.custodySwapDay,
+                      ),
                     ),
                   ),
                 ),
@@ -1624,5 +1906,192 @@ class _DayActivities extends ConsumerWidget {
     final start = CivilDate.hm(e.startsAt);
     final end = e.endsAt == null ? '' : CivilDate.hm(e.endsAt!);
     return end.isEmpty ? start : '$start – $end';
+  }
+}
+
+/// Feuille d'échange d'un jour (cdc §3.4) : jour et heure de début, jour et heure de fin.
+///
+/// Les valeurs proposées viennent de [SwapDefaults] — le créneau que la famille vivrait — et tout
+/// y est corrigeable : le début peut partir de la veille, la fin déborder sur le lendemain. Pendant
+/// web : le `<details>` de la fiche de jour.
+class _SwapSheet extends StatefulWidget {
+  const _SwapSheet({
+    required this.defaults,
+    required this.dateKey,
+    required this.targetName,
+  });
+
+  final SwapDefaults defaults;
+  final String dateKey;
+  final String targetName;
+
+  @override
+  State<_SwapSheet> createState() => _SwapSheetState();
+}
+
+class _SwapSheetState extends State<_SwapSheet> {
+  late String _startDate = widget.defaults.startDate;
+  late String _startTime = widget.defaults.startTime;
+  late String _endDate = widget.defaults.endDate;
+  late String _endTime = widget.defaults.endTime;
+
+  String get _previousKey {
+    final d = CivilDate.of(widget.dateKey)!;
+
+    return CivilDate.format(DateTime(d.year, d.month, d.day - 1));
+  }
+
+  String get _nextKey {
+    final d = CivilDate.of(widget.dateKey)!;
+
+    return CivilDate.format(DateTime(d.year, d.month, d.day + 1));
+  }
+
+  Future<void> _pickTime(bool start) async {
+    final current = DaySegments.minutesOf(start ? _startTime : _endTime) ?? 0;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: current ~/ 60, minute: current % 60),
+    );
+    if (picked == null) return;
+    final value =
+        '${picked.hour.toString().padLeft(2, '0')}:'
+        '${picked.minute.toString().padLeft(2, '0')}';
+    setState(() {
+      if (start) {
+        _startTime = value;
+      } else {
+        _endTime = value;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppL10n.of(context);
+    final dayLabel = DateLabels.isoDayMonth(l.localeName, widget.dateKey);
+    final previousLabel = DateLabels.isoDayMonth(l.localeName, _previousKey);
+    final nextLabel = DateLabels.isoDayMonth(l.localeName, _nextKey);
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l.custodySwapDay, style: AppTypography.textTheme.titleLarge),
+            const SizedBox(height: 4),
+            Text(
+              l.custodySwapIntro(widget.targetName),
+              style: const TextStyle(fontSize: 13, color: AppColors.muted),
+            ),
+            const SizedBox(height: 16),
+            _SwapBound(
+              label: l.custodySwapFrom,
+              dateKey: _startDate,
+              time: _startTime,
+              options: {
+                _previousKey: l.custodySwapDayBefore(previousLabel),
+                widget.dateKey: l.custodySwapSameDay(dayLabel),
+              },
+              onDate: (value) => setState(() => _startDate = value),
+              onTime: () => _pickTime(true),
+              fieldKey: 'custody-swap-start',
+            ),
+            const SizedBox(height: 12),
+            _SwapBound(
+              label: l.custodySwapTo,
+              dateKey: _endDate,
+              time: _endTime,
+              options: {
+                widget.dateKey: l.custodySwapSameDay(dayLabel),
+                _nextKey: l.custodySwapDayAfter(nextLabel),
+              },
+              onDate: (value) => setState(() => _endDate = value),
+              onTime: () => _pickTime(false),
+              fieldKey: 'custody-swap-end',
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                key: const ValueKey('custody-swap-confirm'),
+                onPressed: () => Navigator.of(context).pop(
+                  SwapDefaults(
+                    startDate: _startDate,
+                    startTime: _startTime,
+                    endDate: _endDate,
+                    endTime: _endTime,
+                  ),
+                ),
+                child: Text(l.custodySwapConfirm),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Une borne du créneau : le jour (veille / jour même / lendemain) et l'heure.
+class _SwapBound extends StatelessWidget {
+  const _SwapBound({
+    required this.label,
+    required this.dateKey,
+    required this.time,
+    required this.options,
+    required this.onDate,
+    required this.onTime,
+    required this.fieldKey,
+  });
+
+  final String label;
+  final String dateKey;
+  final String time;
+  final Map<String, String> options;
+  final ValueChanged<String> onDate;
+  final VoidCallback onTime;
+  final String fieldKey;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: AppTypography.eyebrow),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                key: ValueKey('$fieldKey-date'),
+                initialValue: dateKey,
+                isExpanded: true,
+                decoration: const InputDecoration(isDense: true),
+                items: [
+                  for (final entry in options.entries)
+                    DropdownMenuItem(
+                      value: entry.key,
+                      child: Text(entry.value),
+                    ),
+                ],
+                onChanged: (value) {
+                  if (value != null) onDate(value);
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            OutlinedButton(
+              key: ValueKey('$fieldKey-time'),
+              style: AppButtonStyles.outlinedInRow(),
+              onPressed: onTime,
+              child: Text(time),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 }

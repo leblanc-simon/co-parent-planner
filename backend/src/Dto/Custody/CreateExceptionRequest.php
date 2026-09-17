@@ -15,6 +15,15 @@ final class CreateExceptionRequest
     #[Assert\NotBlank]
     public ?string $endDate = null;
 
+    /**
+     * Bornes horaires (HH:MM) de l'échange. Omises = journées entières, comme avant qu'elles
+     * existent ; renseignées, l'exception court de `startDate startTime` (inclus) à
+     * `endDate endTime` (exclu).
+     */
+    public ?string $startTime = null;
+
+    public ?string $endTime = null;
+
     #[Assert\NotBlank]
     public ?string $parentMembershipId = null;
 

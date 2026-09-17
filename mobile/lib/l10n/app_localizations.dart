@@ -927,6 +927,30 @@ abstract class AppL10n {
   /// **'{date} — chez {parent}'**
   String custodyDaySemantics(String date, String parent);
 
+  /// Annonce d'une case de calendrier une journée partagée : les tranches, dans l'ordre.
+  ///
+  /// In fr, this message translates to:
+  /// **'{date} — {slices}'**
+  String custodyDaySplitSemantics(String date, String slices);
+
+  /// Une tranche horaire d'une journée partagée : chez qui, de quand à quand.
+  ///
+  /// In fr, this message translates to:
+  /// **'chez {parent} de {from} à {to}'**
+  String custodyDaySlice(String parent, String from, String to);
+
+  /// Entrée de légende expliquant le filet des cases partagées.
+  ///
+  /// In fr, this message translates to:
+  /// **'Journée partagée : le filet marque l\'heure du passage d\'un parent à l\'autre'**
+  String get custodySharedDay;
+
+  /// Fiche de jour : répartition d'une journée partagée, tranche par tranche.
+  ///
+  /// In fr, this message translates to:
+  /// **'Journée partagée · {slices}'**
+  String custodySharedDayDetail(String slices);
+
   /// No description provided for @custodyColorsTitle.
   ///
   /// In fr, this message translates to:
@@ -1220,6 +1244,78 @@ abstract class AppL10n {
   /// In fr, this message translates to:
   /// **'Jour échangé.'**
   String get custodySwapped;
+
+  /// No description provided for @custodyRevertSwap.
+  ///
+  /// In fr, this message translates to:
+  /// **'Annuler l\'échange'**
+  String get custodyRevertSwap;
+
+  /// Feuille d'échange : rappelle à qui la journée est confiée.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confier ce jour à {parent}, sur le créneau de votre choix.'**
+  String custodySwapIntro(String parent);
+
+  /// No description provided for @custodyDayStartTime.
+  ///
+  /// In fr, this message translates to:
+  /// **'Heure de début de journée'**
+  String get custodyDayStartTime;
+
+  /// Réglages du rythme : à quoi sert l'heure de début de journée.
+  ///
+  /// In fr, this message translates to:
+  /// **'{time} — proposée lorsqu\'un jour est échangé sans reprendre la garde de la veille.'**
+  String custodyDayStartTimeHint(String time);
+
+  /// Réglages du rythme : quand a lieu la transmission.
+  ///
+  /// In fr, this message translates to:
+  /// **'{time} — les enfants changent de foyer à cette heure-là, le dernier jour de chaque période.'**
+  String custodyHandoverTimeHint(String time);
+
+  /// No description provided for @custodySwapFrom.
+  ///
+  /// In fr, this message translates to:
+  /// **'Début'**
+  String get custodySwapFrom;
+
+  /// No description provided for @custodySwapTo.
+  ///
+  /// In fr, this message translates to:
+  /// **'Fin'**
+  String get custodySwapTo;
+
+  /// No description provided for @custodySwapConfirm.
+  ///
+  /// In fr, this message translates to:
+  /// **'Confirmer l\'échange'**
+  String get custodySwapConfirm;
+
+  /// Option de créneau : l'échange commence la veille du jour consulté.
+  ///
+  /// In fr, this message translates to:
+  /// **'la veille ({date})'**
+  String custodySwapDayBefore(String date);
+
+  /// Option de créneau : la borne tombe le jour consulté.
+  ///
+  /// In fr, this message translates to:
+  /// **'le jour même ({date})'**
+  String custodySwapSameDay(String date);
+
+  /// Option de créneau : l'échange finit le lendemain du jour consulté.
+  ///
+  /// In fr, this message translates to:
+  /// **'le lendemain ({date})'**
+  String custodySwapDayAfter(String date);
+
+  /// No description provided for @custodyReverted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Échange annulé — le jour revient au rythme habituel.'**
+  String get custodyReverted;
 
   /// No description provided for @custodySwapUnavailable.
   ///

@@ -16,6 +16,8 @@ class CustodyExceptionJsonld {
     this.startDate = '',
     this.endDate = '',
     this.object5,
+    this.startTime,
+    this.endTime,
     this.parentMembershipId,
     this.reason,
   });
@@ -37,6 +39,10 @@ class CustodyExceptionJsonld {
   final String id;
   final String startDate;
   final String endDate;
+
+  /// Bornes horaires (HH:MM) ; `null` des deux côtés = journées entières.
+  final String? startTime;
+  final String? endTime;
   final String? parentMembershipId;
   final String? reason;
 

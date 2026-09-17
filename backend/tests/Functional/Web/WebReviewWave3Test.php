@@ -15,6 +15,8 @@ use App\Enum\FamilyType;
 use App\Enum\MembershipRole;
 use App\Enum\MembershipStatus;
 use App\Enum\UserStatus;
+use App\Service\Custody\DaySegment;
+use App\Service\Custody\DaySegments;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -280,12 +282,28 @@ final class WebReviewWave3Test extends WebTestCase
         $em->persist($pattern);
 
         if ($materialiseToday) {
+            $holder = $todayBelongsToViewer ? $viewer : $parentB;
+            $next = $todayBelongsToViewer ? $parentB : $viewer;
+
             $em->persist((new CustodyDay())->setFamily($family)->setDate($today)
-                ->setParentMembership($todayBelongsToViewer ? $viewer : $parentB)
+                ->setParentMembership($holder)
                 ->setSource(CustodyDaySource::Base));
-            // Changement d'attributaire trois jours plus tard : la transmission à annoncer.
+            // Dernier jour du bloc, deux jours plus tard : c'est LUI qui porte la transmission
+            // (jusqu'à 19:00 chez l'attributaire, puis chez l'autre — cdc §3.4), et c'est elle que
+            // l'accueil annonce.
+            $handoverDay = DaySegments::nominal(
+                (string) $holder->getId(),
+                (string) $next->getId(),
+                DaySegment::minutesOf('19:00'),
+                CustodyDaySource::Base,
+                CustodyDaySource::Base,
+            );
+            $em->persist((new CustodyDay())->setFamily($family)->setDate($today->modify('+2 days'))
+                ->setParentMembership($holder)
+                ->setSource(CustodyDaySource::Base)
+                ->setSegments($handoverDay->toArray()));
             $em->persist((new CustodyDay())->setFamily($family)->setDate($today->modify('+3 days'))
-                ->setParentMembership($todayBelongsToViewer ? $parentB : $viewer)
+                ->setParentMembership($next)
                 ->setSource(CustodyDaySource::Base));
         }
 

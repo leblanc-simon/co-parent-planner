@@ -14,6 +14,9 @@ CustodyDayJsonld _$CustodyDayJsonldFromJson(Map<String, dynamic> json) =>
       source: json['source'] as String? ?? '',
       object5: json['@context'],
       parentMembershipId: json['parentMembershipId'] as String?,
+      segments: (json['segments'] as List<dynamic>?)
+          ?.map((e) => Map<String, String?>.from(e as Map))
+          .toList(),
     );
 
 Map<String, dynamic> _$CustodyDayJsonldToJson(CustodyDayJsonld instance) =>
@@ -24,4 +27,5 @@ Map<String, dynamic> _$CustodyDayJsonldToJson(CustodyDayJsonld instance) =>
       'date': instance.date,
       'parentMembershipId': instance.parentMembershipId,
       'source': instance.source,
+      'segments': instance.segments,
     };

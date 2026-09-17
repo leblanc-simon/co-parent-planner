@@ -5,7 +5,13 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-09-10** — **Session web : une heure d'inactivité tolérée.** Le JWT d'accès vivait 15 min *depuis la connexion* : une navigation après une pause — ou même après 15 min de lecture — renvoyait à `/login`, sans rattrapage possible (le cookie `refresh_token` est limité au chemin `/api/auth/refresh`, il n'accompagne donc pas un GET de page ; seules les mutations JS savaient rejouer après un refresh). `ACCESS_TOKEN_TTL` passe à **3600 s** et, surtout, `SlidingSessionSubscriber` **ré-émet le JWT à chaque navigation** authentifiée : le délai se compte désormais depuis la **dernière activité**, pas depuis la connexion. Le refresh token n'est **pas** tourné au passage (deux onglets parallèles seraient pris pour un rejeu et invalideraient toute la famille de jetons). Détail : §6, entrée du 2026-09-10.
+Dernière mise à jour : **2026-09-11** — **La garde se compte désormais en heures, plus en journées.** « Échanger ce jour » demande *quand* : jour et heure de début (la veille ou le jour même), jour et heure de fin (le jour même ou le lendemain), **préremplis avec le créneau que la famille vivrait** — prolongation depuis la transmission de la veille quand le parent avait déjà les enfants, reprise le matin même sinon (nouvelle heure de famille `day_start_time`, 08:00 par défaut). Le moteur **matérialise le découpage horaire** de chaque journée (`CustodyDay.segments`) : une case porte une, deux ou trois teintes, avec un filet par frontière. **Convention de transmission révisée** : elle se lit sur la **dernière** case d'un bloc — « A jusqu'au 25, B du 26 au 28, échange 18:00 » met les enfants chez A jusqu'au 25 à 18:00, et c'est la case du **25** qui est bicolore (la version d'hier décalait le planning d'un jour). La journée est **comptée au parent majoritaire en heures** (initiale de la case et statistiques). Amendements écrits au **cdc §3.3 (US-CUST-10), §5.2 et §8.3**. Détail : §6, entrée du 2026-09-11.
+
+Antérieur : **2026-09-10** — **Ré-échanger un jour DÉFAIT l'échange au lieu de l'empiler.** « Échanger ce jour » créait une exception d'un jour ; le refaire sur la même date en créait une **seconde**, en sens inverse : deux exceptions contradictoires que seul l'ordre d'application du moteur départageait, et que l'écran Réglages listait toutes les deux. La fiche de jour propose désormais **« Annuler l'échange »** quand le jour tient son attribution d'une exception qui ne porte que lui — l'exception est **retirée**, le jour revient au rythme (ou à sa règle de vacances). Garde-fou côté serveur, pour tout client : une création d'exception sur une plage **déjà** occupée par une exception de plage identique la **remplace**, et un rejeu à l'identique (même plage, même parent) rend l'existante au lieu d'une jumelle. Une exception de **plusieurs** jours n'est pas annulable depuis la fiche d'un seul — la retirer là toucherait des dates non regardées. Détail : §6, entrée du 2026-09-10.
+
+Antérieur : **2026-09-10** — **Le jour d'échange se partage entre les deux parents.** Le moteur attribue chaque `CustodyDay` à **un** parent, celui qui **reçoit** les enfants : une case peinte en entier à sa couleur donnait à un échange de 19:00 l'apparence d'une journée pleine, alors que 79,2 % s'étaient passés chez l'autre. Les cases d'un jour d'échange portent désormais les **deux teintes**, au prorata de `handover_time`, séparées par un **filet** — une forme, seul canal qui survive aux niveaux de gris et au contraste forcé, où les deux fonds se confondent (§8.1). Trois surfaces des deux côtés : calendrier `/garde`, mini-semaine de l'accueil, fiche de jour (qui **écrit** le partage plutôt que de le laisser à la couleur). **Rien du moteur ni des statistiques n'a bougé** : c'est un partage d'affichage, les jours restent comptés entiers. Amendement écrit au **cdc §8.3**. Détail : §6, entrée du 2026-09-10.
+
+Antérieur : **2026-09-10** — **Session web : une heure d'inactivité tolérée.** Le JWT d'accès vivait 15 min *depuis la connexion* : une navigation après une pause — ou même après 15 min de lecture — renvoyait à `/login`, sans rattrapage possible (le cookie `refresh_token` est limité au chemin `/api/auth/refresh`, il n'accompagne donc pas un GET de page ; seules les mutations JS savaient rejouer après un refresh). `ACCESS_TOKEN_TTL` passe à **3600 s** et, surtout, `SlidingSessionSubscriber` **ré-émet le JWT à chaque navigation** authentifiée : le délai se compte désormais depuis la **dernière activité**, pas depuis la connexion. Le refresh token n'est **pas** tourné au passage (deux onglets parallèles seraient pris pour un rejeu et invalideraient toute la famille de jetons). Détail : §6, entrée du 2026-09-10.
 
 Antérieur : **2026-09-10** — **Import des vacances scolaires : l'horizon, pas la seule année en cours.** L'import n'interrogeait la source que pour l'année scolaire retournée par `currentSchoolYear()` (bascule en septembre) : lancé en été, il ramenait l'année qui s'achève — d'où le « ça récupère les anciennes vacances ». Il couvre désormais toutes les années traversées par l'horizon glissant de 18 mois, une année non publiée renvoyant une liste vide (mise en cache 1 jour au lieu de 7, et sans jamais balayer les périodes déjà importées). Deux effets de bord du même symptôme corrigés : les périodes révolues, qui ouvraient la liste des réglages, sont repliées à part ; et l'onglet « garde » des réglages s'abonne au topic temps réel `/families/{id}/custody`, faute de quoi le rechargement qui suit le 202 de l'import précédait toujours la fin du worker. Enfin, l'été n'apparaissait pas non plus : tant que la rentrée suivante n'est pas fixée, la source ne publie qu'un marqueur ponctuel « Début des Vacances d'Été » (`start == end`), écarté comme période vide — il est désormais matérialisé jusqu'au 31 août sous son libellé définitif, fin provisoire que le prochain import rectifiera sans détruire la règle de garde. Détail : §6, entrée du 2026-09-10.
 
@@ -468,6 +474,162 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-09-11 — La garde à l'heure près : échanges partiels et journées découpées
+
+**Demande** : « lorsque l'on échange un jour, il faut demander l'heure à laquelle cela commence
+(ainsi que le jour — jour J ou la veille) et celle à laquelle ça finit (jour J ou le lendemain). Par
+défaut, si le jour d'avant est à celui qui aura finalement la garde, il faut prendre l'heure
+d'échange de la veille », avec deux exemples chiffrés.
+
+**Une question posée avant d'implémenter, et elle valait le détour.** Les deux exemples ne
+collaient pas au planning que le code produisait : ils supposaient que la transmission se lit sur la
+**dernière** case d'un bloc de garde, alors que le partage livré la veille la plaçait sur la
+**première** case du bloc suivant. Le planning affiché était donc décalé d'un jour par rapport à ce
+que vit la famille. Trois autres arbitrages ont été rendus dans la foulée : l'heure de « début de
+journée » devient un **réglage de famille** (et non une constante), une journée coupée est comptée
+au **parent majoritaire en heures**, et les bornes horaires valent aussi pour le formulaire
+d'exception des Réglages.
+
+**Le modèle** — trois colonnes, une migration, aucune reprise de données :
+
+- `custody_days.segments` (jsonb) : le **découpage horaire matérialisé**, `[{from, to, parent,
+  source}, …]`, `NULL` quand la journée est unie — ce que sont toutes les lignes déjà écrites, et
+  qui se relisent donc exactement comme avant.
+- `custody_exceptions.start_time` / `end_time` : bornes facultatives. Absentes = journées entières,
+  la forme historique ; présentes, l'exception court d'un instant à l'autre.
+- `custody_patterns.day_start_time` : « heure à laquelle la journée commence » (08:00 par défaut).
+
+**Le moteur a changé de forme.** Il enchaînait trois passes SQL dont l'ordre et les gardes
+(`WHERE source <> 'exception'`) portaient la priorité. Il calcule désormais **chaque journée
+entière en PHP** — nominal (rythme, puis règle de vacances), découpage à `handover_time`,
+superposition des exceptions à l'heure près — et écrit **une ligne par jour**. La priorité
+`exception > vacances > base` est devenue un ordre de superposition de tranches, ce qui la rend
+lisible d'un coup d'œil ; `applyException()` et `recomputeWindow()` ont convergé vers le même
+chemin, et la fenêtre recalculée s'élargit d'un jour **en arrière** (la fin d'une journée appartient
+au parent du lendemain : changer un jour change la case du précédent).
+
+**Deux VO purs, chacun avec son jumeau Dart** : `DaySegments` (découpage, superposition, parent
+majoritaire) et `SwapDefaults` (le créneau proposé). Les deux exemples de la demande sont rejoués
+tels quels en test, des deux côtés — c'est la seule protection contre la divergence des jumeaux.
+
+**Une subtilité trouvée par les tests** : la fusion des tranches voisines doit se faire sur le
+**parent**, pas sur le couple (parent, origine). Sans quoi l'échange du 28 (« B jusqu'à 8h, A
+ensuite ») laissait un filet à 18:00 — la frontière entre la tranche d'échange et le rythme qui la
+prolonge, chez le même parent : un passage dessiné là où personne ne bouge.
+
+**Le rendu** : le gabarit pose `--split-stops` (les arrêts du dégradé) et une position de filet par
+frontière ; côté mobile, un `LinearGradient` à N arrêts et un `CustomPainter` qui trace autant de
+filets. Au plus trois tranches, donc deux filets — ce que deux pseudo-éléments savent porter. Les
+lecteurs d'écran reçoivent l'énumération complète (« chez X de 00:00 à 19:00, chez Y de 19:00 à
+24:00 »), le filet restant le seul canal qui survive au contraste forcé (§8.1).
+
+**L'écran** : le formulaire d'échange est **replié** derrière son bouton (le geste courant reste
+« j'accepte ce qui est proposé »), quatre champs préremplis, corrigeables. Côté mobile, une feuille
+modale avec les mêmes bornes. Les Réglages gagnent l'heure de début de journée et deux champs
+d'heure facultatifs sur le formulaire d'exception.
+
+**Ce qui n'a pas bougé** : les statistiques comptent toujours des **jours entiers** — elles les
+créditent simplement au parent majoritaire ; le contrat reste rétrocompatible (heures absentes =
+journées entières) ; aucune dépendance ajoutée, `INSTALL.md` inchangé.
+
+Portes : backend **483 tests / 4 282 assertions**, couverture **87,3 %**, PHPStan 0, cs-fixer 0,
+Twig 38 ; mobile **449 tests**, couverture **84,6 %**, analyze 0, format 0 ; **E2E 23/23** (le
+parcours Lot 3 exerce le formulaire horaire, la case bicolore et l'annulation). OpenAPI ré-exporté,
+**client Dart régénéré**, une migration, registre des données complété (tranches et heures :
+organisation, pas identité).
+
+### 2026-09-10 — Ré-échanger un jour défait l'échange, il ne l'empile pas
+
+**Demande** : « sur le planning de garde, lorsque l'on clique sur un jour puis sur "Échanger ce
+jour", si l'on ré-échange ce même jour, alors il ne faut pas mettre 2 exceptions, mais supprimer
+l'ancienne ».
+
+**Le défaut** : l'action ne savait que **créer**. Un premier échange posait une exception d'un jour
+(jour chez B) ; le second en posait une deuxième sur la **même date** (retour chez A). Les deux
+coexistaient : `rebuildWindow` applique les exceptions triées par date de début, si bien que **l'ordre
+de lecture**, et non l'intention, décidait chez qui l'enfant dormait après une régénération ; et la
+liste des exceptions des Réglages affichait deux lignes contradictoires sur la même journée.
+
+**Le geste, côté fiche** : `DayDetail::revertibleException()` (jumeau Dart
+`CustodyDayDetail.revertibleException`) répond « cette exception ne porte que ce jour-là, et c'est
+bien elle qui donne l'attribution courante ». Quand elle existe, la fiche remplace « Échanger ce
+jour » par **« Annuler l'échange »**, qui **supprime** l'exception (`garde#revertDay` → `DELETE`,
+`_revert` côté mobile) : le jour revient au rythme habituel ou à sa règle de vacances, sans trace.
+Le libellé change parce que l'action change — promettre un échange pour opérer une suppression
+aurait été un mensonge d'interface.
+
+**Le garde-fou, côté serveur** — il vaut pour tout client, l'API mobile comme un appel direct :
+`CreateExceptionProcessor` cherche les exceptions de **plage identique** avant de créer. Même plage
+**et même parent** ⇒ l'existante est rendue telle quelle, motif mis à jour s'il a changé (l'opération
+est déclarée idempotente côté clients, le serveur tient enfin la promesse) ; parent différent ⇒
+l'ancienne est **supprimée**
+(tracée à l'audit) et remplacée. Une plage seulement **chevauchante** n'est pas touchée : une
+exception de séjour et un échange d'un jour à l'intérieur sont deux intentions distinctes.
+
+**Limite assumée** : une exception de **plusieurs** jours ne s'annule pas depuis la fiche d'un seul
+— la retirer là toucherait des dates que l'utilisateur ne regarde pas ; elle reste offerte à
+l'échange (qui pose alors une exception d'un jour, prioritaire) et se supprime depuis les Réglages.
+
+Portes : backend **481 tests / 4 220 assertions**, couverture **87,3 %**, PHPStan 0, cs-fixer 0 ;
+mobile **451 tests**, couverture **84,6 %**, analyze 0, format 0 ; **E2E 23/23** (le parcours Lot 3
+échange puis ré-échange la même case, et vérifie que la liste des exceptions se vide). Contrat
+OpenAPI **inchangé** — client Dart non régénéré ; aucune migration, registre des données inchangé,
+aucune dépendance ajoutée.
+
+### 2026-09-10 — Le jour d'échange se partage entre les deux parents
+
+**Demande** : « sur le planning de garde, on sauvegarde l'heure d'échange, je voudrais me baser sur
+l'heure pour la couleur des jours d'échange d'enfant. Si l'échange se fait le mercredi 9 septembre à
+18h, alors la case du 9 septembre doit avoir les couleurs des 2 parents proportionnellement au temps
+passé ».
+
+**Le décalage** : `CustodyDay` désigne **un** parent — l'**arrivant**, celui qui reçoit les enfants
+ce jour-là. La case était peinte en entier à sa couleur, si bien qu'un échange fixé à 19:00 (défaut
+du rythme) affichait comme une journée pleine un jour dont **79,2 %** s'étaient passés chez l'autre.
+Le planning surestimait visuellement chaque arrivée.
+
+**Le calcul** — un VO pur, `App\Service\Custody\HandoverSplit`, et son jumeau Dart
+`handover_split.dart` (jeux de cas identiques, comme `ParentInitials`) :
+
+- un jour est un **jour d'échange** quand son attributaire diffère de celui de la **veille**, les
+  deux jours étant matérialisés ;
+- la part **gauche** revient au parent qui rend les enfants (minuit → `handover_time`), la droite à
+  l'arrivant ; 18:00 ⇒ 75 / 25, 19:00 ⇒ 79,2 / 20,8 ;
+- **rien n'est deviné** : veille non matérialisée (début de l'horizon généré, bout de l'horizon
+  glissant), heure absente, heure illisible ou échange à minuit ⇒ la case reste unie.
+
+Conséquence pratique : les deux vues chargent **la veille du premier jour affiché** — le 1er du mois
+pour `/garde` (une requête d'un jour, tenue **hors** de `$daysByDate` pour ne pas colorer une seule
+case de complément de semaine), le lundi pour la mini-semaine, et côté mobile une
+`custodyDaysWindow` distincte de la fenêtre des **statistiques**, qui reste le mois.
+
+**Le rendu** : dégradé à arête franche + **filet de 2 px** à la frontière. Le filet est un
+pseudo-élément à **bordure** (web) et un `CustomPainter` (mobile), jamais un fond : `forced-colors`
+écrase les fonds — et avec eux le dégradé — mais force les bordures à la couleur de texte du
+système. C'est donc le seul canal qui dise encore « journée partagée » en niveaux de gris et en
+contraste forcé, où les deux teintes se confondent (§8.1). L'initiale de la case reste celle de
+l'**attributaire** (il garde les enfants la nuit) ; les lecteurs d'écran reçoivent la phrase
+entière — « chez X jusqu'à 19:00, puis chez Y » — et une entrée de légende explique le filet, mais
+seulement si le mois contient effectivement une case partagée.
+
+La **fiche de jour** ne se contente pas de la couleur : elle écrit « Journée partagée · chez Alice
+jusqu'à 19:00, puis chez Bob », au-dessus de la transmission du jour suivant. Une proportion lue sur
+une teinte ne se vérifie nulle part ailleurs.
+
+**Ce que le correctif ne fait pas, délibérément** : ni le moteur (priorité exception > vacances >
+base, un seul parent par `CustodyDay`) ni les **statistiques** — qui comptent des jours entiers sur
+les jours effectifs — ne connaissent cette fraction. Un mois peut donc afficher « 17 / 14 jours » à
+côté de cases partagées : les deux disent la même vérité à deux granularités. Compter des demi-jours
+changerait le sens des statistiques et déborderait la demande.
+
+Amendement produit écrit au **cdc §8.3** (définition, proportion, marqueur non chromatique,
+surfaces, non-contamination du moteur).
+
+Portes : backend **479 tests / 4 185 assertions**, couverture **87,3 %**, PHPStan 0, cs-fixer 0,
+Twig 38 ; mobile **449 tests**, couverture **84,1 %**, analyze 0, format 0 ; **E2E 23/23**. Contrat
+OpenAPI **inchangé** (le partage se dérive côté client des jours et du rythme déjà exposés) — client
+Dart non régénéré ; registre des données inchangé ; aucune dépendance ajoutée.
 
 ### 2026-09-10 — Session web glissante : une heure d'inactivité tolérée
 

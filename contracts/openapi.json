@@ -6835,6 +6835,7 @@
                         "type": "string"
                     },
                     "parentMembershipId": {
+                        "description": "Parent **majoritaire** en heures : celui \u00e0 qui la journ\u00e9e est compt\u00e9e.",
                         "type": [
                             "string",
                             "null"
@@ -6843,6 +6844,19 @@
                     "source": {
                         "default": "",
                         "type": "string"
+                    },
+                    "segments": {
+                        "description": "D\u00e9coupage horaire de la journ\u00e9e (cdc \u00a73.4), toujours renseign\u00e9 et couvrant `00:00` \u2192 `24:00` :\nune tranche pour une journ\u00e9e unie, deux quand la transmission tombe dedans, trois quand un\n\u00e9change partiel est encadr\u00e9 par le rythme. `parent` est le membership, `source` l'origine\n(`base`/`holiday`/`exception`) de la tranche.",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        }
                     }
                 }
             },
@@ -6859,6 +6873,7 @@
                                 "type": "string"
                             },
                             "parentMembershipId": {
+                                "description": "Parent **majoritaire** en heures : celui \u00e0 qui la journ\u00e9e est compt\u00e9e.",
                                 "type": [
                                     "string",
                                     "null"
@@ -6867,6 +6882,19 @@
                             "source": {
                                 "default": "",
                                 "type": "string"
+                            },
+                            "segments": {
+                                "description": "D\u00e9coupage horaire de la journ\u00e9e (cdc \u00a73.4), toujours renseign\u00e9 et couvrant `00:00` \u2192 `24:00` :\nune tranche pour une journ\u00e9e unie, deux quand la transmission tombe dedans, trois quand un\n\u00e9change partiel est encadr\u00e9 par le rythme. `parent` est le membership, `source` l'origine\n(`base`/`holiday`/`exception`) de la tranche.",
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    }
+                                }
                             }
                         }
                     }
@@ -6888,6 +6916,19 @@
                     "endDate": {
                         "default": "",
                         "type": "string"
+                    },
+                    "startTime": {
+                        "description": "Bornes horaires (HH:MM) ; `null` des deux c\u00f4t\u00e9s = journ\u00e9es enti\u00e8res.",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "endTime": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     },
                     "parentMembershipId": {
                         "type": [
@@ -6919,6 +6960,19 @@
                         ]
                     },
                     "endDate": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "startTime": {
+                        "description": "Bornes horaires (HH:MM) de l'\u00e9change. Omises = journ\u00e9es enti\u00e8res, comme avant qu'elles\nexistent ; renseign\u00e9es, l'exception court de `startDate startTime` (inclus) \u00e0\n`endDate endTime` (exclu).",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "endTime": {
                         "type": [
                             "string",
                             "null"
@@ -6958,6 +7012,19 @@
                             "endDate": {
                                 "default": "",
                                 "type": "string"
+                            },
+                            "startTime": {
+                                "description": "Bornes horaires (HH:MM) ; `null` des deux c\u00f4t\u00e9s = journ\u00e9es enti\u00e8res.",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "endTime": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
                             },
                             "parentMembershipId": {
                                 "type": [
@@ -6999,6 +7066,11 @@
                         "type": "integer"
                     },
                     "handoverTime": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "dayStartTime": {
+                        "description": "Heure \u00e0 laquelle \u00ab la journ\u00e9e commence \u00bb : d\u00e9faut propos\u00e9 aux \u00e9changes partiels.",
                         "default": "",
                         "type": "string"
                     },
@@ -7068,6 +7140,13 @@
                         ]
                     },
                     "handoverTime": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "dayStartTime": {
+                        "description": "Heure de \u00ab d\u00e9but de journ\u00e9e \u00bb (HH:MM) ; omise = inchang\u00e9e (08:00 \u00e0 la cr\u00e9ation).",
                         "type": [
                             "string",
                             "null"
@@ -7143,6 +7222,11 @@
                                 "type": "integer"
                             },
                             "handoverTime": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "dayStartTime": {
+                                "description": "Heure \u00e0 laquelle \u00ab la journ\u00e9e commence \u00bb : d\u00e9faut propos\u00e9 aux \u00e9changes partiels.",
                                 "default": "",
                                 "type": "string"
                             },

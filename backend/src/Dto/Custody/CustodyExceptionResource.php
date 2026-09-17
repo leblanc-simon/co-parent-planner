@@ -50,6 +50,9 @@ class CustodyExceptionResource
     public string $id = '';
     public string $startDate = '';
     public string $endDate = '';
+    /** Bornes horaires (HH:MM) ; `null` des deux côtés = journées entières. */
+    public ?string $startTime = null;
+    public ?string $endTime = null;
     public ?string $parentMembershipId = null;
     public ?string $reason = null;
 
@@ -59,6 +62,8 @@ class CustodyExceptionResource
         $dto->id = (string) $e->getId();
         $dto->startDate = $e->getStartDate()->format('Y-m-d');
         $dto->endDate = $e->getEndDate()->format('Y-m-d');
+        $dto->startTime = $e->getStartTime();
+        $dto->endTime = $e->getEndTime();
         $dto->parentMembershipId = $e->getParentMembership() ? (string) $e->getParentMembership()->getId() : null;
         $dto->reason = $e->getReason();
 

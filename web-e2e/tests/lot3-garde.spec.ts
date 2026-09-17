@@ -128,6 +128,19 @@ test('Garde : configurer un rythme → calendrier coloré → échanger un jour'
   // La légende porte le même marqueur — purement colorée, elle n'expliquerait rien.
   await expect(page.locator('.garde-dot--a').first()).not.toBeEmpty();
 
+  // ---- Journées d'échange partagées (cdc §8.3) ----
+  // Le rythme alterne chaque dimanche : le mois affiché contient quatre ou cinq jours d'échange.
+  // Une case d'échange porte les DEUX teintes, au prorata de l'heure (19:00 par défaut ⇒ 79,2 %
+  // au parent qui rend les enfants) — la part est posée en ligne sur la case.
+  const splitDay = page.locator('.garde-day--split').first();
+  await expect(splitDay).toBeVisible();
+  await expect(splitDay).toHaveAttribute('style', /--split-share:\s*79\.2%/);
+  // Le jour reste attribué à l'arrivant : sa classe A/B et son marqueur ne bougent pas.
+  await expect(splitDay).toHaveClass(/garde-day--(a|b)\b/);
+  await expect(splitDay.locator('.garde-day__parent')).not.toBeEmpty();
+  // La légende explique le filet, sans quoi le partage ne se lit qu'à la couleur.
+  await expect(page.locator('.garde-legend__split')).toBeVisible();
+
   // Sous contraste forcé, le système écrase fonds et bordures : le marqueur, qui est du texte,
   // doit rester visible. C'est le seul canal d'information qui subsiste dans ce mode.
   await page.emulateMedia({ forcedColors: 'active' });
@@ -177,14 +190,36 @@ test('Garde : configurer un rythme → calendrier coloré → échanger un jour'
   await page.keyboard.press('Escape');
   await expect(daySheet).not.toBeVisible();
 
-  // Réouverture puis échange effectif depuis la fiche → exception d'un jour.
+  // Réouverture puis échange effectif depuis la fiche. L'échange se négocie en HEURES (cdc §3.4) :
+  // le formulaire propose le créneau que la famille vivrait — début à la transmission de la veille
+  // quand la garde se prolonge, le matin même sinon — et tout y est corrigeable.
   await activityCell.click();
   await expect(daySheet).toBeVisible();
-  await daySheet.getByRole('button', { name: 'Échanger ce jour' }).click();
+  await daySheet.getByText('Échanger ce jour').click();
+  const swapForm = daySheet.locator('.day-sheet__swap-form');
+  await expect(swapForm).toBeVisible();
+  // Les quatre bornes sont préremplies : rien à saisir pour accepter la proposition.
+  await expect(swapForm.locator('[name="startTime"]')).not.toHaveValue('');
+  await expect(swapForm.locator('[name="endTime"]')).not.toHaveValue('');
+  await swapForm.getByRole('button', { name: "Confirmer l'échange" }).click();
   await expect(page.locator('.garde-day--exception').first()).toBeVisible({ timeout: 15_000 });
+  // La case échangée porte les deux teintes : l'échange ne couvre pas la journée entière.
+  await expect(page.locator('.garde-day--split').first()).toBeVisible();
   // L'exception « Échange » figure dans la liste des exceptions, désormais sous Paramètres.
   await page.goto('/settings?tab=garde');
   await expect(page.locator('.garde-list')).toContainText('Échange');
+
+  // Ré-échanger la MÊME date défait l'échange : l'exception est retirée et le jour revient au
+  // rythme — au lieu d'empiler une seconde exception contradictoire sur cette date.
+  await page.goto(`/garde?month=${nextMonth}`);
+  await activityCell.click();
+  await expect(daySheet).toBeVisible({ timeout: 15_000 });
+  await daySheet.getByRole('button', { name: "Annuler l'échange" }).click();
+  await expect(activityCell).not.toHaveClass(/garde-day--exception/, { timeout: 15_000 });
+  // Plus AUCUNE exception sur la période : la liste disparaît avec sa dernière entrée (elle
+  // aurait porté deux lignes contradictoires si le second échange s'était empilé).
+  await page.goto('/settings?tab=garde');
+  await expect(page.locator('#sec-exceptions')).not.toContainText('Échange');
 
   // ---- Couleurs du planning choisies par le spectateur (cdc §8.2, évolution E5) ----
   // Le planning part sur les deux teintes du §8 : terracotta pour A, teal pour B.

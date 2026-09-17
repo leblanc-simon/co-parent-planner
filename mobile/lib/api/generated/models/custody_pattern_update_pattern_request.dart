@@ -14,6 +14,7 @@ class CustodyPatternUpdatePatternRequest {
     this.anchorDate,
     this.handoverWeekday,
     this.handoverTime,
+    this.dayStartTime,
     this.customPattern,
     this.settings,
     this.parentAMembershipId,
@@ -26,6 +27,9 @@ class CustodyPatternUpdatePatternRequest {
   final String? anchorDate;
   final int? handoverWeekday;
   final String? handoverTime;
+
+  /// Heure de « début de journée » (HH:MM) ; omise = inchangée (08:00 à la création).
+  final String? dayStartTime;
   final List<String>? customPattern;
 
   /// Réglages du modèle `midweek_weekends` (US-CUST-1) : jours de week-end, parent de chaque jour.

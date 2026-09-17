@@ -573,8 +573,16 @@
                     <div class="field">
                         <label for="g-time">Heure d'échange</label>
                         <input id="g-time" name="handoverTime" type="time" value="{{ pattern ? pattern.handoverTime : '19:00' }}">
+                        <p class="field__hint">Les enfants changent de foyer à cette heure-là, le dernier jour de chaque période de garde.</p>
                     </div>
-                    <div class="field"></div>
+                    {# Heure de « début de journée » (cdc §3.4) : proposée par défaut quand un
+                       échange ponctuel ne peut pas s'adosser à la transmission de la veille — le
+                       parent vient alors chercher les enfants le matin même. #}
+                    <div class="field">
+                        <label for="g-day-start">Heure de début de journée</label>
+                        <input id="g-day-start" name="dayStartTime" type="time" value="{{ pattern ? pattern.dayStartTime : '08:00' }}">
+                        <p class="field__hint">Proposée par défaut lorsqu'un jour est échangé sans reprendre la garde de la veille.</p>
+                    </div>
                     {# Sans rythme existant, `parentAId`/`parentBId` sont nuls : aucun `selected`
                        n'était posé et les deux sélecteurs retombaient sur la PREMIÈRE option, donc
                        sur le même membre. L'enregistrement ne pouvait alors qu'échouer (l'API exige
@@ -604,9 +612,13 @@
     <section class="card" id="sec-exceptions" style="margin-bottom:1.25rem">
         <h2 class="settings-section__title">Exceptions</h2>
         <p class="settings-section__sub">Attribuez ponctuellement une période à un parent (prioritaire sur le rythme et les vacances).</p>
+        {# Heures facultatives : vides, l'exception couvre des journées entières — la forme d'avant
+           qu'elles existent. Renseignées, elle court de la première à la seconde (cdc §3.4). #}
         <form data-action="submit->garde#addException" class="garde-exc-form">
             <input name="startDate" type="date" required aria-label="Date de début">
+            <input name="startTime" type="time" aria-label="Heure de début (facultative)" placeholder="00:00">
             <input name="endDate" type="date" required aria-label="Date de fin">
+            <input name="endTime" type="time" aria-label="Heure de fin (facultative)" placeholder="24:00">
             <select name="parentMembershipId" aria-label="Parent">{% for m in parents %}<option value="{{ m.id }}">{{ m.user.fullName ?: m.user.email }}</option>{% endfor %}</select>
             <input name="reason" placeholder="Motif (optionnel)" maxlength="200" aria-label="Motif (optionnel)">
             <button class="btn btn--ghost" type="submit">Ajouter</button>
@@ -615,7 +627,7 @@
         <ul class="garde-list">
             {% for e in custodyExceptions %}
             <li>
-                <span>{{ e.startDate|date('d/m/Y') }} → {{ e.endDate|date('d/m/Y') }} · chez {{ e.parentMembership ? (e.parentMembership.user.fullName ?: e.parentMembership.user.email) : '—' }}{% if e.reason %} · {{ e.reason }}{% endif %}</span>
+                <span>{{ e.startDate|date('d/m/Y') }}{% if e.startTime %} {{ e.startTime }}{% endif %} → {{ e.endDate|date('d/m/Y') }}{% if e.endTime %} {{ e.endTime }}{% endif %} · chez {{ e.parentMembership ? (e.parentMembership.user.fullName ?: e.parentMembership.user.email) : '—' }}{% if e.reason %} · {{ e.reason }}{% endif %}</span>
                 <button class="btn btn--ghost btn--danger" type="button" data-action="garde#deleteException" data-exception-id="{{ e.id }}"
                         data-exception-label="du {{ e.startDate|date('d/m/Y') }} au {{ e.endDate|date('d/m/Y') }}">Supprimer</button>
             </li>

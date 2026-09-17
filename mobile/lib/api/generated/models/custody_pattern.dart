@@ -19,6 +19,7 @@ class CustodyPattern {
     this.kind = '',
     this.handoverWeekday = 0,
     this.handoverTime = '',
+    this.dayStartTime = '',
   });
   
   factory CustodyPattern.fromJson(Map<String, Object?> json) => _$CustodyPatternFromJson(json);
@@ -28,6 +29,9 @@ class CustodyPattern {
   final String? anchorDate;
   final int handoverWeekday;
   final String handoverTime;
+
+  /// Heure à laquelle « la journée commence » : défaut proposé aux échanges partiels.
+  final String dayStartTime;
   final List<String>? customPattern;
 
   /// Réglages du modèle `midweek_weekends` (US-CUST-1) : jours de week-end, parent de chaque jour.

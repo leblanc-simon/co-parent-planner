@@ -110,8 +110,30 @@ void main() {
       api.CustodyDay(date: '2026-07-04', parentMembershipId: 'mB'),
     ];
 
-    test('rend le premier jour attribué à l\'autre parent', () {
-      expect(nextHandover(days, '2026-07-01', 'mA')?.date, '2026-07-03');
+    test('rend la première tranche confiée à l\'autre parent', () {
+      final handover = nextHandover(days, '2026-07-01', 'mA');
+
+      expect(handover?.day.date, '2026-07-03');
+      // Journée non découpée : la tranche commence à minuit.
+      expect(handover?.segment.fromTime, '00:00');
+    });
+
+    test('lit l\'HEURE du changement sur le découpage du jour', () {
+      const sliced = [
+        api.CustodyDay(
+          date: '2026-07-02',
+          parentMembershipId: 'mA',
+          segments: [
+            {'from': '00:00', 'to': '18:00', 'parent': 'mA', 'source': 'base'},
+            {'from': '18:00', 'to': '24:00', 'parent': 'mB', 'source': 'base'},
+          ],
+        ),
+      ];
+
+      expect(
+        nextHandover(sliced, '2026-07-01', 'mA')?.segment.fromTime,
+        '18:00',
+      );
     });
 
     test('ignore les jours antérieurs ou égal au jour consulté', () {
@@ -126,7 +148,10 @@ void main() {
     test('l\'ordre d\'entrée n\'influe pas sur le résultat', () {
       final shuffled = days.reversed.toList();
 
-      expect(nextHandover(shuffled, '2026-07-01', 'mA')?.date, '2026-07-03');
+      expect(
+        nextHandover(shuffled, '2026-07-01', 'mA')?.day.date,
+        '2026-07-03',
+      );
     });
   });
 

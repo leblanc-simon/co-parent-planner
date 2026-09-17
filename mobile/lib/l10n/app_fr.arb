@@ -194,6 +194,48 @@
       }
     }
   },
+  "custodyDaySplitSemantics": "{date} — {slices}",
+  "@custodyDaySplitSemantics": {
+    "description": "Annonce d'une case de calendrier une journée partagée : les tranches, dans l'ordre.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "slices": {
+        "type": "String"
+      }
+    }
+  },
+  "custodyDaySlice": "chez {parent} de {from} à {to}",
+  "@custodyDaySlice": {
+    "description": "Une tranche horaire d'une journée partagée : chez qui, de quand à quand.",
+    "placeholders": {
+      "parent": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "custodySharedDay": "Journée partagée : le filet marque l'heure du passage d'un parent à l'autre",
+  "@custodySharedDay": {
+    "description": "Entrée de légende expliquant le filet des cases partagées.",
+    "placeholders": {
+    }
+  },
+  "custodySharedDayDetail": "Journée partagée · {slices}",
+  "@custodySharedDayDetail": {
+    "description": "Fiche de jour : répartition d'une journée partagée, tranche par tranche.",
+    "placeholders": {
+      "slices": {
+        "type": "String"
+      }
+    }
+  },
   "custodyColorsTitle": "Couleurs du planning",
   "custodyColorsHint": "Ces teintes ne changent que votre affichage : l'autre parent garde les siennes. L'initiale de chaque parent reste affichée sur les cases.",
   "custodyColorsSaved": "Couleurs du planning enregistrées.",
@@ -286,6 +328,66 @@
   "custodyAssignedTo": "Confié à",
   "custodyNoParent": "Non attribué",
   "custodySwapped": "Jour échangé.",
+  "custodyRevertSwap": "Annuler l'échange",
+  "custodySwapIntro": "Confier ce jour à {parent}, sur le créneau de votre choix.",
+  "@custodySwapIntro": {
+    "description": "Feuille d'échange : rappelle à qui la journée est confiée.",
+    "placeholders": {
+      "parent": {
+        "type": "String"
+      }
+    }
+  },
+  "custodyDayStartTime": "Heure de début de journée",
+  "custodyDayStartTimeHint": "{time} — proposée lorsqu'un jour est échangé sans reprendre la garde de la veille.",
+  "@custodyDayStartTimeHint": {
+    "description": "Réglages du rythme : à quoi sert l'heure de début de journée.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "custodyHandoverTimeHint": "{time} — les enfants changent de foyer à cette heure-là, le dernier jour de chaque période.",
+  "@custodyHandoverTimeHint": {
+    "description": "Réglages du rythme : quand a lieu la transmission.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "custodySwapFrom": "Début",
+  "custodySwapTo": "Fin",
+  "custodySwapConfirm": "Confirmer l'échange",
+  "custodySwapDayBefore": "la veille ({date})",
+  "@custodySwapDayBefore": {
+    "description": "Option de créneau : l'échange commence la veille du jour consulté.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "custodySwapSameDay": "le jour même ({date})",
+  "@custodySwapSameDay": {
+    "description": "Option de créneau : la borne tombe le jour consulté.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "custodySwapDayAfter": "le lendemain ({date})",
+  "@custodySwapDayAfter": {
+    "description": "Option de créneau : l'échange finit le lendemain du jour consulté.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "custodyReverted": "Échange annulé — le jour revient au rythme habituel.",
   "custodySwapUnavailable": "Échange impossible : l'autre parent n'est pas défini.",
   "custodyParentsRequired": "Choisissez deux parents distincts.",
   "custodyExceptionsTitle": "Exceptions",

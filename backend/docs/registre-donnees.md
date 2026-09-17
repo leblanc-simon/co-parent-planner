@@ -83,6 +83,16 @@ les références (`SET NULL`) sans casser les liens/audits :
   aucune donnée personnelle propre (que des références).
 - **`OverlayPreference`** (Lot 5) : opt-in d'affichage overlay par (`Membership`, `FamilyLink`, `view`).
   **Donnée technique de préférence**, non personnelle, non 🔒 ; FK en `CASCADE`. Aucun champ identité/contenu.
+- **`CustodyDay.segments`** (échanges horaires, 2026-09-11) : découpage horaire de la journée,
+  `[{from, to, parent, source}, …]` — le `parent` y est un **identifiant de membership**, jamais un
+  nom ; les heures sont des données d'organisation, pas d'identité. Colonne dérivée, **régénérable**
+  par le moteur : l'anonymisation d'un membre annule `parent_membership_id` (`SET NULL`) et la
+  régénération suivante réécrit les tranches. Rien de nouveau à protéger, aucun champ `#[PersonalData]`.
+- **`CustodyException.start_time` / `end_time`** (échanges horaires, 2026-09-11) : bornes horaires
+  d'un échange ponctuel. Donnée d'**organisation** (comme les dates déjà présentes), non identifiante,
+  non 🔒 ; visible des seuls membres habilités `custody`.
+- **`CustodyPattern.day_start_time`** : réglage de famille (« heure à laquelle la journée commence »),
+  au même titre que `handover_time`. Aucune donnée personnelle.
 
 ## Champs (Lot 5 — Familles liées / overlay)
 

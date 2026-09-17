@@ -8,6 +8,8 @@ part of 'custody_exception.dart';
 
 CustodyException _$CustodyExceptionFromJson(Map<String, dynamic> json) =>
     CustodyException(
+      startTime: json['startTime'] as String?,
+      endTime: json['endTime'] as String?,
       parentMembershipId: json['parentMembershipId'] as String?,
       reason: json['reason'] as String?,
       id: json['id'] as String? ?? '',
@@ -20,6 +22,8 @@ Map<String, dynamic> _$CustodyExceptionToJson(CustodyException instance) =>
       'id': instance.id,
       'startDate': instance.startDate,
       'endDate': instance.endDate,
+      'startTime': instance.startTime,
+      'endTime': instance.endTime,
       'parentMembershipId': instance.parentMembershipId,
       'reason': instance.reason,
     };

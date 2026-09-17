@@ -103,11 +103,15 @@ S'applique aux familles **séparées** uniquement.
 Paramètres communs : **date d'ancrage** (début du cycle), **jour d'échange** (ex. dimanche), **heure d'échange** (ex. 19h00). La transmission se fait le soir du jour d'échange.
 
 **Génération** (moteur idempotent) :
-1. À partir du modèle + ancrage, générer des enregistrements **`CustodyDay`** (un par jour, parent attribué) sur un **horizon glissant** (≈ 18 mois), régénérés à chaque modification du modèle.
+1. À partir du modèle + ancrage, déterminer le parent **nominal** de chaque jour sur un **horizon
+   glissant** (≈ 18 mois), régénéré à chaque modification du modèle, puis **découper la journée** :
+   le parent du jour jusqu'à `handover_time`, celui du **lendemain** ensuite (convention de
+   transmission, §8.3). Sans lendemain connu, la journée reste entière.
 2. Appliquer par-dessus, par priorité croissante :
-   - **Règles de vacances** (`HolidayRule`) : pour chaque période de vacances scolaires, une règle (`alternating_weeks`, `split_50_50`, `fixed_parent`, `eve_alternating` pour les réveillons, etc.) qui **écrase** la base sur la période.
-   - **Exceptions manuelles** (`CustodyException`) : échange ponctuel d'un jour ou d'une plage (priorité maximale), marquées visuellement « exceptionnel » (bordure pointillée).
-3. Recalculer les **statistiques** (jours par parent sur la période affichée) à partir des `CustodyDay` effectifs.
+   - **Règles de vacances** (`HolidayRule`) : pour chaque période de vacances scolaires, une règle (`alternating_weeks`, `split_50_50`, `fixed_parent`, `eve_alternating` pour les réveillons, etc.) qui **écrase** la base sur la période — elle change le parent nominal, donc le découpage suit.
+   - **Exceptions manuelles** (`CustodyException`) : échange ponctuel d'une plage, **à l'heure près** (priorité maximale), marquées visuellement « exceptionnel » (bordure pointillée). Elles s'appliquent **littéralement**, sur leurs propres bornes, sans suivre la convention de transmission : c'est ce qui permet de dire « du 25 à 18:00 au 26 à 18:00 ».
+3. Écrire **une ligne par jour** : les tranches (`segments`), le parent **majoritaire** en heures (celui à qui le jour est compté) et la source la plus prioritaire présente dans la journée.
+4. Recalculer les **statistiques** (jours par parent sur la période affichée) à partir des `CustodyDay` effectifs — toujours en **jours entiers**, crédités au parent majoritaire.
 
 **Vacances scolaires** : importées automatiquement depuis la source officielle (voir §4.7), par **zone** (A/B/C), **académie** et **année scolaire**. L'utilisateur peut ensuite affecter une règle à chaque période.
 
@@ -156,7 +160,12 @@ Format des user stories : `En tant que <rôle>, je veux <action> afin de <béné
 - US-CUST-4 — *…ajouter une exception manuelle (échange d'un jour ou d'une plage).*
 - US-CUST-5 — *…visualiser le calendrier mensuel coloré par parent, avec les jours exceptionnels distincts et les statistiques de jours par parent.*
 - US-CUST-6 — *…ouvrir le détail d'un jour (chez qui, transmission, activités) et proposer un échange.*
+- US-CUST-10 — *…échanger un jour **à l'heure près** : je choisis quand la garde commence (la veille ou le jour même) et quand elle finit (le jour même ou le lendemain).* **(décision produit 2026-09-11)**
 - CA : modification du modèle ⇒ régénération des `CustodyDay` futurs sans écraser les exceptions ni les règles vacances ; priorité exception > règle vacances > base ; stats recalculées ; édition réservée au droit `custody=edit`.
+- CA (US-CUST-10) : le moteur **matérialise le découpage horaire** de chaque journée (`CustodyDay.segments`, cf. §8.3) ; une exception porte des bornes horaires facultatives (`start_time`/`end_time`, absentes = journées entières, forme historique) et s'applique **littéralement** par-dessus le nominal, sans suivre la convention de transmission du rythme ; le formulaire d'échange **propose** le créneau que la famille vivrait et laisse tout corriger :
+  - la veille appartient déjà au parent qui récupère ⇒ la garde est **prolongée** depuis la transmission de la veille (« A → 25, B → 26-28, échange 18:00 : le 26 pour A » ⇒ du **25 18:00** au **26 18:00**) ;
+  - sinon ⇒ elle **reprend le matin même**, à l'heure de début de journée de la famille (`CustodyPattern.day_start_time`, 08:00 par défaut, réglable dans Paramètres › Garde) — « le 28 pour A » ⇒ du **28 08:00** au **28 18:00** ;
+  - un ré-échange du même jour **défait** l'échange (l'exception est retirée) au lieu d'en empiler une seconde ; deux exceptions ne peuvent pas se superposer sur les mêmes dates (la nouvelle remplace l'ancienne).
 
 ### 3.4 Agenda
 - US-AG-1 — *…créer un événement (titre, catégorie, enfant(s), responsable, date/heure, lieu).*
@@ -304,9 +313,9 @@ erDiagram
 - **Membership** : user_id, family_id, role (`parent`|`step_parent`|`child`), is_admin (bool), child_id (nullable, si compte-enfant), display_color, status (`active`|`invited`). Unicité (user_id, family_id).
 - **Right** : membership_id, domain (`custody`|`agenda`|`children_notes`|`expenses`|`exchanges`|`family_settings`), level (`none`|`view`|`edit`). (Parent : ignoré/forcé `edit`.)
 - **Child** : family_id, first_name 🔒, color, birth_date, school_label 🔒, info 🔒 (jsonb : liste {label, value} libres). *(Pas de champ médical typé.)* **Décision PO du 2026-08-27 — implémentation différée** : ces trois champs décrivent des **mineurs** et étaient les seuls à laisser un dump SQL brut lisible (`Léa | CM2 - École Jules Ferry | [{"label":"Pointure"…`), en contradiction avec l'objectif « ni identités ni contenus » du §7. Ils passent donc en 🔒, **revirement de la décision §5.4 #4** qui les laissait en clair. Tant que le chiffrement n'est pas livré, la base reste en clair : le code, le registre et les lots concernés portent la mention « à chiffrer ».
-- **CustodyPattern** : family_id (1-1), kind (`alternating`|`pattern_2_2_3`|`midweek_weekends`|`custom`), anchor_date, handover_weekday, handover_time, custom_pattern (jsonb : 14 entrées parent A/B), parent_a_membership_id, parent_b_membership_id.
-- **CustodyDay** : family_id, date, parent_membership_id, source (`base`|`holiday`|`exception`). Unicité (family_id, date). *(Matérialisé par le moteur.)*
-- **CustodyException** : family_id, start_date, end_date, parent_membership_id, reason, created_by.
+- **CustodyPattern** : family_id (1-1), kind (`alternating`|`pattern_2_2_3`|`midweek_weekends`|`custom`), anchor_date, handover_weekday, handover_time, **day_start_time** (heure à laquelle « la journée commence », défaut `08:00` — défaut des échanges partiels, §3.3), custom_pattern (jsonb : 14 entrées parent A/B), parent_a_membership_id, parent_b_membership_id.
+- **CustodyDay** : family_id, date, parent_membership_id (**parent majoritaire en heures**), source (`base`|`holiday`|`exception`), **segments** (jsonb : `[{from, to, parent, source}, …]`, `NULL` si la journée est unie — découpage horaire matérialisé, §8.3). Unicité (family_id, date). *(Matérialisé par le moteur.)*
+- **CustodyException** : family_id, start_date, end_date, **start_time**, **end_time** (heures locales `HH:MM`, nullables : absentes = journées entières), parent_membership_id, reason, created_by.
 - **SchoolHoliday** : family_id, label, start_date, end_date, zone, academy, school_year, source (`official`|`manual`).
 - **HolidayRule** : school_holiday_id (1-1), kind (`alternating_weeks`|`split_50_50`|`fixed_parent`|`eve_alternating`|`custom`), params (jsonb).
 - **Event** : family_id, title, category (`sport`|`musique`|`ecole`|`sante`|`autre`), responsible_membership_id, location, description, starts_at, ends_at, all_day (bool), recurrence (jsonb : freq `none|weekly|biweekly|monthly`, until/count, exclude_holidays bool), series_id (nullable). Relation N-N vers Child (table `event_child`), ou flag `whole_family`.
@@ -609,6 +618,35 @@ réattribuer ces deux teintes** (évolution B, `specs/evolutions-2026-09.md`).
 - **Web (Symfony UX)** : recréation directe du HTML/CSS des maquettes en **Twig + CSS**, interactivité via **Stimulus**, navigation via **Turbo**. Médium identique à la maquette ⇒ rendu fidèle naturel.
 - **Desktop** : sidebar fixe (252px, sombre) + zone principale ; gabarit de référence 1320×840 ; grilles 2 colonnes pour Accueil/Garde/Dépenses ; master-détail pour Enfants/Échanges/Paramètres. Responsive : la sidebar se replie en navigation compacte sous un breakpoint.
 - **Mobile (Flutter)** : style iOS 26 « liquid glass » (cf. `ios-frame.jsx` : status bar, dynamic island, grandes en-têtes 34px, listes inset r:26, indicateur home) ; navigation par onglets en bas ; mêmes 7 écrans. Décliner l'esthétique sur Android (Material adapté à la palette).
+
+### 8.3 Journées partagées — AMENDEMENT (décision produit, 2026-09-10, révisé le 2026-09-11)
+
+Un rythme de garde ne bascule pas à minuit : les enfants changent de foyer à `handover_time`. Peindre
+la case entière à la couleur d'un seul parent donne à un échange fixé à 18:00 l'apparence d'une
+journée pleine, alors que trois quarts de la journée se sont passés chez l'autre. Les cases d'une
+**journée partagée** portent donc **les teintes des parents qui s'y succèdent**, au prorata du temps
+passé chez chacun.
+
+- **Convention de transmission (révisée le 2026-09-11)** : la journée appartient au parent du jour
+  **jusqu'à `handover_time`**, puis à celui du **lendemain**. La transmission se lit donc sur la
+  **dernière** case d'un bloc de garde : « A jusqu'au 25, B du 26 au 28, échange à 18:00 » met les
+  enfants chez A jusqu'au **25 à 18:00**, et c'est la case du 25 qui porte les deux couleurs. *(La
+  première version de cet amendement plaçait le partage sur la première case du bloc suivant ; le
+  planning affiché était décalé d'un jour par rapport à ce que vivent les familles.)*
+- **Sans lendemain matérialisé** (bout de l'horizon glissant), la case reste unie : on ne devine pas
+  à qui les enfants sont rendus.
+- **Proportion** : `handover_time` rapporté à 24 h — 18:00 ⇒ 75 % / 25 %. Un échange à minuit ne
+  partage rien. Une journée compte **au plus trois tranches** : un échange partiel encadré par le
+  rythme des deux côtés (« B jusqu'à 8:00, A jusqu'à 18:00, B ensuite »).
+- **Marqueur non chromatique (§8.1)** : un **filet de 2 px** à chaque frontière. C'est une *forme* :
+  elle survit aux niveaux de gris, au daltonisme et à `forced-colors`, où les fonds se confondent.
+  Une entrée de légende l'explique. Les lecteurs d'écran reçoivent l'énumération complète des
+  tranches (« chez X de 00:00 à 18:00, chez Y de 18:00 à 24:00 »).
+- **Initiale de la case et statistiques** : le **parent majoritaire en heures** (décision produit du
+  2026-09-11). À égalité parfaite, celui qui a la nuit. Les statistiques comptent toujours des
+  **jours entiers** — elles créditent ce jour au majoritaire, jamais des demi-journées.
+- **Surfaces** : calendrier de `/garde`, mini-semaine de l'accueil, et leurs équivalents mobiles. La
+  fiche de jour ne se contente pas de la couleur : elle **écrit** les tranches et leurs heures.
 
 ---
 

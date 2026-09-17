@@ -10,6 +10,8 @@ part 'custody_exception.g.dart';
 @JsonSerializable()
 class CustodyException {
   const CustodyException({
+    this.startTime,
+    this.endTime,
     this.parentMembershipId,
     this.reason,
     this.id = '',
@@ -22,6 +24,10 @@ class CustodyException {
   final String id;
   final String startDate;
   final String endDate;
+
+  /// Bornes horaires (HH:MM) ; `null` des deux côtés = journées entières.
+  final String? startTime;
+  final String? endTime;
   final String? parentMembershipId;
   final String? reason;
 

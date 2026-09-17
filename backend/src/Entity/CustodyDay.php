@@ -43,6 +43,19 @@ class CustodyDay
     #[ORM\Column(length: 16, enumType: CustodyDaySource::class)]
     private CustodyDaySource $source = CustodyDaySource::Base;
 
+    /**
+     * Découpage horaire de la journée (cf. `DaySegments`) : `[{from, to, parent, source}, …]`.
+     *
+     * `null` quand la journée est **unie** — le cas courant, et l'état de toutes les lignes écrites
+     * avant que la garde ne connaisse les heures. `parentMembership` porte alors, comme toujours,
+     * le parent de la journée entière ; sinon il porte le parent **majoritaire** en heures, celui à
+     * qui le jour est compté.
+     *
+     * @var list<array{from: string, to: string, parent: ?string, source: string}>|null
+     */
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $segments = null;
+
     public function __construct()
     {
         $this->id = Uuid::v7();
@@ -73,6 +86,20 @@ class CustodyDay
     public function setDate(\DateTimeImmutable $date): static
     {
         $this->date = $date;
+
+        return $this;
+    }
+
+    /** @return list<array{from: string, to: string, parent: ?string, source: string}>|null */
+    public function getSegments(): ?array
+    {
+        return $this->segments;
+    }
+
+    /** @param list<array{from: string, to: string, parent: ?string, source: string}>|null $segments */
+    public function setSegments(?array $segments): static
+    {
+        $this->segments = $segments;
 
         return $this;
     }

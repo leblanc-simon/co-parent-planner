@@ -41,9 +41,20 @@ class CustodyPattern
     #[ORM\Column(type: 'smallint')]
     private int $handoverWeekday = 0;
 
-    /** Heure d'échange locale (HH:MM) — n'influe que sur le libellé de transmission. */
+    /**
+     * Heure d'échange locale (HH:MM) : instant où les enfants passent d'un parent à l'autre, le
+     * **dernier** jour d'un bloc de garde (cf. `DaySegments`). Le moteur en découpe les journées.
+     */
     #[ORM\Column(length: 5)]
     private string $handoverTime = '19:00';
+
+    /**
+     * Heure à laquelle « la journée commence » (HH:MM), proposée par défaut quand un échange
+     * ponctuel ne peut pas s'adosser à la transmission de la veille — la garde reprend alors le
+     * matin même plutôt qu'à minuit.
+     */
+    #[ORM\Column(length: 5, options: ['default' => '08:00'])]
+    private string $dayStartTime = '08:00';
 
     /** @var list<string>|null 14 créneaux "A"/"B" — requis ssi kind=custom. */
     #[ORM\Column(type: 'json', nullable: true)]
@@ -127,6 +138,18 @@ class CustodyPattern
     public function setHandoverTime(string $handoverTime): static
     {
         $this->handoverTime = $handoverTime;
+
+        return $this;
+    }
+
+    public function getDayStartTime(): string
+    {
+        return $this->dayStartTime;
+    }
+
+    public function setDayStartTime(string $dayStartTime): static
+    {
+        $this->dayStartTime = $dayStartTime;
 
         return $this;
     }

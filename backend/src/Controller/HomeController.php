@@ -20,6 +20,9 @@ use App\Repository\UserRepository;
 use App\Security\Auth\TokenHasher;
 use App\Service\Agenda\UpcomingEventsFinder;
 use App\Service\Custody\DayDetailReader;
+use App\Service\Custody\DayPaint;
+use App\Service\Custody\DaySegment;
+use App\Service\Custody\DaySegments;
 use App\Service\Exchange\ExchangeAssembler;
 use App\Web\ActiveFamilyResolver;
 use App\Web\FrenchDate;
@@ -135,26 +138,49 @@ final class HomeController extends AbstractController
         $parentB = $pattern?->getParentB();
         $parentAId = $parentA?->getId();
 
-        $byDate = [];
+        $slotIdOf = static function (?string $parentId) use ($parentAId): ?string {
+            if (null === $parentId) {
+                return null;
+            }
+
+            return (null !== $parentAId && $parentId === (string) $parentAId) ? 'A' : 'B';
+        };
+
+        // Les tranches de chaque journée sont lues sur le jour lui-même : le moteur les a
+        // matérialisées (cdc §3.4), la mini-semaine n'a plus à rejouer la règle de transmission.
+        $dayAt = [];
         foreach ($this->custodyDays->findRange($family, $weekStart, $weekStart->modify('+6 days')) as $d) {
-            $byDate[$d->getDate()->format('Y-m-d')] = $d;
+            $parentId = $d->getParentMembership() ? (string) $d->getParentMembership()->getId() : null;
+            $dayAt[$d->getDate()->format('Y-m-d')] = [
+                'slot' => $slotIdOf($parentId),
+                'source' => $d->getSource()->value,
+                'segments' => array_map(
+                    static fn (DaySegment $seg) => [
+                        'slot' => $slotIdOf($seg->parentId),
+                        'from' => $seg->fromTime(),
+                        'to' => $seg->toTime(),
+                        'percent' => $seg->percent(),
+                    ],
+                    DaySegments::fromArray($d->getSegments(), $parentId, $d->getSource())->segments,
+                ),
+            ];
         }
 
         $cells = [];
         $cursor = $weekStart;
         for ($i = 0; $i < 7; ++$i) {
             $key = $cursor->format('Y-m-d');
-            $cd = $byDate[$key] ?? null;
-            $slot = null;
-            if (null !== $cd && null !== $cd->getParentMembership()) {
-                $slot = (null !== $parentAId && $cd->getParentMembership()->getId()->equals($parentAId)) ? 'A' : 'B';
-            }
+            $segments = $dayAt[$key]['segments'] ?? [];
             $cells[] = [
                 'dow' => (int) $cursor->format('w'),
                 'day' => (int) $cursor->format('j'),
-                'slot' => $slot,
-                'source' => $cd?->getSource()->value,
+                'slot' => $dayAt[$key]['slot'] ?? null,
+                'source' => $dayAt[$key]['source'] ?? null,
                 'isToday' => $key === $todayKey,
+                'segments' => $segments,
+                // Journée partagée : la case porte les deux teintes au prorata, comme le
+                // calendrier de `/garde` — les deux vues montrent le même planning.
+                'paint' => DayPaint::of($segments),
             ];
             $cursor = $cursor->modify('+1 day');
         }

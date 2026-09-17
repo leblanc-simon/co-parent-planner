@@ -48,6 +48,13 @@ abstract final class DateLabels {
   static String dayMonth(String locale, DateTime date) =>
       DateFormat.MMMd(locale).format(date);
 
+  /// « 23 juin » à partir d'une date ISO `AAAA-MM-JJ` du contrat — bornes du créneau d'échange,
+  /// où l'année n'apporte rien (les trois jours proposés se suivent).
+  static String isoDayMonth(String locale, String iso) {
+    final date = CivilDate.of(iso);
+    return date == null ? iso : dayMonth(locale, date);
+  }
+
   /// « 23 juin 2026 » à partir d'une date ISO `AAAA-MM-JJ` du contrat ; renvoie la
   /// chaîne d'origine si elle n'est pas exploitable (jamais d'affichage vide).
   static String isoDayMonthYear(String locale, String iso) {

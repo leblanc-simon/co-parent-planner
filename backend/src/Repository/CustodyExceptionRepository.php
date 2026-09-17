@@ -34,6 +34,32 @@ class CustodyExceptionRepository extends ServiceEntityRepository
     }
 
     /**
+     * Exceptions portant **exactement** la plage [start, end].
+     *
+     * Sert à ce qu'un second échange sur le même jour REMPLACE le premier au lieu de l'empiler :
+     * deux exceptions superposées attribuent le même jour à deux parents, et c'est l'ordre
+     * d'application du moteur — non l'intention de l'utilisateur — qui départage.
+     *
+     * @return list<CustodyException>
+     */
+    public function findByExactRange(Family $family, \DateTimeImmutable $start, \DateTimeImmutable $end): array
+    {
+        /** @var list<CustodyException> $result */
+        $result = $this->createQueryBuilder('e')
+            ->andWhere('e.family = :family')
+            ->andWhere('e.startDate = :start')
+            ->andWhere('e.endDate = :end')
+            ->setParameter('family', $family)
+            ->setParameter('start', $start->format('Y-m-d'))
+            ->setParameter('end', $end->format('Y-m-d'))
+            ->orderBy('e.startDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        return $result;
+    }
+
+    /**
      * Exceptions chevauchant la fenêtre [from, to].
      *
      * @return list<CustodyException>

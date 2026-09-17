@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\CustodyDay;
 use App\Entity\Family;
 use App\Entity\Membership;
 use App\Entity\User;
@@ -22,6 +23,9 @@ use App\Service\Agenda\Occurrence;
 use App\Service\Agenda\OverlayReader;
 use App\Service\Custody\CustodyStatsCalculator;
 use App\Service\Custody\DayDetailReader;
+use App\Service\Custody\DayPaint;
+use App\Service\Custody\DaySegment;
+use App\Service\Custody\DaySegments;
 use App\Service\Family\Household;
 use App\Web\ActiveFamilyResolver;
 use App\Web\FrenchDate;
@@ -145,6 +149,8 @@ final class GardeController extends AbstractController
             'B' => self::displayName($pattern?->getParentB()) ?: 'Parent B',
         ];
 
+        $weeks = $this->buildWeeks($monthStart, $monthEnd, $daysByDate, $pattern?->getParentA()?->getId());
+
         $response = $this->render('app/garde.html.twig', [
             'parentNames' => $parentNames,
             'initials' => $this->parentInitials->pair($parentNames['A'], $parentNames['B']),
@@ -161,7 +167,10 @@ final class GardeController extends AbstractController
             'parents' => $parents,
             'parentAId' => $pattern?->getParentA()?->getId(),
             'parentBId' => $pattern?->getParentB()?->getId(),
-            'weeks' => $this->buildWeeks($monthStart, $monthEnd, $daysByDate, $pattern?->getParentA()?->getId()),
+            'weeks' => $weeks,
+            // La légende n'explique le partage que s'il se voit : un mois entièrement attribué à un
+            // seul parent (règle de vacances) n'a aucune case partagée à commenter.
+            'hasSplit' => (bool) array_filter($weeks, static fn (array $week) => (bool) array_filter($week, static fn (array $cell) => null !== $cell['paint'])),
             'monthLabel' => FrenchDate::month($monthStart),
             'monthValue' => $monthStart->format('Y-m'),
             'prevMonth' => $monthStart->modify('-1 month')->format('Y-m'),
@@ -232,7 +241,26 @@ final class GardeController extends AbstractController
             'dateLabel' => FrenchDate::longDate($parsed),
             'dateValue' => $date,
             'slot' => self::slotOf($detail->parent, $parentAId),
+            // Tranches de la journée : la fiche ÉCRIT le partage (« chez X jusqu'à 18:00, puis chez
+            // Y ») là où la case du calendrier se contente de le peindre.
+            'segments' => array_map(
+                static fn (array $seg) => [
+                    'slot' => self::slotOf($seg['parent'], $parentAId),
+                    'from' => $seg['from'],
+                    'to' => $seg['to'],
+                ],
+                $detail->segments,
+            ),
             'handoverSlot' => self::slotOf($detail->handoverParent, $parentAId),
+            // Bornes proposées au formulaire d'échange (cdc §3.4) et parent qui récupérerait le
+            // jour : calculées côté serveur, où vivent le rythme et l'heure de début de journée.
+            'swap' => $detail->swapDefaults,
+            'swapTargetName' => self::displayName($detail->swapTarget),
+            'swapTargetId' => null !== $detail->swapTarget ? (string) $detail->swapTarget->getId() : null,
+            'previousDayLabel' => $parsed->modify('-1 day')->format('d/m'),
+            'nextDayLabel' => $parsed->modify('+1 day')->format('d/m'),
+            'previousDayValue' => $parsed->modify('-1 day')->format('Y-m-d'),
+            'nextDayValue' => $parsed->modify('+1 day')->format('Y-m-d'),
             'handoverDateLabel' => null !== $detail->handoverDate ? FrenchDate::longDate($detail->handoverDate) : null,
             'parentNames' => $parentNames,
             'initials' => $this->parentInitials->pair($parentNames['A'], $parentNames['B']),
@@ -245,6 +273,16 @@ final class GardeController extends AbstractController
             'events' => $canAgenda ? $this->dayOccurrences($family, $parsed) : [],
             'timezone' => $family->getTimezone(),
         ]);
+    }
+
+    /** Slot A/B d'un identifiant de membership, relativement au parent A du rythme. */
+    private static function slotIdOf(?string $parentId, ?\Symfony\Component\Uid\Uuid $parentAId): ?string
+    {
+        if (null === $parentId) {
+            return null;
+        }
+
+        return null !== $parentAId && $parentId === (string) $parentAId ? 'A' : 'B';
     }
 
     /** Slot A/B d'un membership, relativement au parent A du rythme ; null s'il n'est pas attribué. */
@@ -269,13 +307,17 @@ final class GardeController extends AbstractController
 
     /**
      * Construit la grille du mois (semaines de 7 cases, lundi→dimanche), chaque case portant le
-     * jour, son parent (slot A/B), sa source, son appartenance au mois et le marquage du jour
-     * courant (seul repère d'orientation d'un calendrier navigable mois par mois — la mini-semaine
-     * de l'accueil le calcule déjà, cf. HomeController::custodyWeek()).
+     * jour, son parent majoritaire (slot A/B), sa source, son appartenance au mois, le marquage du
+     * jour courant (seul repère d'orientation d'un calendrier navigable mois par mois — la
+     * mini-semaine de l'accueil le calcule déjà, cf. HomeController::custodyWeek()) et, quand la
+     * journée change de parent en cours de route, ses **tranches horaires** et leur peinture.
      *
-     * @param array<string, \App\Entity\CustodyDay> $daysByDate
+     * Le découpage est lu sur le jour lui-même : il est matérialisé par le moteur, qui seul connaît
+     * la règle de transmission et les échanges à l'heure près (cdc §3.4).
      *
-     * @return list<list<array{date: string, day: int, inMonth: bool, slot: ?string, source: ?string, isToday: bool}>>
+     * @param array<string, CustodyDay> $daysByDate
+     *
+     * @return list<list<array{date: string, day: int, inMonth: bool, slot: ?string, source: ?string, isToday: bool, segments: list<array{slot: ?string, from: string, to: string, percent: float}>, paint: ?DayPaint}>>
      */
     private function buildWeeks(\DateTimeImmutable $monthStart, \DateTimeImmutable $monthEnd, array $daysByDate, ?\Symfony\Component\Uid\Uuid $parentAId): array
     {
@@ -294,17 +336,32 @@ final class GardeController extends AbstractController
         while ($cursor <= $gridEnd) {
             $key = $cursor->format('Y-m-d');
             $cd = $daysByDate[$key] ?? null;
-            $slot = null;
-            if (null !== $cd && null !== $cd->getParentMembership()) {
-                $slot = null !== $parentAId && $cd->getParentMembership()->getId()->equals($parentAId) ? 'A' : 'B';
-            }
+            $parentId = $cd?->getParentMembership() ? (string) $cd->getParentMembership()->getId() : null;
+            $slot = self::slotIdOf($parentId, $parentAId);
+            $inMonth = $cursor->format('Y-m') === $monthStart->format('Y-m');
+
+            // Les cases de complément de semaine ne sont pas colorées : les découper non plus.
+            $segments = $inMonth && null !== $cd
+                ? array_map(
+                    static fn (DaySegment $seg) => [
+                        'slot' => self::slotIdOf($seg->parentId, $parentAId),
+                        'from' => $seg->fromTime(),
+                        'to' => $seg->toTime(),
+                        'percent' => $seg->percent(),
+                    ],
+                    DaySegments::fromArray($cd->getSegments(), $parentId, $cd->getSource())->segments,
+                )
+                : [];
+
             $week[] = [
                 'date' => $key,
                 'day' => (int) $cursor->format('j'),
-                'inMonth' => $cursor->format('Y-m') === $monthStart->format('Y-m'),
+                'inMonth' => $inMonth,
                 'slot' => $slot,
                 'source' => $cd?->getSource()->value,
                 'isToday' => $key === $todayKey,
+                'segments' => $segments,
+                'paint' => DayPaint::of($segments),
             ];
             if (7 === \count($week)) {
                 $weeks[] = $week;

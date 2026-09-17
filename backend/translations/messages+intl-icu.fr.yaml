@@ -170,6 +170,8 @@ custody:
         anchor_future: "La date d'ancrage ne peut pas être dans le futur."
         weekday_invalid: "Le jour d'échange doit être compris entre 0 (dimanche) et 6 (samedi)."
         handover_time_invalid: "L'heure d'échange doit être au format HH:MM."
+        day_start_time_invalid: "L'heure de début de journée doit être au format HH:MM."
+        time_invalid: "L'heure doit être au format HH:MM."
         parents_invalid: 'Les parents A et B doivent être deux membres parents distincts de la famille.'
         custom_invalid: 'Le motif personnalisé doit contenir exactement 14 créneaux (A ou B).'
         settings_invalid: 'La configuration du modèle « jours fixes + week-ends » est invalide.'

@@ -49,6 +49,11 @@ final class PatternWriter
         if (1 !== preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', (string) $data->handoverTime)) {
             throw new CustodyInputException('custody.error.handover_time_invalid');
         }
+        // Heure de « début de journée » : facultative (le rythme existant garde la sienne, un
+        // nouveau naît à 08:00), mais jamais illisible — elle sert de défaut aux échanges partiels.
+        if (null !== $data->dayStartTime && 1 !== preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $data->dayStartTime)) {
+            throw new CustodyInputException('custody.error.day_start_time_invalid');
+        }
 
         [$parentA, $parentB] = $this->resolveParents($family, $data);
         $this->validateConfig($kind, $data);
@@ -57,6 +62,7 @@ final class PatternWriter
             ->setAnchorDate($anchor)
             ->setHandoverWeekday($weekday)
             ->setHandoverTime((string) $data->handoverTime)
+            ->setDayStartTime($data->dayStartTime ?? $pattern->getDayStartTime())
             ->setParentA($parentA)
             ->setParentB($parentB)
             ->setCustomPattern(CustodyPatternKind::Custom === $kind ? array_values($data->customPattern ?? []) : null)

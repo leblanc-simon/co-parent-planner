@@ -16,9 +16,15 @@ use Psr\Clock\ClockInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Moteur de matérialisation de la garde (Lot 3 §3.1) : pipeline **base → vacances → exceptions**,
- * **idempotent** (upsert sur `(family_id,date)`), **passé figé** (`date >= aujourd'hui`), priorité
- * **exception > holiday > base** garantie par l'ordre + des gardes SQL. Sérialisé par advisory lock.
+ * Moteur de matérialisation de la garde (Lot 3 §3.1, cdc §3.4) : pipeline **base → vacances →
+ * exceptions**, **idempotent** (upsert sur `(family_id,date)`), **passé figé**
+ * (`date >= aujourd'hui`), priorité **exception > holiday > base**. Sérialisé par advisory lock.
+ *
+ * Chaque journée est calculée **entière** en PHP — son découpage horaire (`DaySegments`) puis le
+ * parent majoritaire qui la porte — et écrite en une ligne. La priorité ne tient donc plus à
+ * l'ordre de trois requêtes SQL et à leurs gardes, mais à l'ordre de superposition des tranches :
+ * le nominal (rythme, puis règle de vacances), sur lequel les exceptions viennent s'appliquer à
+ * l'heure près.
  */
 final class CustodyGenerator
 {
@@ -50,146 +56,185 @@ final class CustodyGenerator
             return;
         }
 
-        $this->rebuildWindow($family, $pattern, $from, $to, clearExceptions: false);
+        $this->rebuildWindow($family, $pattern, $from, $to);
     }
 
-    /** Crée/écrase les jours d'une exception (priorité maximale). Clampé au présent. */
+    /** Recalcule les jours couverts par une exception (création ou remplacement). */
     public function applyException(CustodyException $exception): void
     {
-        $family = $exception->getFamily();
-        $from = max($this->cal($exception->getStartDate()), $this->today());
-        $to = $this->cal($exception->getEndDate());
-        if ($from > $to) {
-            return; // exception entièrement passée → rien à matérialiser
-        }
-        $parentId = $exception->getParentMembership()?->getId();
-
-        $this->db->transactional(function () use ($family, $from, $to, $parentId): void {
-            $this->lock($family);
-            foreach ($this->eachDay($from, $to) as $date) {
-                $this->upsertException($family, $date, $parentId);
-            }
-        });
+        $this->recomputeWindow($exception->getFamily(), $exception->getStartDate(), $exception->getEndDate());
     }
 
-    /** Recalcule une fenêtre après suppression d'une exception (jours rendus à vacances/base). */
+    /**
+     * Recalcule une fenêtre après un changement ponctuel (exception posée ou retirée, règle de
+     * vacances modifiée) : les jours y sont rendus au nominal, exceptions restantes réappliquées.
+     *
+     * La **veille** entre dans la fenêtre : la fin d'une journée appartient au parent du lendemain,
+     * donc changer un jour change la case du précédent.
+     */
     public function recomputeWindow(Family $family, \DateTimeImmutable $start, \DateTimeImmutable $end): void
     {
         $pattern = $this->patterns->findOneByFamily($family);
-        $from = max($this->cal($start), $this->today());
+        $from = max($this->cal($start)->modify('-1 day'), $this->today());
         $to = $this->cal($end);
         if (null === $pattern || $from > $to) {
             return;
         }
-        $this->rebuildWindow($family, $pattern, $from, $to, clearExceptions: true);
+        $this->rebuildWindow($family, $pattern, $from, $to);
     }
 
     /**
-     * Reconstruit une fenêtre : (option) purge, base (DO NOTHING), vacances (écrase base/holiday),
-     * puis ré-applique les exceptions restantes. Le tout sous verrou, en transaction.
+     * Reconstruit une fenêtre : nominal (rythme puis règles de vacances), découpage horaire de
+     * chaque journée, superposition des exceptions, puis une ligne par jour. Sous verrou, en
+     * transaction.
      */
-    private function rebuildWindow(Family $family, CustodyPattern $pattern, \DateTimeImmutable $from, \DateTimeImmutable $to, bool $clearExceptions): void
+    private function rebuildWindow(Family $family, CustodyPattern $pattern, \DateTimeImmutable $from, \DateTimeImmutable $to): void
     {
-        $this->db->transactional(function () use ($family, $pattern, $from, $to, $clearExceptions): void {
+        $this->db->transactional(function () use ($family, $pattern, $from, $to): void {
             $this->lock($family);
-            $fid = (string) $family->getId();
-            $aId = $pattern->getParentA()?->getId();
-            $bId = $pattern->getParentB()?->getId();
+            $handover = DaySegment::minutesOf($pattern->getHandoverTime());
+            // Le lendemain du dernier jour est calculé sans être écrit : il porte le parent à qui
+            // revient la fin de la journée précédente.
+            $nominal = $this->nominalDays($family, $pattern, $from, $to->modify('+1 day'));
+            $exceptions = $this->exceptions->findOverlapping($family, $from, $to);
 
-            // 1. Purge de la fenêtre : non-exception toujours ; exceptions seulement si demandé.
-            $sql = 'DELETE FROM custody_days WHERE family_id = :fid AND date >= :from AND date <= :to';
-            if (!$clearExceptions) {
-                $sql .= " AND source <> 'exception'";
-            }
-            $this->db->executeStatement($sql, ['fid' => $fid, 'from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d')]);
-
-            // 2. Base : un jour par date, sans écraser une exception résiduelle (DO NOTHING).
             foreach ($this->eachDay($from, $to) as $date) {
-                $slot = $this->base->slotFor($pattern, $date);
-                $this->upsertBase($family, $date, 'A' === $slot ? $aId : $bId);
-            }
+                $key = $date->format('Y-m-d');
+                $day = $nominal[$key] ?? ['parent' => null, 'source' => CustodyDaySource::Base];
+                $next = $nominal[$date->modify('+1 day')->format('Y-m-d')] ?? null;
 
-            // 3. Vacances : écrase base/holiday (dernière période écrite gagne), jamais une exception.
-            //    Le découpage de la règle (moitiés, semaines, réveillons) est calculé sur la période
-            //    COMPLÈTE de la vacance — jamais clampée à la fenêtre — pour rester identique quelle
-            //    que soit la fenêtre régénérée (idempotence) ; on ne matérialise que [from, to].
-            $fromStr = $from->format('Y-m-d');
-            $toStr = $to->format('Y-m-d');
-            foreach ($this->holidays->findWithRuleOverlapping($family, $from, $to) as $holiday) {
-                $rule = $holiday->getRule();
-                if (null === $rule) {
-                    continue;
-                }
-                $assignments = $this->rules->assignments(
-                    $rule->getKind(),
-                    $rule->getParams(),
-                    $this->cal($holiday->getStartDate()),
-                    $this->cal($holiday->getEndDate()),
+                $segments = DaySegments::nominal(
+                    $day['parent'],
+                    $next['parent'] ?? null,
+                    $handover,
+                    $day['source'],
+                    $next['source'] ?? CustodyDaySource::Base,
                 );
-                foreach ($assignments as $dateStr => $slot) {
-                    if ($dateStr < $fromStr || $dateStr > $toStr) {
+                // Les exceptions s'appliquent à la lettre, sur leurs propres heures : elles ne
+                // suivent pas la convention de transmission du rythme — c'est tout l'intérêt de
+                // pouvoir dire « du 25 à 18:00 au 26 à 18:00 ».
+                foreach ($exceptions as $exception) {
+                    $window = $this->exceptionMinutes($exception, $key);
+                    if (null === $window) {
                         continue;
                     }
-                    $this->upsertHoliday($family, $this->cal(new \DateTimeImmutable($dateStr)), 'A' === $slot ? $aId : $bId);
+                    $parentId = $exception->getParentMembership()?->getId();
+                    $segments = $segments->overlay(
+                        $window[0],
+                        $window[1],
+                        null !== $parentId ? (string) $parentId : null,
+                        CustodyDaySource::Exception,
+                    );
                 }
-            }
 
-            // 4. Ré-application des exceptions restantes chevauchant la fenêtre (priorité max).
-            foreach ($this->exceptions->findOverlapping($family, $from, $to) as $exception) {
-                $eFrom = max($this->cal($exception->getStartDate()), $from);
-                $eTo = min($this->cal($exception->getEndDate()), $to);
-                $parentId = $exception->getParentMembership()?->getId();
-                foreach ($this->eachDay($eFrom, $eTo) as $date) {
-                    $this->upsertException($family, $date, $parentId);
-                }
+                $this->upsertDay($family, $date, $segments->merged());
             }
         });
     }
 
-    private function upsertBase(Family $family, \DateTimeImmutable $date, ?Uuid $parentId): void
+    /**
+     * Attribution **nominale** (rythme, puis règles de vacances) de chaque jour de la fenêtre.
+     *
+     * @return array<string, array{parent: ?string, source: CustodyDaySource}>
+     */
+    private function nominalDays(Family $family, CustodyPattern $pattern, \DateTimeImmutable $from, \DateTimeImmutable $to): array
     {
-        // N'insère que si la date est libre : préserve une exception résiduelle (non purgée).
-        $this->db->executeStatement(
-            'INSERT INTO custody_days (id, family_id, date, parent_membership_id, source, created_at, updated_at)
-             VALUES (:id, :fid, :date, :pid, :src, :now, :now)
-             ON CONFLICT (family_id, date) DO NOTHING',
-            $this->params($family, $date, $parentId, CustodyDaySource::Base),
-        );
+        $aId = $pattern->getParentA()?->getId();
+        $bId = $pattern->getParentB()?->getId();
+        $parentOf = static fn (string $slot): ?string => null !== ('A' === $slot ? $aId : $bId)
+            ? (string) ('A' === $slot ? $aId : $bId)
+            : null;
+
+        $nominal = [];
+        foreach ($this->eachDay($from, $to) as $date) {
+            $nominal[$date->format('Y-m-d')] = [
+                'parent' => $parentOf($this->base->slotFor($pattern, $date)),
+                'source' => CustodyDaySource::Base,
+            ];
+        }
+
+        // Le découpage d'une règle de vacances (moitiés, semaines, réveillons) est calculé sur la
+        // période COMPLÈTE — jamais clampée à la fenêtre — pour rester identique quelle que soit la
+        // fenêtre régénérée (idempotence) ; seuls les jours de [from, to] sont retenus.
+        $fromKey = $from->format('Y-m-d');
+        $toKey = $to->format('Y-m-d');
+        foreach ($this->holidays->findWithRuleOverlapping($family, $from, $to) as $holiday) {
+            $rule = $holiday->getRule();
+            if (null === $rule) {
+                continue;
+            }
+            $assignments = $this->rules->assignments(
+                $rule->getKind(),
+                $rule->getParams(),
+                $this->cal($holiday->getStartDate()),
+                $this->cal($holiday->getEndDate()),
+            );
+            foreach ($assignments as $dateStr => $slot) {
+                if ($dateStr < $fromKey || $dateStr > $toKey) {
+                    continue;
+                }
+                $nominal[$dateStr] = ['parent' => $parentOf($slot), 'source' => CustodyDaySource::Holiday];
+            }
+        }
+
+        return $nominal;
     }
 
-    private function upsertHoliday(Family $family, \DateTimeImmutable $date, ?Uuid $parentId): void
+    /**
+     * Part de la journée `$dayKey` couverte par l'exception, en minutes `[début, fin)`, ou `null`
+     * si elle ne la touche pas.
+     *
+     * Heures absentes = journées entières : c'est la forme des exceptions posées avant que la garde
+     * ne connaisse les heures, et celle du formulaire quand on n'en demande pas.
+     *
+     * @return array{0: int, 1: int}|null
+     */
+    private function exceptionMinutes(CustodyException $exception, string $dayKey): ?array
     {
-        $this->db->executeStatement(
-            "INSERT INTO custody_days (id, family_id, date, parent_membership_id, source, created_at, updated_at)
-             VALUES (:id, :fid, :date, :pid, :src, :now, :now)
-             ON CONFLICT (family_id, date) DO UPDATE
-               SET parent_membership_id = EXCLUDED.parent_membership_id, source = EXCLUDED.source, updated_at = EXCLUDED.updated_at
-             WHERE custody_days.source <> 'exception'",
-            $this->params($family, $date, $parentId, CustodyDaySource::Holiday),
-        );
+        $startKey = $exception->getStartDate()->format('Y-m-d');
+        $endKey = $exception->getEndDate()->format('Y-m-d');
+        if ($dayKey < $startKey || $dayKey > $endKey) {
+            return null;
+        }
+
+        $from = $dayKey === $startKey ? (DaySegment::minutesOf($exception->getStartTime()) ?? 0) : 0;
+        $to = $dayKey === $endKey
+            ? (DaySegment::minutesOf($exception->getEndTime()) ?? DaySegment::MINUTES_PER_DAY)
+            : DaySegment::MINUTES_PER_DAY;
+
+        return $from < $to ? [$from, $to] : null;
     }
 
-    private function upsertException(Family $family, \DateTimeImmutable $date, ?Uuid $parentId): void
+    /**
+     * Écrit la journée : le parent **majoritaire** la porte (c'est lui que comptent les
+     * statistiques et qu'affiche la case), le découpage n'est stocké que s'il y a quelque chose à
+     * découper — une journée unie n'a pas de tranches.
+     */
+    private function upsertDay(Family $family, \DateTimeImmutable $date, DaySegments $segments): void
     {
+        $params = $this->params($family, $date, $segments->majorityParentId(), $segments->dominantSource());
+        $params['segments'] = $segments->isUniform() ? null : json_encode($segments->toArray(), \JSON_THROW_ON_ERROR);
+
         $this->db->executeStatement(
-            'INSERT INTO custody_days (id, family_id, date, parent_membership_id, source, created_at, updated_at)
-             VALUES (:id, :fid, :date, :pid, :src, :now, :now)
+            'INSERT INTO custody_days (id, family_id, date, parent_membership_id, source, segments, created_at, updated_at)
+             VALUES (:id, :fid, :date, :pid, :src, CAST(:segments AS JSON), :now, :now)
              ON CONFLICT (family_id, date) DO UPDATE
-               SET parent_membership_id = EXCLUDED.parent_membership_id, source = EXCLUDED.source, updated_at = EXCLUDED.updated_at',
-            $this->params($family, $date, $parentId, CustodyDaySource::Exception),
+               SET parent_membership_id = EXCLUDED.parent_membership_id, source = EXCLUDED.source,
+                   segments = EXCLUDED.segments, updated_at = EXCLUDED.updated_at',
+            $params,
         );
     }
 
     /**
      * @return array<string, string|null>
      */
-    private function params(Family $family, \DateTimeImmutable $date, ?Uuid $parentId, CustodyDaySource $source): array
+    private function params(Family $family, \DateTimeImmutable $date, ?string $parentId, CustodyDaySource $source): array
     {
         return [
             'id' => Uuid::v7()->toRfc4122(),
             'fid' => (string) $family->getId(),
             'date' => $date->format('Y-m-d'),
-            'pid' => null !== $parentId ? (string) $parentId : null,
+            'pid' => $parentId,
             'src' => $source->value,
             'now' => $this->clock->now()->format('Y-m-d H:i:s'),
         ];

@@ -39,6 +39,8 @@ class CustodyPatternResource
     public ?string $anchorDate = null;
     public int $handoverWeekday = 0;
     public string $handoverTime = '';
+    /** Heure à laquelle « la journée commence » : défaut proposé aux échanges partiels. */
+    public string $dayStartTime = '';
     /** @var list<string>|null */
     public ?array $customPattern = null;
     /**
@@ -79,6 +81,7 @@ class CustodyPatternResource
         $dto->anchorDate = $p->getAnchorDate()->format('Y-m-d');
         $dto->handoverWeekday = $p->getHandoverWeekday();
         $dto->handoverTime = $p->getHandoverTime();
+        $dto->dayStartTime = $p->getDayStartTime();
         $dto->customPattern = $p->getCustomPattern();
         $dto->settings = $p->getSettings();
         $dto->parentAMembershipId = $p->getParentA() ? (string) $p->getParentA()->getId() : null;

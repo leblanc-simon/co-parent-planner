@@ -68,14 +68,23 @@
                 </div>
                 <div class="home-custody">
                     {% for cell in custody.cells %}
-                    <div class="home-custody__day home-custody__day--{{ cell.slot == 'A' ? 'a' : (cell.slot == 'B' ? 'b' : 'none') }}{{ cell.isToday ? ' is-today' }}">
+                    {# Journée partagée : les teintes des parents qui s'y succèdent, au prorata du
+                       temps passé, comme les cases de `/garde` — les deux vues montrent le même
+                       planning et doivent s'accorder. #}
+                    {% set paint = cell.paint %}
+                    <div class="home-custody__day home-custody__day--{{ cell.slot == 'A' ? 'a' : (cell.slot == 'B' ? 'b' : 'none') }}{{ cell.isToday ? ' is-today' }}{{ paint ? ' home-custody__day--split' }}{{ paint and paint.boundaries|length > 1 ? ' home-custody__day--split-3' }}"
+                         {% if paint %}style="--split-stops: {{ paint.stops }}; --split-share: {{ paint.boundaries|first }}{% if paint.boundaries|length > 1 %}; --split-share-2: {{ paint.boundaries[1] }}{% endif %}"{% endif %}>
                         <span class="home-custody__dow">{{ dowFr[cell.dow] }}</span>
                         <span class="home-custody__num">{{ cell.day }}</span>
                         {# Même marqueur non chromatique que /garde (cdc §8) : les deux fonds de cette
                            mini-semaine ne se distinguaient que par la teinte, à 1,09:1. #}
                         {% if cell.slot %}
                             <span class="home-custody__parent" aria-hidden="true">{{ cell.slot == 'A' ? custody.initials.A : custody.initials.B }}</span>
-                            <span class="sr-only">chez {{ cell.slot == 'A' ? custody.names.A : custody.names.B }}</span>
+                            {% if paint %}
+                                <span class="sr-only">{{ cell.segments|map(seg => 'chez ' ~ (seg.slot == 'A' ? custody.names.A : (seg.slot == 'B' ? custody.names.B : 'personne')) ~ ' de ' ~ seg.from ~ ' à ' ~ seg.to)|join(', ') }}</span>
+                            {% else %}
+                                <span class="sr-only">chez {{ cell.slot == 'A' ? custody.names.A : custody.names.B }}</span>
+                            {% endif %}
                         {% endif %}
                     </div>
                     {% endfor %}

@@ -16,6 +16,7 @@ class CustodyPatternJsonld {
     this.kind = '',
     this.handoverWeekday = 0,
     this.handoverTime = '',
+    this.dayStartTime = '',
     this.object5,
     this.anchorDate,
     this.customPattern,
@@ -43,6 +44,9 @@ class CustodyPatternJsonld {
   final String? anchorDate;
   final int handoverWeekday;
   final String handoverTime;
+
+  /// Heure à laquelle « la journée commence » : défaut proposé aux échanges partiels.
+  final String dayStartTime;
   final List<String>? customPattern;
 
   /// Réglages du modèle `midweek_weekends` (US-CUST-1) : jours de week-end, parent de chaque jour.

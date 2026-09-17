@@ -5,7 +5,9 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-09-17** — **Les informations sur les enfants sont chiffrées au repos.** `Child.firstName`, `Child.schoolLabel` et `Child.info` passent en 🔒 (AES-256-GCM applicatif) : ce sont des données de **mineurs**, et elles étaient les dernières à rendre un dump SQL brut lisible. La décision PO du 2026-08-27 attendait depuis trois semaines parce qu'elle bute sur un vrai point dur — **le tri sur le prénom**, qu'un `ORDER BY` ne peut plus rendre. Il passe en PHP (`ChildSorter`, `Collator` de la locale active) et `ChildRepository::findByFamily()` devient le **point de passage unique** pour lister les enfants ; l'index aveugle, envisagé dans le registre, a été écarté — un HMAC répond à l'égalité, pas à l'ordre. Nouveau type Doctrine `encrypted_json` pour `info` (JSON sérialisé **puis** chiffré, colonne TEXT). Migration `Version20260917204656` avec **reprise des lignes existantes**, aller-retour vérifié sur 191 enfants réels. Détail : §6, entrée du 2026-09-17.
+Dernière mise à jour : **2026-09-18** — **Les deux dettes techniques sont soldées, et l'une d'elles cachait un vrai défaut.** (1) Un test E2E **exerce** enfin une mise à jour poussée de bout en bout : écran ouvert, mutation faite hors de la page, aucune navigation déclenchée par le test — ce qui apparaît ne peut venir que du hub. Il a été vérifié en panne des deux côtés (poussée coupée, puis retour au `<turbo-stream-source>` du défaut C2). (2) L'overlay agenda mobile passe au **client généré** : le blocage n'était pas le mobile mais le contrat, qui déclarait une seule forme là où `overlay=` en renvoie deux ; `EventResource` porte désormais le discriminant `source`/`color`/`editable`/`linkedFamilyId`. **Défaut trouvé en chemin** : sur un écran temps réel, la poussée déclenchée par sa *propre* mutation remplaçait le corps de la page et **effaçait la confirmation de succès** — celle-ci avait déjà été consommée du `sessionStorage` par son premier affichage. C'est ce qui rendait la suite E2E instable à cache froid, instabilité que `retries: 1` masquait en CI. Détail : §6, entrée du 2026-09-18.
+
+Antérieur : **2026-09-17** — **Les informations sur les enfants sont chiffrées au repos.** `Child.firstName`, `Child.schoolLabel` et `Child.info` passent en 🔒 (AES-256-GCM applicatif) : ce sont des données de **mineurs**, et elles étaient les dernières à rendre un dump SQL brut lisible. La décision PO du 2026-08-27 attendait depuis trois semaines parce qu'elle bute sur un vrai point dur — **le tri sur le prénom**, qu'un `ORDER BY` ne peut plus rendre. Il passe en PHP (`ChildSorter`, `Collator` de la locale active) et `ChildRepository::findByFamily()` devient le **point de passage unique** pour lister les enfants ; l'index aveugle, envisagé dans le registre, a été écarté — un HMAC répond à l'égalité, pas à l'ordre. Nouveau type Doctrine `encrypted_json` pour `info` (JSON sérialisé **puis** chiffré, colonne TEXT). Migration `Version20260917204656` avec **reprise des lignes existantes**, aller-retour vérifié sur 191 enfants réels. Détail : §6, entrée du 2026-09-17.
 
 Antérieur : **2026-09-11** — **La garde se compte désormais en heures, plus en journées.** « Échanger ce jour » demande *quand* : jour et heure de début (la veille ou le jour même), jour et heure de fin (le jour même ou le lendemain), **préremplis avec le créneau que la famille vivrait** — prolongation depuis la transmission de la veille quand le parent avait déjà les enfants, reprise le matin même sinon (nouvelle heure de famille `day_start_time`, 08:00 par défaut). Le moteur **matérialise le découpage horaire** de chaque journée (`CustodyDay.segments`) : une case porte une, deux ou trois teintes, avec un filet par frontière. **Convention de transmission révisée** : elle se lit sur la **dernière** case d'un bloc — « A jusqu'au 25, B du 26 au 28, échange 18:00 » met les enfants chez A jusqu'au 25 à 18:00, et c'est la case du **25** qui est bicolore (la version d'hier décalait le planning d'un jour). La journée est **comptée au parent majoritaire en heures** (initiale de la case et statistiques). Amendements écrits au **cdc §3.3 (US-CUST-10), §5.2 et §8.3**. Détail : §6, entrée du 2026-09-11.
 
@@ -154,11 +156,15 @@ nouvelle revue, non d'un reste à solder.
 - Après une **fusion** (ou tout changement de branche), `symfony console cache:clear` en `dev` **et**
   en `--env=test` avant d'exporter l'OpenAPI ou de lancer PHPUnit : des métadonnées API Platform
   périmées amputent le contrat et font échouer des tests fonctionnels à tort.
-- **Suite E2E sur un cache dev froid** : la première requête vers une route lourde recompile Twig et
-  le conteneur, ce qui dépasse les 15 s d'attente de `waitForSaved()` — un à trois tests échouent
-  alors sans qu'aucun code soit en cause (observé le 2026-09-17, les mêmes tests passant seuls puis
-  à cache chaud). Après un `cache:clear` en dev, **lancer la suite deux fois** ou chauffer les routes
-  avant de conclure à une régression.
+- **Suite E2E instable à cache froid** (observé le 2026-09-17) : ce n'était **pas** un défaut de
+  test. Le cache froid ne faisait qu'élargir la fenêtre d'une course réelle entre le rechargement
+  d'une mutation et la poussée temps réel qu'elle provoque — corrigé le 2026-09-18 (journal §6).
+  À retenir de l'épisode : avant d'incriminer la suite, **couper la publication Mercure**
+  (`MERCURE_URL` vers un port mort, `MERCURE_PUBLIC_URL` intact) ; si tout repasse au vert, le
+  défaut est dans le temps réel, pas dans les tests.
+- **`cache:clear` ne suffit pas toujours avant `api:openapi:export`** : des métadonnées API Platform
+  survivent et le contrat exporté est alors amputé des champs qu'on vient d'ajouter — sans la
+  moindre erreur. En cas de doute, `rm -rf var/cache/dev` (constaté le 2026-09-17).
 
 ### Point de reprise du chantier web (au 2026-08-27)
 
@@ -195,11 +201,11 @@ point de reprise en tête de section.)
 lignes existantes, `schoolLabel` ajouté au registre, tri du prénom passé en PHP (`ChildSorter`).
 Détail : §6, entrée du 2026-09-17.
 
-Deux tâches héritées de la revue d'août, à planifier :
-**(a)** un test E2E qui **exerce** une mise à jour temps réel de bout en bout (le hub tourne
-désormais dans la stack E2E et en CI, mais aucun test ne publie encore) ;
-**(b)** côté mobile, remplacer l'appel dio brut de l'overlay agenda par le client généré, maintenant
-que `?overlay=` figure au contrat.
+Deux tâches héritées de la revue d'août — **soldées le 2026-09-18** :
+**(a)** `web-e2e/tests/realtime.spec.ts` exerce une mise à jour poussée de bout en bout (et une
+seconde poussée qui ne doit pas effacer la confirmation en cours) ;
+**(b)** l'overlay agenda mobile passe par le client généré — ce qui a demandé de compléter le
+contrat, `GET /events?overlay=` renvoyant deux formes pour un seul schéma déclaré.
 **6 constats restants**, dans cet ordre (**6.1 livré le 2026-08-28** — pastilles d'activité +
 fiche de jour sur `/garde`, voir le journal) :
 
@@ -478,6 +484,68 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-09-18 — Les deux dettes techniques, et le défaut que la première a révélé
+
+**Dette (a) — un test E2E qui exerce vraiment le temps réel.** Le hub tournait dans la stack locale
+et en CI depuis août, mais aucun test ne publiait : la suite prouvait que l'abonnement s'ouvrait,
+jamais qu'une poussée arrivait. `web-e2e/tests/realtime.spec.ts` ouvre l'écran d'un échange, attend
+que l'`EventSource` soit réellement à `OPEN` — sans quoi un échec ne dirait pas ce qui a manqué —,
+poste un message **par l'API**, puis n'entreprend plus aucune navigation : ni `goto`, ni `reload`,
+ni clic. Ce qui apparaît ne peut venir que du hub.
+
+Un test qui passe ne prouve rien tant qu'il n'a pas échoué pour la bonne raison. Il a donc été
+vérifié en panne **deux fois** : poussée neutralisée (il tombe sur l'assertion du message, pas
+ailleurs), puis `<turbo-mercure-stream-source>` remplacé par le `<turbo-stream-source>` du défaut
+historique C2 (il tombe sur l'abonnement, avec le message qui le dit).
+
+**Dette (b) — l'overlay mobile passait par un appel dio écrit à la main.** La note de reprise disait
+« maintenant que `?overlay=` figure au contrat » ; c'était insuffisant. Le paramètre était bien
+déclaré, mais pas les **deux formes** que la collection renvoie quand il est posé : le schéma ne
+décrivait que l'événement propre, si bien que le modèle Dart généré perdait silencieusement `source`
+et `linkedFamilyId` — exactement les deux champs dont le mobile a besoin pour trier le liste du
+propre. Le contournement n'était donc pas une négligence mais la conséquence d'un contrat incomplet.
+
+Le paramètre `overlay=` sur `/events` est **verrouillé** (cdc §6.2, Lot 5 : « le paramètre `overlay=`
+n'existe que sur `/events` ») : un endpoint séparé aurait contredit la spec. `EventResource` déclare
+donc l'union — `source`, `color`, `editable`, `linkedFamilyId`, avec les valeurs d'un événement
+propre — et le test fonctionnel fixe le discriminant **des deux côtés** : l'absence d'une clé ne se
+voit pas depuis un modèle généré à valeurs par défaut. `OverlayRepository` utilise le client généré,
+`Dio` disparaît de ses dépendances, et quatre tests couvrent enfin ce chemin, qui n'en avait aucun.
+
+**Le défaut trouvé en chemin, et qui valait le détour.** La suite E2E échouait à cache froid, un à
+quatre tests selon les runs, toujours sur `waitForSaved()`. La tentation était de conclure à une
+lenteur de premier accès — le préchauffage du cache n'y a rien changé. Une sonde a tranché :
+au moment de l'échec, la clé `sessionStorage` était **consommée** et la zone de confirmation **vide
+et masquée**, page entièrement chargée.
+
+C'est une course, et elle appartient au produit, pas aux tests : sur un écran temps réel, la
+mutation qu'on vient de réussir **se pousse à soi-même**. Le rechargement de `_onSuccess()` affiche
+la confirmation (et la retire du stockage) ; la poussée arrive juste après, Turbo remplace le corps
+de la page, et la confirmation disparaît — ou n'apparaît jamais. L'utilisateur enregistre et ne voit
+rien. Vérification décisive : publication Mercure coupée (abonnement intact, cache froid), **23/23
+verts**.
+
+Le correctif rend la confirmation **ré-affichable** plutôt que consommable : elle est stockée avec
+son écran (le chemin), son contrôleur et une échéance de 5 s, et chaque `connect()` la ré-affiche
+tant qu'elle vaut. Deux effets de bord réglés au passage — le lien au contrôleur évite que les
+quatre panneaux de `/settings` affichent le même message (l'ancienne version s'en tirait par
+accident : le premier contrôleur connecté consommait le message, fût-ce le mauvais), et la
+comparaison sur le **chemin** seul laisse la confirmation suivre les mutations qui redirigent, comme
+la création d'un enfant vers `/children?child=<id>`.
+
+Un second test E2E le fixe, et **de façon déterministe** : une mutation faite à l'écran, sa
+confirmation, puis une poussée venue d'ailleurs — on attend d'abord la preuve que le rendu poussé a
+eu lieu, puis on vérifie que la confirmation y a survécu. Il échoue sur l'ancien code, à la bonne
+ligne.
+
+**Ce que l'épisode apprend sur la CI** : `retries: 1` rejouait le test une fois le cache chaud, si
+bien que la CI restait verte en masquant un défaut de production. Trois passages **cache purgé**
+donnent désormais 24, puis 25/25.
+
+Portes : backend **490 tests / 4 318 assertions**, couverture **87,9 %**, PHPStan 0, cs-fixer 0 ;
+mobile **453 tests**, couverture **85,0 %**, analyze 0, format 0, génération idempotente ;
+**E2E 25/25** (dont 3 passages sur cache froid). OpenAPI ré-exporté, client Dart régénéré.
 
 ### 2026-09-17 — Les informations sur les enfants passent chiffrées au repos
 

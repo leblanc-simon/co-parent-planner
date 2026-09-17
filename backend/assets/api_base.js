@@ -28,6 +28,18 @@ import { Controller } from '@hotwired/stimulus';
 
 const NOTICE_KEY = 'cpp.notice';
 
+/*
+ * Durée pendant laquelle une confirmation de succès reste « à afficher ».
+ *
+ * Elle n'est pas cosmétique : sur un écran temps réel, la mutation qu'on vient de réussir se pousse
+ * à soi-même (Mercure → `<turbo-stream action="refresh">`), et cette poussée arrive typiquement
+ * APRÈS le rechargement déclenché par `_onSuccess()`. La visite Turbo remplace alors le corps de la
+ * page — confirmation comprise — alors que la valeur avait déjà été retirée du stockage par le
+ * premier affichage : le message disparaissait aussitôt, ou n'apparaissait jamais. Le conserver
+ * quelques secondes le rend re-affichable par le rendu suivant, quel qu'il soit.
+ */
+const NOTICE_TTL_MS = 5_000;
+
 export class ApiController extends Controller {
     // Stimulus fusionne les `targets`/`values` statiques le long de la chaîne de prototypes (3.x) :
     // les sous-classes déclarent seulement les leurs.
@@ -60,8 +72,10 @@ export class ApiController extends Controller {
         if (this.hasErrorTarget) this.errorTarget.hidden = true;
         // La confirmation de l'action PRÉCÉDENTE disparaît dès qu'une nouvelle part : la laisser
         // affichée à côté d'un geste en cours laisse croire qu'il a déjà abouti — et, côté tests,
-        // rendait « attendre la confirmation » satisfiable par un message périmé.
+        // rendait « attendre la confirmation » satisfiable par un message périmé. Elle est aussi
+        // oubliée du stockage, sinon le rendu suivant la ressusciterait.
         if (this.hasNoticeTarget) this.noticeTarget.hidden = true;
+        this._forgetNotice();
         this._busy(trigger, true);
 
         try {
@@ -161,12 +175,48 @@ export class ApiController extends Controller {
 
     // ---- Confirmation de succès (survit au rechargement) ----
 
+    /**
+     * La confirmation est bornée dans le temps, à l'écran ET au contrôleur qui l'a produite.
+     *
+     * Le contrôleur compte parce que `/settings` en porte quatre, chacun avec sa propre zone de
+     * confirmation : sans lui, « Invitation envoyée. » s'afficherait aussi dans les panneaux
+     * Notifications et Garde. L'ancienne version s'en tirait par accident — le premier contrôleur
+     * connecté consommait le message, fût-ce le mauvais.
+     */
     _storeNotice(message) {
         try {
-            window.sessionStorage.setItem(NOTICE_KEY, message);
+            window.sessionStorage.setItem(
+                NOTICE_KEY,
+                JSON.stringify({
+                    message,
+                    url: this._screen(),
+                    controller: this.identifier,
+                    until: Date.now() + NOTICE_TTL_MS,
+                }),
+            );
         } catch (e) {
             /* stockage indisponible (navigation privée stricte) : on renonce au message, pas à l'action */
         }
+    }
+
+    _forgetNotice() {
+        try {
+            window.sessionStorage.removeItem(NOTICE_KEY);
+        } catch (e) {
+            /* rien à oublier si le stockage est indisponible */
+        }
+    }
+
+    /**
+     * Écran destinataire d'une confirmation : le **chemin**, sans la chaîne de requête.
+     *
+     * Le chemin seul, parce que plusieurs mutations changent la requête en réussissant — créer un
+     * enfant redirige vers `/children?child=<id>` — et que la confirmation doit les suivre. La
+     * contrepartie est mince et bornée par {@link NOTICE_TTL_MS} : passer d'un enfant à l'autre dans
+     * les secondes qui suivent réaffiche le message, jusqu'à ce qu'un nouveau geste l'efface.
+     */
+    _screen() {
+        return window.location.pathname;
     }
 
     _showNotice(message) {
@@ -175,17 +225,38 @@ export class ApiController extends Controller {
         this.noticeTarget.hidden = false;
     }
 
+    /**
+     * Ré-affiche la confirmation en attente, sans la consommer : le même écran peut être rendu
+     * plusieurs fois de suite (rechargement, puis visite Turbo déclenchée par la poussée temps réel),
+     * et c'est le dernier rendu qui doit la porter. Elle est oubliée quand elle a expiré, ou dès que
+     * l'écran change — sans quoi un « Enregistré » suivrait l'utilisateur sur la page suivante.
+     */
     _flushNotice() {
         if (!this.hasNoticeTarget) return;
-        let message = null;
+        let stored = null;
         try {
-            message = window.sessionStorage.getItem(NOTICE_KEY);
-            if (message) window.sessionStorage.removeItem(NOTICE_KEY);
+            stored = window.sessionStorage.getItem(NOTICE_KEY);
         } catch (e) {
             return;
         }
-        if (!message) return;
-        this._showNotice(message);
+        if (!stored) return;
+
+        let pending = null;
+        try {
+            pending = JSON.parse(stored);
+        } catch (e) {
+            this._forgetNotice(); // valeur d'une version antérieure : on ne la devine pas
+            return;
+        }
+
+        if (!pending?.message || Date.now() > pending.until || pending.url !== this._screen()) {
+            this._forgetNotice();
+            return;
+        }
+        // Un autre contrôleur du même écran ne s'en saisit pas — et ne la fait donc pas disparaître.
+        if (pending.controller !== this.identifier) return;
+
+        this._showNotice(pending.message);
     }
 
     // ---- État « occupé » ----

@@ -18,6 +18,8 @@ EventJsonld _$EventJsonldFromJson(Map<String, dynamic> json) => EventJsonld(
   isRecurring: json['isRecurring'] as bool? ?? false,
   isOverride: json['isOverride'] as bool? ?? false,
   version: (json['version'] as num?)?.toInt() ?? 1,
+  source: json['source'] as String? ?? 'own',
+  editable: json['editable'] as bool? ?? true,
   object5: json['@context'],
   seriesId: json['seriesId'] as String?,
   responsibleMembershipId: json['responsibleMembershipId'] as String?,
@@ -29,6 +31,8 @@ EventJsonld _$EventJsonldFromJson(Map<String, dynamic> json) => EventJsonld(
   endsAt: json['endsAt'] as String?,
   recurrenceDate: json['recurrenceDate'] as String?,
   recurrence: json['recurrence'] as Map<String, dynamic>?,
+  color: json['color'] as String?,
+  linkedFamilyId: json['linkedFamilyId'] as String?,
 );
 
 Map<String, dynamic> _$EventJsonldToJson(EventJsonld instance) =>
@@ -53,4 +57,8 @@ Map<String, dynamic> _$EventJsonldToJson(EventJsonld instance) =>
       'isOverride': instance.isOverride,
       'version': instance.version,
       'recurrence': instance.recurrence,
+      'source': instance.source,
+      'color': instance.color,
+      'editable': instance.editable,
+      'linkedFamilyId': instance.linkedFamilyId,
     };

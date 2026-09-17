@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../api/generated/export.dart' as api;
 import '../../../core/error/api_exception.dart';
 import '../../../core/network/api_clients.dart';
-import '../../../core/network/network_providers.dart';
 import '../../family/application/family_context.dart';
 
 /// Événement projeté d'une famille liée (overlay Lot 5, lecture seule). Ne porte que la projection
@@ -19,13 +18,16 @@ class OverlayEvent {
     this.allDay = false,
   });
 
-  factory OverlayEvent.fromJson(Map<String, dynamic> json) => OverlayEvent(
-    title: (json['title'] ?? '') as String,
-    startsAt: (json['startsAt'] ?? '') as String,
-    endsAt: (json['endsAt'] as String?) ?? (json['startsAt'] ?? '') as String,
-    category: (json['category'] ?? 'autre') as String,
-    linkedFamilyId: (json['linkedFamilyId'] ?? '') as String,
-    allDay: (json['allDay'] ?? false) as bool,
+  /// Projette un élément `source == 'linked'` de la collection `/events`. Les champs qu'un
+  /// événement propre porte et que la projection liée n'a pas (identifiant, enfants, responsable…)
+  /// ne sont volontairement pas lus : ils valent leur défaut et n'ont aucun sens ici.
+  factory OverlayEvent.fromApi(api.Event event) => OverlayEvent(
+    title: event.title,
+    startsAt: event.startsAt,
+    endsAt: event.endsAt ?? event.startsAt,
+    category: event.category,
+    linkedFamilyId: event.linkedFamilyId ?? '',
+    allDay: event.allDay,
   );
 
   final String title;
@@ -37,14 +39,11 @@ class OverlayEvent {
 }
 
 /// Overlay familles liées côté mobile (Lot 5) : liens actifs, préférences (opt-in par vue), et
-/// événements projetés en lecture seule. Le paramètre `overlay=` de `/events` n'étant pas exposé par
-/// le client généré, la lecture overlay passe par un appel dio direct (scope `X-Family-Id` posé par
-/// l'intercepteur). L'offline riche de l'overlay est consolidé au Lot 8.
+/// événements projetés en lecture seule. L'offline riche de l'overlay est consolidé au Lot 8.
 class OverlayRepository {
-  OverlayRepository(this._clients, this._dio);
+  OverlayRepository(this._clients);
 
   final ApiClients _clients;
-  final Dio _dio;
 
   Future<List<api.FamilyLink>> activeLinks(String familyId) async {
     try {
@@ -97,14 +96,17 @@ class OverlayRepository {
       return const [];
     }
     try {
-      final response = await _dio.get<List<dynamic>>(
-        '/api/families/$familyId/events',
-        queryParameters: {'overlay': linkedFamilyIds.join(',')},
-      );
-      return (response.data ?? const [])
-          .whereType<Map<String, dynamic>>()
-          .where((m) => m['source'] == 'linked')
-          .map(OverlayEvent.fromJson)
+      // `source` discrimine les deux formes que la collection mêle quand `overlay=` est posé. Le
+      // contrat le déclare depuis le 2026-09-17 ; jusque-là, le client généré ne pouvait pas voir
+      // le champ et cette lecture passait par un appel dio écrit à la main.
+      final events = await _clients.events
+          .apiFamiliesFamilyIdeventsGetCollection(
+            familyId: familyId,
+            overlay: linkedFamilyIds.join(','),
+          );
+      return events
+          .where((e) => e.source == 'linked')
+          .map(OverlayEvent.fromApi)
           .toList();
     } on DioException catch (e) {
       throw ApiException.fromDio(e);
@@ -113,8 +115,7 @@ class OverlayRepository {
 }
 
 final overlayRepositoryProvider = Provider<OverlayRepository>(
-  (ref) =>
-      OverlayRepository(ref.watch(apiClientsProvider), ref.watch(dioProvider)),
+  (ref) => OverlayRepository(ref.watch(apiClientsProvider)),
 );
 
 /// Liens de famille **actifs** de la famille active.

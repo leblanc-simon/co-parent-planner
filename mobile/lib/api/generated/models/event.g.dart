@@ -17,6 +17,8 @@ Event _$EventFromJson(Map<String, dynamic> json) => Event(
   endsAt: json['endsAt'] as String?,
   recurrenceDate: json['recurrenceDate'] as String?,
   recurrence: json['recurrence'] as Map<String, dynamic>?,
+  color: json['color'] as String?,
+  linkedFamilyId: json['linkedFamilyId'] as String?,
   id: json['id'] as String? ?? '',
   title: json['title'] as String? ?? '',
   category: json['category'] as String? ?? '',
@@ -26,6 +28,8 @@ Event _$EventFromJson(Map<String, dynamic> json) => Event(
   isRecurring: json['isRecurring'] as bool? ?? false,
   isOverride: json['isOverride'] as bool? ?? false,
   version: (json['version'] as num?)?.toInt() ?? 1,
+  source: json['source'] as String? ?? 'own',
+  editable: json['editable'] as bool? ?? true,
 );
 
 Map<String, dynamic> _$EventToJson(Event instance) => <String, dynamic>{
@@ -46,4 +50,8 @@ Map<String, dynamic> _$EventToJson(Event instance) => <String, dynamic>{
   'isOverride': instance.isOverride,
   'version': instance.version,
   'recurrence': instance.recurrence,
+  'source': instance.source,
+  'color': instance.color,
+  'editable': instance.editable,
+  'linkedFamilyId': instance.linkedFamilyId,
 };

@@ -7593,6 +7593,30 @@
                                 }
                             ]
                         }
+                    },
+                    "source": {
+                        "description": "Origine de l'\u00e9l\u00e9ment : `own` (famille active) ou `linked` (famille li\u00e9e, lecture seule).",
+                        "default": "own",
+                        "type": "string"
+                    },
+                    "color": {
+                        "description": "Teinte impos\u00e9e par l'origine (`#9C6FB0` pour une famille li\u00e9e) ; `null` = palette de cat\u00e9gorie.",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "editable": {
+                        "description": "La ressource est mutable via l'API \u2014 l'autorisation reste soumise au droit `agenda`. Toujours `false` en overlay.",
+                        "default": true,
+                        "type": "boolean"
+                    },
+                    "linkedFamilyId": {
+                        "description": "Famille li\u00e9e d'origine, pour le regroupement UI ; `null` pour un \u00e9v\u00e9nement de la famille active.",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
                     }
                 }
             },
@@ -7886,6 +7910,30 @@
                                         }
                                     ]
                                 }
+                            },
+                            "source": {
+                                "description": "Origine de l'\u00e9l\u00e9ment : `own` (famille active) ou `linked` (famille li\u00e9e, lecture seule).",
+                                "default": "own",
+                                "type": "string"
+                            },
+                            "color": {
+                                "description": "Teinte impos\u00e9e par l'origine (`#9C6FB0` pour une famille li\u00e9e) ; `null` = palette de cat\u00e9gorie.",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "editable": {
+                                "description": "La ressource est mutable via l'API \u2014 l'autorisation reste soumise au droit `agenda`. Toujours `false` en overlay.",
+                                "default": true,
+                                "type": "boolean"
+                            },
+                            "linkedFamilyId": {
+                                "description": "Famille li\u00e9e d'origine, pour le regroupement UI ; `null` pour un \u00e9v\u00e9nement de la famille active.",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
                             }
                         }
                     }

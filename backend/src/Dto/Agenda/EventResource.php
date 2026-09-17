@@ -134,6 +134,23 @@ class EventResource
     /** @var array{freq: string, until?: string|null, count?: int|null, excludeHolidays?: bool}|null */
     public ?array $recurrence = null;
 
+    // ---- Discriminant d'origine (Lot 5) ----------------------------------------------------------
+    //
+    // Avec `overlay=`, la collection mêle deux formes : les événements de la famille active et la
+    // projection minimale des familles liées ({@see OverlayEventResource}). Le contrat ne déclarait
+    // que la première, si bien qu'un client généré depuis l'OpenAPI ne pouvait pas distinguer les
+    // deux — le mobile contournait par un appel HTTP écrit à la main. Ces quatre champs déclarent
+    // l'union : ce sont exactement ceux que porte la projection liée.
+
+    /** Origine de l'élément : `own` (famille active) ou `linked` (famille liée, lecture seule). */
+    public string $source = 'own';
+    /** Teinte imposée par l'origine (`#9C6FB0` pour une famille liée) ; `null` = palette de catégorie. */
+    public ?string $color = null;
+    /** La ressource est mutable via l'API — l'autorisation reste soumise au droit `agenda`. Toujours `false` en overlay. */
+    public bool $editable = true;
+    /** Famille liée d'origine, pour le regroupement UI ; `null` pour un événement de la famille active. */
+    public ?string $linkedFamilyId = null;
+
     public static function fromOccurrence(Occurrence $o, \DateTimeZone $tz): self
     {
         $dto = new self();

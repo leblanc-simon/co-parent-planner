@@ -99,6 +99,13 @@ final class EventOverlayLot5Test extends ApiAuthTestCase
 
         self::assertCount(1, $own, 'événement propre de A');
         self::assertSame('Tennis (foyer A)', $own[0]['title']);
+        // Le discriminant est porté par les DEUX formes : un client généré depuis l'OpenAPI ne peut
+        // les distinguer que si l'événement propre l'annonce lui aussi (et pas seulement par
+        // l'absence de la clé, qu'un modèle à valeurs par défaut ne sait pas voir).
+        self::assertSame('own', $own[0]['source']);
+        self::assertTrue($own[0]['editable']);
+        self::assertNull($own[0]['color']);
+        self::assertNull($own[0]['linkedFamilyId']);
         self::assertCount(1, $linked, 'événement de la famille liée B, projeté');
         self::assertSame('Judo (foyer B)', $linked[0]['title']);
         self::assertSame('#9C6FB0', $linked[0]['color']);

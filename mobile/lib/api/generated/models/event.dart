@@ -22,6 +22,8 @@ class Event {
     this.endsAt,
     this.recurrenceDate,
     this.recurrence,
+    this.color,
+    this.linkedFamilyId,
     this.id = '',
     this.title = '',
     this.category = '',
@@ -31,6 +33,8 @@ class Event {
     this.isRecurring = false,
     this.isOverride = false,
     this.version = 1,
+    this.source = 'own',
+    this.editable = true,
   });
   
   factory Event.fromJson(Map<String, Object?> json) => _$EventFromJson(json);
@@ -54,6 +58,18 @@ class Event {
   /// Version de la ligne à renvoyer dans `expectedVersion` d'un PATCH (verrou optimiste, §4.3).
   final int version;
   final Map<String, dynamic>? recurrence;
+
+  /// Origine de l'élément : `own` (famille active) ou `linked` (famille liée, lecture seule).
+  final String source;
+
+  /// Teinte imposée par l'origine (`#9C6FB0` pour une famille liée) ; `null` = palette de catégorie.
+  final String? color;
+
+  /// La ressource est mutable via l'API — l'autorisation reste soumise au droit `agenda`. Toujours `false` en overlay.
+  final bool editable;
+
+  /// Famille liée d'origine, pour le regroupement UI ; `null` pour un événement de la famille active.
+  final String? linkedFamilyId;
 
   Map<String, Object?> toJson() => _$EventToJson(this);
 }

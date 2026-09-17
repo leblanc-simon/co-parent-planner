@@ -543,6 +543,13 @@ ligne.
 bien que la CI restait verte en masquant un défaut de production. Trois passages **cache purgé**
 donnent désormais 24, puis 25/25.
 
+**Réessais supprimés** (2026-09-18, décision PO) : `retries: 0` en CI comme en local — un échec E2E
+doit se voir. Deux conséquences traitées dans la foulée, sans quoi la CI aurait perdu sa capacité de
+diagnostic au moment où elle en a le plus besoin : `trace: 'on-first-retry'` ne produisait plus rien
+sans réessai (passé à `retain-on-failure`), et l'artefact d'échec pointait `playwright-report/`, que
+le reporter CI (`github` + `list`) ne génère pas — il était donc **vide**. Il pointe désormais
+`test-results/`, vérifié porteur des `trace.zip`, captures et contextes d'erreur.
+
 Portes : backend **490 tests / 4 318 assertions**, couverture **87,9 %**, PHPStan 0, cs-fixer 0 ;
 mobile **453 tests**, couverture **85,0 %**, analyze 0, format 0, génération idempotente ;
 **E2E 25/25** (dont 3 passages sur cache froid). OpenAPI ré-exporté, client Dart régénéré.

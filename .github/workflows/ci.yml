@@ -145,11 +145,15 @@ jobs:
       - name: Playwright — parcours E2E
         working-directory: web-e2e
         run: npm test
+      # `test-results/` et non `playwright-report/` : le rapport HTML n'est pas généré en CI
+      # (reporter `github` + `list`), si bien que l'artefact était vide. Les traces, captures et
+      # contextes d'erreur des tests échoués vivent ici — seule matière pour diagnostiquer un échec
+      # désormais qu'aucun réessai ne le masque.
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-report
-          path: web-e2e/playwright-report/
+          name: playwright-traces
+          path: web-e2e/test-results/
 
   # ---------------------------------------------------------------------------
   mobile:

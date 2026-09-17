@@ -15,6 +15,7 @@ import '../features/children/presentation/children_screen.dart';
 import '../features/custody/presentation/custody_screen.dart';
 import '../features/family/application/family_context.dart';
 import '../features/home/shell/agenda_tab.dart';
+import '../features/home/shell/depenses_tab.dart';
 import '../features/home/shell/home_shell.dart';
 import '../features/home/shell/home_tab.dart';
 import '../features/onboarding/presentation/create_family_screen.dart';
@@ -146,6 +147,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: Routes.children,
                 builder: (_, _) => const ChildrenScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.expenses,
+                builder: (_, _) => const DepensesTab(),
               ),
             ],
           ),

@@ -7,6 +7,7 @@ namespace App\Service\Notification;
 use App\Entity\Family;
 use App\Entity\Membership;
 use App\Enum\NotificationType;
+use App\Enum\RightLevel;
 use App\Message\SendNotification;
 use App\Repository\NotificationPrefRepository;
 use Psr\Log\LoggerInterface;
@@ -46,21 +47,60 @@ final class NotificationEmitter
                 if (null !== $authorId && (string) $membership->getId() === $authorId) {
                     continue; // pas d'auto-notification
                 }
-                $user = $membership->getUser();
-                if (!$this->prefs->isEmailEnabled($user, $type->category())) {
-                    continue;
-                }
-                $key = $type->value.':'.$factId.':'.$user->getId();
-                $this->bus->dispatch(new SendNotification(
-                    $key,
-                    (string) $user->getId(),
-                    (string) $family->getId(),
-                    $type->value,
-                    $payloadRefs,
-                ));
+                $this->dispatch($type, $family, $membership, $factId, $payloadRefs);
             }
         } catch (\Throwable $e) {
             $this->logger->warning('Échec d\'émission de notification.', ['type' => $type->value, 'exception' => $e]);
         }
+    }
+
+    /**
+     * Notification adressée à **un** membre désigné, et non à tous les habilités du domaine.
+     *
+     * Le rappel de dépense (Lot 10 US-DEP-2) en a besoin : il s'adresse au parent débiteur, pas à
+     * quiconque peut voir les dépenses. Le droit du destinataire reste vérifié — un membre qui a
+     * perdu l'accès au domaine ne doit pas continuer à en recevoir les e-mails.
+     *
+     * @param array<string, string> $payloadRefs
+     */
+    public function emitTo(
+        NotificationType $type,
+        Family $family,
+        Membership $recipient,
+        string $factId,
+        array $payloadRefs = [],
+    ): void {
+        try {
+            if (!$recipient->can($type->rightDomain(), RightLevel::View)) {
+                return;
+            }
+            $this->dispatch($type, $family, $recipient, $factId, $payloadRefs);
+        } catch (\Throwable $e) {
+            $this->logger->warning('Échec d\'émission de notification ciblée.', ['type' => $type->value, 'exception' => $e]);
+        }
+    }
+
+    /**
+     * @param array<string, string> $payloadRefs
+     */
+    private function dispatch(
+        NotificationType $type,
+        Family $family,
+        Membership $membership,
+        string $factId,
+        array $payloadRefs,
+    ): void {
+        $user = $membership->getUser();
+        if (!$this->prefs->isEmailEnabled($user, $type->category())) {
+            return;
+        }
+
+        $this->bus->dispatch(new SendNotification(
+            $type->value.':'.$factId.':'.$user->getId(),
+            (string) $user->getId(),
+            (string) $family->getId(),
+            $type->value,
+            $payloadRefs,
+        ));
     }
 }

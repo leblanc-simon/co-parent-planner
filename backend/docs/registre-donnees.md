@@ -11,7 +11,7 @@
 > 🔒 = chiffré au repos (AES-256-GCM, clé hors base — cdc §5.3).
 > La clé `Entité.champ` doit apparaître telle quelle dans la colonne « Champ ».
 
-Dernière mise à jour : 2026-07-10 (Lot 8 — RGPD Manager actif).
+Dernière mise à jour : 2026-09-18 (Lot 10 — module Dépenses activé).
 
 ## Champs (Lot 0)
 
@@ -201,3 +201,34 @@ les références (`SET NULL`) sans casser les liens/audits :
 | Champ | Catégorie | Sensibilité | Base légale | Finalité | Conservation | Destinataires |
 |---|---|---|---|---|---|---|
 | `ExchangeRead.lastReadAt` | Technique (horodatage d'activité) | Standard | Exécution du contrat (coordination parentale) | Distinguer les échanges qui ont du nouveau de ceux déjà lus | Durée de vie de l'échange ou du membership (`CASCADE`) ; purge RGPD (Lot 8) | Interne (usage serveur) — jamais exposé aux autres membres |
+
+## Champs (Lot 10 — dépenses partagées, v2)
+
+> Une dépense dit **ce qui a été acheté pour un enfant, par qui et pour quel montant**. Prise isolément
+> chaque ligne est anodine ; accumulées, elles dessinent le train de vie d'un foyer et les besoins d'un
+> mineur. Elles entrent donc au registre, bien qu'aucune ne soit chiffrée.
+>
+> **Pas de chiffrement 🔒 au Lot 10, et ce n'est pas un oubli** : le cdc §5.2 ne marque aucun champ
+> de dépense, et le libellé est un intitulé fonctionnel (« Cantine septembre »), pas un contenu
+> rédigé comme un message ou une note. Le chiffrer coûterait par ailleurs les agrégats SQL dont vit
+> l'écran. Si une analyse ultérieure le demandait, ce serait une évolution explicite — comme l'a été
+> le passage des informations enfants en 🔒 le 2026-09-17.
+>
+> **`category = sante` n'est pas une donnée de santé** (invariant cdc §1.4.1) : c'est une ligne de
+> compte, au même titre que « scolarité » ou « vêtements ». Elle ne décrit aucun état de l'enfant, et
+> rien dans le modèle ne permet d'en inférer un.
+>
+> **Suppression de compte** : les dépenses ne sont pas effacées (intégrité des comptes partagés, même
+> traitement que les messages et les notes). Les FK `payer_membership_id` et
+> `expense_shares.membership_id` passent à `NULL` — le membre devient « membre supprimé » — et la
+> dépense **sort alors du solde** faute de contrepartie identifiable, tout en restant au total engagé.
+
+| Champ | Catégorie | Sensibilité | Base légale | Finalité | Conservation | Destinataires |
+|---|---|---|---|---|---|---|
+| `Expense.title` | Contenu (coordination) | Standard (intitulé fonctionnel, **aucune donnée de santé typée**) | Exécution du contrat (coordination parentale) | Identifier la dépense engagée pour les enfants | Durée de vie de la dépense ; purge RGPD (Lot 8) | Membres habilités de la famille (expenses ≥ view ; **jamais un enfant**) |
+| `Expense.amountCents` | Contenu (financier) | Standard (entier en centimes, devise EUR) | Exécution du contrat (coordination parentale) | Calculer le solde « qui doit quoi » et les totaux engagés | Durée de vie de la dépense ; purge RGPD (Lot 8) | Membres habilités de la famille (expenses ≥ view ; **jamais un enfant**) |
+| `ExpenseShare.value` | Contenu (financier) | Standard (pourcentage ou centimes) | Exécution du contrat (coordination parentale) | Répartir une dépense entre les parents | Durée de vie de la dépense (`CASCADE`) ; purge RGPD (Lot 8) | Membres habilités de la famille (expenses ≥ view ; **jamais un enfant**) |
+
+> Tables techniques associées : `expense_child` (liaison N-N `Expense` ↔ `Child`, `CASCADE` des deux
+> côtés) porte un rattachement, pas un contenu ; `Expense.payerMembership` et
+> `Expense.createdByMembership` sont des FK `SET NULL` vers `Membership` (identités déjà 🔒 côté `User`).

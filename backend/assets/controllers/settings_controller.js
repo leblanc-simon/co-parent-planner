@@ -51,6 +51,12 @@ export default class extends ApiController {
         // disparu du formulaire, `data.get()` renverrait `null` et le processor, qui n'écrit que les
         // clés reçues, effacerait alors la valeur enregistrée en base à chaque sauvegarde des
         // réglages de la famille.
+        // Module Dépenses (Lot 10) : une case à cocher non cochée n'est PAS dans le FormData —
+        // lire `data.get()` renverrait `null`, que le processor ignore, et le module ne pourrait
+        // jamais être désactivé. On lit donc l'état de la case elle-même.
+        const expenses = event.currentTarget.querySelector('[name="expensesEnabled"]');
+        if (expenses) body.expensesEnabled = expenses.checked;
+
         this._send('PATCH', `/api/families/${this.familyIdValue}`, body, {
             event,
             notice: 'Réglages de la famille enregistrés.',

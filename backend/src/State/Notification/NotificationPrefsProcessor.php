@@ -66,7 +66,7 @@ final class NotificationPrefsProcessor implements ProcessorInterface
     {
         foreach ($email as $categoryValue => $enabled) {
             $category = NotificationCategory::tryFrom((string) $categoryValue);
-            if (null === $category || !$category->isV1()) {
+            if (null === $category) {
                 throw new NotificationInputException('notification.error.category_invalid');
             }
             $pref = $this->prefs->findOneFor($user, $category, NotificationChannel::Email)

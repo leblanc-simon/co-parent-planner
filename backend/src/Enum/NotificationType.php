@@ -27,6 +27,11 @@ enum NotificationType: string
     // Garde (Lot 3)
     case CustodyChanged = 'custody_changed';
 
+    // Dépenses (Lot 10, v2)
+    case ExpenseAdded = 'expense_added';
+    case ExpenseSettled = 'expense_settled';
+    case ExpenseReminder = 'expense_reminder';
+
     public function category(): NotificationCategory
     {
         return match ($this) {
@@ -35,6 +40,7 @@ enum NotificationType: string
             self::AgendaEventCreated, self::AgendaEventUpdated,
             self::AgendaEventDeleted, self::AgendaReminder => NotificationCategory::Agenda,
             self::CustodyChanged => NotificationCategory::Custody,
+            self::ExpenseAdded, self::ExpenseSettled, self::ExpenseReminder => NotificationCategory::Expenses,
         };
     }
 
@@ -45,6 +51,7 @@ enum NotificationType: string
             NotificationCategory::Custody => RightDomain::Custody,
             NotificationCategory::Agenda => RightDomain::Agenda,
             NotificationCategory::Exchanges => RightDomain::Exchanges,
+            NotificationCategory::Expenses => RightDomain::Expenses,
             default => RightDomain::Agenda,
         };
     }

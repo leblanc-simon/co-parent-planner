@@ -1713,6 +1713,276 @@ abstract class AppL10n {
   /// **'Les événements récurrents se créent depuis le web.'**
   String get agendaRecurrenceWebOnly;
 
+  /// No description provided for @tabExpenses.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dépenses'**
+  String get tabExpenses;
+
+  /// No description provided for @expensesTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dépenses partagées'**
+  String get expensesTitle;
+
+  /// No description provided for @expensesSubtitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Frais des enfants · répartition et remboursements'**
+  String get expensesSubtitle;
+
+  /// No description provided for @expensesEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucune dépense pour l\'instant.'**
+  String get expensesEmpty;
+
+  /// No description provided for @expensesFilterAll.
+  ///
+  /// In fr, this message translates to:
+  /// **'Toutes'**
+  String get expensesFilterAll;
+
+  /// No description provided for @expensesFilterDue.
+  ///
+  /// In fr, this message translates to:
+  /// **'À régler'**
+  String get expensesFilterDue;
+
+  /// No description provided for @expensesFilterSettled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réglées'**
+  String get expensesFilterSettled;
+
+  /// No description provided for @expensesNew.
+  ///
+  /// In fr, this message translates to:
+  /// **'Nouvelle dépense'**
+  String get expensesNew;
+
+  /// No description provided for @expensesCreate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enregistrer'**
+  String get expensesCreate;
+
+  /// No description provided for @expensesCreated.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dépense enregistrée.'**
+  String get expensesCreated;
+
+  /// No description provided for @expensesFieldTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Libellé'**
+  String get expensesFieldTitle;
+
+  /// No description provided for @expensesCategory.
+  ///
+  /// In fr, this message translates to:
+  /// **'Catégorie'**
+  String get expensesCategory;
+
+  /// No description provided for @expensesAmount.
+  ///
+  /// In fr, this message translates to:
+  /// **'Montant (€)'**
+  String get expensesAmount;
+
+  /// No description provided for @expensesDate.
+  ///
+  /// In fr, this message translates to:
+  /// **'Date'**
+  String get expensesDate;
+
+  /// No description provided for @expensesPayer.
+  ///
+  /// In fr, this message translates to:
+  /// **'Payé par'**
+  String get expensesPayer;
+
+  /// No description provided for @expensesChildren.
+  ///
+  /// In fr, this message translates to:
+  /// **'Enfant(s) concerné(s)'**
+  String get expensesChildren;
+
+  /// No description provided for @expensesNoChild.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ajoutez d\'abord un enfant pour enregistrer une dépense.'**
+  String get expensesNoChild;
+
+  /// No description provided for @expensesPaidBy.
+  ///
+  /// In fr, this message translates to:
+  /// **'{payer} a payé'**
+  String expensesPaidBy(String payer);
+
+  /// No description provided for @expensesDeletedMember.
+  ///
+  /// In fr, this message translates to:
+  /// **'Membre supprimé'**
+  String get expensesDeletedMember;
+
+  /// No description provided for @expensesStatusSettled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Réglée'**
+  String get expensesStatusSettled;
+
+  /// No description provided for @expensesStatusDue.
+  ///
+  /// In fr, this message translates to:
+  /// **'À régler'**
+  String get expensesStatusDue;
+
+  /// No description provided for @expensesSettle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Marquer réglée'**
+  String get expensesSettle;
+
+  /// No description provided for @expensesSettled.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dépense marquée réglée.'**
+  String get expensesSettled;
+
+  /// No description provided for @expensesRemind.
+  ///
+  /// In fr, this message translates to:
+  /// **'Relancer'**
+  String get expensesRemind;
+
+  /// No description provided for @expensesReminded.
+  ///
+  /// In fr, this message translates to:
+  /// **'Rappel envoyé.'**
+  String get expensesReminded;
+
+  /// No description provided for @expensesReminderPending.
+  ///
+  /// In fr, this message translates to:
+  /// **'Un rappel vient d\'être envoyé pour cette dépense.'**
+  String get expensesReminderPending;
+
+  /// No description provided for @expensesDelete.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer'**
+  String get expensesDelete;
+
+  /// No description provided for @expensesDeleteConfirmTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Supprimer cette dépense ?'**
+  String get expensesDeleteConfirmTitle;
+
+  /// No description provided for @expensesDeleteConfirmBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'« {title} » sera supprimée pour tous les membres de la famille.'**
+  String expensesDeleteConfirmBody(String title);
+
+  /// No description provided for @expensesDeleted.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dépense supprimée.'**
+  String get expensesDeleted;
+
+  /// No description provided for @expensesBalanceTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Solde courant'**
+  String get expensesBalanceTitle;
+
+  /// No description provided for @expensesBalanced.
+  ///
+  /// In fr, this message translates to:
+  /// **'Comptes équilibrés'**
+  String get expensesBalanced;
+
+  /// No description provided for @expensesOwes.
+  ///
+  /// In fr, this message translates to:
+  /// **'{debtor} doit {amount} à {creditor}'**
+  String expensesOwes(String debtor, String amount, String creditor);
+
+  /// No description provided for @expensesBalanceExcluded.
+  ///
+  /// In fr, this message translates to:
+  /// **'{count, plural, one{{count} dépense est exclue du solde (compte supprimé).} other{{count} dépenses sont exclues du solde (compte supprimé).}}'**
+  String expensesBalanceExcluded(num count);
+
+  /// No description provided for @expensesBalanceUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Solde indisponible hors connexion.'**
+  String get expensesBalanceUnavailable;
+
+  /// No description provided for @expensesByCategory.
+  ///
+  /// In fr, this message translates to:
+  /// **'Par catégorie'**
+  String get expensesByCategory;
+
+  /// No description provided for @expensesTotal.
+  ///
+  /// In fr, this message translates to:
+  /// **'Total engagé'**
+  String get expensesTotal;
+
+  /// No description provided for @expensesRemaining.
+  ///
+  /// In fr, this message translates to:
+  /// **'Reste à régler'**
+  String get expensesRemaining;
+
+  /// No description provided for @expensesAmountInvalid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Saisissez un montant supérieur à zéro.'**
+  String get expensesAmountInvalid;
+
+  /// No description provided for @expensesChildRequired.
+  ///
+  /// In fr, this message translates to:
+  /// **'Sélectionnez au moins un enfant.'**
+  String get expensesChildRequired;
+
+  /// No description provided for @expCatHealth.
+  ///
+  /// In fr, this message translates to:
+  /// **'Santé'**
+  String get expCatHealth;
+
+  /// No description provided for @expCatSchooling.
+  ///
+  /// In fr, this message translates to:
+  /// **'Scolarité'**
+  String get expCatSchooling;
+
+  /// No description provided for @expCatActivities.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activités'**
+  String get expCatActivities;
+
+  /// No description provided for @expCatClothing.
+  ///
+  /// In fr, this message translates to:
+  /// **'Vêtements'**
+  String get expCatClothing;
+
+  /// No description provided for @expCatOther.
+  ///
+  /// In fr, this message translates to:
+  /// **'Autre'**
+  String get expCatOther;
+
   /// No description provided for @catSport.
   ///
   /// In fr, this message translates to:

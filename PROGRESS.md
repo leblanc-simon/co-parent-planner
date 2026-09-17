@@ -5,7 +5,9 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-09-18** — **Les deux dettes techniques sont soldées, et l'une d'elles cachait un vrai défaut.** (1) Un test E2E **exerce** enfin une mise à jour poussée de bout en bout : écran ouvert, mutation faite hors de la page, aucune navigation déclenchée par le test — ce qui apparaît ne peut venir que du hub. Il a été vérifié en panne des deux côtés (poussée coupée, puis retour au `<turbo-stream-source>` du défaut C2). (2) L'overlay agenda mobile passe au **client généré** : le blocage n'était pas le mobile mais le contrat, qui déclarait une seule forme là où `overlay=` en renvoie deux ; `EventResource` porte désormais le discriminant `source`/`color`/`editable`/`linkedFamilyId`. **Défaut trouvé en chemin** : sur un écran temps réel, la poussée déclenchée par sa *propre* mutation remplaçait le corps de la page et **effaçait la confirmation de succès** — celle-ci avait déjà été consommée du `sessionStorage` par son premier affichage. C'est ce qui rendait la suite E2E instable à cache froid, instabilité que `retries: 1` masquait en CI. Détail : §6, entrée du 2026-09-18.
+Dernière mise à jour : **2026-09-18** — **Lot 10 livré : les dépenses partagées existent, module par module.** Backend (entités `Expense`/`ExpenseShare`/`expense_child`, Voter, solde, agrégats, rappel), front web (`/depenses`, grille 2 colonnes du §8), mobile (5ᵉ onglet conditionnel, saisie hors-ligne), E2E et contrat. **Trois arbitrages PO rendus le 2026-09-18** : `DELETE /api/expenses/{id}` et `POST /api/expenses/{id}/reminder` sont exposés (extensions assumées du cdc §6.2) ; la **pondération par enfant est écartée** — neutre sur le partage entre parents par linéarité (§3.1.D), une pondération non persistée n'aurait été observable nulle part, `expense_child` reste donc la table nue du cdc §5.2 ; cooldown de rappel à **72 h** par dépense. **Ce que les tests ont trouvé** : un titulaire de part anonymisé faisait porter **tout** le montant au parent survivant (le balayage d'arrondi l'a pris en défaut), un partage ré-édité heurtait l'unicité `(expense_id, membership_id)` en 500, et `read: false` sur le GET du solde renvoyait `null` en 200. Détail : §6, entrée du 2026-09-18 (Lot 10).
+
+Antérieur : **2026-09-18** — **Les deux dettes techniques sont soldées, et l'une d'elles cachait un vrai défaut.** (1) Un test E2E **exerce** enfin une mise à jour poussée de bout en bout : écran ouvert, mutation faite hors de la page, aucune navigation déclenchée par le test — ce qui apparaît ne peut venir que du hub. Il a été vérifié en panne des deux côtés (poussée coupée, puis retour au `<turbo-stream-source>` du défaut C2). (2) L'overlay agenda mobile passe au **client généré** : le blocage n'était pas le mobile mais le contrat, qui déclarait une seule forme là où `overlay=` en renvoie deux ; `EventResource` porte désormais le discriminant `source`/`color`/`editable`/`linkedFamilyId`. **Défaut trouvé en chemin** : sur un écran temps réel, la poussée déclenchée par sa *propre* mutation remplaçait le corps de la page et **effaçait la confirmation de succès** — celle-ci avait déjà été consommée du `sessionStorage` par son premier affichage. C'est ce qui rendait la suite E2E instable à cache froid, instabilité que `retries: 1` masquait en CI. Détail : §6, entrée du 2026-09-18.
 
 Antérieur : **2026-09-17** — **Les informations sur les enfants sont chiffrées au repos.** `Child.firstName`, `Child.schoolLabel` et `Child.info` passent en 🔒 (AES-256-GCM applicatif) : ce sont des données de **mineurs**, et elles étaient les dernières à rendre un dump SQL brut lisible. La décision PO du 2026-08-27 attendait depuis trois semaines parce qu'elle bute sur un vrai point dur — **le tri sur le prénom**, qu'un `ORDER BY` ne peut plus rendre. Il passe en PHP (`ChildSorter`, `Collator` de la locale active) et `ChildRepository::findByFamily()` devient le **point de passage unique** pour lister les enfants ; l'index aveugle, envisagé dans le registre, a été écarté — un HMAC répond à l'égalité, pas à l'ordre. Nouveau type Doctrine `encrypted_json` pour `info` (JSON sérialisé **puis** chiffré, colonne TEXT). Migration `Version20260917204656` avec **reprise des lignes existantes**, aller-retour vérifié sur 191 enfants réels. Détail : §6, entrée du 2026-09-17.
 
@@ -102,7 +104,7 @@ PHPStan niv.8 0, cs-fixer 0 ; mobile `dart analyze --fatal-infos --fatal-warning
 0, **283 tests**, couverture **76,0 %** ; **E2E web 21/21** ; OpenAPI ré-exporté et client Dart
 régénéré, génération **idempotente**.
 
-**Évolutions produit : E1 et E4 livrées le 2026-09-05 ; restent E2, E3 et E5.**
+**Évolutions produit : les cinq lots E1→E5 sont livrés** (E1 et E4 le 2026-09-05, E2/E3/E5 le 2026-09-08, commit `cf004f6`).
 
 **Revue UX/UI de l'écran Échanges** (`specs/revue-echanges-ux-2026-09.md`, 2026-09-05) — 9 points,
 dont deux P1 sur le vote. **X1 et X2 livrés le 2026-09-05** : vote en deux gestes (choix local
@@ -139,8 +141,11 @@ nommage du foyer dans les e-mails.
 
 **Plus aucun chantier de revue ouvert** : la **revue mobile** est close (68/68, 2026-09-04) et la
 **revue web** l'est à son tour (39/39, 2026-09-05) — étapes 1 à 6 **et** liste de finition P2/P3.
-Le prochain travail relève donc du produit (Lot 10 dépenses v2, Lot 11 push mobile v2) ou d'une
-nouvelle revue, non d'un reste à solder.
+
+**Lot 10 — Dépenses (v2) : ✅ LIVRÉ le 2026-09-18** (backend + web + mobile + E2E + contrat).
+**Reste au catalogue : le Lot 11 (push mobile, v2)**, qui dépend d'une action mainteneur — APNs ne
+fonctionne pas sur simulateur, sa validation iOS exige un build signé sur device réel (compte Apple,
+clé API ASC, dépôt `match`, secrets CI : `infra/INSTALL.md §E.1`).
 
 **Pièges à connaître dans ce dépôt** :
 - Ne **jamais** passer `dart format` sur `mobile/lib/api/generated` — le générateur produit un style
@@ -484,6 +489,102 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-09-18 — Lot 10 : les dépenses partagées
+
+**Trois arbitrages avant la première ligne de code.** La spec du lot réservait explicitement trois
+décisions au porteur produit, toutes des extensions du cdc §6.2. `DELETE /api/expenses/{id}` et
+`POST /api/expenses/{id}/reminder` sont **retenus** : sans le premier, une saisie erronée resterait
+au total engagé pour toujours (la « supprimer » en la déclarant réglée mentirait sur les comptes) ;
+sans le second, l'action « Envoyer un rappel » du cdc §2.7 n'était routée nulle part et se serait
+greffée en effet de bord d'un PATCH. La **pondération par enfant est écartée**, et c'est le
+raisonnement du §3.1.D qui l'a décidé : par linéarité, appliquer un pourcentage au total ou à chaque
+tranche-enfant puis sommer donne le même montant par parent — la pondération est donc **neutre** sur
+le partage, et avec `share_type=amount` elle est explicitement ignorée. Non persistée, elle n'aurait
+été observable nulle part : une saisie sans effet. `expense_child` reste la table de liaison nue du
+cdc §5.2. Cooldown de rappel : **72 h** par dépense.
+
+**Le module s'active, il ne se présume pas.** Trois gardes en profondeur (§3.4), et l'ordre compte :
+scope famille, puis `expensesEnabled` → **404**, puis le Voter. Le 404 précède le Voter à dessein —
+un 403 sur un module éteint apprendrait à un tiers que la ressource existe ailleurs. Le deuxième
+niveau a demandé de **déplacer** le test `isV2()` dans `Membership::effectiveLevel()` **avant**
+`forcesEdit()` : un parent y passait outre, si bien que le niveau effectif valait `edit` sur un
+module inexistant. Ce niveau n'est pas décoratif — il décide de l'onglet (web **et** mobile), du
+topic Mercure et des destinataires de notification. Une seule condition, `can('expenses')`, couvre
+donc les trois règles du §3.4, y compris l'interdiction stricte enfant.
+
+**Ce que les tests ont trouvé, et qu'une relecture n'aurait pas vu.**
+
+1. *Le balayage d'arrondi* (tout montant de 1 à 2 000 centimes × cinq répartitions) a pris en défaut
+   le traitement des parts **orphelines**. Quand un compte est anonymisé, la FK `SET NULL` laisse une
+   part sans titulaire ; la première version l'écartait **avant** la répartition, et les 50 % du
+   parent disparu se reportaient sur le survivant — anonymiser un parent doublait mécaniquement la
+   dette de l'autre, et la somme restait égale au total, donc rien ne clochait à l'œil. Les parts
+   sans titulaire gardent désormais leur **poids** dans le calcul et ne sont retirées qu'à la fin :
+   la somme des parts résolubles tombe alors sous le total, signal dont le solde se sert pour
+   **écarter la dépense entière** plutôt que d'inventer un débiteur. La conservation `Σ net == 0`
+   tient, et l'écran dit combien de dépenses sont exclues — un solde amputé sans explication passe
+   pour un bug.
+2. *Ré-éditer un partage* répondait **500** : vider la collection pour la reconstruire heurte
+   l'unicité `(expense_id, membership_id)`, Doctrine insérant les nouvelles lignes avant de supprimer
+   les anciennes. La réconciliation se fait désormais **en place**.
+3. *Le solde renvoyait `null` en 200* : sur un `Get` API Platform, `read: false` désactive l'étape de
+   lecture — le provider n'était jamais appelé. Quatre tests tombaient sur le même symptôme.
+4. *Le client Dart généré* sérialise **toutes** les clés d'un merge-patch, les non renseignées à
+   `null`. Marquer une dépense réglée depuis le mobile envoie donc `title: null`, `amountCents: null`…
+   C'est sans danger parce que `ExpenseWriter::update` lit `null` comme « inchangé » et jamais comme
+   « efface » — mais la convention n'était écrite nulle part : un test fonctionnel envoie désormais
+   exactement ce corps et vérifie que rien n'est effacé.
+
+**Exactitude monétaire.** Centimes entiers de bout en bout, contrat compris ; la division par 100
+n'a lieu qu'à l'affichage (filtre Twig `|money`, `MoneyLabels` côté Dart, tous deux ICU). La
+répartition emploie la méthode du **plus grand reste**, départagée par identifiant croissant : la
+somme des parts vaut exactement le montant, et le centime résiduel tombe toujours du même côté —
+sans quoi le solde varierait d'un affichage à l'autre. Côté saisie, les deux clients convertissent
+les euros en centimes par un **arrondi explicite** : `42.35 * 100` vaut 4234.999999999999 en virgule
+flottante, soit un centime perdu à chaque saisie.
+
+**Ce que le solde ne fait pas.** Il n'est **jamais matérialisé** : un total stocké serait à réviser à
+chaque création, édition, règlement, suppression et anonymisation — cinq occasions de diverger, pour
+une addition d'entiers. Sur mobile, il n'a **pas** de repli cache : un solde périmé se lit comme une
+dette due, et deux parents n'ont pas à négocier sur un chiffre calculé avant la dernière saisie ;
+hors-ligne, l'écran le tait et affiche la liste (qui, elle, est en cache). Enfin, le filtre de la
+liste ne touche pas le solde — une dette qui change quand on clique sur « Vêtements » serait fausse.
+
+**Web.** Écran `/depenses` en grille 2 colonnes (liste + rail de solde, cdc §8), filtres catégorie /
+état / enfant, saisie avec partage personnalisé en pourcentages, statut en **texte** (« Réglée » /
+« À régler ») et non par la seule couleur (WCAG 1.4.1). Une teinte de catégorie manquait au design
+system — « Vêtements » `#7E9B7A`, les quatre autres sont celles de l'agenda ; elle est entrée au
+mode `prefers-contrast: more` comme les autres, et `ContrastTokensTest` la vérifie. Le drapeau du
+module se règle depuis Paramètres › Famille (`family_settings:edit`), et le désactiver **conserve**
+les données.
+
+**Mobile.** Cinquième onglet, rendu seulement quand le droit effectif l'autorise. Saisie hors-ligne
+par l'outbox avec `Idempotency-Key` tirée **avant** la tentative réseau (un rejeu après timeout ne
+doit pas créer une seconde dépense, donc un solde faux), effet optimiste reconstitué depuis l'entrée
+outbox et marqué « en attente de synchro » — ces lignes n'offrent ni règlement ni relance, que le
+serveur refuserait. Le partage personnalisé reste web : la saisie de pourcentages y est plus sûre.
+
+**Deux garde-fous du dépôt ont fait leur travail** sans qu'on les sollicite : la table de
+classification des routes (`api_routes_contract_test`) a exigé de **décider explicitement** si les
+quatre nouveaux endpoints portent `X-Family-Id` — c'est le garde-fou né du P0 `C17` —, et le barrel
+de couverture a refusé que cinq fichiers neufs échappent au dénominateur.
+
+**RGPD.** Aucun champ 🔒 nouveau (le cdc §5.2 n'en marque aucun côté dépenses, et le libellé est un
+intitulé fonctionnel, pas un contenu rédigé) ; `Expense.title`, `Expense.amountCents` et
+`ExpenseShare.value` entrent au registre. `category = sante` reste une étiquette budgétaire — aucun
+champ typé santé n'est créé. Les dépenses survivent à la suppression d'un compte (intégrité des
+comptes partagés, même traitement que les messages et les notes) et figurent à l'export du sujet.
+
+**Simplification assumée** : la collection n'est **pas paginée**, comme toutes les collections du
+projet. Le format `json` exposé au client mobile ne transporte aucune métadonnée de page — paginer
+tronquerait la liste sans que le client puisse le savoir. À revoir si le volume l'impose, avec le
+reste des collections.
+
+Portes : backend **554 tests / 55 186 assertions**, couverture **88,4 %**, PHPStan 0, cs-fixer 0 ;
+mobile **478 tests**, couverture **83,2 %**, analyze 0, format 0, génération idempotente ;
+**E2E 26/26**. Migration `Version20260917223309`, OpenAPI ré-exporté (+4 chemins), client Dart
+régénéré, registre et `INSTALL.md` à jour (`EXPENSE_REMINDER_COOLDOWN_HOURS`).
 
 ### 2026-09-18 — Les deux dettes techniques, et le défaut que la première a révélé
 

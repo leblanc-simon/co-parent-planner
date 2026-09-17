@@ -80,6 +80,13 @@ const Map<String, bool> expectedFamilyScoped = {
   '/api/exchanges/{id}/decide': true,
   '/api/exchanges/{id}/read': true,
   '/api/holidays/{id}/rule': true,
+  // Dépenses (Lot 10, v2) : scopées comme toute ressource métier. Le module éteint, le serveur
+  // répond 404 — mais l'en-tête part quand même, sans quoi la réponse serait un 400 de scope
+  // manquant, qui dirait tout autre chose à l'utilisateur.
+  '/api/families/{familyId}/expenses': true,
+  '/api/families/{familyId}/expenses/balance': true,
+  '/api/expenses/{id}': true,
+  '/api/expenses/{id}/reminder': true,
   // Révocation d'invitation : RevokeInvitationProcessor::scope->require().
   '/api/invitations/{id}': true,
   '/api/memberships/{id}': true,

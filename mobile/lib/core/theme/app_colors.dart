@@ -52,4 +52,11 @@ abstract final class AppColors {
   static const Color catHealthSoft = Color(0xFFF6E3E3);
   static const Color catOther = Color(0xFF857E71);
   static const Color catOtherSoft = Color(0xFFECE5D9);
+
+  // Categories depenses (cdc §8, Lot 10). Quatre teintes sur cinq sont celles de
+  // l'agenda — Sante, Scolarite (= ecole), Activites (= sport) et Autre : on reutilise
+  // les constantes plutot que d'en recopier les valeurs. Seul « Vetements » est propre
+  // aux depenses.
+  static const Color catClothing = Color(0xFF7E9B7A);
+  static const Color catClothingSoft = Color(0xFFE9EFE7);
 }

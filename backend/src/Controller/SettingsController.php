@@ -76,7 +76,7 @@ final class SettingsController extends AbstractController
         $user = $active->getUser();
 
         $notifPrefs = [];
-        foreach (NotificationCategory::v1Cases() as $category) {
+        foreach (NotificationCategory::cases() as $category) {
             $notifPrefs[$category->value] = $this->notifPrefs->isEmailEnabled($user, $category);
         }
 

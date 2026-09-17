@@ -77,6 +77,13 @@ enum AuditAction: string
     case NotificationFailed = 'notification.failed';
     case InvitationSent = 'invitation.sent';
 
+    // Dépenses (Lot 10, v2)
+    case ExpenseCreated = 'expense.created';
+    case ExpenseUpdated = 'expense.updated';
+    case ExpenseSettled = 'expense.settled';
+    case ExpenseDeleted = 'expense.deleted';
+    case ExpenseReminderSent = 'expense.reminder.sent';
+
     // RGPD Manager (Lot 8) — export, effacement, anonymisation, purge, accès admin technique
     case RgpdExportRequested = 'rgpd.export.requested';
     case RgpdExportCompleted = 'rgpd.export.completed';

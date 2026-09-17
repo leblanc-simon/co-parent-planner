@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Rgpd\Export;
 
 use App\Entity\User;
+use App\Repository\ExpenseRepository;
 use App\Repository\MembershipRepository;
 use App\Repository\MessageRepository;
 use App\Repository\NoteRepository;
@@ -23,6 +24,7 @@ final class UserDataExporter
 {
     public function __construct(
         private readonly MembershipRepository $memberships,
+        private readonly ExpenseRepository $expenses,
         private readonly NoteRepository $notes,
         private readonly MessageRepository $messages,
         private readonly NotificationPrefRepository $notificationPrefs,
@@ -50,6 +52,7 @@ final class UserDataExporter
             'memberships' => $this->memberships($user),
             'notes' => $this->notesOf($user),
             'messages' => $this->messagesOf($user),
+            'expenses' => $this->expensesOf($user),
             'notificationPreferences' => $this->preferences($user),
         ];
     }
@@ -100,6 +103,42 @@ final class UserDataExporter
                 'exchangeId' => (string) $message->getExchange()->getId(),
                 'text' => $message->getText(),
                 'sentAt' => $message->getSentAt()->format(\DateTimeInterface::ATOM),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Dépenses où le sujet est partie prenante (Lot 10 §4.9). On expose sa **propre** part et le
+     * montant total, jamais l'identité des autres parents : le droit d'accès porte sur ses données,
+     * pas sur celles du co-parent.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function expensesOf(User $user): array
+    {
+        $out = [];
+        foreach ($this->expenses->findInvolvingUser($user) as $expense) {
+            $own = null;
+            foreach ($expense->getShares() as $share) {
+                if ($share->getMembership()?->getUser()->getId()->equals($user->getId()) ?? false) {
+                    $own = $share;
+                }
+            }
+
+            $out[] = [
+                'id' => (string) $expense->getId(),
+                'familyId' => (string) $expense->getFamily()->getId(),
+                'title' => $expense->getTitle(),
+                'category' => $expense->getCategory()->value,
+                'amountCents' => $expense->getAmountCents(),
+                'currency' => $expense->getCurrency(),
+                'expenseDate' => $expense->getExpenseDate()->format('Y-m-d'),
+                'settled' => $expense->isSettled(),
+                'paidBySubject' => $expense->getPayerMembership()?->getUser()->getId()->equals($user->getId()) ?? false,
+                'ownShareType' => $own?->getShareType()->value,
+                'ownShareValue' => $own?->getValue(),
             ];
         }
 

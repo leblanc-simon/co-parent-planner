@@ -37,6 +37,8 @@ final class ContrastTokensTest extends TestCase
         '--cat-school' => '--cat-school-bg',
         '--cat-health' => '--cat-health-bg',
         '--cat-other' => '--cat-other-bg',
+        // Dépenses (Lot 10) : « Vêtements » est la seule teinte de catégorie qui leur soit propre.
+        '--cat-clothing' => '--cat-clothing-bg',
     ];
 
     public function testHighContrastModeMeetsAaOnEverySurface(): void

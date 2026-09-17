@@ -54,6 +54,12 @@
     --cat-health: #C75D5D;      --cat-health-bg: #F6E3E3;
     --cat-other: #857E71;       --cat-other-bg: #ECE5D9;
 
+    /* Catégories dépenses (cdc §8, Lot 10). Quatre teintes sur cinq sont celles de l'agenda —
+       Santé, Scolarité (école), Activités (sport) et Autre : on réutilise les tokens plutôt que d'en
+       recopier les valeurs, qui divergeraient à la première retouche. Seul « Vêtements » est propre
+       aux dépenses, d'où ce token. */
+    --cat-clothing: #7E9B7A;    --cat-clothing-bg: #E9EFE7;
+
     /* Bordures */
     --border: #EFEAE0;
     --border-2: #EAE4D9;
@@ -1284,6 +1290,7 @@ a:hover { text-decoration: underline; }
         --cat-school: #7D5F27;
         --cat-health: #9D4949;
         --cat-other: #686258;
+        --cat-clothing: #4A5F47;
     }
 }
 
@@ -1308,4 +1315,253 @@ a:hover { text-decoration: underline; }
     /* Le mode écrase le fond des pastilles d'activité : sans contour elles deviennent invisibles,
        et sur téléphone (où le libellé est masqué) plus rien ne signalerait l'activité. */
     .garde-day__event-dot { border: 1px solid currentColor; }
+}
+
+
+/* =========================================================================
+   Dépenses partagées (Lot 10, cdc §8 — grille 2 colonnes : liste + rail de solde).
+   Le rail passe SOUS la liste avant 1100 px : à 340 px fixes, il étrangle la liste bien avant le
+   breakpoint de la barre latérale, et les libellés de catégorie s'y coupaient en deux.
+   ========================================================================= */
+.depenses {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 1.4rem;
+    align-items: start;
+    margin-top: 1.2rem;
+
+    @media (max-width: 1100px) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.dep-list {
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+}
+
+.dep-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1rem 1.1rem;
+    box-shadow: 0 1px 2px rgba(41, 38, 33, .03);
+
+    /* Une dépense réglée s'efface sans disparaître : elle reste lisible (le texte garde son
+       contraste), seule la pastille de catégorie s'atténue. Passer toute la carte en `opacity`
+       ferait tomber le libellé sous le seuil de lisibilité. */
+    &.dep-item--settled .dep-item__icon { opacity: .55; }
+
+    & .dep-item__icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: .95rem;
+        font-weight: 700;
+    }
+
+    & .dep-item__body { flex: 1; min-width: 0; }
+
+    & .dep-item__title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--ink);
+    }
+
+    & .dep-item__meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: .45rem;
+        margin-top: .25rem;
+        color: var(--muted);
+        font-size: .82rem;
+    }
+
+    & .dep-item__amount {
+        text-align: right;
+        flex-shrink: 0;
+        font-family: var(--font-title);
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--ink);
+    }
+
+    & .dep-item__split {
+        font-size: .75rem;
+        font-weight: 400;
+        font-family: var(--font-body);
+        color: var(--muted);
+        margin-top: .1rem;
+    }
+
+    & .dep-item__actions {
+        display: flex;
+        gap: .35rem;
+        flex-shrink: 0;
+    }
+}
+
+/* Statut : la couleur ne porte JAMAIS seule l'information (WCAG 1.4.1) — la pastille est un texte
+   (« Réglée » / « À régler »), lisible en niveaux de gris comme en contraste forcé. */
+.dep-status {
+    font-size: .7rem;
+    font-weight: 700;
+    padding: .3rem .7rem;
+    border-radius: var(--radius-pill);
+    white-space: nowrap;
+    flex-shrink: 0;
+
+    &.dep-status--settled { color: var(--positive-strong); background: var(--positive-soft); }
+    &.dep-status--due { color: var(--accent-strong); background: var(--accent-soft-2); }
+}
+
+.dep-rail {
+    display: flex;
+    flex-direction: column;
+    gap: .9rem;
+}
+
+.dep-balance {
+    position: relative;
+    overflow: hidden;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card-lg);
+    padding: 1.4rem;
+    box-shadow: var(--shadow-soft);
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 6px;
+        height: 100%;
+        background: var(--accent);
+    }
+
+    &.dep-balance--even::before { background: var(--positive); }
+
+    & .dep-balance__amount {
+        font-family: var(--font-title);
+        font-size: 1.85rem;
+        font-weight: 700;
+        line-height: 1.15;
+        color: var(--accent-strong);
+        margin-top: .6rem;
+    }
+
+    &.dep-balance--even .dep-balance__amount { color: var(--positive-strong); }
+
+    & .dep-balance__text {
+        font-size: .95rem;
+        color: var(--ink-2);
+        margin-top: .25rem;
+        text-wrap: pretty;
+    }
+
+    & .dep-balance__note {
+        font-size: .8rem;
+        color: var(--muted);
+        margin-top: .5rem;
+    }
+}
+
+.dep-cats {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: 1.1rem;
+
+    & .dep-cats__rows {
+        display: flex;
+        flex-direction: column;
+        gap: .8rem;
+    }
+
+    & .dep-cats__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: .35rem;
+        font-size: .88rem;
+        color: var(--ink-2);
+    }
+
+    & .dep-cats__swatch {
+        width: 11px;
+        height: 11px;
+        border-radius: 4px;
+        display: inline-block;
+        margin-right: .45rem;
+        vertical-align: -1px;
+    }
+
+    & .dep-cats__value { font-weight: 600; color: var(--ink); }
+
+    & .dep-cats__bar {
+        height: 7px;
+        border-radius: 4px;
+        background: #F1ECE2;
+        overflow: hidden;
+    }
+
+    & .dep-cats__fill {
+        height: 100%;
+        border-radius: 4px;
+    }
+
+    & .dep-cats__total {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 1rem;
+        padding-top: .9rem;
+        border-top: 1px solid #F1ECE2;
+        font-size: .88rem;
+        font-weight: 600;
+        color: var(--muted);
+
+        & strong {
+            font-family: var(--font-title);
+            font-size: 1.1rem;
+            color: var(--ink);
+        }
+    }
+}
+
+/* Pastilles de catégorie propres aux dépenses. Les valeurs viennent des tokens du §8 ; « Activités »
+   et « Scolarité » partagent la teinte de Sport et École côté agenda — même couleur, autre domaine. */
+.pill--health { color: var(--cat-health); background: var(--cat-health-bg); }
+.pill--schooling { color: var(--cat-school); background: var(--cat-school-bg); }
+.pill--activities { color: var(--cat-sport); background: var(--cat-sport-bg); }
+.pill--clothing { color: var(--cat-clothing); background: var(--cat-clothing-bg); }
+
+.dep-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    align-items: center;
+}
+
+.dep-shares {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+
+    & .dep-shares__row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 7rem;
+        gap: .5rem;
+        align-items: center;
+    }
 }

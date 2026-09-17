@@ -216,6 +216,7 @@ php bin/console api:openapi:export --output=../contracts/openapi.json   # contra
 | `RGPD_EU_HOSTING` | hébergement UE confirmé (reporté par le rapport de conformité) | `1` |
 | `RGPD_RETENTION_*` | durées de rétention/purge (comptes inactifs, invitations, exports, journaux, notifications) | 1095 j / 30 j / 24 h / 1095 j / 90 j |
 | `RL_RGPD_EXPORT_LIMIT` | exports RGPD max par utilisateur et par heure | `5` |
+| `EXPENSE_REMINDER_COOLDOWN_HOURS` | délai minimal entre deux rappels **d'une même dépense** (module Dépenses, Lot 10) — anti-harcèlement, un dépassement répond 429 | `72` |
 
 > **RGPD (Lot 8)** : en dev/bare-metal les exports sont écrits dans `backend/var/exports` (créé
 > automatiquement, hors web-root) et servis par lien signé HMAC ; **en prod**, brancher une impl

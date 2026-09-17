@@ -1,0 +1,205 @@
+{% extends 'app/shell.html.twig' %}
+{% block title %}Dépenses · CoParentPlanner{% endblock %}
+{% set nav_active = 'depenses' %}
+
+{# Catégories de dépense : classe de pastille et libellé. Les valeurs d'énumération (`scolarite`)
+   ne sortent jamais à l'écran. Les teintes viennent du §8 (voir les tokens `--cat-*`). #}
+{% set depClass = {'sante':'health','scolarite':'schooling','activites':'activities','vetements':'clothing','autre':'other'} %}
+{% set depLabel = {'sante':'Santé','scolarite':'Scolarité','activites':'Activités','vetements':'Vêtements','autre':'Autre'} %}
+{% set depVar = {'sante':'--cat-health','scolarite':'--cat-school','activites':'--cat-sport','vetements':'--cat-clothing','autre':'--cat-other'} %}
+
+{% block main %}
+<header class="main__header">
+    <div>
+        <div class="eyebrow">Comptes partagés</div>
+        <h1>Dépenses partagées</h1>
+        <p class="main__subtitle">Frais des enfants · répartition et remboursements</p>
+    </div>
+</header>
+
+{% if not canView %}
+    <section class="card"><p class="empty-state">Vous n'avez pas accès aux dépenses de cette famille.</p></section>
+{% else %}
+<div data-controller="depenses" data-depenses-family-id-value="{{ family.id }}">
+    <p class="form-error" data-depenses-target="error" role="alert" hidden></p>
+    <p class="form-success" data-depenses-target="notice" role="status" aria-live="polite" hidden></p>
+
+    {# Abonnement temps réel (Turbo Stream over Mercure). `<turbo-mercure-stream-source>` de UX Turbo,
+       seul élément qui honore `private` et transmet donc le cookie d'abonnement au hub (revue 2026-08 C2). #}
+    <turbo-mercure-stream-source private data-controller="realtime" src="{{ mercureHub }}?topic={{ expensesTopic|url_encode }}"></turbo-mercure-stream-source>
+
+    {# ───────── Filtres ───────── #}
+    <section class="card">
+        <div class="dep-filters">
+            <a class="agenda-chip {{ activeCategory is null ? 'is-active' }}"
+               {% if activeCategory is null %}aria-current="page"{% endif %}
+               href="{{ path('app_depenses') }}">Toutes</a>
+            {% for c in categories %}
+                <a class="agenda-chip pill--{{ depClass[c.value] }} {{ activeCategory == c.value ? 'is-active' }}"
+                   {% if activeCategory == c.value %}aria-current="page"{% endif %}
+                   href="{{ path('app_depenses', { category: c.value }) }}">{{ depLabel[c.value] }}</a>
+            {% endfor %}
+        </div>
+        <div class="dep-filters" style="margin-top:.6rem">
+            <a class="agenda-chip {{ activeSettled is null ? 'is-active' }}" href="{{ path('app_depenses', { category: activeCategory }) }}">Tous les états</a>
+            <a class="agenda-chip {{ activeSettled is same as(false) ? 'is-active' }}" href="{{ path('app_depenses', { category: activeCategory, settled: 'false' }) }}">À régler</a>
+            <a class="agenda-chip {{ activeSettled is same as(true) ? 'is-active' }}" href="{{ path('app_depenses', { category: activeCategory, settled: 'true' }) }}">Réglées</a>
+            {% for child in children %}
+                <a class="agenda-chip {{ activeChild == child.id ? 'is-active' }}"
+                   href="{{ path('app_depenses', { category: activeCategory, child: child.id }) }}">{{ child.firstName }}</a>
+            {% endfor %}
+        </div>
+    </section>
+
+    {# ───────── Saisie ───────── #}
+    {% if canEdit %}
+    <details class="create-panel card">
+        <summary class="create-panel__cta">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Ajouter une dépense
+        </summary>
+        <form data-action="submit->depenses#createExpense" class="agenda-form">
+            <div class="grid-2">
+                <div class="field"><label for="d-title">Libellé</label><input id="d-title" name="title" required maxlength="200" placeholder="Cantine septembre"></div>
+                <div class="field"><label for="d-cat">Catégorie</label>
+                    <select id="d-cat" name="category">{% for c in categories %}<option value="{{ c.value }}">{{ depLabel[c.value] }}</option>{% endfor %}</select>
+                </div>
+                {# Le montant se saisit en euros — personne ne compte en centimes — et le contrôleur
+                   Stimulus le convertit avant l'envoi : le contrat, lui, ne transporte que des entiers. #}
+                <div class="field"><label for="d-amount">Montant (€)</label>
+                    <input id="d-amount" name="amount" type="number" min="0.01" step="0.01" required inputmode="decimal" placeholder="42,50">
+                </div>
+                <div class="field"><label for="d-date">Date</label><input id="d-date" name="expenseDate" type="date" required value="{{ 'now'|date('Y-m-d') }}"></div>
+                <div class="field"><label for="d-payer">Payé par</label>
+                    <select id="d-payer" name="payerMembershipId">
+                        {% for parent in parents %}<option value="{{ parent.id }}">{{ parent.user.fullName ?: parent.user.email }}</option>{% endfor %}
+                    </select>
+                </div>
+            </div>
+            <fieldset class="field">
+                <legend>Enfant(s) concerné(s)</legend>
+                {% for child in children %}
+                    <label class="check"><input type="checkbox" name="childIds[]" value="{{ child.id }}"> {{ child.firstName }}</label>
+                {% else %}
+                    <p class="empty-state">Ajoutez d'abord un enfant pour enregistrer une dépense.</p>
+                {% endfor %}
+            </fieldset>
+
+            {# Partage : 50/50 par défaut, sinon des pourcentages qui doivent tomber sur 100. Le
+               partage en montants fixes existe côté API ; l'écran s'en tient au pourcentage, plus
+               court à saisir et impossible à désaccorder du total. #}
+            <details class="field">
+                <summary>Partage personnalisé</summary>
+                <p class="field__hint">Par défaut, la dépense est partagée à parts égales entre les parents.</p>
+                <div class="dep-shares">
+                    {% for parent in parents %}
+                    <div class="dep-shares__row">
+                        <label for="d-share-{{ loop.index }}">{{ parent.user.fullName ?: parent.user.email }}</label>
+                        <input id="d-share-{{ loop.index }}" type="number" min="0" max="100" step="1"
+                               name="sharePercent[]" data-membership-id="{{ parent.id }}" placeholder="%">
+                    </div>
+                    {% endfor %}
+                </div>
+            </details>
+
+            <div class="form-actions"><button class="btn btn--primary" type="submit">Enregistrer</button></div>
+        </form>
+    </details>
+    {% endif %}
+
+    <div class="depenses">
+        {# ───────── Liste ───────── #}
+        <div>
+            <div class="eyebrow">{{ expenses|length }} dépense{{ expenses|length > 1 ? 's' }}{% if activeCategory or activeSettled is not null or activeChild %} · filtrées{% endif %}</div>
+            <div class="dep-list">
+                {% for expense in expenses %}
+                <article class="dep-item {{ expense.settled ? 'dep-item--settled' }}">
+                    <span class="dep-item__icon pill--{{ depClass[expense.category] }}" aria-hidden="true">{{ depLabel[expense.category]|first }}</span>
+                    <div class="dep-item__body">
+                        <div class="dep-item__title">{{ expense.title }}</div>
+                        <div class="dep-item__meta">
+                            <span>{{ expense.payerName ?: 'Membre supprimé' }} a payé</span>
+                            <span aria-hidden="true">·</span>
+                            <span>{{ expense.expenseDate|date('d/m/Y') }}</span>
+                            <span aria-hidden="true">·</span>
+                            <span>{{ depLabel[expense.category] }}</span>
+                        </div>
+                    </div>
+                    <div class="dep-item__amount">
+                        {{ expense.amountCents|money(expense.currency) }}
+                        <div class="dep-item__split">
+                            {% for share in expense.shares %}{{ loop.first ? '' : ' · ' }}{{ share.memberName|slice(0, 1)|upper }} {{ share.effectiveCents|money(expense.currency) }}{% endfor %}
+                        </div>
+                    </div>
+                    <span class="dep-status {{ expense.settled ? 'dep-status--settled' : 'dep-status--due' }}">{{ expense.settled ? 'Réglée' : 'À régler' }}</span>
+                    {% if canEdit %}
+                    <div class="dep-item__actions">
+                        {% if not expense.settled %}
+                            <button class="btn btn--ghost btn--sm" data-action="depenses#settle" data-expense-id="{{ expense.id }}">Marquer réglée</button>
+                            <button class="btn btn--ghost btn--sm" data-action="depenses#remind" data-expense-id="{{ expense.id }}"
+                                    {% if expense.reminderAvailableAt %}disabled title="Un rappel vient d'être envoyé."{% endif %}>Relancer</button>
+                        {% endif %}
+                        <button class="btn btn--danger btn--sm" data-action="depenses#deleteExpense"
+                                data-expense-id="{{ expense.id }}" data-title="{{ expense.title }}">Supprimer</button>
+                    </div>
+                    {% endif %}
+                </article>
+                {% else %}
+                <p class="empty-state">Aucune dépense pour ce filtre.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        {# ───────── Rail : solde + répartition ───────── #}
+        <div class="dep-rail">
+            <section class="dep-balance {{ balance.isBalanced ? 'dep-balance--even' }}">
+                <div class="eyebrow">Solde courant</div>
+                <div class="dep-balance__amount">{{ balance.amountCents|money }}</div>
+                <p class="dep-balance__text">
+                    {% if balance.isBalanced %}
+                        Comptes équilibrés.
+                    {% else %}
+                        {{ names[balance.debtorMembershipId] ?? 'Membre supprimé' }} doit
+                        {{ balance.amountCents|money }} à {{ names[balance.creditorMembershipId] ?? 'Membre supprimé' }}.
+                    {% endif %}
+                </p>
+                {# Le solde ne recouvre pas toujours l'historique : le dire explicitement évite de
+                   faire passer pour un bug ce qui est une conséquence de la suppression d'un compte. #}
+                {% if balance.excludedExpenseCount > 0 %}
+                <p class="dep-balance__note">
+                    {{ balance.excludedExpenseCount }} dépense{{ balance.excludedExpenseCount > 1 ? 's' }}
+                    exclue{{ balance.excludedExpenseCount > 1 ? 's' }} du solde (compte supprimé).
+                </p>
+                {% endif %}
+            </section>
+
+            <section class="dep-cats">
+                <div class="eyebrow">Par catégorie</div>
+                <div class="dep-cats__rows">
+                    {% for c in categories %}
+                    {% set line = totals.byCategory[c.value] %}
+                    <div>
+                        <div class="dep-cats__head">
+                            <span><span class="dep-cats__swatch" style="background: var({{ depVar[c.value] }})"></span>{{ depLabel[c.value] }}</span>
+                            <span class="dep-cats__value">{{ line.amountCents|money }}</span>
+                        </div>
+                        <div class="dep-cats__bar">
+                            <div class="dep-cats__fill" style="width: {{ totals.percentOf(c) }}%; background: var({{ depVar[c.value] }})"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="dep-cats__total">
+                    <span>Total engagé</span>
+                    <strong>{{ totals.totalCents|money }}</strong>
+                </div>
+                <div class="dep-cats__total" style="border-top:0; margin-top:.2rem; padding-top:0">
+                    <span>Reste à régler</span>
+                    <strong>{{ totals.unsettledCents|money }}</strong>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

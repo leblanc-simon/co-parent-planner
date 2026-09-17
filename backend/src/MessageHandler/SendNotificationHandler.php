@@ -201,6 +201,7 @@ final class SendNotificationHandler
             NotificationCategory::Exchanges => '/echanges'.(isset($refs['exchangeId']) ? '?exchange='.rawurlencode($refs['exchangeId']) : ''),
             NotificationCategory::Agenda => '/agenda',
             NotificationCategory::Custody => '/garde',
+            NotificationCategory::Expenses => '/depenses',
             default => '/',
         };
     }

@@ -60,6 +60,7 @@ import 'package:coparentplanner/core/theme/liquid_glass.dart';
 import 'package:coparentplanner/core/util/civil_date.dart';
 import 'package:coparentplanner/core/util/date_labels.dart';
 import 'package:coparentplanner/core/util/detached_providers.dart';
+import 'package:coparentplanner/core/util/money_labels.dart';
 import 'package:coparentplanner/core/widgets/app_filter_chip.dart';
 import 'package:coparentplanner/core/widgets/confirm_dialog.dart';
 import 'package:coparentplanner/core/widgets/error_banner.dart';
@@ -94,6 +95,9 @@ import 'package:coparentplanner/features/custody/presentation/custody_activities
 import 'package:coparentplanner/features/custody/presentation/custody_screen.dart';
 import 'package:coparentplanner/features/custody/presentation/custody_settings_screen.dart';
 import 'package:coparentplanner/features/custody/presentation/parent_initials.dart';
+import 'package:coparentplanner/features/depenses/data/expense_repository.dart';
+import 'package:coparentplanner/features/depenses/data/pending_expenses.dart';
+import 'package:coparentplanner/features/depenses/presentation/depenses_screen.dart';
 import 'package:coparentplanner/features/exchanges/application/exchanges_realtime.dart';
 import 'package:coparentplanner/features/exchanges/data/exchanges_repository.dart';
 import 'package:coparentplanner/features/exchanges/presentation/exchange_detail_screen.dart';
@@ -102,6 +106,7 @@ import 'package:coparentplanner/features/family/application/family_context.dart'
 import 'package:coparentplanner/features/family/data/family_repository.dart';
 import 'package:coparentplanner/features/family/presentation/family_switcher.dart';
 import 'package:coparentplanner/features/home/shell/agenda_tab.dart';
+import 'package:coparentplanner/features/home/shell/depenses_tab.dart';
 import 'package:coparentplanner/features/home/shell/home_shell.dart';
 import 'package:coparentplanner/features/home/shell/home_tab.dart';
 import 'package:coparentplanner/features/home/shell/settings_tab.dart';

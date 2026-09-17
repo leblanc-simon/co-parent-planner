@@ -30,47 +30,54 @@ class HomeShell extends ConsumerWidget {
     // masqués tant que le droit n'est pas confirmé, un 403 étant pire qu'une action
     // qui apparaît un instant plus tard.
     bool mayView(String domain) => ref.watch(rightProvider(domain)) != 'none';
-    // Composition maquette (SHELL-03) : Accueil · Garde · Agenda · Enfants.
+    // Composition maquette (SHELL-03) : Accueil · Garde · Agenda · Enfants, plus
+    // **Dépenses** quand le module est activé (Lot 10 §3.4 : « onglet bas mobile »
+    // conditionnel). La maquette montrait l'onglet pour toute famille séparée ; la spec
+    // le subordonne à l'activation, qui fait foi.
     // L'accès aux Paramètres passe par l'engrenage d'en-tête de l'accueil (U1-03),
     // plus d'onglet Réglages.
     //
-    // Les branches de l'`indexedStack` restent au nombre de quatre — leur nombre
-    // doit être stable — mais un onglet dont l'écran ne peut rien montrer n'est plus
-    // rendu : la spec impose de masquer Garde pour une famille **unie** (« l'onglet
+    // Le nombre de branches de l'`indexedStack` est **fixe** (cinq depuis le Lot 10) :
+    // il ne varie jamais avec les droits, seul le rendu des onglets varie. Un onglet
+    // dont l'écran ne peut rien montrer n'est pas rendu : la spec impose de masquer Garde pour une famille **unie** (« l'onglet
     // est absent côté UI », web ET mobile) et le web masque en plus tout onglet dont
     // le domaine est refusé. Un bouton qui ne mène qu'à un écran de refus n'informe
     // personne (revue mobile 2026-08, constat C33 ; revue web 6.12).
-    final items =
-        <({int branch, IconData icon, String label, bool visible})>[
-              (
-                branch: 0,
-                icon: Icons.home_outlined,
-                label: l.tabHome,
-                visible: true,
-              ),
-              (
-                branch: 1,
-                icon: Icons.calendar_today_outlined,
-                label: l.tabCustody,
-                // Le type de famille, lui, est connu localement et sans délai.
-                visible:
-                    family != null && !family.isIntact && mayView('custody'),
-              ),
-              (
-                branch: 2,
-                icon: Icons.view_agenda_outlined,
-                label: l.tabAgenda,
-                visible: mayView('agenda'),
-              ),
-              (
-                branch: 3,
-                icon: Icons.people_outline,
-                label: l.tabNotes,
-                visible: mayView('children_notes'),
-              ),
-            ]
-            .where((i) => i.visible || i.branch == navigationShell.currentIndex)
-            .toList();
+    final items = <({int branch, IconData icon, String label, bool visible})>[
+      (branch: 0, icon: Icons.home_outlined, label: l.tabHome, visible: true),
+      (
+        branch: 1,
+        icon: Icons.calendar_today_outlined,
+        label: l.tabCustody,
+        // Le type de famille, lui, est connu localement et sans délai.
+        visible: family != null && !family.isIntact && mayView('custody'),
+      ),
+      (
+        branch: 2,
+        icon: Icons.view_agenda_outlined,
+        label: l.tabAgenda,
+        visible: mayView('agenda'),
+      ),
+      (
+        branch: 3,
+        icon: Icons.people_outline,
+        label: l.tabNotes,
+        visible: mayView('children_notes'),
+      ),
+      // Dépenses (Lot 10, v2) : le niveau effectif renvoyé par l'API vaut déjà
+      // `none` quand le module est éteint pour la famille, quand le membre est un
+      // enfant, ou quand le droit n'est pas accordé — une seule condition suffit
+      // donc à couvrir les trois règles du §3.4. Contrairement aux autres onglets,
+      // celui-ci reste masqué tant que le droit est inconnu : un onglet qui
+      // apparaît puis disparaît au chargement des membres serait pire qu'un onglet
+      // qui arrive une fraction de seconde plus tard.
+      (
+        branch: 4,
+        icon: Icons.account_balance_wallet_outlined,
+        label: l.tabExpenses,
+        visible: ref.watch(canViewProvider('expenses')),
+      ),
+    ].where((i) => i.visible || i.branch == navigationShell.currentIndex).toList();
 
     return Scaffold(
       body: Column(

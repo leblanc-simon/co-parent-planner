@@ -2387,6 +2387,527 @@
                 }
             }
         },
+        "/api/expenses/{id}": {
+            "delete": {
+                "operationId": "api_expenses_id_delete",
+                "tags": [
+                    "Expense"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Expense resource deleted"
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Removes the Expense resource.",
+                "description": "Removes the Expense resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Expense identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            },
+            "patch": {
+                "operationId": "api_expenses_id_patch",
+                "tags": [
+                    "Expense"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Expense resource updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Expense"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Expense.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Updates the Expense resource.",
+                "description": "Updates the Expense resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Expense identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The updated Expense resource",
+                    "content": {
+                        "application/merge-patch+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Expense.UpdateExpenseRequest.jsonMergePatch"
+                            }
+                        },
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Expense.UpdateExpenseRequest.jsonMergePatch"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/expenses/{id}/reminder": {
+            "post": {
+                "operationId": "api_expenses_idreminder_post",
+                "tags": [
+                    "Expense"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Expense resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Expense"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Expense.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a Expense resource.",
+                "description": "Creates a Expense resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Expense identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            }
+        },
+        "/api/families/{familyId}/expenses": {
+            "get": {
+                "operationId": "api_families_familyIdexpenses_get_collection",
+                "tags": [
+                    "Expense"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Expense collection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Expense"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "Expense.jsonld collection.",
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/HydraCollectionBaseSchemaNoPagination"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "member"
+                                            ],
+                                            "properties": {
+                                                "member": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Expense.jsonld"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Retrieves the collection of Expense resources.",
+                "description": "Retrieves the collection of Expense resources.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    },
+                    {
+                        "name": "category",
+                        "in": "query",
+                        "description": "Filtre de cat\u00e9gorie (`sante`, `scolarite`, `activites`, `vetements`, `autre`). Absent = toutes.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "sante",
+                                "scolarite",
+                                "activites",
+                                "vetements",
+                                "autre"
+                            ]
+                        },
+                        "style": "form",
+                        "explode": true
+                    },
+                    {
+                        "name": "childId",
+                        "in": "query",
+                        "description": "Ne retenir que les d\u00e9penses concernant cet enfant de la famille active.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "style": "form",
+                        "explode": true
+                    },
+                    {
+                        "name": "settled",
+                        "in": "query",
+                        "description": "Filtre d'\u00e9tat : `true` (r\u00e9gl\u00e9es), `false` (non r\u00e9gl\u00e9es). Absent = les deux.",
+                        "required": false,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "style": "form",
+                        "explode": true
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "api_families_familyIdexpenses_post",
+                "tags": [
+                    "Expense"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Expense resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Expense"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Expense.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a Expense resource.",
+                "description": "Creates a Expense resource.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ],
+                "requestBody": {
+                    "description": "The new Expense resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Expense.CreateExpenseRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Expense.CreateExpenseRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/families/{familyId}/expenses/balance": {
+            "get": {
+                "operationId": "api_families_familyIdexpensesbalance_get",
+                "tags": [
+                    "ExpenseBalance"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "ExpenseBalance resource",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ExpenseBalance"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ExpenseBalance.jsonld"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Retrieves a ExpenseBalance resource.",
+                "description": "Retrieves a ExpenseBalance resource.",
+                "parameters": [
+                    {
+                        "name": "familyId",
+                        "in": "path",
+                        "description": "FamilyResource identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            }
+        },
         "/api/families": {
             "get": {
                 "operationId": "api_families_get_collection",
@@ -8307,6 +8828,559 @@
                 ],
                 "description": "\u00c9change expos\u00e9 (Lot 6 \u00a76.1). La collection `/families/{id}/exchanges?status=` renvoie les r\u00e9sum\u00e9s\n(sans le fil) tri\u00e9s (\u00a73.6) ; `GET /exchanges/{id}` renvoie le d\u00e9tail (options + d\u00e9comptes + fil en\nclair). `POST .../decide` valide une option et renvoie l'\u00e9change (statut + options \u00e0 jour) ;\n`POST .../read` marque le fil lu pour l'appelant (X5). Le\nmarqueur `overdue` est d\u00e9riv\u00e9 (fuseau famille, \u00a73.4)."
             },
+            "Expense": {
+                "type": "object",
+                "description": "D\u00e9pense partag\u00e9e expos\u00e9e (Lot 10 \u00a76 ; cdc \u00a76.2 \u00ab D\u00e9penses (v2) \u00bb).\n\n**Toutes ces op\u00e9rations n'existent que si la famille a activ\u00e9 le module** (`expensesEnabled`) :\nsinon 404, y compris pour un parent admin (\u00a73.4). Les montants circulent en **centimes entiers**,\njamais en d\u00e9cimal : la mise en forme \u00ab 1 234,56 \u20ac \u00bb appartient aux clients, qui la produisent avec\nle formateur ICU de la locale.\n\nExtensions assum\u00e9es du cdc \u00a76.2, **valid\u00e9es par le porteur produit le 2026-09-18** : `DELETE`\n(corriger une saisie erron\u00e9e) et `POST /reminder` (mat\u00e9rialiser l'action \u00ab Envoyer un rappel \u00bb du\ncdc \u00a72.7, qui n'\u00e9tait rout\u00e9e nulle part). La pond\u00e9ration par enfant, elle, a \u00e9t\u00e9 **\u00e9cart\u00e9e** \u00e0 la\nm\u00eame occasion : neutre sur le partage entre parents (\u00a73.1.D), elle n'aurait \u00e9t\u00e9 observable nulle\npart \u2014 `expense_child` reste donc la table de liaison nue du cdc \u00a75.2.",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "title": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "category": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "payerMembershipId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "payerName": {
+                        "description": "Nom d'affichage du payeur ; vide si le compte a \u00e9t\u00e9 anonymis\u00e9 (\u00a74.9).",
+                        "default": "",
+                        "type": "string"
+                    },
+                    "amountCents": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "currency": {
+                        "default": "EUR",
+                        "type": "string"
+                    },
+                    "expenseDate": {
+                        "description": "Jour civil de la d\u00e9pense (AAAA-MM-JJ) \u2014 une date, pas un instant (\u00a74.1).",
+                        "default": "",
+                        "type": "string"
+                    },
+                    "settled": {
+                        "default": false,
+                        "type": "boolean"
+                    },
+                    "childIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "shares": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ExpenseShareResource"
+                        }
+                    },
+                    "reminderSentAt": {
+                        "description": "Dernier rappel envoy\u00e9, ISO 8601 ; `null` si aucun.",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "reminderAvailableAt": {
+                        "description": "Instant \u00e0 partir duquel un nouveau rappel est accept\u00e9 (ISO 8601), `null` si d\u00e8s maintenant.",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "Expense.CreateExpenseRequest": {
+                "type": "object",
+                "description": "D\u00e9pense partag\u00e9e expos\u00e9e (Lot 10 \u00a76 ; cdc \u00a76.2 \u00ab D\u00e9penses (v2) \u00bb).\n\n**Toutes ces op\u00e9rations n'existent que si la famille a activ\u00e9 le module** (`expensesEnabled`) :\nsinon 404, y compris pour un parent admin (\u00a73.4). Les montants circulent en **centimes entiers**,\njamais en d\u00e9cimal : la mise en forme \u00ab 1 234,56 \u20ac \u00bb appartient aux clients, qui la produisent avec\nle formateur ICU de la locale.\n\nExtensions assum\u00e9es du cdc \u00a76.2, **valid\u00e9es par le porteur produit le 2026-09-18** : `DELETE`\n(corriger une saisie erron\u00e9e) et `POST /reminder` (mat\u00e9rialiser l'action \u00ab Envoyer un rappel \u00bb du\ncdc \u00a72.7, qui n'\u00e9tait rout\u00e9e nulle part). La pond\u00e9ration par enfant, elle, a \u00e9t\u00e9 **\u00e9cart\u00e9e** \u00e0 la\nm\u00eame occasion : neutre sur le partage entre parents (\u00a73.1.D), elle n'aurait \u00e9t\u00e9 observable nulle\npart \u2014 `expense_child` reste donc la table de liaison nue du cdc \u00a75.2.",
+                "required": [
+                    "title",
+                    "category",
+                    "payerMembershipId",
+                    "amountCents",
+                    "expenseDate"
+                ],
+                "properties": {
+                    "title": {
+                        "maxLength": 200,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "category": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "payerMembershipId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "amountCents": {
+                        "description": "Montant total en **centimes entiers** (> 0, \u2264 1 000 000 \u20ac).",
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "expenseDate": {
+                        "description": "Jour civil de la d\u00e9pense (AAAA-MM-JJ), interpr\u00e9t\u00e9 dans le fuseau de la famille (\u00a74.1).",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "childIds": {
+                        "description": "Enfant(s) concern\u00e9(s) \u2014 au moins un (\u00a74.6) : une d\u00e9pense n'a pas de cible \u00ab toute la famille \u00bb.",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "shares": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ShareInput"
+                        }
+                    }
+                }
+            },
+            "Expense.UpdateExpenseRequest.jsonMergePatch": {
+                "type": "object",
+                "description": "D\u00e9pense partag\u00e9e expos\u00e9e (Lot 10 \u00a76 ; cdc \u00a76.2 \u00ab D\u00e9penses (v2) \u00bb).\n\n**Toutes ces op\u00e9rations n'existent que si la famille a activ\u00e9 le module** (`expensesEnabled`) :\nsinon 404, y compris pour un parent admin (\u00a73.4). Les montants circulent en **centimes entiers**,\njamais en d\u00e9cimal : la mise en forme \u00ab 1 234,56 \u20ac \u00bb appartient aux clients, qui la produisent avec\nle formateur ICU de la locale.\n\nExtensions assum\u00e9es du cdc \u00a76.2, **valid\u00e9es par le porteur produit le 2026-09-18** : `DELETE`\n(corriger une saisie erron\u00e9e) et `POST /reminder` (mat\u00e9rialiser l'action \u00ab Envoyer un rappel \u00bb du\ncdc \u00a72.7, qui n'\u00e9tait rout\u00e9e nulle part). La pond\u00e9ration par enfant, elle, a \u00e9t\u00e9 **\u00e9cart\u00e9e** \u00e0 la\nm\u00eame occasion : neutre sur le partage entre parents (\u00a73.1.D), elle n'aurait \u00e9t\u00e9 observable nulle\npart \u2014 `expense_child` reste donc la table de liaison nue du cdc \u00a75.2.",
+                "properties": {
+                    "title": {
+                        "maxLength": 200,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "category": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "payerMembershipId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "amountCents": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "expenseDate": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "settled": {
+                        "type": [
+                            "boolean",
+                            "null"
+                        ]
+                    },
+                    "childIds": {
+                        "type": [
+                            "array",
+                            "null"
+                        ],
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "shares": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ShareInput"
+                        }
+                    }
+                }
+            },
+            "Expense.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "title": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "category": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "payerMembershipId": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "payerName": {
+                                "description": "Nom d'affichage du payeur ; vide si le compte a \u00e9t\u00e9 anonymis\u00e9 (\u00a74.9).",
+                                "default": "",
+                                "type": "string"
+                            },
+                            "amountCents": {
+                                "default": 0,
+                                "type": "integer"
+                            },
+                            "currency": {
+                                "default": "EUR",
+                                "type": "string"
+                            },
+                            "expenseDate": {
+                                "description": "Jour civil de la d\u00e9pense (AAAA-MM-JJ) \u2014 une date, pas un instant (\u00a74.1).",
+                                "default": "",
+                                "type": "string"
+                            },
+                            "settled": {
+                                "default": false,
+                                "type": "boolean"
+                            },
+                            "childIds": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "shares": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/ExpenseShareResource.jsonld"
+                                }
+                            },
+                            "reminderSentAt": {
+                                "description": "Dernier rappel envoy\u00e9, ISO 8601 ; `null` si aucun.",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "reminderAvailableAt": {
+                                "description": "Instant \u00e0 partir duquel un nouveau rappel est accept\u00e9 (ISO 8601), `null` si d\u00e8s maintenant.",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "description": "D\u00e9pense partag\u00e9e expos\u00e9e (Lot 10 \u00a76 ; cdc \u00a76.2 \u00ab D\u00e9penses (v2) \u00bb).\n\n**Toutes ces op\u00e9rations n'existent que si la famille a activ\u00e9 le module** (`expensesEnabled`) :\nsinon 404, y compris pour un parent admin (\u00a73.4). Les montants circulent en **centimes entiers**,\njamais en d\u00e9cimal : la mise en forme \u00ab 1 234,56 \u20ac \u00bb appartient aux clients, qui la produisent avec\nle formateur ICU de la locale.\n\nExtensions assum\u00e9es du cdc \u00a76.2, **valid\u00e9es par le porteur produit le 2026-09-18** : `DELETE`\n(corriger une saisie erron\u00e9e) et `POST /reminder` (mat\u00e9rialiser l'action \u00ab Envoyer un rappel \u00bb du\ncdc \u00a72.7, qui n'\u00e9tait rout\u00e9e nulle part). La pond\u00e9ration par enfant, elle, a \u00e9t\u00e9 **\u00e9cart\u00e9e** \u00e0 la\nm\u00eame occasion : neutre sur le partage entre parents (\u00a73.1.D), elle n'aurait \u00e9t\u00e9 observable nulle\npart \u2014 `expense_child` reste donc la table de liaison nue du cdc \u00a75.2."
+            },
+            "ExpenseBalance": {
+                "type": "object",
+                "description": "Solde \u00ab qui doit quoi \u00bb, r\u00e9partition par cat\u00e9gorie et total engag\u00e9 (US-DEP-2, cdc \u00a76.2).\n\nDeux p\u00e9rim\u00e8tres cohabitent volontairement dans la m\u00eame r\u00e9ponse, parce que l'\u00e9cran les affiche\nc\u00f4te \u00e0 c\u00f4te : le **solde** ne porte que sur les d\u00e9penses non r\u00e9gl\u00e9es (une d\u00e9pense rembours\u00e9e ne se\ndoit plus), tandis que le **total engag\u00e9** et la **r\u00e9partition par cat\u00e9gorie** portent sur tout\nl'historique (une d\u00e9pense rembours\u00e9e a bien \u00e9t\u00e9 engag\u00e9e).\n\nTous les montants sont en centimes entiers ; `percent` est le seul d\u00e9riv\u00e9 d'affichage, arrondi \u00e0\nl'unit\u00e9 \u2014 la somme des parts peut donc s'\u00e9carter de 100 de \u00b11 (\u00a73.3).",
+                "properties": {
+                    "familyId": {
+                        "description": "Identifiant de la famille \u2014 le solde n'a de sens que scop\u00e9 (\u00a74.5).",
+                        "default": "",
+                        "type": "string"
+                    },
+                    "net": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ExpenseNetResource"
+                        }
+                    },
+                    "debtorMembershipId": {
+                        "description": "Parent qui doit, `null` si les comptes sont \u00e9quilibr\u00e9s.",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "debtorName": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "creditorMembershipId": {
+                        "description": "Parent \u00e0 qui l'on doit, `null` si les comptes sont \u00e9quilibr\u00e9s.",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "creditorName": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "amountCents": {
+                        "description": "Montant de la dette nette, en centimes ; `0` \u21d4 comptes \u00e9quilibr\u00e9s.",
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "balanced": {
+                        "default": true,
+                        "type": "boolean"
+                    },
+                    "totalCents": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "settledCents": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "unsettledCents": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "expenseCount": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "byCategory": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ExpenseCategoryTotalResource"
+                        }
+                    },
+                    "excludedFromBalanceCount": {
+                        "description": "D\u00e9penses non r\u00e9gl\u00e9es \u00e9cart\u00e9es du solde faute de partie identifiable (compte anonymis\u00e9, \u00a74.9).",
+                        "default": 0,
+                        "type": "integer"
+                    }
+                }
+            },
+            "ExpenseBalance.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "familyId": {
+                                "description": "Identifiant de la famille \u2014 le solde n'a de sens que scop\u00e9 (\u00a74.5).",
+                                "default": "",
+                                "type": "string"
+                            },
+                            "net": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/ExpenseNetResource.jsonld"
+                                }
+                            },
+                            "debtorMembershipId": {
+                                "description": "Parent qui doit, `null` si les comptes sont \u00e9quilibr\u00e9s.",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "debtorName": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "creditorMembershipId": {
+                                "description": "Parent \u00e0 qui l'on doit, `null` si les comptes sont \u00e9quilibr\u00e9s.",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "creditorName": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "amountCents": {
+                                "description": "Montant de la dette nette, en centimes ; `0` \u21d4 comptes \u00e9quilibr\u00e9s.",
+                                "default": 0,
+                                "type": "integer"
+                            },
+                            "balanced": {
+                                "default": true,
+                                "type": "boolean"
+                            },
+                            "totalCents": {
+                                "default": 0,
+                                "type": "integer"
+                            },
+                            "settledCents": {
+                                "default": 0,
+                                "type": "integer"
+                            },
+                            "unsettledCents": {
+                                "default": 0,
+                                "type": "integer"
+                            },
+                            "expenseCount": {
+                                "default": 0,
+                                "type": "integer"
+                            },
+                            "byCategory": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/ExpenseCategoryTotalResource.jsonld"
+                                }
+                            },
+                            "excludedFromBalanceCount": {
+                                "description": "D\u00e9penses non r\u00e9gl\u00e9es \u00e9cart\u00e9es du solde faute de partie identifiable (compte anonymis\u00e9, \u00a74.9).",
+                                "default": 0,
+                                "type": "integer"
+                            }
+                        }
+                    }
+                ],
+                "description": "Solde \u00ab qui doit quoi \u00bb, r\u00e9partition par cat\u00e9gorie et total engag\u00e9 (US-DEP-2, cdc \u00a76.2).\n\nDeux p\u00e9rim\u00e8tres cohabitent volontairement dans la m\u00eame r\u00e9ponse, parce que l'\u00e9cran les affiche\nc\u00f4te \u00e0 c\u00f4te : le **solde** ne porte que sur les d\u00e9penses non r\u00e9gl\u00e9es (une d\u00e9pense rembours\u00e9e ne se\ndoit plus), tandis que le **total engag\u00e9** et la **r\u00e9partition par cat\u00e9gorie** portent sur tout\nl'historique (une d\u00e9pense rembours\u00e9e a bien \u00e9t\u00e9 engag\u00e9e).\n\nTous les montants sont en centimes entiers ; `percent` est le seul d\u00e9riv\u00e9 d'affichage, arrondi \u00e0\nl'unit\u00e9 \u2014 la somme des parts peut donc s'\u00e9carter de 100 de \u00b11 (\u00a73.3)."
+            },
+            "ExpenseCategoryTotalResource": {
+                "type": "object",
+                "properties": {
+                    "category": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "amountCents": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "count": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "percent": {
+                        "description": "Part dans le total engag\u00e9, en pourcentage entier (d\u00e9riv\u00e9 d'affichage, \u00b11 sur la somme).",
+                        "default": 0,
+                        "type": "integer"
+                    }
+                }
+            },
+            "ExpenseCategoryTotalResource.jsonld": {
+                "type": "object",
+                "properties": {
+                    "category": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "amountCents": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "count": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "percent": {
+                        "description": "Part dans le total engag\u00e9, en pourcentage entier (d\u00e9riv\u00e9 d'affichage, \u00b11 sur la somme).",
+                        "default": 0,
+                        "type": "integer"
+                    }
+                }
+            },
+            "ExpenseNetResource": {
+                "type": "object",
+                "properties": {
+                    "membershipId": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "memberName": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "netCents": {
+                        "default": 0,
+                        "type": "integer"
+                    }
+                }
+            },
+            "ExpenseNetResource.jsonld": {
+                "type": "object",
+                "properties": {
+                    "membershipId": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "memberName": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "netCents": {
+                        "default": 0,
+                        "type": "integer"
+                    }
+                }
+            },
+            "ExpenseShareResource": {
+                "type": "object",
+                "properties": {
+                    "membershipId": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "memberName": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "shareType": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "value": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "effectiveCents": {
+                        "default": 0,
+                        "type": "integer"
+                    }
+                }
+            },
+            "ExpenseShareResource.jsonld": {
+                "type": "object",
+                "properties": {
+                    "membershipId": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "memberName": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "shareType": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "value": {
+                        "default": 0,
+                        "type": "integer"
+                    },
+                    "effectiveCents": {
+                        "default": 0,
+                        "type": "integer"
+                    }
+                }
+            },
             "Family": {
                 "type": "object",
                 "description": "Repr\u00e9sentation d'une famille du point de vue du membre courant (US-ONB-1, US-HOME-1).\n`role`/`isAdmin` refl\u00e8tent la perspective de l'utilisateur connect\u00e9 dans cette famille.",
@@ -10840,6 +11914,30 @@
                 ],
                 "description": "P\u00e9riode de vacances expos\u00e9e (US-CUST-3) avec sa r\u00e8gle \u00e9ventuelle."
             },
+            "ShareInput": {
+                "type": "object",
+                "properties": {
+                    "membershipId": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "shareType": {
+                        "description": "`percent` ou `amount` \u2014 homog\u00e8ne sur toute la d\u00e9pense (\u00a73.1, r\u00e8gle 2).",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "value": {
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    }
+                }
+            },
             "VerifyEmailRequest": {
                 "type": "object",
                 "description": "US-AUTH-1 sc.5 \u2014 v\u00e9rification d'e-mail. Endpoint API unique (d\u00e9cision D5) appel\u00e9 par la page\nweb GET /verify-email et par le deep link mobile.",
@@ -10968,6 +12066,14 @@
         {
             "name": "Message",
             "description": "Message du fil (Lot 6 \u00a76.1). `POST /exchanges/{exchangeId}/messages` cr\u00e9e un message (texte\nchiffr\u00e9 au repos, renvoy\u00e9 **en clair** \u00e0 l'appelant autoris\u00e9). Sert aussi de vue imbriqu\u00e9e dans le\nd\u00e9tail d'un \u00e9change. `authorName`/`authorColor` sont `null` pour un auteur anonymis\u00e9 (\u00a74.8)."
+        },
+        {
+            "name": "ExpenseBalance",
+            "description": "Solde \u00ab qui doit quoi \u00bb, r\u00e9partition par cat\u00e9gorie et total engag\u00e9 (US-DEP-2, cdc \u00a76.2).\n\nDeux p\u00e9rim\u00e8tres cohabitent volontairement dans la m\u00eame r\u00e9ponse, parce que l'\u00e9cran les affiche\nc\u00f4te \u00e0 c\u00f4te : le **solde** ne porte que sur les d\u00e9penses non r\u00e9gl\u00e9es (une d\u00e9pense rembours\u00e9e ne se\ndoit plus), tandis que le **total engag\u00e9** et la **r\u00e9partition par cat\u00e9gorie** portent sur tout\nl'historique (une d\u00e9pense rembours\u00e9e a bien \u00e9t\u00e9 engag\u00e9e).\n\nTous les montants sont en centimes entiers ; `percent` est le seul d\u00e9riv\u00e9 d'affichage, arrondi \u00e0\nl'unit\u00e9 \u2014 la somme des parts peut donc s'\u00e9carter de 100 de \u00b11 (\u00a73.3)."
+        },
+        {
+            "name": "Expense",
+            "description": "D\u00e9pense partag\u00e9e expos\u00e9e (Lot 10 \u00a76 ; cdc \u00a76.2 \u00ab D\u00e9penses (v2) \u00bb).\n\n**Toutes ces op\u00e9rations n'existent que si la famille a activ\u00e9 le module** (`expensesEnabled`) :\nsinon 404, y compris pour un parent admin (\u00a73.4). Les montants circulent en **centimes entiers**,\njamais en d\u00e9cimal : la mise en forme \u00ab 1 234,56 \u20ac \u00bb appartient aux clients, qui la produisent avec\nle formateur ICU de la locale.\n\nExtensions assum\u00e9es du cdc \u00a76.2, **valid\u00e9es par le porteur produit le 2026-09-18** : `DELETE`\n(corriger une saisie erron\u00e9e) et `POST /reminder` (mat\u00e9rialiser l'action \u00ab Envoyer un rappel \u00bb du\ncdc \u00a72.7, qui n'\u00e9tait rout\u00e9e nulle part). La pond\u00e9ration par enfant, elle, a \u00e9t\u00e9 **\u00e9cart\u00e9e** \u00e0 la\nm\u00eame occasion : neutre sur le partage entre parents (\u00a73.1.D), elle n'aurait \u00e9t\u00e9 observable nulle\npart \u2014 `expense_child` reste donc la table de liaison nue du cdc \u00a75.2."
         },
         {
             "name": "Family",

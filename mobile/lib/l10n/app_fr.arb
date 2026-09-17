@@ -489,6 +489,85 @@
   "agendaSeriesReadOnly": "Cet événement fait partie d'une série : sa modification et sa suppression par portée se font depuis le web.",
   "agendaLinkedReadOnly": "Événement d'une famille liée : consultation seule.",
   "agendaRecurrenceWebOnly": "Les événements récurrents se créent depuis le web.",
+  "tabExpenses": "Dépenses",
+  "expensesTitle": "Dépenses partagées",
+  "expensesSubtitle": "Frais des enfants · répartition et remboursements",
+  "expensesEmpty": "Aucune dépense pour l'instant.",
+  "expensesFilterAll": "Toutes",
+  "expensesFilterDue": "À régler",
+  "expensesFilterSettled": "Réglées",
+  "expensesNew": "Nouvelle dépense",
+  "expensesCreate": "Enregistrer",
+  "expensesCreated": "Dépense enregistrée.",
+  "expensesFieldTitle": "Libellé",
+  "expensesCategory": "Catégorie",
+  "expensesAmount": "Montant (€)",
+  "expensesDate": "Date",
+  "expensesPayer": "Payé par",
+  "expensesChildren": "Enfant(s) concerné(s)",
+  "expensesNoChild": "Ajoutez d'abord un enfant pour enregistrer une dépense.",
+  "expensesPaidBy": "{payer} a payé",
+  "@expensesPaidBy": {
+    "placeholders": {
+      "payer": {
+        "type": "String"
+      }
+    }
+  },
+  "expensesDeletedMember": "Membre supprimé",
+  "expensesStatusSettled": "Réglée",
+  "expensesStatusDue": "À régler",
+  "expensesSettle": "Marquer réglée",
+  "expensesSettled": "Dépense marquée réglée.",
+  "expensesRemind": "Relancer",
+  "expensesReminded": "Rappel envoyé.",
+  "expensesReminderPending": "Un rappel vient d'être envoyé pour cette dépense.",
+  "expensesDelete": "Supprimer",
+  "expensesDeleteConfirmTitle": "Supprimer cette dépense ?",
+  "expensesDeleteConfirmBody": "« {title} » sera supprimée pour tous les membres de la famille.",
+  "@expensesDeleteConfirmBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "expensesDeleted": "Dépense supprimée.",
+  "expensesBalanceTitle": "Solde courant",
+  "expensesBalanced": "Comptes équilibrés",
+  "expensesOwes": "{debtor} doit {amount} à {creditor}",
+  "@expensesOwes": {
+    "placeholders": {
+      "debtor": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      },
+      "creditor": {
+        "type": "String"
+      }
+    }
+  },
+  "expensesBalanceExcluded": "{count, plural, one{{count} dépense est exclue du solde (compte supprimé).} other{{count} dépenses sont exclues du solde (compte supprimé).}}",
+  "@expensesBalanceExcluded": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "expensesBalanceUnavailable": "Solde indisponible hors connexion.",
+  "expensesByCategory": "Par catégorie",
+  "expensesTotal": "Total engagé",
+  "expensesRemaining": "Reste à régler",
+  "expensesAmountInvalid": "Saisissez un montant supérieur à zéro.",
+  "expensesChildRequired": "Sélectionnez au moins un enfant.",
+  "expCatHealth": "Santé",
+  "expCatSchooling": "Scolarité",
+  "expCatActivities": "Activités",
+  "expCatClothing": "Vêtements",
+  "expCatOther": "Autre",
   "catSport": "Sport",
   "catMusic": "Musique",
   "catSchool": "École",

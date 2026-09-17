@@ -35,7 +35,7 @@ final class NotificationPrefsProvider implements ProviderInterface
 
         $explicit = $this->prefs->emailMap($user);
         $resource = new NotificationPrefsResource();
-        foreach (NotificationCategory::v1Cases() as $category) {
+        foreach (NotificationCategory::cases() as $category) {
             $resource->email[$category->value] = $explicit[$category->value] ?? true;
         }
         $resource->quietHoursStart = $user->getQuietHoursStart();

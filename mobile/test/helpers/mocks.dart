@@ -4,6 +4,7 @@ import 'package:coparentplanner/features/agenda/data/overlay_repository.dart';
 import 'package:coparentplanner/features/auth/data/auth_repository.dart';
 import 'package:coparentplanner/features/children/data/children_repository.dart';
 import 'package:coparentplanner/features/custody/data/custody_repository.dart';
+import 'package:coparentplanner/features/depenses/data/expense_repository.dart';
 import 'package:coparentplanner/features/exchanges/data/exchanges_repository.dart';
 import 'package:coparentplanner/features/family/data/family_repository.dart';
 import 'package:coparentplanner/features/members/data/members_repository.dart';
@@ -23,6 +24,8 @@ class MockCustodyRepository extends Mock implements CustodyRepository {}
 class MockAgendaRepository extends Mock implements AgendaRepository {}
 
 class MockOverlayRepository extends Mock implements OverlayRepository {}
+
+class MockExpenseRepository extends Mock implements ExpenseRepository {}
 
 class MockExchangesRepository extends Mock implements ExchangesRepository {}
 

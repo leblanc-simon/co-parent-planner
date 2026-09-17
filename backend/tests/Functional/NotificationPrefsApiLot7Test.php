@@ -22,7 +22,9 @@ final class NotificationPrefsApiLot7Test extends ApiAuthTestCase
         self::assertTrue($body['email']['agenda']);
         self::assertTrue($body['email']['exchanges']);
         self::assertTrue($body['email']['invitation']);
-        self::assertArrayNotHasKey('expenses', $body['email']); // réservé v2, masqué
+        // Le module Dépenses (Lot 10) active la catégorie : elle est offerte comme les autres, en
+        // opt-out par défaut, y compris à qui n'a encore activé le module dans aucune famille.
+        self::assertTrue($body['email']['expenses']);
         self::assertNull($body['quietHoursStart']);
         self::assertSame('fr-FR', $body['locale']);
     }
@@ -97,9 +99,20 @@ final class NotificationPrefsApiLot7Test extends ApiAuthTestCase
     {
         [$client, $token] = $this->authenticatedClient('np-cat@example.com');
         $res = $client->request('PUT', '/api/me/notification-prefs', [
-            'json' => ['email' => ['expenses' => true]],
+            'json' => ['email' => ['dépenses' => true]],
             'headers' => $this->bearer($token),
         ]);
-        self::assertSame(422, $res->getStatusCode()); // expenses réservé v2 → rejeté en v1
+        self::assertSame(422, $res->getStatusCode()); // catégorie hors énumération → rejetée
+    }
+
+    public function testExpensesCategoryIsWritableSinceLot10(): void
+    {
+        [$client, $token] = $this->authenticatedClient('np-exp@example.com');
+        $res = $client->request('PUT', '/api/me/notification-prefs', [
+            'json' => ['email' => ['expenses' => false]],
+            'headers' => $this->bearer($token),
+        ]);
+        self::assertSame(200, $res->getStatusCode());
+        self::assertFalse($res->toArray()['email']['expenses']);
     }
 }

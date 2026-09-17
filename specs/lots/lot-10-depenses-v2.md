@@ -87,6 +87,15 @@ En v1 (cdc §1.4.4), le modèle de données **réserve la place** (`Expense`, `E
 > | `expense_child.weight` (pondération enfant persistée) | US-DEP-1 (CA pondération), §3.1.D, §5.3 | cdc §5.2 (table `expense_child` sans `weight`) | Matérialiser la « pondération par enfant » du cdc §2.7 | Garder la pondération volatile (saisie non persistée) ou la retirer |
 > | US-DEP-3 (lister/filtrer), US-DEP-4 (modifier), US-DEP-6 (activer module), US-DEP-8 (offline) | §2 | cdc §3.7 (2 US seulement) | Couverture CRUD + activation + offline déjà imposés par d'autres §/lots (§6.2 `GET`/`PATCH`, §2.1, §4.4) | — (dérivés directs d'exigences existantes, faible risque) |
 >
+> **✅ ARBITRAGES RENDUS PAR LE PORTEUR PRODUIT LE 2026-09-18 (lot livré).**
+> - `DELETE /api/expenses/{id}` : **retenu et exposé**.
+> - `POST /api/expenses/{id}/reminder` : **retenu et exposé**, avec un cooldown de **72 h** par dépense (§4.9).
+> - `expense_child.weight` : **écarté**. La pondération par enfant est neutre sur le partage entre
+>   parents (§3.1.D, par linéarité) et explicitement ignorée avec `share_type=amount` ; non
+>   persistée, elle n'aurait été observable nulle part. Le lot ne l'implémente donc **ni** en
+>   persistance **ni** en saisie : `expense_child` reste la table de liaison nue du cdc §5.2, et les
+>   CA « pondération par enfant » d'US-DEP-1 ainsi que la finalité 1 du §3.1.D sont **hors périmètre livré**.
+>
 > Les US-DEP-3/4/6/8 sont des **dérivés directs** d'exigences déjà présentes ailleurs dans le cdc (endpoints `GET`/`PATCH` du §6.2, activation par module §2.1, offline mobile §4.4) : leur risque de divergence est faible. Les trois premières lignes (DELETE, endpoint reminder, colonne `weight`) sont les **vraies extensions de contrat** à arbitrer.
 
 ### US-DEP-1 — Ajouter une dépense

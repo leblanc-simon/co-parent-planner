@@ -922,6 +922,158 @@ class AppL10nFr extends AppL10n {
       'Les événements récurrents se créent depuis le web.';
 
   @override
+  String get tabExpenses => 'Dépenses';
+
+  @override
+  String get expensesTitle => 'Dépenses partagées';
+
+  @override
+  String get expensesSubtitle =>
+      'Frais des enfants · répartition et remboursements';
+
+  @override
+  String get expensesEmpty => 'Aucune dépense pour l\'instant.';
+
+  @override
+  String get expensesFilterAll => 'Toutes';
+
+  @override
+  String get expensesFilterDue => 'À régler';
+
+  @override
+  String get expensesFilterSettled => 'Réglées';
+
+  @override
+  String get expensesNew => 'Nouvelle dépense';
+
+  @override
+  String get expensesCreate => 'Enregistrer';
+
+  @override
+  String get expensesCreated => 'Dépense enregistrée.';
+
+  @override
+  String get expensesFieldTitle => 'Libellé';
+
+  @override
+  String get expensesCategory => 'Catégorie';
+
+  @override
+  String get expensesAmount => 'Montant (€)';
+
+  @override
+  String get expensesDate => 'Date';
+
+  @override
+  String get expensesPayer => 'Payé par';
+
+  @override
+  String get expensesChildren => 'Enfant(s) concerné(s)';
+
+  @override
+  String get expensesNoChild =>
+      'Ajoutez d\'abord un enfant pour enregistrer une dépense.';
+
+  @override
+  String expensesPaidBy(String payer) {
+    return '$payer a payé';
+  }
+
+  @override
+  String get expensesDeletedMember => 'Membre supprimé';
+
+  @override
+  String get expensesStatusSettled => 'Réglée';
+
+  @override
+  String get expensesStatusDue => 'À régler';
+
+  @override
+  String get expensesSettle => 'Marquer réglée';
+
+  @override
+  String get expensesSettled => 'Dépense marquée réglée.';
+
+  @override
+  String get expensesRemind => 'Relancer';
+
+  @override
+  String get expensesReminded => 'Rappel envoyé.';
+
+  @override
+  String get expensesReminderPending =>
+      'Un rappel vient d\'être envoyé pour cette dépense.';
+
+  @override
+  String get expensesDelete => 'Supprimer';
+
+  @override
+  String get expensesDeleteConfirmTitle => 'Supprimer cette dépense ?';
+
+  @override
+  String expensesDeleteConfirmBody(String title) {
+    return '« $title » sera supprimée pour tous les membres de la famille.';
+  }
+
+  @override
+  String get expensesDeleted => 'Dépense supprimée.';
+
+  @override
+  String get expensesBalanceTitle => 'Solde courant';
+
+  @override
+  String get expensesBalanced => 'Comptes équilibrés';
+
+  @override
+  String expensesOwes(String debtor, String amount, String creditor) {
+    return '$debtor doit $amount à $creditor';
+  }
+
+  @override
+  String expensesBalanceExcluded(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dépenses sont exclues du solde (compte supprimé).',
+      one: '$count dépense est exclue du solde (compte supprimé).',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get expensesBalanceUnavailable => 'Solde indisponible hors connexion.';
+
+  @override
+  String get expensesByCategory => 'Par catégorie';
+
+  @override
+  String get expensesTotal => 'Total engagé';
+
+  @override
+  String get expensesRemaining => 'Reste à régler';
+
+  @override
+  String get expensesAmountInvalid => 'Saisissez un montant supérieur à zéro.';
+
+  @override
+  String get expensesChildRequired => 'Sélectionnez au moins un enfant.';
+
+  @override
+  String get expCatHealth => 'Santé';
+
+  @override
+  String get expCatSchooling => 'Scolarité';
+
+  @override
+  String get expCatActivities => 'Activités';
+
+  @override
+  String get expCatClothing => 'Vêtements';
+
+  @override
+  String get expCatOther => 'Autre';
+
+  @override
   String get catSport => 'Sport';
 
   @override

@@ -35,7 +35,9 @@ class ApiClients {
       exchanges = api.ExchangeClient(dio),
       messages = api.MessageClient(dio),
       notificationPrefs = api.NotificationPrefsClient(dio),
-      meExport = api.MeExportClient(dio);
+      meExport = api.MeExportClient(dio),
+      expenses = api.ExpenseClient(dio),
+      expenseBalance = api.ExpenseBalanceClient(dio);
 
   final api.RegisterRequestClient register;
   final api.LoginRequestClient login;
@@ -64,6 +66,8 @@ class ApiClients {
   final api.MessageClient messages;
   final api.NotificationPrefsClient notificationPrefs;
   final api.MeExportClient meExport;
+  final api.ExpenseClient expenses;
+  final api.ExpenseBalanceClient expenseBalance;
 }
 
 final apiClientsProvider = Provider<ApiClients>(

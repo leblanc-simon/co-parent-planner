@@ -64,6 +64,18 @@ email:
             # `{household}` est « Sophie » ou « Sophie et Bob » selon l'association parent ↔
             # beau-parent, composée par `Household` à partir du catalogue (`household.pair`).
             body_day: "Le {date} est désormais chez {household}. Consultez le planning dans l'application."
+        # Dépenses (Lot 10). Le modèle et l'API parlent d'état `settled` (clé stable, non traduite) ;
+        # l'utilisateur, lui, lit « réglée » — le cdc §2.9 disait « remboursée ». L'écart de
+        # vocabulaire tient donc dans ce catalogue, jamais dans le code ni dans le contrat.
+        expense_added:
+            subject: "Nouvelle dépense : {title}"
+            body: "Une nouvelle dépense « {title} » a été enregistrée dans les comptes partagés."
+        expense_settled:
+            subject: "Dépense réglée : {title}"
+            body: "La dépense « {title} » a été marquée réglée."
+        expense_reminder:
+            subject: "Rappel : {title} reste à régler"
+            body: "La dépense « {title} » n'est pas réglée. Ouvrez l'application pour consulter le solde."
 
 household:
     # Nomme le foyer d'un parent associé à un beau-parent (évolutions E2/E3). Composée ICI et non en
@@ -270,6 +282,43 @@ exchange:
     decided_banner: 'Décision tranchée'
     open_count: '{count, plural, =0 {Aucun échange ouvert} one {# échange ouvert} other {# échanges ouverts}}'
     votes: '{count, plural, =0 {Aucune validation} one {# validation} other {# validations}}'
+
+expense:
+    error:
+        not_found: 'Dépense introuvable.'
+        title_required: 'Le libellé de la dépense est requis.'
+        title_too_long: 'Le libellé de la dépense est trop long.'
+        category_invalid: 'Catégorie de dépense invalide.'
+        amount_invalid: 'Le montant doit être supérieur à zéro.'
+        amount_too_large: 'Le montant dépasse le maximum autorisé.'
+        date_invalid: 'Date de dépense invalide.'
+        settled_invalid: "Filtre d'état invalide (attendu : true ou false)."
+        payer_invalid: 'Le payeur doit être un parent actif de la famille.'
+        child_required: 'Une dépense doit concerner au moins un enfant.'
+        child_invalid: "L'un des enfants concernés n'appartient pas à la famille."
+        no_parent: 'La famille ne compte aucun parent à qui répartir la dépense.'
+        share_type_invalid: 'Type de partage invalide (attendu : percent ou amount).'
+        share_type_mixed: 'Un partage combine des pourcentages et des montants : choisissez l''un ou l''autre.'
+        share_member_invalid: 'Une part ne peut revenir qu''à un parent actif de la famille.'
+        share_duplicate: 'Un même membre apparaît deux fois dans le partage.'
+        share_value_invalid: 'Valeur de part invalide.'
+        share_percent_sum: 'La somme des pourcentages doit faire exactement 100 %.'
+        share_amount_sum: 'La somme des montants doit être égale au total de la dépense.'
+        reminder_settled: 'Cette dépense est déjà réglée : il n''y a pas de rappel à envoyer.'
+        reminder_no_debtor: 'Cette dépense est entièrement à la charge de son payeur : personne à relancer.'
+        reminder_too_soon: 'Un rappel a déjà été envoyé pour cette dépense. Patientez {hours} heures avant d''en envoyer un autre.'
+    category:
+        sante: 'Santé'
+        scolarite: 'Scolarité'
+        activites: 'Activités'
+        vetements: 'Vêtements'
+        autre: 'Autre'
+    count: '{count, plural, =0 {Aucune dépense} one {# dépense} other {# dépenses}}'
+    settled: '{count, plural, =0 {Aucune réglée} one {# réglée} other {# réglées}}'
+    balance:
+        owes: '{debtor} doit {amount} à {creditor}'
+        balanced: 'Comptes équilibrés'
+        excluded: '{count, plural, one {# dépense est exclue du solde} other {# dépenses sont exclues du solde}} (compte supprimé).'
 
 notification:
     error:

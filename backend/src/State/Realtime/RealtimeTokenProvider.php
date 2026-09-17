@@ -94,6 +94,12 @@ final class RealtimeTokenProvider implements ProviderInterface
         if ($membership->can(RightDomain::Agenda, RightLevel::View)) {
             $topics[] = \sprintf('/families/%s/agenda', $familyId);
         }
+        // Dépenses (Lot 10, v2) : abonnement filtré sur `expenses ≥ view`, ce qui suffit à couvrir les
+        // trois conditions du §3.5 — le niveau effectif vaut déjà `none` si le module est désactivé
+        // pour la famille ou si le membre est un enfant (cf. Membership::effectiveLevel()).
+        if ($membership->can(RightDomain::Expenses, RightLevel::View)) {
+            $topics[] = \sprintf('/families/%s/expenses', $familyId);
+        }
         // Échanges (Lot 6) : liste (badge) + détail par échange (template RFC 6570), filtré sur
         // exchanges ≥ view (US-EX-2/7). Le clair des messages n'est poussé qu'ici, aux abonnés autorisés.
         if ($membership->can(RightDomain::Exchanges, RightLevel::View)) {

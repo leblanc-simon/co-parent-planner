@@ -188,6 +188,20 @@
            qu'une valeur recopiée de l'un vers l'autre désignait un autre jour.
            `FamilyResource.handoverWeekday/handoverTime` reste dans l'API (contrat inchangé) : seule
            la saisie disparaît de l'UI, là où la garde a une source de vérité unique. #}
+        {# ───── Module Dépenses (US-DEP-6, Lot 10) ─────
+           Le drapeau commande l'onglet, les écrans ET l'API (§3.4) : le désactiver ne supprime
+           rien, les dépenses saisies réapparaissent telles quelles à la réactivation. Réservé à un
+           administrateur, comme le reste de cette section (`family_settings:edit`). #}
+        <label class="overlay-card" style="margin-top:1rem">
+            <span class="overlay-card__body">
+                <span class="overlay-card__title">Partage des dépenses</span>
+                <span class="overlay-card__sub">Active l'onglet Dépenses et le suivi des soldes{% if family.type.value == 'intact' %} — optionnel pour une famille unie{% endif %}.</span>
+            </span>
+            <span class="switch">
+                <input type="checkbox" name="expensesEnabled" {{ family.expensesEnabled ? 'checked' }} {{ isAdmin ? '' : 'disabled' }}>
+                <span class="switch__slider"></span>
+            </span>
+        </label>
         {% if isAdmin %}<button class="btn btn--primary" type="submit">Enregistrer</button>{% endif %}
     </form>
 </section>

@@ -18,6 +18,9 @@ abstract final class Routes {
   static const String agenda = '/agenda';
   static const String children = '/children';
 
+  /// Onglet Dépenses (Lot 10, v2) — rendu seulement si la famille a activé le module.
+  static const String expenses = '/expenses';
+
   /// Routes publiques (accessibles non connecte).
   ///
   /// `splash` n'en fait **pas** partie : c'est un ecran transitoire, pas une

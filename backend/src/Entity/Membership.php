@@ -238,6 +238,7 @@ class Membership
      * Niveau effectif sur un domaine (table de vérité §2.2 + §3.7) :
      * - **précondition** : un membership non actif (invité/retiré) n'a aucun droit (§3.1) ;
      * - family_settings : édition réservée aux admins ; un parent non-admin n'a que `view`, les autres `none` ;
+     * - expenses (v2) : `none` pour **tous** tant que `Family.expensesEnabled` est faux (Lot 10 §3.4) ;
      * - parent → `edit` forcé sur tous les autres domaines ;
      * - child → `expenses` et structure (`family_settings`) forcés `none` ;
      * - step_parent / child → niveau du Right déclaré (défaut `none`).
@@ -255,16 +256,20 @@ class Membership
             return MembershipRole::Parent === $this->role ? RightLevel::View : RightLevel::None;
         }
 
+        // Module v2 (`expenses`) : **aucun rôle** n'y a accès tant que la famille ne l'a pas activé
+        // (Lot 10 §3.4, niveau 2 de la défense en profondeur). Le test précède `forcesEdit()` à
+        // dessein : un parent non plus n'a rien à faire sur un module inexistant pour sa famille, et
+        // c'est ce même niveau effectif qui décide de l'onglet, du topic Mercure et des destinataires
+        // de notification.
+        if ($domain->isV2() && !$this->hasExpensesModule()) {
+            return RightLevel::None;
+        }
+
         if ($this->role->forcesEdit()) {
             return RightLevel::Edit;
         }
 
         if ($this->role->isChild() && ($domain->isForbiddenForChild() || $domain->isStructural())) {
-            return RightLevel::None;
-        }
-
-        // step_parent : `expenses` inerte tant que le module Dépenses n'est pas activé (§3.1, v2).
-        if ($domain->isV2() && !$this->family->isExpensesEnabled()) {
             return RightLevel::None;
         }
 
@@ -275,6 +280,16 @@ class Membership
         }
 
         return RightLevel::None;
+    }
+
+    /**
+     * La famille a-t-elle activé le module Dépenses (v2) ? Un membership détaché de sa famille
+     * (construit en mémoire, hors persistance) est traité comme **sans module** : le défaut sûr est
+     * le refus, jamais l'ouverture d'un domaine par accident de construction.
+     */
+    private function hasExpensesModule(): bool
+    {
+        return isset($this->family) && $this->family->isExpensesEnabled();
     }
 
     public function can(RightDomain $domain, RightLevel $required): bool

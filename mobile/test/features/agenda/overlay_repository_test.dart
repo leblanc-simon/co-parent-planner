@@ -65,14 +65,17 @@ void main() {
     expect(events.single.allDay, isFalse);
   });
 
-  test('le paramètre overlay part en CSV sur la route de la famille active', () async {
-    await repo([]).overlayEvents('fam-a', ['fam-b', 'fam-c']);
+  test(
+    'le paramètre overlay part en CSV sur la route de la famille active',
+    () async {
+      await repo([]).overlayEvents('fam-a', ['fam-b', 'fam-c']);
 
-    expect(adapter.requests, hasLength(1));
-    final request = adapter.requests.single;
-    expect(request.path, '/api/families/fam-a/events');
-    expect(request.queryParameters['overlay'], 'fam-b,fam-c');
-  });
+      expect(adapter.requests, hasLength(1));
+      final request = adapter.requests.single;
+      expect(request.path, '/api/families/fam-a/events');
+      expect(request.queryParameters['overlay'], 'fam-b,fam-c');
+    },
+  );
 
   /// Sans lien activé, il n'y a rien à projeter : demander quand même exposerait la famille active
   /// à un 422 « lien invalide » pour une question qu'on n'avait pas besoin de poser.

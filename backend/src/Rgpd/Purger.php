@@ -6,6 +6,7 @@ namespace App\Rgpd;
 
 use App\Enum\RgpdMode;
 use App\Repository\AuditLogRepository;
+use App\Repository\DeviceTokenRepository;
 use App\Repository\IdempotencyKeyRepository;
 use App\Repository\InvitationRepository;
 use App\Repository\NotificationDispatchRepository;
@@ -41,6 +42,7 @@ final class Purger
         private readonly NotificationDispatchRepository $dispatches,
         private readonly OneTimeTokenRepository $oneTimeTokens,
         private readonly IdempotencyKeyRepository $idempotencyKeys,
+        private readonly DeviceTokenRepository $deviceTokens,
         private readonly RgpdOperationRepository $operations,
         private readonly ExportStorage $storage,
         private readonly Anonymizer $anonymizer,
@@ -74,6 +76,7 @@ final class Purger
                     fn (): int => $this->oneTimeTokens->countExpiredBefore($before),
                     fn (): int => $this->oneTimeTokens->deleteExpiredBefore($before)),
                 RetentionScope::IdempotencyKeys => $this->purgeIdempotencyKeys($mode, $rule),
+                RetentionScope::DeviceTokens => $this->purgeDeviceTokens($mode, $before, $rule),
             };
         }
 
@@ -139,6 +142,15 @@ final class Purger
         return $this->count($mode, $rule,
             fn (): int => $this->idempotencyKeys->countOlderThan($before),
             fn (): int => $this->idempotencyKeys->deleteOlderThan($before));
+    }
+
+    private function purgeDeviceTokens(RgpdMode $mode, \DateTimeImmutable $retiredBefore, RetentionRule $rule): PurgeReportLine
+    {
+        $dormantBefore = $this->clock->now()->sub(new \DateInterval('P'.$this->policy->dormantDevicesDays().'D'));
+
+        return $this->count($mode, $rule,
+            fn (): int => $this->deviceTokens->countPurgeable($retiredBefore, $dormantBefore),
+            fn (): int => $this->deviceTokens->deletePurgeable($retiredBefore, $dormantBefore));
     }
 
     private function purgeExports(RgpdMode $mode, \DateTimeImmutable $before, RetentionRule $rule): PurgeReportLine

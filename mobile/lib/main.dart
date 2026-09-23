@@ -2,13 +2,21 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'core/push/firebase_push_gateway.dart';
+import 'core/push/push_controller.dart';
 import 'features/auth/application/auth_controller.dart';
 import 'features/family/application/family_context.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final container = ProviderContainer();
+  // Push (Lot 11) : sans configuration Firebase dans ce build, la passerelle
+  // est inerte et l'app démarre normalement, push éteint.
+  final push = await FirebasePushGateway.initialize();
+
+  final container = ProviderContainer(
+    overrides: [pushGatewayProvider.overrideWithValue(push)],
+  );
 
   // La famille active vient du stockage local : quelques millisecondes, on peut
   // l'attendre pour que le routeur affiche d'emblée le bon écran.

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Rgpd\Export;
 
 use App\Entity\User;
+use App\Repository\DeviceTokenRepository;
 use App\Repository\ExpenseRepository;
 use App\Repository\MembershipRepository;
 use App\Repository\MessageRepository;
@@ -28,6 +29,7 @@ final class UserDataExporter
         private readonly NoteRepository $notes,
         private readonly MessageRepository $messages,
         private readonly NotificationPrefRepository $notificationPrefs,
+        private readonly DeviceTokenRepository $deviceTokens,
         private readonly ClockInterface $clock,
     ) {
     }
@@ -54,6 +56,7 @@ final class UserDataExporter
             'messages' => $this->messagesOf($user),
             'expenses' => $this->expensesOf($user),
             'notificationPreferences' => $this->preferences($user),
+            'devices' => $this->devicesOf($user),
         ];
     }
 
@@ -139,6 +142,31 @@ final class UserDataExporter
                 'paidBySubject' => $expense->getPayerMembership()?->getUser()->getId()->equals($user->getId()) ?? false,
                 'ownShareType' => $own?->getShareType()->value,
                 'ownShareValue' => $own?->getValue(),
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * Appareils enregistrés pour le push (Lot 11). Le jeton n'est pas exporté : c'est un secret
+     * d'acheminement, pas une information sur la personne, et un export circule hors de l'app.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function devicesOf(User $user): array
+    {
+        $out = [];
+        foreach ($this->deviceTokens->findForUser($user) as $device) {
+            $out[] = [
+                'id' => (string) $device->getId(),
+                'platform' => $device->getPlatform()->value,
+                'status' => $device->getStatus()->value,
+                'deviceModel' => $device->getDeviceModel(),
+                'appVersion' => $device->getAppVersion(),
+                'locale' => $device->getLocale(),
+                'createdAt' => $device->getCreatedAt()->format(\DateTimeInterface::ATOM),
+                'lastSeenAt' => $device->getLastSeenAt()?->format(\DateTimeInterface::ATOM),
             ];
         }
 

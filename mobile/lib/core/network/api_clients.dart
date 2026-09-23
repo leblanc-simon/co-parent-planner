@@ -37,7 +37,8 @@ class ApiClients {
       notificationPrefs = api.NotificationPrefsClient(dio),
       meExport = api.MeExportClient(dio),
       expenses = api.ExpenseClient(dio),
-      expenseBalance = api.ExpenseBalanceClient(dio);
+      expenseBalance = api.ExpenseBalanceClient(dio),
+      devices = api.DeviceClient(dio);
 
   final api.RegisterRequestClient register;
   final api.LoginRequestClient login;
@@ -68,6 +69,7 @@ class ApiClients {
   final api.MeExportClient meExport;
   final api.ExpenseClient expenses;
   final api.ExpenseBalanceClient expenseBalance;
+  final api.DeviceClient devices;
 }
 
 final apiClientsProvider = Provider<ApiClients>(

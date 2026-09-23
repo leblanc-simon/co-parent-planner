@@ -24,6 +24,8 @@ final class RetentionPolicy
 
     private readonly int $idempotencyTtlHours;
 
+    private readonly int $dormantDevicesDays;
+
     public function __construct(
         #[Autowire('%env(int:RGPD_RETENTION_INACTIVE_ACCOUNTS_DAYS)%')]
         int $inactiveAccountsDays = 1095,
@@ -37,7 +39,14 @@ final class RetentionPolicy
         int $notificationsDays = 90,
         #[Autowire('%env(int:RGPD_RETENTION_IDEMPOTENCY_HOURS)%')]
         int $idempotencyTtlHours = 48,
+        #[Autowire('%env(int:RGPD_RETENTION_DEVICE_TOKENS_DAYS)%')]
+        int $retiredDevicesDays = 30,
+        #[Autowire('%env(int:RGPD_RETENTION_DORMANT_DEVICES_DAYS)%')]
+        int $dormantDevicesDays = 270,
     ) {
+        // Un jeton FCM resté muet ~270 jours est tenu pour périmé par Google lui-même : le garder
+        // n'apporte plus de joignabilité, seulement de la surface (Lot 11 §4.8).
+        $this->dormantDevicesDays = max(1, $dormantDevicesDays);
         // Les exports (dump complet de PII) ont un TTL court exprimé en HEURES : le Purger l'applique
         // à l'heure près (pas de quantification en jours) afin de ne pas sur-conserver la donnée la plus
         // sensible et d'honorer une valeur sub-journalière (minimisation §3.4).
@@ -56,7 +65,14 @@ final class RetentionPolicy
             new RetentionRule(RetentionScope::NotificationDispatches, $notificationsDays, RetentionAction::Delete, true, 'Journaux de notifications'),
             new RetentionRule(RetentionScope::OneTimeTokens, 1, RetentionAction::Delete, true, 'Jetons à usage unique expirés'),
             new RetentionRule(RetentionScope::IdempotencyKeys, $indicativeIdempotencyDays, RetentionAction::Delete, true, 'Clés d\'idempotence'),
+            new RetentionRule(RetentionScope::DeviceTokens, $retiredDevicesDays, RetentionAction::Delete, true, 'Jetons push révoqués, invalides ou dormants'),
         ];
+    }
+
+    /** Silence au-delà duquel un appareil encore « actif » est purgé (Lot 11 §4.8). */
+    public function dormantDevicesDays(): int
+    {
+        return $this->dormantDevicesDays;
     }
 
     /** TTL des artefacts d'export, en heures (borne appliquée à l'heure près par le Purger). */

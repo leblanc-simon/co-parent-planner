@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Teinte des notifications push : accent du design system (cdc §8). -->
+    <color name="notification_accent">#C2643D</color>
+</resources>

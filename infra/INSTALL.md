@@ -217,6 +217,8 @@ php bin/console api:openapi:export --output=../contracts/openapi.json   # contra
 | `RGPD_RETENTION_*` | durées de rétention/purge (comptes inactifs, invitations, exports, journaux, notifications) | 1095 j / 30 j / 24 h / 1095 j / 90 j |
 | `RL_RGPD_EXPORT_LIMIT` | exports RGPD max par utilisateur et par heure | `5` |
 | `EXPENSE_REMINDER_COOLDOWN_HOURS` | délai minimal entre deux rappels **d'une même dépense** (module Dépenses, Lot 10) — anti-harcèlement, un dépassement répond 429 | `72` |
+| `FCM_CREDENTIALS_FILE` | chemin du JSON du compte de service Firebase (push mobile, Lot 11) — **hors dépôt, hors web-root** ; vide = canal push éteint (§G) | vide |
+| `RGPD_RETENTION_DEVICE_TOKENS_DAYS` / `RGPD_RETENTION_DORMANT_DEVICES_DAYS` | purge des jetons push révoqués/invalides, puis des jetons actifs restés muets (Lot 11) | `30` / `270` |
 
 > **RGPD (Lot 8)** : en dev/bare-metal les exports sont écrits dans `backend/var/exports` (créé
 > automatiquement, hors web-root) et servis par lien signé HMAC ; **en prod**, brancher une impl
@@ -384,6 +386,10 @@ L'URL d'API **doit** être passée en `--dart-define` : la valeur par défaut
 (`http://10.0.2.2:8000`, alias de la machine de dev depuis l'émulateur) est en clair et sera de
 toute façon bloquée par la politique de trafic Android en release.
 
+Pour un build qui reçoit les notifications push (Lot 11), ajouter les quatre identifiants Firebase
+Android de §G.3 (`FIREBASE_PROJECT_ID`, `FIREBASE_SENDER_ID`, `FIREBASE_ANDROID_APP_ID`,
+`FIREBASE_ANDROID_API_KEY`) en `--dart-define` ; sans eux, le push de ce build est éteint.
+
 ### F.3 Build en CI
 
 Le `build.gradle.kts` accepte les mêmes valeurs par variables d'environnement, ce qui évite d'écrire
@@ -406,3 +412,106 @@ décodé au début du job vers un chemin temporaire — jamais committé, jamais
   **pas** fusionnés en release, d'où une app release sans réseau avant ce correctif (C4/C63).
 - `android:allowBackup="false"` — la base locale (outbox + cache de lecture, en clair) et le magasin
   de jetons ne partent plus dans la sauvegarde cloud de l'utilisateur (C6).
+
+---
+
+## G. Notifications push mobile (Lot 11)
+
+Le push passe **entièrement par Firebase Cloud Messaging** (arbitrage du 2026-09-23) : FCM livre
+les appareils Android et **relaie vers APNs** les appareils iOS. Le backend ne détient donc qu'un
+identifiant — le compte de service Firebase — et aucune clé APNs.
+
+**Tout est facultatif** : sans configuration, le backend n'enfile aucun push (l'e-mail n'est pas
+affecté), et l'app affiche « notifications push indisponibles » dans ses réglages. La CI tourne sur
+une passerelle factice (`App\Tests\Support\FakePushSender`) : aucun appel à Google en test.
+
+### G.1 Projet Firebase (une fois, mainteneur)
+
+1. Créer un projet sur <https://console.firebase.google.com> (région de données : UE si proposée)
+   et y déclarer **deux applications** :
+   - Android, package `eu.coparentplanner.app` ;
+   - iOS, bundle `eu.coparentplanner.app`.
+   Télécharger `google-services.json` / `GoogleService-Info.plist` seulement pour y lire les
+   clés API (§G.3) : ils **ne sont pas committés**, l'app reçoit ses identifiants au build.
+2. **iOS — clé APNs** : dans le portail Apple Developer, *Keys* → créer une clé avec le service
+   *Apple Push Notifications service (APNs)* (fichier `.p8`, téléchargeable une seule fois). La
+   déposer dans Firebase : *Paramètres du projet → Cloud Messaging → Configuration des applications
+   Apple → Clé d'authentification APNs* (avec le Key ID et le Team ID). C'est Firebase, pas notre
+   backend, qui la détient.
+3. **iOS — capacité Push de l'App ID** : *Identifiers* → `eu.coparentplanner.app` →
+   cocher **Push Notifications**, puis **régénérer les profils match** (le profil doit porter
+   l'entitlement `aps-environment` que déclare `mobile/ios/Runner/Runner.entitlements`) :
+   ```bash
+   cd mobile/ios && bundle exec fastlane ios certificates   # §E.1 ; ajouter force: true si besoin
+   ```
+   Sans cette étape, l'export gym échoue sur un profil sans capacité Push.
+
+### G.2 Backend : compte de service
+
+*Paramètres du projet → Comptes de service → Générer une nouvelle clé privée* → fichier JSON. Le
+déposer **hors du dépôt et hors web-root**, lisible du seul utilisateur PHP, puis :
+
+```bash
+# .env.local (bare-metal) ou variable d'environnement du conteneur (Docker) :
+FCM_CREDENTIALS_FILE=/etc/coparentplanner/fcm-service-account.json
+chmod 600 /etc/coparentplanner/fcm-service-account.json
+```
+
+En Docker, monter le fichier en lecture seule (secret compose ou volume `:ro`) et pointer
+`FCM_CREDENTIALS_FILE` dessus. Aucune dépendance PHP supplémentaire : l'OAuth 2 (assertion JWT
+RS256) et l'API HTTP v1 passent par `symfony/http-client` et l'extension `openssl`, déjà requis.
+Les envois partent du worker Messenger (`App\Message\SendPushNotification` sur `async`) : **le
+worker doit tourner** pour que le push parte.
+
+Rotation : générer une nouvelle clé, remplacer le fichier, redémarrer le worker, puis révoquer
+l'ancienne clé dans la console. Un identifiant refusé ne supprime **jamais** les jetons des
+utilisateurs : les envois sont rejoués puis parqués dans la file `failed`
+(`php bin/console messenger:failed:retry` une fois la clé corrigée).
+
+### G.3 Mobile : identifiants publics au build
+
+Les identifiants de l'app Firebase (*Paramètres du projet → Vos applications*) sont **publics** —
+ils finissent dans le binaire. Ils passent en `--dart-define` plutôt qu'en fichiers committés :
+
+| Variable | Où la lire |
+|---|---|
+| `FIREBASE_PROJECT_ID` | console : ID du projet |
+| `FIREBASE_SENDER_ID` | console : Cloud Messaging → ID de l'expéditeur |
+| `FIREBASE_ANDROID_APP_ID` | console : app Android → ID d'application (`1:…:android:…`) |
+| `FIREBASE_ANDROID_API_KEY` | `google-services.json` → `client[].api_key[].current_key` |
+| `FIREBASE_IOS_APP_ID` | console : app iOS → ID d'application (`1:…:ios:…`) |
+| `FIREBASE_IOS_API_KEY` | `GoogleService-Info.plist` → `API_KEY` |
+
+> Firebase crée **une clé API par application**, restreinte à son package ou à son bundle : ne pas
+> réutiliser la clé Android pour iOS (ni la « clé API Web » du projet). Les deux fichiers de
+> configuration servent seulement à lire ces valeurs ; ils restent hors dépôt.
+
+```bash
+cd mobile
+flutter run \
+  --dart-define=API_BASE_URL=http://10.0.2.2:8000 \
+  --dart-define=FIREBASE_PROJECT_ID=… --dart-define=FIREBASE_SENDER_ID=… \
+  --dart-define=FIREBASE_ANDROID_APP_ID=… --dart-define=FIREBASE_ANDROID_API_KEY=…
+```
+
+- **CI iOS** : déclarer `FIREBASE_PROJECT_ID`, `FIREBASE_SENDER_ID`, `FIREBASE_IOS_APP_ID`,
+  `FIREBASE_IOS_API_KEY` (et `API_BASE_URL`) comme **variables de dépôt** GitHub (`vars`, pas
+  `secrets`) et dans le groupe `ios_signing` de Codemagic ; le `Fastfile` les relaie en
+  `--dart-define` (§E). Absentes, le build reste valide, push éteint.
+- **Plateformes** : iOS **15.0** minimum (exigence de `firebase_messaging`) ; Android 7.0 (API 24,
+  défaut Flutter). La permission Android 13+ `POST_NOTIFICATIONS` est fusionnée depuis le plugin.
+- **Nouvelles dépendances Flutter** : `firebase_core`, `firebase_messaging`, `device_info_plus`,
+  `package_info_plus` (`flutter pub get`). Aucune n'a de hook natif qui gêne `build_runner`.
+
+### G.4 Valider sur appareil
+
+- **Android** : un émulateur *avec Google Play* suffit.
+- **iOS** : **impossible sur simulateur** (pas de jeton APNs) — build signé installé via TestFlight
+  (§E.3), sur un iPhone réel. C'est le prérequis mainteneur qui conditionne la validation iOS du lot.
+
+Parcours de recette : se connecter → Réglages › Notifications → activer « Échanges » (l'invite
+système s'affiche à ce moment-là, pas au lancement) → depuis un autre compte de la famille, écrire
+dans un échange → la notification arrive app fermée, et le tap ouvre le fil. Couper la permission
+dans les réglages du téléphone puis revenir dans l'app : l'appareil disparaît de la liste
+« Appareils » (révocation serveur).
+

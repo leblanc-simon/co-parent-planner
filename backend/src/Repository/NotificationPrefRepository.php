@@ -62,12 +62,17 @@ class NotificationPrefRepository extends ServiceEntityRepository
      */
     public function emailMap(User $user): array
     {
-        $map = [];
-        foreach ($this->findBy(['user' => $user, 'channel' => NotificationChannel::Email]) as $pref) {
-            $map[$pref->getCategory()->value] = $pref->isEnabled();
-        }
+        return $this->channelMap($user, NotificationChannel::Email);
+    }
 
-        return $map;
+    /**
+     * Préférences push explicites de l'utilisateur, indexées par valeur de catégorie.
+     *
+     * @return array<string, bool>
+     */
+    public function pushMap(User $user): array
+    {
+        return $this->channelMap($user, NotificationChannel::Push);
     }
 
     /**
@@ -79,5 +84,27 @@ class NotificationPrefRepository extends ServiceEntityRepository
         $pref = $this->findOneFor($user, $category, NotificationChannel::Email);
 
         return null === $pref || $pref->isEnabled();
+    }
+
+    /**
+     * Notification push activée pour cette catégorie ? Absence d'enregistrement ⇒ **désactivé** :
+     * le push est un opt-in explicite (Lot 11 US-PUSH-4), à l'inverse de l'e-mail.
+     */
+    public function isPushEnabled(User $user, NotificationCategory $category): bool
+    {
+        return $this->findOneFor($user, $category, NotificationChannel::Push)?->isEnabled() ?? false;
+    }
+
+    /**
+     * @return array<string, bool>
+     */
+    private function channelMap(User $user, NotificationChannel $channel): array
+    {
+        $map = [];
+        foreach ($this->findBy(['user' => $user, 'channel' => $channel]) as $pref) {
+            $map[$pref->getCategory()->value] = $pref->isEnabled();
+        }
+
+        return $map;
     }
 }

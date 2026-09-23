@@ -77,6 +77,54 @@ email:
             subject: "Rappel : {title} reste à régler"
             body: "La dépense « {title} » n'est pas réglée. Ouvrez l'application pour consulter le solde."
 
+# Notifications push mobile (Lot 11). Titre court + corps d'une ligne : l'écran verrouillé tronque
+# au-delà. Jamais de champ 🔒 (texte de message, prénom, nom de foyer) — le payload transite par
+# Google et Apple ; `{title}` est le titre non chiffré de la ressource, celui qu'affiche l'e-mail.
+push:
+    notif:
+        exchange_message:
+            title: "Nouveau message"
+            body: "Dans l'échange « {title} »"
+        exchange_opened:
+            title: "Nouvel échange"
+            body: "« {title} » vient d'être ouvert"
+        exchange_decided:
+            title: "Décision prise"
+            body: "« {title} » a été tranchée"
+        exchange_closed:
+            title: "Échange clos"
+            body: "« {title} » a été clôturé"
+        decision_reminder:
+            title: "Échéance demain"
+            body: "« {title} » n'est pas encore tranchée"
+        decision_overdue:
+            title: "Décision en retard"
+            body: "« {title} » a dépassé son échéance"
+        agenda_event_created:
+            title: "Nouvel événement"
+            body: "« {title} » ajouté à l'agenda"
+        agenda_event_updated:
+            title: "Événement modifié"
+            body: "« {title} » a changé"
+        agenda_event_deleted:
+            title: "Événement annulé"
+            body: "« {title} » a été annulé"
+        agenda_reminder:
+            title: "Rappel"
+            body: "« {title} » approche"
+        custody_changed:
+            title: "Planning de garde modifié"
+            body: "Consultez le nouveau planning"
+        expense_added:
+            title: "Nouvelle dépense"
+            body: "« {title} » ajoutée aux comptes partagés"
+        expense_settled:
+            title: "Dépense réglée"
+            body: "« {title} » a été marquée réglée"
+        expense_reminder:
+            title: "Dépense à régler"
+            body: "« {title} » n'est pas encore réglée"
+
 household:
     # Nomme le foyer d'un parent associé à un beau-parent (évolutions E2/E3). Composée ICI et non en
     # PHP : la conjonction et l'ordre des deux noms changent d'une langue à l'autre.
@@ -332,6 +380,14 @@ notification:
         agenda: 'Agenda'
         exchanges: 'Échanges'
         invitation: 'Invitations'
+
+# Appareils enregistrés pour le push (Lot 11)
+device:
+    error:
+        platform_invalid: "La plateforme doit valoir « ios » ou « android »."
+        token_invalid: "Le jeton de notification de l'appareil est vide ou invalide."
+        locale_invalid: "La langue de l'appareil n'est pas dans un format valide (par exemple « fr-FR »)."
+        not_found: "Appareil introuvable."
 
 # RGPD Manager (Lot 8)
 rgpd:

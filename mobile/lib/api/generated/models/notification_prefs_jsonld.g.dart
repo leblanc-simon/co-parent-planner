@@ -16,6 +16,9 @@ NotificationPrefsJsonld _$NotificationPrefsJsonldFromJson(
   email: (json['email'] as Map<String, dynamic>?)?.map(
     (k, e) => MapEntry(k, e as bool),
   ),
+  push: (json['push'] as Map<String, dynamic>?)?.map(
+    (k, e) => MapEntry(k, e as bool),
+  ),
   quietHoursStart: json['quietHoursStart'] as String?,
   quietHoursEnd: json['quietHoursEnd'] as String?,
 );
@@ -27,6 +30,7 @@ Map<String, dynamic> _$NotificationPrefsJsonldToJson(
   '@id': instance.object6,
   '@type': instance.object7,
   'email': instance.email,
+  'push': instance.push,
   'quietHoursStart': instance.quietHoursStart,
   'quietHoursEnd': instance.quietHoursEnd,
   'locale': instance.locale,

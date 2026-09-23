@@ -43,6 +43,9 @@ const Map<String, bool> expectedFamilyScoped = {
   '/api/me/export': false,
   '/api/me/export/{id}': false,
   '/api/me/notification-prefs': false,
+  // Appareils push (Lot 11) : liés au compte, pas à une famille.
+  '/api/me/devices': false,
+  '/api/me/devices/{id}': false,
 
   // Lister ses familles / en créer une : précède le choix d'une famille active.
   '/api/families': false,

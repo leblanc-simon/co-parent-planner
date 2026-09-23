@@ -24,4 +24,6 @@ enum RetentionScope: string
     case NotificationDispatches = 'notification_dispatches';
     /** Jetons à usage unique expirés (vérif e-mail, reset, step-up) → suppression. */
     case OneTimeTokens = 'one_time_tokens';
+    /** Jetons push révoqués/invalides au-delà de la durée, ou actifs mais muets depuis longtemps → suppression (Lot 11). */
+    case DeviceTokens = 'device_tokens';
 }

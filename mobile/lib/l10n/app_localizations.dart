@@ -2403,6 +2403,126 @@ abstract class AppL10n {
   /// **'Invitations'**
   String get notifCategoryInvitation;
 
+  /// No description provided for @notifCategoryExpenses.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dépenses'**
+  String get notifCategoryExpenses;
+
+  /// No description provided for @notificationsPushSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Notifications sur ce téléphone'**
+  String get notificationsPushSection;
+
+  /// No description provided for @notificationsPushHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Recevez une notification même application fermée, pour les sujets choisis.'**
+  String get notificationsPushHint;
+
+  /// No description provided for @notificationsPushAsk.
+  ///
+  /// In fr, this message translates to:
+  /// **'Activer un sujet demandera au téléphone l\'autorisation d\'afficher des notifications.'**
+  String get notificationsPushAsk;
+
+  /// No description provided for @notificationsPushDenied.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les notifications de CoParentPlanner sont désactivées dans les réglages du téléphone.'**
+  String get notificationsPushDenied;
+
+  /// No description provided for @notificationsPushOpenSettings.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir les réglages'**
+  String get notificationsPushOpenSettings;
+
+  /// No description provided for @notificationsPushUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Les notifications push ne sont pas disponibles sur cet appareil.'**
+  String get notificationsPushUnavailable;
+
+  /// No description provided for @notificationsDevicesSection.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appareils'**
+  String get notificationsDevicesSection;
+
+  /// No description provided for @notificationsDevicesHint.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ces appareils reçoivent vos notifications push. Retirez celui que vous n\'utilisez plus ou que vous avez perdu.'**
+  String get notificationsDevicesHint;
+
+  /// No description provided for @notificationsDevicesEmpty.
+  ///
+  /// In fr, this message translates to:
+  /// **'Aucun appareil ne reçoit vos notifications push.'**
+  String get notificationsDevicesEmpty;
+
+  /// No description provided for @notificationsDeviceThis.
+  ///
+  /// In fr, this message translates to:
+  /// **'Cet appareil'**
+  String get notificationsDeviceThis;
+
+  /// No description provided for @notificationsDeviceIos.
+  ///
+  /// In fr, this message translates to:
+  /// **'iPhone ou iPad'**
+  String get notificationsDeviceIos;
+
+  /// No description provided for @notificationsDeviceAndroid.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appareil Android'**
+  String get notificationsDeviceAndroid;
+
+  /// No description provided for @notificationsDeviceLastSeen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Dernière activité : {date}'**
+  String notificationsDeviceLastSeen(String date);
+
+  /// No description provided for @notificationsDeviceRevoke.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer'**
+  String get notificationsDeviceRevoke;
+
+  /// No description provided for @notificationsDeviceRevokeTitle.
+  ///
+  /// In fr, this message translates to:
+  /// **'Retirer cet appareil ?'**
+  String get notificationsDeviceRevokeTitle;
+
+  /// No description provided for @notificationsDeviceRevokeBody.
+  ///
+  /// In fr, this message translates to:
+  /// **'Il ne recevra plus de notification push. Il suffira de se reconnecter dessus pour le réactiver.'**
+  String get notificationsDeviceRevokeBody;
+
+  /// No description provided for @notificationsDeviceRevoked.
+  ///
+  /// In fr, this message translates to:
+  /// **'Appareil retiré.'**
+  String get notificationsDeviceRevoked;
+
+  /// No description provided for @pushOpen.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ouvrir'**
+  String get pushOpen;
+
+  /// No description provided for @pushTargetUnavailable.
+  ///
+  /// In fr, this message translates to:
+  /// **'Ce contenu n\'est plus accessible depuis votre compte.'**
+  String get pushTargetUnavailable;
+
   /// No description provided for @notificationsQuietSection.
   ///
   /// In fr, this message translates to:
@@ -2412,7 +2532,7 @@ abstract class AppL10n {
   /// No description provided for @notificationsQuietHint.
   ///
   /// In fr, this message translates to:
-  /// **'Aucun e-mail ne sera envoyé pendant cette plage (fuseau de la famille).'**
+  /// **'Ni e-mail ni notification push pendant cette plage (fuseau de la famille) : ils partent à la fin.'**
   String get notificationsQuietHint;
 
   /// No description provided for @notificationsQuietStart.
@@ -2433,11 +2553,17 @@ abstract class AppL10n {
   /// **'Non définie'**
   String get notificationsQuietUnset;
 
-  /// No description provided for @notificationsSaved.
+  /// No description provided for @notificationsQuietSave.
   ///
   /// In fr, this message translates to:
-  /// **'Préférences enregistrées.'**
-  String get notificationsSaved;
+  /// **'Enregistrer la plage'**
+  String get notificationsQuietSave;
+
+  /// No description provided for @notificationsQuietSaved.
+  ///
+  /// In fr, this message translates to:
+  /// **'Heures silencieuses enregistrées.'**
+  String get notificationsQuietSaved;
 
   /// No description provided for @offlineBanner.
   ///

@@ -30,4 +30,13 @@ final class BlindIndexHasher
     {
         return hash_hmac('sha256', mb_strtolower(trim($value)), $this->key);
     }
+
+    /**
+     * Empreinte d'une valeur **sensible à la casse** : un jeton FCM distingue majuscules et
+     * minuscules, et deux jetons qui ne différeraient que par la casse sont deux appareils.
+     */
+    public function hashExact(string $value): string
+    {
+        return hash_hmac('sha256', $value, $this->key);
+    }
 }

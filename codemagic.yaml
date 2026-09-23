@@ -61,8 +61,11 @@ definitions:
   environment: &ios_env
     groups:
       - ios_signing        # MATCH_GIT_URL, MATCH_PASSWORD, MATCH_GIT_TOKEN, ASC_KEY_*, APPLE_TEAM_ID
+                           # + (optionnel, Lot 11) API_BASE_URL, FIREBASE_PROJECT_ID, FIREBASE_SENDER_ID,
+                           #   FIREBASE_IOS_APP_ID, FIREBASE_IOS_API_KEY — relayées en --dart-define
+                           #   par le Fastfile ; absentes, le push du build est éteint.
     vars:
-      APP_IDENTIFIER: "net.coparentplanner.coparentplanner"  # consommé par ENV[] dans le Fastfile
+      APP_IDENTIFIER: "eu.coparentplanner.app"  # consommé par ENV[] dans le Fastfile
     flutter: 3.38.9        # version figée (source unique), cohérente avec GitHub Actions / Lot 0
     xcode: latest
     cocoapods: default

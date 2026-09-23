@@ -1,4 +1,5 @@
 import 'package:coparentplanner/api/generated/export.dart' as api;
+import 'package:coparentplanner/core/push/device_registration.dart';
 import 'package:coparentplanner/features/agenda/data/agenda_repository.dart';
 import 'package:coparentplanner/features/agenda/data/overlay_repository.dart';
 import 'package:coparentplanner/features/auth/data/auth_repository.dart';
@@ -83,3 +84,5 @@ MockMembersRepository membersRepositoryWithRights(
 
   return mock;
 }
+
+class MockDeviceRegistration extends Mock implements DeviceRegistration {}

@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Entity\Concern\TimestampableTrait;
 use App\Enum\NotificationCategory;
+use App\Enum\NotificationChannel;
 use App\Enum\NotificationStatus;
 use App\Enum\NotificationType;
 use App\Repository\NotificationDispatchRepository;
@@ -17,6 +18,10 @@ use Symfony\Component\Uid\Uuid;
  * Trace technique d'un envoi de notification (Lot 7 §5.2) : porte l'**idempotence** via
  * `notificationKey` unique (une notification par fait × destinataire). Ne contient **aucun** champ 🔒
  * en clair — seulement des identifiants (`payloadRefs`).
+ *
+ * Lot 11 : une ligne par **canal × cible** — un e-mail par destinataire, un push par appareil
+ * (`push:<fait>:<appareil>`). La table tient le rôle de la `NotificationDelivery` du Lot 11 §5.2 :
+ * la contrainte d'unicité sur la clé sérialise deux workers qui traiteraient le même événement.
  */
 #[ORM\Entity(repositoryClass: NotificationDispatchRepository::class)]
 #[ORM\Table(name: 'notification_dispatches')]
@@ -41,6 +46,9 @@ class NotificationDispatch
     #[ORM\Column(length: 16, enumType: NotificationCategory::class)]
     private NotificationCategory $category;
 
+    #[ORM\Column(length: 8, enumType: NotificationChannel::class, options: ['default' => 'email'])]
+    private NotificationChannel $channel;
+
     #[ORM\Column(length: 32, enumType: NotificationType::class)]
     private NotificationType $type;
 
@@ -50,13 +58,18 @@ class NotificationDispatch
     #[ORM\Column(type: 'datetime_immutable', nullable: true)]
     private ?\DateTimeImmutable $sentAt = null;
 
-    public function __construct(string $notificationKey, User $recipient, NotificationType $type)
-    {
+    public function __construct(
+        string $notificationKey,
+        User $recipient,
+        NotificationType $type,
+        NotificationChannel $channel = NotificationChannel::Email,
+    ) {
         $this->id = Uuid::v7();
         $this->notificationKey = $notificationKey;
         $this->recipient = $recipient;
         $this->type = $type;
         $this->category = $type->category();
+        $this->channel = $channel;
     }
 
     public function getId(): Uuid
@@ -77,6 +90,11 @@ class NotificationDispatch
     public function getCategory(): NotificationCategory
     {
         return $this->category;
+    }
+
+    public function getChannel(): NotificationChannel
+    {
+        return $this->channel;
     }
 
     public function getType(): NotificationType

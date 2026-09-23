@@ -49,3 +49,10 @@ app.*.map.json
 /android/key.properties
 *.jks
 *.keystore
+
+# Configuration Firebase (Lot 11) : l'app reçoit ses identifiants en --dart-define
+# (infra/INSTALL.md §G.3) ; ces fichiers ne servent qu'à les lire et restent hors dépôt.
+google-services.json
+GoogleService-Info.plist
+# Paramètres de build locaux (--dart-define-from-file).
+dart-defines*.json

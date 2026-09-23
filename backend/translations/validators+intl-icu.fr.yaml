@@ -35,3 +35,10 @@ family:
     error:
         name_required: "Le nom de la famille est requis."
         name_too_long: "Le nom de la famille est trop long (120 caractères maximum)."
+
+# Appareils push (Lot 11)
+device:
+    error:
+        platform_invalid: "La plateforme doit valoir « ios » ou « android »."
+        token_invalid: "Le jeton de notification de l'appareil est vide ou invalide."
+        locale_invalid: "La langue de l'appareil n'est pas dans un format valide (par exemple « fr-FR »)."

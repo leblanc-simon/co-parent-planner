@@ -1322,11 +1322,81 @@ class AppL10nFr extends AppL10n {
   String get notifCategoryInvitation => 'Invitations';
 
   @override
+  String get notifCategoryExpenses => 'Dépenses';
+
+  @override
+  String get notificationsPushSection => 'Notifications sur ce téléphone';
+
+  @override
+  String get notificationsPushHint =>
+      'Recevez une notification même application fermée, pour les sujets choisis.';
+
+  @override
+  String get notificationsPushAsk =>
+      'Activer un sujet demandera au téléphone l\'autorisation d\'afficher des notifications.';
+
+  @override
+  String get notificationsPushDenied =>
+      'Les notifications de CoParentPlanner sont désactivées dans les réglages du téléphone.';
+
+  @override
+  String get notificationsPushOpenSettings => 'Ouvrir les réglages';
+
+  @override
+  String get notificationsPushUnavailable =>
+      'Les notifications push ne sont pas disponibles sur cet appareil.';
+
+  @override
+  String get notificationsDevicesSection => 'Appareils';
+
+  @override
+  String get notificationsDevicesHint =>
+      'Ces appareils reçoivent vos notifications push. Retirez celui que vous n\'utilisez plus ou que vous avez perdu.';
+
+  @override
+  String get notificationsDevicesEmpty =>
+      'Aucun appareil ne reçoit vos notifications push.';
+
+  @override
+  String get notificationsDeviceThis => 'Cet appareil';
+
+  @override
+  String get notificationsDeviceIos => 'iPhone ou iPad';
+
+  @override
+  String get notificationsDeviceAndroid => 'Appareil Android';
+
+  @override
+  String notificationsDeviceLastSeen(String date) {
+    return 'Dernière activité : $date';
+  }
+
+  @override
+  String get notificationsDeviceRevoke => 'Retirer';
+
+  @override
+  String get notificationsDeviceRevokeTitle => 'Retirer cet appareil ?';
+
+  @override
+  String get notificationsDeviceRevokeBody =>
+      'Il ne recevra plus de notification push. Il suffira de se reconnecter dessus pour le réactiver.';
+
+  @override
+  String get notificationsDeviceRevoked => 'Appareil retiré.';
+
+  @override
+  String get pushOpen => 'Ouvrir';
+
+  @override
+  String get pushTargetUnavailable =>
+      'Ce contenu n\'est plus accessible depuis votre compte.';
+
+  @override
   String get notificationsQuietSection => 'Heures silencieuses';
 
   @override
   String get notificationsQuietHint =>
-      'Aucun e-mail ne sera envoyé pendant cette plage (fuseau de la famille).';
+      'Ni e-mail ni notification push pendant cette plage (fuseau de la famille) : ils partent à la fin.';
 
   @override
   String get notificationsQuietStart => 'Début';
@@ -1338,7 +1408,10 @@ class AppL10nFr extends AppL10n {
   String get notificationsQuietUnset => 'Non définie';
 
   @override
-  String get notificationsSaved => 'Préférences enregistrées.';
+  String get notificationsQuietSave => 'Enregistrer la plage';
+
+  @override
+  String get notificationsQuietSaved => 'Heures silencieuses enregistrées.';
 
   @override
   String get offlineBanner =>

@@ -9,20 +9,28 @@ use App\Entity\Membership;
 use App\Enum\NotificationType;
 use App\Enum\RightLevel;
 use App\Message\SendNotification;
+use App\Message\SendPushNotification;
+use App\Repository\DeviceTokenRepository;
 use App\Repository\NotificationPrefRepository;
+use App\Service\Notification\Push\PushSender;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 
 /**
  * Routeur de notifications (Lot 7 §3.1) : à appeler **après commit** d'une mutation métier. Résout les
- * destinataires (Voter), exclut l'auteur (pas d'auto-notification), filtre par préférence e-mail, puis
- * dispatch un message Messenger idempotent par destinataire. Best-effort : n'interrompt pas la requête.
+ * destinataires (Voter), exclut l'auteur (pas d'auto-notification), puis fan-out **par canal** : un
+ * message e-mail si la préférence e-mail le permet, un message push (Lot 11) si la préférence push
+ * est activée **et** que le destinataire a au moins un appareil actif — pas d'appareil, pas de
+ * permission système, rien à enfiler. Les deux canaux sont indépendants. Best-effort : n'interrompt
+ * pas la requête.
  */
 final class NotificationEmitter
 {
     public function __construct(
         private readonly RecipientResolver $recipients,
         private readonly NotificationPrefRepository $prefs,
+        private readonly DeviceTokenRepository $devices,
+        private readonly PushSender $pushSender,
         private readonly MessageBusInterface $bus,
         private readonly LoggerInterface $logger,
     ) {
@@ -91,16 +99,28 @@ final class NotificationEmitter
         array $payloadRefs,
     ): void {
         $user = $membership->getUser();
-        if (!$this->prefs->isEmailEnabled($user, $type->category())) {
-            return;
+        $eventKey = $type->value.':'.$factId;
+
+        if ($this->prefs->isEmailEnabled($user, $type->category())) {
+            $this->bus->dispatch(new SendNotification(
+                $eventKey.':'.$user->getId(),
+                (string) $user->getId(),
+                (string) $family->getId(),
+                $type->value,
+                $payloadRefs,
+            ));
         }
 
-        $this->bus->dispatch(new SendNotification(
-            $type->value.':'.$factId.':'.$user->getId(),
-            (string) $user->getId(),
-            (string) $family->getId(),
-            $type->value,
-            $payloadRefs,
-        ));
+        if ($this->pushSender->isEnabled()
+            && $this->prefs->isPushEnabled($user, $type->category())
+            && $this->devices->hasActiveForUser($user)) {
+            $this->bus->dispatch(new SendPushNotification(
+                $eventKey,
+                (string) $user->getId(),
+                (string) $family->getId(),
+                $type->value,
+                $payloadRefs,
+            ));
+        }
     }
 }

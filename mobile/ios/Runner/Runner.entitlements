@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Push (Lot 11). `development` ici : l'export App Store (gym, profil match
+	     AppStore) le réécrit en `production`. Le profil doit porter la capacité
+	     Push Notifications — infra/INSTALL.md §G. -->
+	<key>aps-environment</key>
+	<string>development</string>
+</dict>
+</plist>

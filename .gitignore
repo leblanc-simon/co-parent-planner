@@ -40,3 +40,9 @@ coverage/
 .phpunit.result.cache
 .php-cs-fixer.cache
 .phpstan.cache
+
+# Push (Lot 11) : compte de service Firebase — SECRET, jamais au dépôt (infra/INSTALL.md §G.2).
+*service-account*.json
+*firebase-adminsdk*.json
+# Surcharges compose locales (secrets montés, ports) — infra/INSTALL.md §G.2.
+infra/docker-compose.override.yml

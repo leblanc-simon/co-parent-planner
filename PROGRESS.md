@@ -5,7 +5,9 @@
 > Maquettes (rendu visuel fait foi) : `specs/design/` (`CoParentPlanner Desktop.dc.html`, variante
 > mobile, `ios-frame.jsx`, `screenshots/`).
 
-Dernière mise à jour : **2026-09-18** — **Lot 10 livré : les dépenses partagées existent, module par module.** Backend (entités `Expense`/`ExpenseShare`/`expense_child`, Voter, solde, agrégats, rappel), front web (`/depenses`, grille 2 colonnes du §8), mobile (5ᵉ onglet conditionnel, saisie hors-ligne), E2E et contrat. **Trois arbitrages PO rendus le 2026-09-18** : `DELETE /api/expenses/{id}` et `POST /api/expenses/{id}/reminder` sont exposés (extensions assumées du cdc §6.2) ; la **pondération par enfant est écartée** — neutre sur le partage entre parents par linéarité (§3.1.D), une pondération non persistée n'aurait été observable nulle part, `expense_child` reste donc la table nue du cdc §5.2 ; cooldown de rappel à **72 h** par dépense. **Ce que les tests ont trouvé** : un titulaire de part anonymisé faisait porter **tout** le montant au parent survivant (le balayage d'arrondi l'a pris en défaut), un partage ré-édité heurtait l'unicité `(expense_id, membership_id)` en 500, et `read: false` sur le GET du solde renvoyait `null` en 200. Détail : §6, entrée du 2026-09-18 (Lot 10).
+Dernière mise à jour : **2026-09-23** — **Lot 11 livré en code : le canal push mobile existe, de bout en bout, et attend ses identifiants.** Backend (`DeviceToken` 🔒, `/api/me/devices`, préférences `push` en opt-in, `SendPushNotification` idempotent par appareil, passerelle FCM HTTP v1, purge et effacement RGPD), mobile (permission demandée sur un geste, enregistrement et rotation du jeton, outbox hors-ligne, tap → bon écran et bonne famille, bannière de premier plan sans doublon, liste des appareils révocables), configuration native iOS/Android et relais des identifiants par le `Fastfile`. **Arbitrage du 2026-09-23 : tout passe par FCM**, qui relaie APNs — le backend n'a qu'un compte de service, pas de clé APNs ; écart assumé au §0.2 de la spec (pas d'`ApnsSender`). **Reste hors code** : créer le projet Firebase, déposer la clé APNs, cocher la capacité Push de l'App ID et régénérer les profils match, puis valider sur un iPhone réel via TestFlight (`infra/INSTALL.md §G`). Détail : §6, entrée du 2026-09-23 (Lot 11).
+
+Antérieur : **2026-09-18** — **Lot 10 livré : les dépenses partagées existent, module par module.** Backend (entités `Expense`/`ExpenseShare`/`expense_child`, Voter, solde, agrégats, rappel), front web (`/depenses`, grille 2 colonnes du §8), mobile (5ᵉ onglet conditionnel, saisie hors-ligne), E2E et contrat. **Trois arbitrages PO rendus le 2026-09-18** : `DELETE /api/expenses/{id}` et `POST /api/expenses/{id}/reminder` sont exposés (extensions assumées du cdc §6.2) ; la **pondération par enfant est écartée** — neutre sur le partage entre parents par linéarité (§3.1.D), une pondération non persistée n'aurait été observable nulle part, `expense_child` reste donc la table nue du cdc §5.2 ; cooldown de rappel à **72 h** par dépense. **Ce que les tests ont trouvé** : un titulaire de part anonymisé faisait porter **tout** le montant au parent survivant (le balayage d'arrondi l'a pris en défaut), un partage ré-édité heurtait l'unicité `(expense_id, membership_id)` en 500, et `read: false` sur le GET du solde renvoyait `null` en 200. Détail : §6, entrée du 2026-09-18 (Lot 10).
 
 Antérieur : **2026-09-18** — **Les deux dettes techniques sont soldées, et l'une d'elles cachait un vrai défaut.** (1) Un test E2E **exerce** enfin une mise à jour poussée de bout en bout : écran ouvert, mutation faite hors de la page, aucune navigation déclenchée par le test — ce qui apparaît ne peut venir que du hub. Il a été vérifié en panne des deux côtés (poussée coupée, puis retour au `<turbo-stream-source>` du défaut C2). (2) L'overlay agenda mobile passe au **client généré** : le blocage n'était pas le mobile mais le contrat, qui déclarait une seule forme là où `overlay=` en renvoie deux ; `EventResource` porte désormais le discriminant `source`/`color`/`editable`/`linkedFamilyId`. **Défaut trouvé en chemin** : sur un écran temps réel, la poussée déclenchée par sa *propre* mutation remplaçait le corps de la page et **effaçait la confirmation de succès** — celle-ci avait déjà été consommée du `sessionStorage` par son premier affichage. C'est ce qui rendait la suite E2E instable à cache froid, instabilité que `retries: 1` masquait en CI. Détail : §6, entrée du 2026-09-18.
 
@@ -143,9 +145,12 @@ nommage du foyer dans les e-mails.
 **revue web** l'est à son tour (39/39, 2026-09-05) — étapes 1 à 6 **et** liste de finition P2/P3.
 
 **Lot 10 — Dépenses (v2) : ✅ LIVRÉ le 2026-09-18** (backend + web + mobile + E2E + contrat).
-**Reste au catalogue : le Lot 11 (push mobile, v2)**, qui dépend d'une action mainteneur — APNs ne
-fonctionne pas sur simulateur, sa validation iOS exige un build signé sur device réel (compte Apple,
-clé API ASC, dépôt `match`, secrets CI : `infra/INSTALL.md §E.1`).
+**Lot 11 — Push mobile (v2) : ✅ LIVRÉ EN CODE le 2026-09-23** (backend + mobile + contrat + config
+native + CI). **Tous les lots du catalogue sont implémentés.** Reste une **recette sur appareil**,
+suspendue à des actions mainteneur : projet Firebase, clé APNs déposée dans Firebase, capacité Push
+de l'App ID + profils match régénérés, `FCM_CREDENTIALS_FILE` côté serveur, variables `FIREBASE_*`
+au build — puis un iPhone réel via TestFlight (APNs ne fonctionne pas sur simulateur). Pas à pas :
+`infra/INSTALL.md §G`.
 
 **Pièges à connaître dans ce dépôt** :
 - Ne **jamais** passer `dart format` sur `mobile/lib/api/generated` — le générateur produit un style
@@ -489,6 +494,117 @@ web-e2e/scripts/e2e-local.sh --project=desktop  # seulement le parcours desktop
 ---
 
 ## 6. Journal (du plus récent au plus ancien)
+
+### 2026-09-23 — Lot 11 : le push mobile
+
+**Un arbitrage avant la première ligne : tout passe par FCM.** La spec prévoyait deux passerelles
+(`ApnsSender` HTTP/2 + clé `.p8` côté serveur, `FcmSender` pour Android). Retenu : **FCM pour les
+deux plateformes**, FCM relayant APNs. Le backend ne détient qu'un identifiant (le JSON d'un compte
+de service, `FCM_CREDENTIALS_FILE`, hors dépôt) ; la clé APNs se dépose dans la console Firebase.
+Conséquence côté mobile : `firebase_messaging` sur iOS aussi, et des identifiants Firebase
+**publics** passés en `--dart-define` plutôt qu'en `google-services.json`/`GoogleService-Info.plist`
+committés — un build sans eux (CI, contributeur) démarre normalement, push éteint.
+
+**Backend.**
+- `DeviceToken` : jeton 🔒 (AES-256-GCM), `tokenHash` HMAC **sensible à la casse**
+  (`BlindIndexHasher::hashExact` — un jeton FCM distingue majuscules et minuscules, l'index des
+  e-mails les confond), index unique **partiel** sur les lignes `active`. `DeviceRegistrar` tient les
+  trois invariants du §3.1 sous verrou consultatif : un jeton actif par valeur, **un compte par
+  jeton** (réenregistré par un autre compte, l'ancien est révoqué — un push n'atteint jamais le
+  mauvais compte), un jeton actif par installation (rotation). `POST` répond **201 dans les deux
+  cas** (création ou rafraîchissement, le §2 l'autorise) ; `Idempotency-Key` passe par le middleware
+  générique du Lot 8. Appareil d'autrui → **404** non énumérant. Audit `device.*` sans le jeton.
+- Préférences : `push` à côté d'`email` dans `/api/me/notification-prefs`, **opt-in** (absence de
+  ligne = désactivé, l'inverse de l'e-mail). L'écran web n'expose rien du push (il ne lit que
+  l'e-mail) — pas de web push, conforme au §0.3.
+- Pipeline : `NotificationEmitter` fan-out **par canal** ; le message push n'est enfilé que si la
+  passerelle est configurée, la préférence activée **et** qu'un appareil actif existe (pas d'appareil
+  = pas de permission système). `SendPushNotificationHandler` : quiet-hours du Lot 7 (report une
+  fois), **opt-in relu à l'envoi** (un push reporté au matin ne part pas si la catégorie a été coupée
+  la nuit), clé d'idempotence **par appareil** `push:<événement>:<appareil>` dans
+  `NotificationDispatch` — qui gagne une colonne `channel` et tient le rôle de la
+  `NotificationDelivery` du §5.2 plutôt qu'une table de plus. Seul `InvalidToken` invalide un jeton ;
+  une panne ou un quota lèvent **après** avoir servi les autres appareils, et le rejeu ne re-sert
+  pas ceux déjà servis.
+- Contenu : titre court + titre **non chiffré** de la ressource (celui de l'e-mail), coupé sur une
+  frontière de **graphème** ; jamais de champ 🔒 — là où l'e-mail de garde nomme le foyer
+  (« chez Sophie et Bob »), le push dit seulement que le planning a changé : il s'affiche sur l'écran
+  verrouillé et transite par Google et Apple. `data` = identifiants seuls (`eventId`, `familyId`,
+  `exchangeId`, `date`).
+- `FcmPushSender` : OAuth 2 « JWT bearer » signé RS256 à la main (`openssl_sign`, aucune dépendance
+  ajoutée), jeton d'accès en cache, message façonné par plateforme (`android.collapse_key` /
+  `apns-collapse-id`). **`INVALID_ARGUMENT` n'invalide le jeton que si FCM désigne le jeton** : sinon
+  c'est notre message qui est en cause, et invalider ferait taire tous les appareils pour un défaut
+  serveur. Un compte de service refusé (`401`/`403`/`THIRD_PARTY_AUTH_ERROR`) est un `AuthFailure`
+  qui ne touche **aucun** jeton utilisateur.
+- RGPD : jetons **supprimés** (pas anonymisés) à l'effacement ; purge `device_tokens`
+  (révoqués/invalides > 30 j, actifs muets > 270 j — le seuil où Google tient lui-même un jeton pour
+  périmé) ; export listant les appareils **sans** le jeton ; registre à jour (FCM/APNs déclarés
+  sous-traitants, base légale : consentement).
+- `invitation` : **aucun push**. Aucun déclencheur ne porte cette catégorie (l'invitation s'adresse à
+  une adresse e-mail, pas forcément à un compte) — le Lot 11 n'ajoute pas de déclencheur (§0.3).
+
+**Mobile.**
+- `PushGateway` (interface) : `FirebasePushGateway` en vrai, `UnavailablePushGateway` sans
+  configuration ; tout le comportement se teste sans Firebase.
+- `PushController` : **jamais d'invite au lancement** (iOS ne la montre qu'une fois dans la vie de
+  l'app) — elle part quand l'utilisateur active son premier sujet push ; enregistrement à chaque
+  ouverture de session (idempotent, entretient `last_seen_at`) ; permission retirée dans les
+  réglages → révocation serveur au retour au premier plan ; déconnexion → révocation **puis**
+  `deleteToken()` chez Google, qui suffit si la révocation n'a pas pu partir (session perdue,
+  hors-ligne).
+- `DeviceRegistration` : hors-ligne, l'enregistrement part dans l'**outbox** avec la clé de la
+  tentative en ligne (C13) ; l'accès à l'outbox est **paresseux** — le construire abonne à la
+  connectivité, ce qu'une déconnexion n'a pas à déclencher (un test existant l'a montré).
+- `PushMessageHandler` : tap → bascule de famille si besoin, puis onglet ou **fil d'échange** ;
+  famille quittée ou module Dépenses coupé → accueil **avec un message**, jamais un écran fantôme ;
+  notification reçue avant la fin de la restauration de session → mise en attente. Premier plan :
+  bannière discrète, sauf si l'échange concerné est **déjà affiché** (le temps réel l'a mis à jour)
+  ou si l'événement a déjà été annoncé.
+- Réglages › Notifications : section push (état de la permission, bouton vers les réglages du
+  téléphone quand elle est refusée), sujets Dépenses seulement si le module est visible, liste des
+  **appareils** révocables à distance (sauf celui-ci, qui se réenregistrerait).
+- Natif : `UIBackgroundModes/remote-notification`, `Runner.entitlements` (`aps-environment`),
+  **cible iOS 15** (minimum de `firebase_messaging`), icône Android monochrome dérivée de `logo.png`
+  (l'icône de l'app serait devenue un carré blanc dans la barre d'état). Le bouton « Ouvrir les
+  réglages » passe par un **canal natif** de dix lignes (Kotlin/Swift) : `app_settings` 8 et 9 ne
+  publient plus que pour Swift Package Manager, et l'outil `flutter` refuse alors de construire un
+  projet CocoaPods.
+- CI : le `Fastfile` relaie `API_BASE_URL` et `FIREBASE_*` en `--dart-define` s'ils sont dans l'env
+  (variables de dépôt GitHub, groupe Codemagic) — le build release n'en recevait aucune jusqu'ici.
+
+**Portes.** Backend **602 tests** (dont 48 du lot : API appareils, préférences, pipeline, RGPD,
+FCM sans réseau), PHPStan niv. 8 **0**, cs-fixer **0**, registre cohérent, schéma synchronisé.
+Mobile **525 tests**, couverture **83,2 %**, `dart analyze --fatal-infos` **0**, `dart format` **0**,
+client régénéré et génération idempotente. **E2E web 26/26**. OpenAPI exporté (`/api/me/devices`,
+champ `push`).
+
+**Écarts assumés à la spec du lot** : pas d'`ApnsSender` (arbitrage FCM) ; `NotificationDispatch`
++ `channel` au lieu d'une table `NotificationDelivery` ; `POST /api/me/devices` toujours 201 ; pas de
+push `invitation` ; la liste mobile ne révoque pas l'appareil courant.
+
+**Renommage (même jour, demande utilisateur)** : identifiant de l'app **`eu.coparentplanner.app`**
+(Android `applicationId`/`namespace` + package Kotlin, iOS `PRODUCT_BUNDLE_IDENTIFIER`, Fastlane
+`Appfile`/`Matchfile`/`Fastfile`, `ExportOptions.plist`, Codemagic) et nom affiché
+**CoParentPlanner** (`android:label`, `CFBundleDisplayName`/`CFBundleName`). Fait **avant** toute
+création de l'app chez Apple ou Firebase : le profil match devient `match AppStore
+eu.coparentplanner.app`. Le build APK de contrôle a révélé un défaut du lot : un `--` dans deux
+commentaires XML Android (`colors.xml`, manifeste), interdit par XML — corrigé, APK debug construit.
+
+**Recette Android du 2026-09-23 (Pixel 6, stack `infra` derrière le tunnel) : ✅ notification
+reçue.** Elle a d'abord échoué pour deux raisons étrangères au pipeline : la destinataire était dans
+ses heures silencieuses (report voulu), et **sa préférence push n'avait jamais été enregistrée** —
+l'invite système s'affichait au geste et l'appareil s'enregistrait, mais le switch attendait le
+bouton « Enregistrer » en bas d'écran. **Corrigé** : chaque switch (push **et** e-mail, pour ne pas
+mélanger deux comportements sur un écran) s'enregistre au geste, en file (un PUT à la fois, les
+gestes rapides ne s'écrasent pas), avec retour arrière et bannière en cas de refus ; il renvoie la
+plage de silence **enregistrée**, jamais celle en cours de saisie. La plage garde son bouton,
+« Enregistrer la plage », actif seulement si elle a changé. Mobile : 529 tests, couverture 83,3 %.
+
+**Reste (hors code, mainteneur)** — `infra/INSTALL.md §G` : projet Firebase et ses deux apps ; clé
+APNs déposée dans Firebase ; capacité Push de l'App ID puis `fastlane ios certificates` ; compte de
+service sur le serveur (`FCM_CREDENTIALS_FILE`) ; variables `FIREBASE_*` au build ; recette sur
+Android (émulateur Google Play) et sur **iPhone réel** via TestFlight.
 
 ### 2026-09-18 — Lot 10 : les dépenses partagées
 

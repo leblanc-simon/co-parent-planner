@@ -15,6 +15,7 @@ import '../../../core/widgets/initial_avatar.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../members/data/members_repository.dart';
 import '../application/exchanges_realtime.dart';
+import '../application/visible_exchange.dart';
 import '../data/exchanges_repository.dart';
 import 'exchanges_screen.dart' show exchangeDate, exchangeDateOnly;
 
@@ -62,6 +63,7 @@ class _ExchangeDetailScreenState extends ConsumerState<ExchangeDetailScreen> {
   @override
   void initState() {
     super.initState();
+    visibleExchangeId.value = widget.exchangeId;
     // Après le premier rendu : c'est l'affichage qui vaut lecture, pas la
     // construction du widget — et `ref.read` est interdit pendant `initState`.
     // `initState` ne s'exécutant qu'une fois, la lecture ne part qu'une fois : la
@@ -71,6 +73,9 @@ class _ExchangeDetailScreenState extends ConsumerState<ExchangeDetailScreen> {
 
   @override
   void dispose() {
+    if (visibleExchangeId.value == widget.exchangeId) {
+      visibleExchangeId.value = null;
+    }
     _message.dispose();
     super.dispose();
   }

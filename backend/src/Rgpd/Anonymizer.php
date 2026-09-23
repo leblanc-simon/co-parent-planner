@@ -8,6 +8,7 @@ use App\Entity\Membership;
 use App\Entity\User;
 use App\Enum\AuditAction;
 use App\Enum\UserStatus;
+use App\Repository\DeviceTokenRepository;
 use App\Repository\InvitationRepository;
 use App\Repository\MembershipRepository;
 use App\Repository\NotificationPrefRepository;
@@ -41,6 +42,7 @@ final class Anonymizer
         private readonly RefreshTokenManager $refreshTokens,
         private readonly NotificationPrefRepository $notificationPrefs,
         private readonly InvitationRepository $invitations,
+        private readonly DeviceTokenRepository $deviceTokens,
         private readonly BlindIndexHasher $blindIndex,
         private readonly AuditLogger $audit,
     ) {
@@ -111,6 +113,10 @@ final class Anonymizer
 
             $prefsRemoved = $this->notificationPrefs->deleteForUser($user);
 
+            // Appareils push (Lot 11 §4.8) : identifiants techniques sans valeur pour la cohérence
+            // des fils → supprimés, pas anonymisés. Plus aucun push ne part vers ce compte.
+            $devicesRemoved = $this->deviceTokens->deleteForUser($user);
+
             // Purge des invitations adressées au sujet AVANT de perdre son e-mail : `Invitation.email`
             // est chiffré réversiblement (clé applicative) → sans cela, l'effacement serait réversible.
             $this->invitations->deleteByEmailHash($this->blindIndex->hash($user->getEmail()));
@@ -137,6 +143,7 @@ final class Anonymizer
                     'subject' => (string) $user->getId(),
                     'memberships_removed' => $removed,
                     'notification_prefs_removed' => $prefsRemoved,
+                    'devices_removed' => $devicesRemoved,
                 ],
                 entityType: 'User',
                 entityId: (string) $user->getId(),

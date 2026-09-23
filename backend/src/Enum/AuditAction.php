@@ -77,6 +77,12 @@ enum AuditAction: string
     case NotificationFailed = 'notification.failed';
     case InvitationSent = 'invitation.sent';
 
+    // Appareils push (Lot 11, v2) — jamais le jeton en clair dans `metadata`.
+    case DeviceRegistered = 'device.registered';
+    case DeviceRevoked = 'device.revoked';
+    case DeviceReassigned = 'device.reassigned';
+    case DeviceInvalidated = 'device.invalidated';
+
     // Dépenses (Lot 10, v2)
     case ExpenseCreated = 'expense.created';
     case ExpenseUpdated = 'expense.updated';

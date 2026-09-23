@@ -33,6 +33,17 @@ abstract interface class SecureStorage {
   /// deviennent inatteignables dès que l'écran est quitté (constat C52).
   Future<String?> readExportOperationId();
   Future<void> writeExportOperationId(String? id);
+
+  /// Identifiant aléatoire **de l'installation** (Lot 11 US-PUSH-2) : il
+  /// survit aux changements de compte, et permet au serveur de révoquer
+  /// l'ancien jeton push quand l'OS le fait tourner.
+  Future<String?> readInstallationId();
+  Future<void> writeInstallationId(String id);
+
+  /// Appareil enregistré pour le push par le compte connecté (JSON : compte,
+  /// identifiant serveur, jeton) — de quoi le révoquer à la déconnexion.
+  Future<String?> readPushDevice();
+  Future<void> writePushDevice(String? json);
 }
 
 class FlutterSecureStorageAdapter implements SecureStorage {
@@ -51,6 +62,8 @@ class FlutterSecureStorageAdapter implements SecureStorage {
   static const _kProfile = 'user_profile';
   static const _kLocale = 'locale';
   static const _kExport = 'rgpd_export_operation';
+  static const _kInstallation = 'installation_id';
+  static const _kPushDevice = 'push_device';
 
   @override
   Future<String?> readAccessToken() => _storage.read(key: _kAccess);
@@ -75,6 +88,8 @@ class FlutterSecureStorageAdapter implements SecureStorage {
     // L'opération d'export appartient au compte : elle ne doit pas survivre à
     // sa déconnexion sur un appareil partagé.
     await _storage.delete(key: _kExport);
+    // L'enregistrement push aussi ; l'identifiant d'installation, lui, reste.
+    await _storage.delete(key: _kPushDevice);
   }
 
   @override
@@ -117,6 +132,25 @@ class FlutterSecureStorageAdapter implements SecureStorage {
       await _storage.delete(key: _kExport);
     } else {
       await _storage.write(key: _kExport, value: id);
+    }
+  }
+
+  @override
+  Future<String?> readInstallationId() => _storage.read(key: _kInstallation);
+
+  @override
+  Future<void> writeInstallationId(String id) =>
+      _storage.write(key: _kInstallation, value: id);
+
+  @override
+  Future<String?> readPushDevice() => _storage.read(key: _kPushDevice);
+
+  @override
+  Future<void> writePushDevice(String? json) async {
+    if (json == null) {
+      await _storage.delete(key: _kPushDevice);
+    } else {
+      await _storage.write(key: _kPushDevice, value: json);
     }
   }
 }

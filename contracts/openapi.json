@@ -1407,6 +1407,192 @@
                 ]
             }
         },
+        "/api/me/devices": {
+            "get": {
+                "operationId": "api_medevices_get_collection",
+                "tags": [
+                    "Device"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Device collection",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Device"
+                                    }
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "type": "object",
+                                    "description": "Device.jsonld collection.",
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/HydraCollectionBaseSchemaNoPagination"
+                                        },
+                                        {
+                                            "type": "object",
+                                            "required": [
+                                                "member"
+                                            ],
+                                            "properties": {
+                                                "member": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Device.jsonld"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                },
+                "summary": "Retrieves the collection of Device resources.",
+                "description": "Retrieves the collection of Device resources.",
+                "parameters": []
+            },
+            "post": {
+                "operationId": "api_medevices_post",
+                "tags": [
+                    "Device"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Device resource created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Device"
+                                }
+                            },
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Device.jsonld"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    },
+                    "422": {
+                        "description": "An error occurred",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ConstraintViolation"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Creates a Device resource.",
+                "description": "Creates a Device resource.",
+                "parameters": [],
+                "requestBody": {
+                    "description": "The new Device resource",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Device.RegisterDeviceRequest"
+                            }
+                        },
+                        "application/ld+json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Device.RegisterDeviceRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                }
+            }
+        },
+        "/api/me/devices/{id}": {
+            "delete": {
+                "operationId": "api_medevices_id_delete",
+                "tags": [
+                    "Device"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Device resource deleted"
+                    },
+                    "404": {
+                        "description": "Not found",
+                        "content": {
+                            "application/ld+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error.jsonld"
+                                }
+                            },
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            },
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        },
+                        "links": {}
+                    }
+                },
+                "summary": "Removes the Device resource.",
+                "description": "Removes the Device resource.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Device identifier",
+                        "required": true,
+                        "deprecated": false,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "style": "simple",
+                        "explode": false
+                    }
+                ]
+            }
+        },
         "/api/events/{id}": {
             "delete": {
                 "operationId": "api_events_id_delete",
@@ -7906,6 +8092,151 @@
                 ],
                 "description": "Statistiques de garde sur une fen\u00eatre (US-CUST-5)."
             },
+            "Device": {
+                "type": "object",
+                "description": "Appareils du compte courant enregistr\u00e9s pour le push (Lot 11 \u00a76.2). Ressource **utilisateur** :\naucun `X-Family-Id` requis, et jamais l'appareil d'un autre compte (404, sans r\u00e9v\u00e9ler qu'il existe).\n\nLe jeton n'est **jamais** renvoy\u00e9 : il suffit \u00e0 pousser du contenu vers l'appareil. La liste ne\nmontre que ce qui permet de reconna\u00eetre un appareil avant de le r\u00e9voquer.",
+                "properties": {
+                    "id": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "platform": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "status": {
+                        "default": "",
+                        "type": "string"
+                    },
+                    "deviceModel": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "appVersion": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "lastSeenAt": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "createdAt": {
+                        "default": "",
+                        "type": "string"
+                    }
+                }
+            },
+            "Device.RegisterDeviceRequest": {
+                "type": "object",
+                "description": "Appareils du compte courant enregistr\u00e9s pour le push (Lot 11 \u00a76.2). Ressource **utilisateur** :\naucun `X-Family-Id` requis, et jamais l'appareil d'un autre compte (404, sans r\u00e9v\u00e9ler qu'il existe).\n\nLe jeton n'est **jamais** renvoy\u00e9 : il suffit \u00e0 pousser du contenu vers l'appareil. La liste ne\nmontre que ce qui permet de reconna\u00eetre un appareil avant de le r\u00e9voquer.",
+                "required": [
+                    "platform",
+                    "token"
+                ],
+                "properties": {
+                    "platform": {
+                        "enum": [
+                            "ios",
+                            "android"
+                        ],
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "token": {
+                        "maxLength": 4096,
+                        "description": "Jeton FCM (quelques centaines de caract\u00e8res) ; au-del\u00e0 de 4 Kio ce n'est pas un jeton.",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "installationId": {
+                        "maxLength": 128,
+                        "description": "Identifiant stable de l'installation de l'app : d\u00e9tecte la rotation du jeton (US-PUSH-2).",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "appVersion": {
+                        "maxLength": 32,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "deviceModel": {
+                        "maxLength": 64,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "locale": {
+                        "maxLength": 16,
+                        "pattern": "^(.*(^[a-zA-Z]{2,3}(-[a-zA-Z]{4})?(-([a-zA-Z]{2}|[0-9]{3}))?$).*)$",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    }
+                }
+            },
+            "Device.jsonld": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/HydraItemBaseSchema"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "id": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "platform": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "status": {
+                                "default": "",
+                                "type": "string"
+                            },
+                            "deviceModel": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "appVersion": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "lastSeenAt": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "createdAt": {
+                                "default": "",
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "description": "Appareils du compte courant enregistr\u00e9s pour le push (Lot 11 \u00a76.2). Ressource **utilisateur** :\naucun `X-Family-Id` requis, et jamais l'appareil d'un autre compte (404, sans r\u00e9v\u00e9ler qu'il existe).\n\nLe jeton n'est **jamais** renvoy\u00e9 : il suffit \u00e0 pousser du contenu vers l'appareil. La liste ne\nmontre que ce qui permet de reconna\u00eetre un appareil avant de le r\u00e9voquer."
+            },
             "Error": {
                 "type": "object",
                 "description": "A representation of common errors.",
@@ -10906,10 +11237,17 @@
             },
             "NotificationPrefs": {
                 "type": "object",
-                "description": "US-SET-1 (Lot 7) \u2014 pr\u00e9f\u00e9rences de notification du compte courant. `/api/me/notification-prefs`\nest implicitement scop\u00e9 \u00e0 l'utilisateur du token (jamais un autre compte). Canal `email` seul en\nv1 ; cat\u00e9gorie `expenses` et canal `push` masqu\u00e9s (r\u00e9serv\u00e9s v2). Quiet-hours `HH:MM` interpr\u00e9t\u00e9es\ndans le fuseau de la famille active.",
+                "description": "US-SET-1 (Lot 7) \u2014 pr\u00e9f\u00e9rences de notification du compte courant. `/api/me/notification-prefs`\nest implicitement scop\u00e9 \u00e0 l'utilisateur du token (jamais un autre compte). Deux canaux, r\u00e9gl\u00e9s\nind\u00e9pendamment par cat\u00e9gorie : `email` (opt-out) et `push` (opt-in, Lot 11 US-PUSH-4).\nQuiet-hours `HH:MM` interpr\u00e9t\u00e9es dans le fuseau de la famille active, communes aux deux canaux.",
                 "properties": {
                     "email": {
-                        "description": "Activation e-mail par cat\u00e9gorie v1 (`custody`, `agenda`, `exchanges`, `invitation`).",
+                        "description": "Activation e-mail par cat\u00e9gorie (`custody`, `agenda`, `expenses`, `exchanges`, `invitation`).",
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "boolean"
+                        }
+                    },
+                    "push": {
+                        "description": "Activation push (app mobile) par cat\u00e9gorie, m\u00eames cl\u00e9s que `email`. Absence d'enregistrement\n\u21d2 **d\u00e9sactiv\u00e9** : rien n'est pouss\u00e9 sans un choix explicite. Sans effet tant qu'aucun appareil\nn'est enregistr\u00e9 (`/api/me/devices`), c'est-\u00e0-dire tant que la permission syst\u00e8me manque.",
                         "type": "object",
                         "additionalProperties": {
                             "type": "boolean"
@@ -10942,7 +11280,14 @@
                         "type": "object",
                         "properties": {
                             "email": {
-                                "description": "Activation e-mail par cat\u00e9gorie v1 (`custody`, `agenda`, `exchanges`, `invitation`).",
+                                "description": "Activation e-mail par cat\u00e9gorie (`custody`, `agenda`, `expenses`, `exchanges`, `invitation`).",
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "boolean"
+                                }
+                            },
+                            "push": {
+                                "description": "Activation push (app mobile) par cat\u00e9gorie, m\u00eames cl\u00e9s que `email`. Absence d'enregistrement\n\u21d2 **d\u00e9sactiv\u00e9** : rien n'est pouss\u00e9 sans un choix explicite. Sans effet tant qu'aucun appareil\nn'est enregistr\u00e9 (`/api/me/devices`), c'est-\u00e0-dire tant que la permission syst\u00e8me manque.",
                                 "type": "object",
                                 "additionalProperties": {
                                     "type": "boolean"
@@ -10967,7 +11312,7 @@
                         }
                     }
                 ],
-                "description": "US-SET-1 (Lot 7) \u2014 pr\u00e9f\u00e9rences de notification du compte courant. `/api/me/notification-prefs`\nest implicitement scop\u00e9 \u00e0 l'utilisateur du token (jamais un autre compte). Canal `email` seul en\nv1 ; cat\u00e9gorie `expenses` et canal `push` masqu\u00e9s (r\u00e9serv\u00e9s v2). Quiet-hours `HH:MM` interpr\u00e9t\u00e9es\ndans le fuseau de la famille active."
+                "description": "US-SET-1 (Lot 7) \u2014 pr\u00e9f\u00e9rences de notification du compte courant. `/api/me/notification-prefs`\nest implicitement scop\u00e9 \u00e0 l'utilisateur du token (jamais un autre compte). Deux canaux, r\u00e9gl\u00e9s\nind\u00e9pendamment par cat\u00e9gorie : `email` (opt-out) et `push` (opt-in, Lot 11 US-PUSH-4).\nQuiet-hours `HH:MM` interpr\u00e9t\u00e9es dans le fuseau de la famille active, communes aux deux canaux."
             },
             "OptionView": {
                 "type": "object",
@@ -12060,6 +12405,10 @@
             "description": "P\u00e9riode de vacances expos\u00e9e (US-CUST-3) avec sa r\u00e8gle \u00e9ventuelle."
         },
         {
+            "name": "Device",
+            "description": "Appareils du compte courant enregistr\u00e9s pour le push (Lot 11 \u00a76.2). Ressource **utilisateur** :\naucun `X-Family-Id` requis, et jamais l'appareil d'un autre compte (404, sans r\u00e9v\u00e9ler qu'il existe).\n\nLe jeton n'est **jamais** renvoy\u00e9 : il suffit \u00e0 pousser du contenu vers l'appareil. La liste ne\nmontre que ce qui permet de reconna\u00eetre un appareil avant de le r\u00e9voquer."
+        },
+        {
             "name": "Exchange",
             "description": "\u00c9change expos\u00e9 (Lot 6 \u00a76.1). La collection `/families/{id}/exchanges?status=` renvoie les r\u00e9sum\u00e9s\n(sans le fil) tri\u00e9s (\u00a73.6) ; `GET /exchanges/{id}` renvoie le d\u00e9tail (options + d\u00e9comptes + fil en\nclair). `POST .../decide` valide une option et renvoie l'\u00e9change (statut + options \u00e0 jour) ;\n`POST .../read` marque le fil lu pour l'appelant (X5). Le\nmarqueur `overdue` est d\u00e9riv\u00e9 (fuseau famille, \u00a73.4)."
         },
@@ -12109,7 +12458,7 @@
         },
         {
             "name": "NotificationPrefs",
-            "description": "US-SET-1 (Lot 7) \u2014 pr\u00e9f\u00e9rences de notification du compte courant. `/api/me/notification-prefs`\nest implicitement scop\u00e9 \u00e0 l'utilisateur du token (jamais un autre compte). Canal `email` seul en\nv1 ; cat\u00e9gorie `expenses` et canal `push` masqu\u00e9s (r\u00e9serv\u00e9s v2). Quiet-hours `HH:MM` interpr\u00e9t\u00e9es\ndans le fuseau de la famille active."
+            "description": "US-SET-1 (Lot 7) \u2014 pr\u00e9f\u00e9rences de notification du compte courant. `/api/me/notification-prefs`\nest implicitement scop\u00e9 \u00e0 l'utilisateur du token (jamais un autre compte). Deux canaux, r\u00e9gl\u00e9s\nind\u00e9pendamment par cat\u00e9gorie : `email` (opt-out) et `push` (opt-in, Lot 11 US-PUSH-4).\nQuiet-hours `HH:MM` interpr\u00e9t\u00e9es dans le fuseau de la famille active, communes aux deux canaux."
         },
         {
             "name": "RealtimeToken",

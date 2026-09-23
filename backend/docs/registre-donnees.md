@@ -11,7 +11,7 @@
 > 🔒 = chiffré au repos (AES-256-GCM, clé hors base — cdc §5.3).
 > La clé `Entité.champ` doit apparaître telle quelle dans la colonne « Champ ».
 
-Dernière mise à jour : 2026-09-18 (Lot 10 — module Dépenses activé).
+Dernière mise à jour : 2026-09-23 (Lot 11 — push mobile).
 
 ## Champs (Lot 0)
 
@@ -128,7 +128,7 @@ les références (`SET NULL`) sans casser les liens/audits :
 ## Champs (Lot 7 — Notifications e-mail)
 
 > Préférences de notification et plage de silence = **données personnelles** (non chiffrées, non
-> sensibles). Le canal `push` et la catégorie `expenses` sont réservés v2 (inactifs). Aucun contenu 🔒
+> sensibles). Le canal `push` est actif depuis le Lot 11, la catégorie `expenses` depuis le Lot 10. Aucun contenu 🔒
 > n'est stocké par ce lot ; les champs chiffrés (`Invitation.email`, `Message.text`…) sont déchiffrés
 > **uniquement en mémoire** pour le rendu d'un e-mail, jamais journalisés en clair.
 
@@ -232,3 +232,34 @@ les références (`SET NULL`) sans casser les liens/audits :
 > Tables techniques associées : `expense_child` (liaison N-N `Expense` ↔ `Child`, `CASCADE` des deux
 > côtés) porte un rattachement, pas un contenu ; `Expense.payerMembership` et
 > `Expense.createdByMembership` sont des FK `SET NULL` vers `Membership` (identités déjà 🔒 côté `User`).
+
+## Champs (Lot 11 — push mobile, v2)
+
+> Un **jeton d'appareil** est un identifiant technique, mais il est rattaché à une personne et suffit à
+> lui pousser du contenu : il entre au registre, **chiffré au repos** 🔒. Son empreinte HMAC
+> (`tokenHash`, clé hors base) sert seule à l'unicité et à la recherche.
+>
+> **Sous-traitant** : l'acheminement passe par **Firebase Cloud Messaging (Google)**, qui relaie vers
+> **APNs (Apple)** pour les appareils iOS. Ils reçoivent le jeton et le contenu du push — un titre
+> court et le titre non chiffré de la ressource, **jamais** un champ 🔒 (texte de message, prénom,
+> nom de foyer) — plus des identifiants techniques (`eventId`, `familyId`, `exchangeId`).
+>
+> **Base légale : consentement**, matérialisé deux fois — la permission système accordée sur
+> l'appareil (sans elle, aucun jeton n'est enregistré) et la préférence push, **désactivée par défaut**
+> pour chaque catégorie (`NotificationPref` canal `push`).
+>
+> **Effacement** : à l'anonymisation du compte, tous ses jetons sont **supprimés** (pas anonymisés — ils
+> n'ont aucune valeur pour la cohérence des fils). **Purge planifiée** (scope `device_tokens`) : jetons
+> révoqués ou invalides au-delà de `RGPD_RETENTION_DEVICE_TOKENS_DAYS` (30 j), et jetons actifs muets
+> au-delà de `RGPD_RETENTION_DORMANT_DEVICES_DAYS` (270 j). L'export RGPD liste les appareils **sans**
+> le jeton. `AuditLog` (`device.registered|revoked|reassigned|invalidated`) ne porte jamais le jeton.
+
+| Champ | Catégorie | Sensibilité | Base légale | Finalité | Conservation | Destinataires |
+|---|---|---|---|---|---|---|
+| `DeviceToken.token` | Technique (identifiant d'appareil) | 🔒 Chiffré (AES-256-GCM) | Consentement (permission système + préférence push) | Acheminer les notifications push vers l'appareil | Tant que l'appareil est actif ; révoqué/invalide purgé après 30 j, dormant après 270 j ; supprimé à l'effacement | Sous-traitants FCM (Google) et APNs (Apple) |
+| `DeviceToken.tokenHash` | Technique | Pseudonyme (HMAC keyé, non réversible sans clé) | Intérêt légitime (intégrité du routage) | Unicité « un seul compte par jeton actif » et recherche sans déchiffrer | Identique au jeton | Interne (jamais exposé) |
+| `DeviceToken.installationId` | Technique | Standard (identifiant aléatoire généré par l'app) | Intérêt légitime (un seul jeton actif par installation) | Détecter la rotation du jeton sur une même installation | Identique au jeton | Interne (jamais exposé) |
+| `DeviceToken.deviceModel` | Technique | Standard | Intérêt légitime (gestion des appareils) | Permettre à l'utilisateur de reconnaître un appareil avant de le révoquer | Identique au jeton | L'utilisateur lui-même |
+
+> Champs de diagnostic non personnels (hors registre) : `platform`, `appVersion`, `locale`, `status`
+> et les horodatages du cycle de vie.

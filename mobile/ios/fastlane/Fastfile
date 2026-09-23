@@ -15,7 +15,7 @@
 
 default_platform(:ios)
 
-APP_IDENTIFIER = ENV["APP_IDENTIFIER"] || "net.coparentplanner.coparentplanner"
+APP_IDENTIFIER = ENV["APP_IDENTIFIER"] || "eu.coparentplanner.app"
 
 # Clé API App Store Connect (.p8) depuis les secrets — méthode partagée (top-level).
 # Utilisée par match (readonly:false), gym et pilot. ASC_KEY_CONTENT = contenu du .p8 encodé
@@ -28,6 +28,23 @@ def asc_api_key
     is_key_content_base64: true,
     in_house: false
   )
+end
+
+# Variables de compilation relayées de l'env vers `--dart-define` (lib/core/config/app_config.dart).
+# Aucune n'est un secret : elles finissent dans le binaire (identifiants publics Firebase du push,
+# Lot 11). Seules les variables présentes passent ; absentes, le push du build est éteint.
+DART_DEFINES = %w[
+  API_BASE_URL
+  FIREBASE_PROJECT_ID
+  FIREBASE_SENDER_ID
+  FIREBASE_IOS_APP_ID
+  FIREBASE_IOS_API_KEY
+].freeze
+
+def dart_defines
+  DART_DEFINES
+    .reject { |name| ENV[name].to_s.empty? }
+    .map { |name| "--dart-define=#{name}=#{ENV[name]}" }
 end
 
 platform :ios do
@@ -95,8 +112,10 @@ platform :ios do
 
     # 2) Compile le Dart + les assets et génère la config Xcode, SANS signer (Flutter pilote).
     #    CWD Fastlane = mobile/ios ; `..` = mobile (racine du projet Flutter).
+    #    Les --dart-define (URL d'API, identifiants publics Firebase du push, Lot 11) viennent de
+    #    l'env CI s'ils y sont : absents, le build reste valide et le push y est simplement éteint.
     Dir.chdir("..") do
-      sh("flutter", "build", "ios", "--release", "--no-codesign")
+      sh("flutter", "build", "ios", "--release", "--no-codesign", *dart_defines)
     end
 
     # 3) Archive + export du .ipa signé (gym). L'export référence le profil match par son nom

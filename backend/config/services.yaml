@@ -46,3 +46,7 @@ when@test:
         # En test : aucun appel réseau ; le provider de vacances renvoie des fixtures.
         App\Tests\Support\FakeSchoolHolidaysProvider: ~
         App\Service\Custody\Holidays\SchoolHolidaysProvider: '@App\Tests\Support\FakeSchoolHolidaysProvider'
+        # Push (Lot 11) : jamais d'appel réel à FCM en CI ; le fake enregistre les envois.
+        App\Tests\Support\FakePushSender:
+            public: true
+        App\Service\Notification\Push\PushSender: '@App\Tests\Support\FakePushSender'

@@ -19,8 +19,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 
 /**
- * US-SET-1 — met à jour les préférences de notification du compte courant (upsert par catégorie,
- * quiet-hours `HH:MM` validées, locale). Scope **utilisateur** (jamais un tiers). Validation RFC 7807.
+ * US-SET-1 — met à jour les préférences de notification du compte courant (upsert par catégorie et
+ * par canal `email`/`push`, quiet-hours `HH:MM` validées, locale). Scope **utilisateur** (jamais un tiers). Validation RFC 7807.
  *
  * @implements ProcessorInterface<NotificationPrefsResource, NotificationPrefsResource>
  */
@@ -45,7 +45,8 @@ final class NotificationPrefsProcessor implements ProcessorInterface
         $user = $this->security->getUser();
         \assert($user instanceof User);
 
-        $this->applyEmailPrefs($user, $data->email);
+        $this->applyChannelPrefs($user, NotificationChannel::Email, $data->email);
+        $this->applyChannelPrefs($user, NotificationChannel::Push, $data->push);
         $this->applyQuietHours($user, $data->quietHoursStart, $data->quietHoursEnd);
         if ('' !== $data->locale) {
             $user->setLocale($this->validLocale($data->locale));
@@ -60,17 +61,19 @@ final class NotificationPrefsProcessor implements ProcessorInterface
     }
 
     /**
-     * @param array<string, bool> $email
+     * Upsert des toggles d'un canal. Une catégorie absente du corps reste inchangée.
+     *
+     * @param array<string, bool> $toggles
      */
-    private function applyEmailPrefs(User $user, array $email): void
+    private function applyChannelPrefs(User $user, NotificationChannel $channel, array $toggles): void
     {
-        foreach ($email as $categoryValue => $enabled) {
+        foreach ($toggles as $categoryValue => $enabled) {
             $category = NotificationCategory::tryFrom((string) $categoryValue);
             if (null === $category) {
                 throw new NotificationInputException('notification.error.category_invalid');
             }
-            $pref = $this->prefs->findOneFor($user, $category, NotificationChannel::Email)
-                ?? (new NotificationPref())->setUser($user)->setCategory($category)->setChannel(NotificationChannel::Email);
+            $pref = $this->prefs->findOneFor($user, $category, $channel)
+                ?? (new NotificationPref())->setUser($user)->setCategory($category)->setChannel($channel);
             $pref->setEnabled((bool) $enabled);
             $this->em->persist($pref);
         }

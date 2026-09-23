@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/api_exception.dart';
 import '../../../core/i18n/locale_controller.dart';
+import '../../../core/push/push_controller.dart';
 import '../../../core/storage/local_data_purger.dart';
 import '../../family/application/family_context.dart';
 import '../data/auth_repository.dart';
@@ -140,6 +141,12 @@ class AuthController extends Notifier<AuthState> {
   /// (file de mutations + cache de lecture) : c'est une intention explicite de ne
   /// plus rien laisser sur l'appareil.
   Future<void> logout() async {
+    // Avant la révocation de session : c'est le dernier moment où l'appareil
+    // peut être retiré du serveur (Lot 11 US-PUSH-3).
+    final current = state;
+    if (current is AuthAuthenticated) {
+      await ref.read(pushControllerProvider.notifier).signOut(current.user.id);
+    }
     await _repo.logout();
     await _clearLocalSession(purgeDeviceData: true);
     state = const AuthUnauthenticated();
@@ -152,6 +159,7 @@ class AuthController extends Notifier<AuthState> {
   /// compte, sont cloisonnées par son identifiant et seront rejouées à la
   /// reconnexion. Les effacer ferait perdre du travail hors-ligne légitime.
   Future<void> forceLogout() async {
+    await ref.read(pushControllerProvider.notifier).forget();
     await _repo.clearTokens();
     await _clearLocalSession(purgeDeviceData: false);
     state = const AuthUnauthenticated();
@@ -159,6 +167,8 @@ class AuthController extends Notifier<AuthState> {
 
   /// Suppression de compte (US-SET-4b) : plus rien ne doit rester sur l'appareil.
   Future<void> onAccountDeleted() async {
+    // Le serveur a déjà supprimé les appareils du compte ; reste le jeton.
+    await ref.read(pushControllerProvider.notifier).forget();
     await _repo.clearTokens();
     await _clearLocalSession(purgeDeviceData: true);
     state = const AuthUnauthenticated();

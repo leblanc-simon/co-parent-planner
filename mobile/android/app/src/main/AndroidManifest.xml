@@ -9,7 +9,7 @@
          l'utilisateur, qui exposerait des données de la famille hors de l'appareil
          (revue mobile 2026-08, constat C6). -->
     <application
-        android:label="coparentplanner"
+        android:label="CoParentPlanner"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="false">
@@ -42,6 +42,16 @@
                 <data android:scheme="coparentplanner"/>
             </intent-filter>
         </activity>
+        <!-- Push (Lot 11) : icône de barre d'état monochrome dérivée de logo.png (Android
+             réduit toute icône à sa silhouette : l'icône de l'app y deviendrait un carré
+             blanc) et teinte terracotta du design system (accent, cdc §8). La permission
+             POST_NOTIFICATIONS (Android 13+) est fusionnée depuis firebase_messaging. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_notification" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_accent" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

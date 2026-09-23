@@ -7,7 +7,7 @@
   documente donc la configuration de référence (méthode app-store, signature MANUELLE, profil
   installé par `match`) et sert de repli pour un export xcodebuild/`flutter build ipa` manuel.
 
-  Le nom de profil « match AppStore net.coparentplanner.coparentplanner » est déterministe :
+  Le nom de profil « match AppStore eu.coparentplanner.app » est déterministe :
   c'est celui installé par `fastlane match appstore` pour ce bundle id.
 -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -19,8 +19,8 @@
     <string>manual</string>
     <key>provisioningProfiles</key>
     <dict>
-        <key>net.coparentplanner.coparentplanner</key>
-        <string>match AppStore net.coparentplanner.coparentplanner</string>
+        <key>eu.coparentplanner.app</key>
+        <string>match AppStore eu.coparentplanner.app</string>
     </dict>
     <key>uploadBitcode</key>
     <false/>

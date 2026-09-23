@@ -19,7 +19,8 @@ cd infra
 docker compose up --build
 ```
 Au premier démarrage, le service `app` génère les clés JWT (volume partagé) et applique les
-migrations automatiquement. Services exposés :
+migrations automatiquement ; quand il y en avait à appliquer, il régénère aussi la garde
+matérialisée (`app:custody:regenerate`, voir B.2). Services exposés :
 
 | Service | URL / port | Rôle |
 |---|---|---|
@@ -89,10 +90,17 @@ php bin/console lexik:jwt:generate-keypair
 ```bash
 php bin/console doctrine:database:create
 php bin/console doctrine:migrations:migrate -n
+php bin/console app:custody:regenerate     # après CHAQUE migration (voir ci-dessous)
 # Base de test :
 php bin/console --env=test doctrine:database:create
 php bin/console --env=test doctrine:migrations:migrate -n
 ```
+
+> **Mise à jour** : après chaque `doctrine:migrations:migrate`, lancer `app:custody:regenerate`.
+> Les jours de garde sont **matérialisés** : une migration qui change ce que le moteur écrit (par
+> exemple le découpage horaire `custody_days.segments`) laisse sinon l'ancienne forme en place
+> jusqu'au prochain passage du scheduler (03:00). Commande idempotente, passé figé ; un argument
+> optionnel restreint le recalcul à une famille (`app:custody:regenerate <id-famille>`).
 
 **Mercure** (temps réel) — lancer le binaire avec le secret `MERCURE_JWT_SECRET`. `SERVER_NAME=':80'`
 est **nécessaire en local** : sans lui, le hub force HTTPS et redirige vers un port fermé, ce qui rend
@@ -117,6 +125,11 @@ symfony server:start -d           # ou : php -S 127.0.0.1:8000 -t public
 php bin/console messenger:consume async -v        # worker (e-mails, jobs async)
 php bin/console messenger:consume scheduler_default -v  # scheduler (tâches planifiées)
 ```
+
+> Les tâches **journalières et mensuelles** du scheduler tombent à heure fixe (Europe/Paris) :
+> horizon de garde à 03:00, purge RGPD à 03:30, vacances scolaires le 1er du mois à 04:00. Elles ne
+> dépendent donc pas de la survie de `var/cache` : un `cache:clear` ou un redéploiement ne les
+> repousse plus.
 
 > **Notifications e-mail (Lot 7)** : les notifications (`App\Message\SendNotification`) et les e-mails
 > transactionnels passent par le **même transport `async`** — le worker ci-dessus les traite (retry +

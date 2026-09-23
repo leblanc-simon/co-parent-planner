@@ -608,6 +608,18 @@ désormais configurable (`App\Web\MercureSubscription`) ; vide = comportement in
 les tunnels : cookie posé sur `.t.leblanc-simon.fr`, abonnement accepté par le hub. Utile aussi en
 production si le hub y est servi sur un sous-domaine (`infra/INSTALL.md §D`).
 
+**Garde restée unicolore après la migration horaire (2026-09-24).** Les familles antérieures au
+2026-09-10 n'avaient **aucun** `custody_days.segments` (Carin / Flechel : 0 / 561) : la migration
+comptait sur l'extension quotidienne de l'horizon pour tout recalculer, et celle-ci ne tombait
+jamais — `every('1 day')` sans `from` se compte depuis l'état du scheduler dans `cache.app`, effacé
+à chaque recréation du conteneur ou `cache:clear`. Trois correctifs : commande
+**`app:custody:regenerate [famille]`** (idempotente, lancée par l'entrypoint Docker quand des
+migrations viennent de tourner, étape de mise à jour en bare-metal) ; tâches journalières et
+mensuelles **ancrées à heure fixe** (horizon 03:00, purge RGPD 03:30, vacances le 1er à 04:00,
+Europe/Paris) ; healthcheck HTTP hérité de FrankenPHP désactivé sur `worker`/`scheduler`, qui
+s'affichaient « unhealthy ». Bases régénérées : Carin / Flechel 153 jours partagés, horizon au
+2028-03-24. Backend 605 tests, PHPStan 0, cs-fixer 0.
+
 **Reste (hors code, mainteneur)** — `infra/INSTALL.md §G` : projet Firebase et ses deux apps ; clé
 APNs déposée dans Firebase ; capacité Push de l'App ID puis `fastlane ios certificates` ; compte de
 service sur le serveur (`FCM_CREDENTIALS_FILE`) ; variables `FIREBASE_*` au build ; recette sur

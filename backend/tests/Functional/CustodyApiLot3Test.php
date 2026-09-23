@@ -12,7 +12,9 @@ use App\Enum\MembershipRole;
 use App\Enum\MembershipStatus;
 use App\Repository\FamilyRepository;
 use App\Service\Custody\CustodyGenerator;
+use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Component\Clock\Test\ClockSensitiveTrait;
+use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -332,6 +334,42 @@ final class CustodyApiLot3Test extends ApiAuthTestCase
     }
 
     /** Heure illisible ou créneau vide : refus 422 plutôt qu'un échange sans effet. */
+    /**
+     * `app:custody:regenerate` : des jours écrits avant la matérialisation horaire (`segments`
+     * NULL, une seule teinte) retrouvent leur découpage à l'heure d'échange sans attendre
+     * l'extension quotidienne de l'horizon.
+     */
+    public function testRegenerateCommandRestoresSegmentsOfLegacyDays(): void
+    {
+        static::mockTime(new \DateTimeImmutable('2026-06-23 10:00', new \DateTimeZone('Europe/Paris')));
+        [$client, $h, $familyId, $parentA, $parentB] = $this->separatedFamilyWithTwoParents('cust-regen@example.com');
+        $this->putPattern($client, $h, $familyId, $parentA, $parentB);
+        $this->runGeneration($familyId);
+
+        $db = $this->em()->getConnection();
+        $countSegments = static fn (): int => (int) $db->fetchOne('SELECT COUNT(segments) FROM custody_days WHERE family_id = ?', [$familyId]);
+        self::assertGreaterThan(0, $countSegments());
+
+        // Ce qu'a laissé la migration : des jours entiers, sans découpage.
+        $db->executeStatement('UPDATE custody_days SET segments = NULL WHERE family_id = ?', [$familyId]);
+
+        self::assertNotNull(self::$kernel);
+        $tester = new CommandTester((new Application(self::$kernel))->find('app:custody:regenerate'));
+        self::assertSame(0, $tester->execute([]));
+        self::assertGreaterThan(0, $countSegments(), 'les jours d\'échange sont de nouveau partagés');
+
+        $split = array_filter(
+            $client->request('GET', '/api/families/'.$familyId.'/custody/days?from=2026-07-01&to=2026-07-31', ['headers' => $h])->toArray(),
+            static fn (array $d): bool => \count($d['segments']) > 1,
+        );
+        self::assertNotEmpty($split);
+        foreach ($split as $day) {
+            self::assertSame('19:00', $day['segments'][0]['to'], 'le partage tombe à l\'heure d\'échange');
+        }
+
+        self::assertSame(2, $tester->execute(['family' => 'pas-un-uuid']));
+    }
+
     public function testHourlySwapRejectsUnreadableOrEmptyWindow(): void
     {
         static::mockTime(new \DateTimeImmutable('2026-06-23 10:00', new \DateTimeZone('Europe/Paris')));

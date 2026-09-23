@@ -52,6 +52,11 @@ services:
   worker:
     <<: *app
     command: ["php", "bin/console", "messenger:consume", "async", "-v", "--time-limit=3600", "--memory-limit=192M"]
+    # L'image FrankenPHP déclare un HEALTHCHECK sur l'API d'admin de Caddy (port 2019) ; ce
+    # conteneur ne fait tourner qu'un consommateur Messenger, sans Caddy : il serait toujours
+    # « unhealthy ».
+    healthcheck:
+      disable: true
     depends_on:
       database:
         condition: service_healthy
@@ -63,6 +68,11 @@ services:
   scheduler:
     <<: *app
     command: ["php", "bin/console", "messenger:consume", "scheduler_default", "-v", "--time-limit=3600"]
+    # L'image FrankenPHP déclare un HEALTHCHECK sur l'API d'admin de Caddy (port 2019) ; ce
+    # conteneur ne fait tourner qu'un consommateur Messenger, sans Caddy : il serait toujours
+    # « unhealthy ».
+    healthcheck:
+      disable: true
     depends_on:
       database:
         condition: service_healthy

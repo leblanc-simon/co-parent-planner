@@ -21,6 +21,12 @@ use Symfony\Contracts\Cache\CacheInterface;
  * Planification principale (cdc §4.2). Consommée par `messenger:consume scheduler_default`.
  * Au Lot 0 : un job de santé. Les vraies tâches (régénération d'horizon de garde, rafraîchissement
  * vacances, rappels d'échéance, purges RGPD) sont ajoutées à leurs lots.
+ *
+ * **Les tâches journalières et mensuelles sont calées sur une heure fixe** (`from`). Sans elle,
+ * la première échéance se compte depuis l'état mémorisé dans `cache.app` — un dossier du
+ * conteneur, effacé à chaque recréation ou `cache:clear` : chaque déploiement repoussait alors
+ * l'échéance de 24 h (ou d'un mois), et un rythme de déploiement plus serré qu'elle ne la laissait
+ * jamais tomber. Ancrée, elle tombe au plus tard à la prochaine heure dite.
  */
 #[AsSchedule]
 class Schedule implements ScheduleProviderInterface
@@ -38,11 +44,11 @@ class Schedule implements ScheduleProviderInterface
             ->add(RecurringMessage::every('1 hour', new HealthPing()))
             ->add(RecurringMessage::every('1 hour', new PurgeExpiredInvitations()))
             // Garde (Lot 3) : horizon glissant étendu quotidiennement ; vacances rafraîchies mensuellement.
-            ->add(RecurringMessage::every('1 day', new ExtendCustodyHorizon()))
-            ->add(RecurringMessage::every('1 month', new RefreshSchoolHolidays()))
+            ->add(RecurringMessage::every('1 day', new ExtendCustodyHorizon(), from: '03:00 Europe/Paris'))
+            ->add(RecurringMessage::every('1 month', new RefreshSchoolHolidays(), from: 'first day of this month 04:00 Europe/Paris'))
             // Notifications (Lot 7) : rappels d'échéance des décisions (dédup idempotente).
             ->add(RecurringMessage::every('15 minutes', new SendDeadlineReminders()))
             // RGPD (Lot 8) : purge planifiée quotidienne (live), idempotente et journalisée (§3.4).
-            ->add(RecurringMessage::every('1 day', new RunRgpdPurge(RgpdMode::Live->value)));
+            ->add(RecurringMessage::every('1 day', new RunRgpdPurge(RgpdMode::Live->value), from: '03:30 Europe/Paris'));
     }
 }

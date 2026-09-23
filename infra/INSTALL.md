@@ -206,6 +206,7 @@ php bin/console api:openapi:export --output=../contracts/openapi.json   # contra
 | `DATABASE_URL` | connexion PostgreSQL | `…@127.0.0.1:5432/app` |
 | `JWT_PASSPHRASE` | passphrase de la clé privée JWT | dev-only (`.env`) |
 | `MERCURE_JWT_SECRET` | secret de signature des JWT Mercure | dev-only |
+| `MERCURE_COOKIE_DOMAIN` | domaine du cookie d'abonnement temps réel du web ; à renseigner (domaine parent, ex. `.example.org`) **seulement** si le hub est sur un autre sous-domaine que l'app | vide (hôte de l'app) |
 | `MAILER_DSN` | transport e-mail | `smtp://127.0.0.1:1025` |
 | `ACCESS_TOKEN_TTL` / `REFRESH_TOKEN_TTL` / `ONE_TIME_TOKEN_TTL` | durées de vie (s) ; `ACCESS_TOKEN_TTL` = tolérance d'inactivité du web (session glissante : chaque navigation ré-émet le JWT) | 3600 / 2592000 / 3600 |
 | `COOKIE_SECURE` | force le flag Secure des cookies d'auth | `false` (dev) — **`true` en prod** |

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Web;
 
 use Psr\Clock\ClockInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mercure\HubInterface;
@@ -26,6 +27,13 @@ use Symfony\Component\Mercure\HubInterface;
  *
  * Le serveur reste seule autorité sur les claims `subscribe` ; `publish` est toujours vide (le
  * client ne publie jamais).
+ *
+ * **Domaine du cookie** (`MERCURE_COOKIE_DOMAIN`) : par défaut le cookie ne vaut que pour l'hôte
+ * de l'app, ce qui suffit quand le hub est servi sous le même hôte (`/.well-known/mercure`). Quand
+ * le hub vit sur un **autre sous-domaine** (`hub.example.org` pour `app.example.org`), le
+ * navigateur ne lui enverrait jamais le cookie et l'écran afficherait « mises à jour en direct
+ * indisponibles » : il faut alors un domaine parent commun (`.example.org`). Le domaine le plus
+ * étroit qui couvre les deux hôtes — chaque hôte couvert reçoit une capacité d'écoute.
  */
 final class MercureSubscription
 {
@@ -35,6 +43,8 @@ final class MercureSubscription
     public function __construct(
         private readonly HubInterface $hub,
         private readonly ClockInterface $clock,
+        #[Autowire('%env(default::MERCURE_COOKIE_DOMAIN)%')]
+        private readonly ?string $cookieDomain = null,
     ) {
     }
 
@@ -57,6 +67,7 @@ final class MercureSubscription
                 ->withHttpOnly(true)
                 ->withSameSite(Cookie::SAMESITE_LAX)
                 ->withPath('/.well-known/mercure')
+                ->withDomain(null === $this->cookieDomain || '' === $this->cookieDomain ? null : $this->cookieDomain)
                 // Le cookie ne survit pas au JWT qu'il transporte : un cookie encore présent mais
                 // périmé ne produirait qu'un abonnement refusé sans explication.
                 ->withExpires($expiresAt),

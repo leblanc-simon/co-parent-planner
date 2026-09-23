@@ -601,6 +601,13 @@ gestes rapides ne s'écrasent pas), avec retour arrière et bannière en cas de 
 plage de silence **enregistrée**, jamais celle en cours de saisie. La plage garde son bouton,
 « Enregistrer la plage », actif seulement si elle a changé. Mobile : 529 tests, couverture 83,3 %.
 
+**`MERCURE_COOKIE_DOMAIN` (même jour).** Recette du temps réel à travers deux tunnels (app et hub
+sur deux sous-domaines) : le mobile s'abonnait (jeton en en-tête), le **web non** — le cookie
+`mercureAuthorization` était attaché au seul hôte de l'app, donc jamais envoyé au hub. Domaine
+désormais configurable (`App\Web\MercureSubscription`) ; vide = comportement inchangé. Vérifié via
+les tunnels : cookie posé sur `.t.leblanc-simon.fr`, abonnement accepté par le hub. Utile aussi en
+production si le hub y est servi sur un sous-domaine (`infra/INSTALL.md §D`).
+
 **Reste (hors code, mainteneur)** — `infra/INSTALL.md §G` : projet Firebase et ses deux apps ; clé
 APNs déposée dans Firebase ; capacité Push de l'App ID puis `fastlane ios certificates` ; compte de
 service sur le serveur (`FCM_CREDENTIALS_FILE`) ; variables `FIREBASE_*` au build ; recette sur

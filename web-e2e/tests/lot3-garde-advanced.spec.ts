@@ -4,7 +4,7 @@ import {
   waitForInvitationToken,
   waitForVerificationToken,
 } from '../helpers/mailpit';
-import { waitForSaved } from '../helpers/page';
+import { waitForReload, waitForSaved } from '../helpers/page';
 
 const PASSWORD = 'MotDePasseTresLong123';
 
@@ -88,7 +88,12 @@ test('Garde avancée : rythme custom 14 jours, vacances manuelle + règle, excep
   // Le motif par défaut alterne A/B ; on bascule une nuit d'un clic pour vérifier l'interaction,
   // le motif mixte produit les deux couleurs dans le calendrier généré.
   await nights.first().click();
+  // Rechargement armé avant le clic : « Invitation envoyée. » (setup) est encore dans sa fenêtre
+  // d'affichage et visible en tête de /settings — `waitForSaved` seul la prenait pour la
+  // confirmation du rythme, et le `goto` suivant percutait le rechargement (ERR_ABORTED).
+  const reloaded = waitForReload(page);
   await page.locator('.garde-config button[type="submit"]').click();
+  await reloaded;
   await waitForSaved(page); // succès → rechargement de /settings
 
   // ---- Le calendrier généré se consulte sur l'écran Garde ----

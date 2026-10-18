@@ -21,7 +21,9 @@ services:
 
 ###> symfony/mercure-bundle ###
   mercure:
-    image: dunglas/mercure
+    # Épinglé en 0.x : la 1.x exige des claims `iss`/`aud` (RFC 9068) que le bundle n'émet
+    # pas (401 sur chaque abonnement) et ne livre plus `dev.Caddyfile`.
+    image: dunglas/mercure:v0.24.2
     restart: unless-stopped
     environment:
       # HTTPS **désactivé** en développement : avec le SERVER_NAME par défaut, le hub répondait

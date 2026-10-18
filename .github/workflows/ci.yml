@@ -95,7 +95,9 @@ jobs:
       # joignable, l'abonnement échoue et le front affiche son bandeau « Mises à jour en direct
       # indisponibles » — la suite testait donc un front dégradé (revue 2026-08 C2/C11).
       mercure:
-        image: dunglas/mercure
+        # Épinglé en 0.x : la 1.x exige des claims `iss`/`aud` (RFC 9068) que le bundle n'émet
+        # pas (401 sur chaque abonnement) et ne livre plus `dev.Caddyfile`.
+        image: dunglas/mercure:v0.24.2
         env:
           SERVER_NAME: ':80'
           MERCURE_PUBLISHER_JWT_KEY: '!ChangeThisMercureHubJWTSecretKey!'

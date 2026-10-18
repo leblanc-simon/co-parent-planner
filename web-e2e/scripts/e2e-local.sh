@@ -39,7 +39,7 @@ docker run -d --name "$MERCURE_NAME" -p 13000:80 \
   -e MERCURE_PUBLISHER_JWT_KEY='!ChangeThisMercureHubJWTSecretKey!' \
   -e MERCURE_SUBSCRIBER_JWT_KEY='!ChangeThisMercureHubJWTSecretKey!' \
   -e MERCURE_EXTRA_DIRECTIVES="cors_origins http://127.0.0.1:$APP_PORT" \
-  dunglas/mercure >/dev/null
+  dunglas/mercure:v0.24.2 >/dev/null  # 0.x : la 1.x exige des claims iss/aud (cf. infra/docker-compose.yml)
 
 echo "== Migrations (base dev) =="
 (cd "$BACKEND" && symfony console doctrine:database:create --if-not-exists >/dev/null 2>&1 || true)

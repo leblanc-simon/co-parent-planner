@@ -55,7 +55,7 @@ docker compose down -v         # arrête + supprime les volumes (base, clés JWT
 | PostgreSQL | **16** | l'extension `citext` est créée par la 1ʳᵉ migration |
 | Redis | 7 | recommandé (cache, rate-limit) ; optionnel en dev (repli filesystem) |
 | Symfony CLI | ≥ 5 | recommandé (`symfony server`, injection d'env) |
-| Binaire Mercure | récent | optionnel en dev (temps réel) |
+| Binaire Mercure | **0.24.x** (pas 1.x) | optionnel en dev (temps réel) ; la 1.x exige des claims `iss`/`aud` que l'app n'émet pas (401) |
 | Node.js | optionnel | AssetMapper ne requiert pas Node |
 | Flutter SDK | 3.38.x (Dart 3.10.x) | app mobile `/mobile` (génération client = pur Dart, sans JVM) |
 | `fonttools` (pip) | optionnel | **régénération** des coupes de polices (`mobile/tool/build_fonts.py`) ; les fichiers produits sont commités |

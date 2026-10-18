@@ -43,7 +43,7 @@ jobs:
       run:
         working-directory: mobile
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
@@ -85,7 +85,7 @@ jobs:
       FIREBASE_IOS_APP_ID: ${{ vars.FIREBASE_IOS_APP_ID }}
       FIREBASE_IOS_API_KEY: ${{ vars.FIREBASE_IOS_API_KEY }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0   # tags nécessaires au versionnage/traçabilité de l'artefact
 
@@ -139,7 +139,7 @@ jobs:
 
       # Traçabilité (§6.7) : artefact nommé par ref (tag/branche) + SHA du commit déclencheur.
       - name: Publier l'.ipa en artefact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ios-ipa-${{ github.ref_name }}-${{ github.sha }}
           path: mobile/build/ios/ipa/*.ipa

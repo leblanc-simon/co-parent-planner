@@ -41,7 +41,7 @@ jobs:
       APP_ENV: test
       DATABASE_URL: 'postgresql://app:app@127.0.0.1:5432/app?serverVersion=16&charset=utf8'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ env.PHP_VERSION }}
@@ -54,7 +54,11 @@ jobs:
       - name: Style (php-cs-fixer)
         run: PHP_CS_FIXER_IGNORE_ENV=1 vendor/bin/php-cs-fixer fix --dry-run --diff
       - name: Analyse statique (PHPStan niveau 8)
-        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+        # phpstan.dist.neon lit le conteneur `dev` ; le job tourne en APP_ENV=test et
+        # `composer install` ne compile que celui-ci.
+        run: |
+          php bin/console cache:warmup --env=dev
+          vendor/bin/phpstan analyse --no-progress --memory-limit=1G
       - name: Base de test + migrations
         run: |
           php bin/console --env=test doctrine:database:create --if-not-exists
@@ -116,15 +120,15 @@ jobs:
       E2E_BASE_URL: 'http://127.0.0.1:8000'
       MAILPIT_API: 'http://127.0.0.1:8025'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ env.PHP_VERSION }}
           extensions: pdo_pgsql, pgsql, sodium, intl, redis, apcu, mbstring, zip
           tools: composer:v2
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '24'
       - name: Backend — install + clés + DB
         working-directory: backend
         run: |
@@ -135,7 +139,9 @@ jobs:
       - name: Démarrer l'app (serveur PHP intégré)
         working-directory: backend
         run: |
-          php -S 127.0.0.1:8000 -t public public/index.php &
+          # variables_order=EGPCS : le php.ini de production (GPCS) laisse $_ENV vide sous
+          # `php -S` ; Dotenv appliquait alors `.env` par-dessus l'env du job (rate-limit à 10).
+          php -d variables_order=EGPCS -S 127.0.0.1:8000 -t public public/index.php &
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8000/login >/dev/null && break; sleep 1; done
       - name: Playwright — install
         working-directory: web-e2e
@@ -149,7 +155,7 @@ jobs:
       # (reporter `github` + `list`), si bien que l'artefact était vide. Les traces, captures et
       # contextes d'erreur des tests échoués vivent ici — seule matière pour diagnostiquer un échec
       # désormais qu'aucun réessai ne le masque.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-traces
@@ -163,7 +169,7 @@ jobs:
       run:
         working-directory: mobile
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}

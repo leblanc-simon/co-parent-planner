@@ -26,7 +26,7 @@
 
     {# Abonnement temps réel (Turbo Stream over Mercure). `<turbo-mercure-stream-source>` de UX Turbo,
        seul élément qui honore `private` et transmet donc le cookie d'abonnement au hub (revue 2026-08 C2). #}
-    <turbo-mercure-stream-source private data-controller="realtime" src="{{ mercureHub }}?topic={{ expensesTopic|url_encode }}"></turbo-mercure-stream-source>
+    <turbo-mercure-stream-source private data-controller="realtime" src="{{ mercureHub }}?match={{ expensesTopic|url_encode }}"></turbo-mercure-stream-source>
 
     {# ───────── Filtres ───────── #}
     <section class="card">

@@ -46,11 +46,14 @@ final class RealtimeTokenTest extends ApiAuthTestCase
         self::assertNotEmpty($body['token']);
         self::assertNotEmpty($body['hub']);
 
-        // Le serveur est seule autorité sur subscribe ; au Lot 0 il est vide.
+        // Le serveur est seule autorité sur subscribe ; sans famille active, aucun droit : le jeton
+        // d'accès (RFC 9068, Mercure 1.0) ne porte aucun `authorization_details`.
         $payload = $this->decodePayload($body['token']);
-        self::assertArrayHasKey('mercure', $payload);
-        self::assertSame([], $payload['mercure']['subscribe'] ?? null);
-        self::assertSame([], $payload['mercure']['publish'] ?? null);
+        self::assertArrayNotHasKey('authorization_details', $payload);
+        self::assertArrayNotHasKey('mercure', $payload, 'Claim du protocole 0.x, refusé par un hub 1.0.');
+        foreach (['iss', 'aud', 'sub', 'client_id', 'iat', 'exp', 'jti'] as $claim) {
+            self::assertArrayHasKey($claim, $payload, "Claim RFC 9068 requis par le hub : $claim.");
+        }
     }
 
     public function testScopedByActiveFamilyIncludesNotesTopicFromLot2(): void
@@ -72,13 +75,19 @@ final class RealtimeTokenTest extends ApiAuthTestCase
         // Lot 2/3/4/6 : un parent (children_notes + custody + agenda + exchanges ≥ view) sur une famille
         // séparée reçoit les topics notes, garde, agenda ET échanges (liste + détail), scopés à sa
         // famille active (US-CH-3, US-CUST-5, US-AG-8, US-EX-2/7).
+        // Le détail d'échange passe par un URL Pattern (`:exchangeId`) : Mercure 1.0 a retiré les
+        // gabarits RFC 6570.
         $payload = $this->decodePayload($response->toArray()['token']);
-        self::assertSame([
-            '/families/'.$familyId.'/notes',
-            '/families/'.$familyId.'/custody',
-            '/families/'.$familyId.'/agenda',
-            '/families/'.$familyId.'/exchanges',
-            '/families/'.$familyId.'/exchanges/{exchangeId}',
-        ], $payload['mercure']['subscribe'] ?? null);
+        self::assertSame([[
+            'type' => 'https://mercure.rocks/authorization-detail',
+            'actions' => ['subscribe'],
+            'topics' => [
+                ['match' => '/families/'.$familyId.'/notes'],
+                ['match' => '/families/'.$familyId.'/custody'],
+                ['match' => '/families/'.$familyId.'/agenda'],
+                ['match' => '/families/'.$familyId.'/exchanges'],
+                ['match' => '/families/'.$familyId.'/exchanges/:exchangeId', 'match_type' => 'urlpattern'],
+            ],
+        ]], $payload['authorization_details'] ?? null);
     }
 }

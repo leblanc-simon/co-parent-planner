@@ -3,6 +3,17 @@ mercure:
         default:
             url: '%env(default::MERCURE_URL)%'
             public_url: '%env(default::MERCURE_PUBLIC_URL)%'
+            # Protocole Mercure 1.0 (hub ≥ 1.0) : jetons d'accès OAuth 2.0 (RFC 9068), abonnement
+            # par `match=`. Le nom du cookie est fixé explicitement, à l'identique du `cookie_name`
+            # du hub : le défaut du bundle varie avec `kernel.debug`, celui du hub non.
+            cookie_name: '%env(MERCURE_COOKIE_NAME)%'
             jwt:
                 secret: '%env(MERCURE_JWT_SECRET)%'
                 publish: '*'
+                # `aud` est ajouté par le bundle (URL publique du hub, plus l'URL interne pour le
+                # jeton d'éditeur) ; `iat`, `jti` et `exp` par la fabrique.
+                claims:
+                    # Doit figurer parmi les émetteurs de confiance du hub (MERCURE_TRUSTED_ISSUERS).
+                    iss: '%env(MERCURE_JWT_ISSUER)%'
+                    sub: coparentplanner
+                    client_id: coparentplanner

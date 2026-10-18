@@ -620,6 +620,21 @@ Europe/Paris) ; healthcheck HTTP hérité de FrankenPHP désactivé sur `worker`
 s'affichaient « unhealthy ». Bases régénérées : Carin / Flechel 153 jours partagés, horizon au
 2028-03-24. Backend 605 tests, PHPStan 0, cs-fixer 0.
 
+**CI GitHub réparée, puis bascule Mercure 1.x (2026-10-18).** Premier passage de la CI sur
+GitHub : PHPStan ne trouvait pas le conteneur `dev` (job en `APP_ENV=test`), et `php -S` sous le
+`php.ini` de production (`variables_order=GPCS`) laissait `$_ENV` vide — Dotenv appliquait `.env`
+par-dessus l'env du job (rate-limit d'inscription à 10/h). Puis l'image `dunglas/mercure`, non
+épinglée, est passée en **1.x** : 401 sur chaque abonnement. Bascule complète au **protocole 1.0** :
+`symfony/mercure` 0.9, `mercure-bundle` 0.6.1, `ux-turbo` 3.6 ; jetons d'accès RFC 9068
+(`authorization_details`, `iss`/`sub`/`client_id` dans `jwt.claims`, `aud` et `exp` ajoutés par le
+bundle — le jeton mobile, jusqu'ici perpétuel, expire désormais) ; abonnement par **`match=`** (web et
+mobile) ; détail d'échange accordé par **URL Pattern** `/exchanges/:exchangeId` (les gabarits
+RFC 6570 n'existent plus — étanchéité vérifiée contre un hub 1.1.2) ; cookie
+`MERCURE_COOKIE_NAME` (= `cookie_name` du hub) ; émetteur `MERCURE_JWT_ISSUER` (=
+`MERCURE_TRUSTED_ISSUERS` du hub) ; hub épinglé `v1.1.2` partout, `dev.Caddyfile` et `/healthz`
+retirés. Derrière un proxy TLS : `resource_identifier` à épingler (`infra/INSTALL.md`). Backend
+609 tests, E2E 26/26 contre le hub 1.1.2.
+
 **Reste (hors code, mainteneur)** — `infra/INSTALL.md §G` : projet Firebase et ses deux apps ; clé
 APNs déposée dans Firebase ; capacité Push de l'App ID puis `fastlane ios certificates` ; compte de
 service sur le serveur (`FCM_CREDENTIALS_FILE`) ; variables `FIREBASE_*` au build ; recette sur

@@ -9,9 +9,10 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mercure\HubInterface;
+use Symfony\Component\Mercure\Jwt\Grant;
 
 /**
- * Pose le cookie d'abonnement Mercure (`mercureAuthorization`) d'un écran web.
+ * Pose le cookie d'abonnement Mercure (nom : `MERCURE_COOKIE_NAME`) d'un écran web.
  *
  * Centralisé ici parce que les quatre écrans temps réel (garde, agenda, enfants, échanges)
  * portaient la même construction copiée-collée, et donc les deux mêmes défauts (revue 2026-08) :
@@ -60,11 +61,14 @@ final class MercureSubscription
 
         $now = $this->clock->now();
         $expiresAt = $now->add(new \DateInterval('PT'.self::TTL_SECONDS.'S'));
-        $jwt = $factory->create($topics, [], ['iat' => $now, 'exp' => $expiresAt]);
+        $jwt = $factory->create([new Grant([Grant::ACTION_SUBSCRIBE], $topics)], ['iat' => $now, 'exp' => $expiresAt]);
+        $name = $this->hub->getCookieName();
 
         $response->headers->setCookie(
-            Cookie::create('mercureAuthorization', $jwt)
+            Cookie::create($name, $jwt)
                 ->withHttpOnly(true)
+                // Un cookie `__Secure-` sans l'attribut Secure est rejeté par le navigateur.
+                ->withSecure(str_starts_with($name, '__Secure-') || str_starts_with($this->hub->getPublicUrl(), 'https://'))
                 ->withSameSite(Cookie::SAMESITE_LAX)
                 ->withPath('/.well-known/mercure')
                 ->withDomain(null === $this->cookieDomain || '' === $this->cookieDomain ? null : $this->cookieDomain)

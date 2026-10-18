@@ -83,7 +83,7 @@ void main() {
       ]).toList();
 
       final hubCall = adapter.requests.last;
-      expect(hubCall.uri.queryParametersAll['topic'], [
+      expect(hubCall.uri.queryParametersAll['match'], [
         '/families/f1/exchanges',
         '/families/f1/exchanges/x1',
       ]);

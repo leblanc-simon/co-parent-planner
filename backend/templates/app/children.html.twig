@@ -139,7 +139,7 @@
 
                 {# `<turbo-mercure-stream-source>` (UX Turbo) : seul élément qui honore `private` et
                    transmet le cookie d'abonnement — cf. `garde.html.twig` (revue 2026-08 C2). #}
-                <turbo-mercure-stream-source private data-controller="realtime" src="{{ mercureHub }}?topic={{ notesTopic|url_encode }}"></turbo-mercure-stream-source>
+                <turbo-mercure-stream-source private data-controller="realtime" src="{{ mercureHub }}?match={{ notesTopic|url_encode }}"></turbo-mercure-stream-source>
                 <ul class="notes" id="notes-list-{{ child.id }}">
                     {% for note in detail.notes %}
                         {{ include('app/_note_item.html.twig', { note: {

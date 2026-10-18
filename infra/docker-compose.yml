@@ -25,6 +25,9 @@ x-app: &app
     MERCURE_URL: "http://mercure/.well-known/mercure"
     MERCURE_PUBLIC_URL: "http://localhost:3000/.well-known/mercure"
     MERCURE_JWT_SECRET: "!ChangeThisMercureHubJWTSecretKey!"
+    # `iss` des jetons Mercure : doit figurer dans MERCURE_TRUSTED_ISSUERS du hub.
+    MERCURE_JWT_ISSUER: "http://localhost:8000"
+    MERCURE_COOKIE_NAME: "mercure_access_token"
     APP_ENCRYPTION_KEY: "ERA17y4xejfPQrEqVvRDYXRYv8PlWwz6feNlAvXEpNs="
     ACCESS_TOKEN_TTL: "3600"
     REFRESH_TOKEN_TTL: "2592000"
@@ -102,18 +105,20 @@ services:
       - "6379:6379"
 
   mercure:
-    # Épinglé en 0.x : la 1.x exige des claims `iss`/`aud` (RFC 9068) que le bundle n'émet
-    # pas (401 sur chaque abonnement) et ne livre plus `dev.Caddyfile`.
-    image: dunglas/mercure:v0.24.2
+    # Protocole 1.0 (jetons RFC 9068, `match=`). Version épinglée : la bascule 0.x → 1.0 a
+    # cassé le temps réel sans prévenir tant que l'image suivait `latest`.
+    image: dunglas/mercure:v1.1.2
     environment:
       SERVER_NAME: ":80"
       MERCURE_PUBLISHER_JWT_KEY: "!ChangeThisMercureHubJWTSecretKey!"
       MERCURE_SUBSCRIBER_JWT_KEY: "!ChangeThisMercureHubJWTSecretKey!"
+      MERCURE_TRUSTED_ISSUERS: "http://localhost:8000"
       MERCURE_EXTRA_DIRECTIVES: |
         cors_origins http://localhost:8000
-    command: /usr/bin/caddy run --config /etc/caddy/dev.Caddyfile
+        cookie_name mercure_access_token
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost/healthz"]
+      # `/healthz` a disparu en 1.0 ; sonde de disponibilité de l'API d'administration Caddy.
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:2019/mercure/health/ready"]
       interval: 10s
       timeout: 5s
       retries: 5

@@ -25,7 +25,7 @@
     {# Abonnement temps réel (Turbo Stream over Mercure). `<turbo-mercure-stream-source>` de UX Turbo,
        seul élément qui honore `private` et transmet donc le cookie d'abonnement au hub — voir le
        commentaire détaillé dans `garde.html.twig` (revue 2026-08 C2). #}
-    <turbo-mercure-stream-source private data-controller="realtime" src="{{ mercureHub }}?topic={{ agendaTopic|url_encode }}"></turbo-mercure-stream-source>
+    <turbo-mercure-stream-source private data-controller="realtime" src="{{ mercureHub }}?match={{ agendaTopic|url_encode }}"></turbo-mercure-stream-source>
 
     {# ───────── Navigation mois + filtres catégorie ───────── #}
     <section class="card">

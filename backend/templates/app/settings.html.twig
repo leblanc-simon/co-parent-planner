@@ -427,7 +427,7 @@
    vacances et la régénération sont asynchrones : le worker pousse un `turbo-stream refresh` en fin
    de traitement, qui remplit la liste des périodes sans que l'utilisateur ait à recharger. #}
 {% if custodyTopic %}
-<turbo-mercure-stream-source private data-controller="realtime" src="{{ mercureHub }}?topic={{ custodyTopic|url_encode }}"></turbo-mercure-stream-source>
+<turbo-mercure-stream-source private data-controller="realtime" src="{{ mercureHub }}?match={{ custodyTopic|url_encode }}"></turbo-mercure-stream-source>
 {% endif %}
 {# ───────────── Rythme de garde + exceptions + vacances (US-CUST-1/2/9) ─────────────
    Rapatriés depuis l'écran Garde (qui reste en consultation). Édition réservée à custody:edit.

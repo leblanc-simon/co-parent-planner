@@ -38,8 +38,10 @@ docker run -d --name "$MERCURE_NAME" -p 13000:80 \
   -e SERVER_NAME=':80' \
   -e MERCURE_PUBLISHER_JWT_KEY='!ChangeThisMercureHubJWTSecretKey!' \
   -e MERCURE_SUBSCRIBER_JWT_KEY='!ChangeThisMercureHubJWTSecretKey!' \
-  -e MERCURE_EXTRA_DIRECTIVES="cors_origins http://127.0.0.1:$APP_PORT" \
-  dunglas/mercure:v0.24.2 >/dev/null  # 0.x : la 1.x exige des claims iss/aud (cf. infra/docker-compose.yml)
+  -e MERCURE_TRUSTED_ISSUERS="http://127.0.0.1:$APP_PORT" \
+  -e MERCURE_EXTRA_DIRECTIVES="cors_origins http://127.0.0.1:$APP_PORT
+cookie_name mercure_access_token" \
+  dunglas/mercure:v1.1.2 >/dev/null
 
 echo "== Migrations (base dev) =="
 (cd "$BACKEND" && symfony console doctrine:database:create --if-not-exists >/dev/null 2>&1 || true)
@@ -60,6 +62,8 @@ export MAILER_DSN="smtp://127.0.0.1:11025"
 export MERCURE_URL="http://127.0.0.1:13000/.well-known/mercure"
 export MERCURE_PUBLIC_URL="http://127.0.0.1:13000/.well-known/mercure"
 export MERCURE_JWT_SECRET='!ChangeThisMercureHubJWTSecretKey!'
+export MERCURE_JWT_ISSUER="http://127.0.0.1:$APP_PORT"
+export MERCURE_COOKIE_NAME="mercure_access_token"
 export MAILER_FROM="no-reply@coparentplanner.test"
 export APP_WEB_BASE_URL="http://127.0.0.1:$APP_PORT"
 symfony server:stop >/dev/null 2>&1 || true

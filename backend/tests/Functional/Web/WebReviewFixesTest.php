@@ -156,7 +156,7 @@ final class WebReviewFixesTest extends WebTestCase
         self::assertStringNotContainsString('Une semaine sur deux', $html);
         self::assertStringNotContainsString('19:00', $html);
         self::assertNull(
-            $client->getCookieJar()->get('mercureAuthorization', '/.well-known/mercure'),
+            $client->getCookieJar()->get('mercure_access_token', '/.well-known/mercure'),
             'Abonnement temps réel `custody` accordé sans le droit correspondant (C15).',
         );
     }
@@ -172,7 +172,7 @@ final class WebReviewFixesTest extends WebTestCase
         $client->request('GET', '/garde');
         self::assertResponseIsSuccessful();
 
-        $cookie = $client->getCookieJar()->get('mercureAuthorization', '/.well-known/mercure');
+        $cookie = $client->getCookieJar()->get('mercure_access_token', '/.well-known/mercure');
         self::assertNotNull($cookie, 'Le membre habilité doit recevoir son abonnement.');
 
         $claims = self::decodeJwtPayload($cookie->getValue());
@@ -180,8 +180,8 @@ final class WebReviewFixesTest extends WebTestCase
         self::assertArrayHasKey('iat', $claims);
         self::assertGreaterThan(time(), $claims['exp']);
         self::assertSame(
-            ['/families/'.$this->familyId().'/custody'],
-            $claims['mercure']['subscribe'] ?? null,
+            [['match' => '/families/'.$this->familyId().'/custody']],
+            $claims['authorization_details'][0]['topics'] ?? null,
             "L'abonnement doit rester scopé au seul topic garde de la famille active.",
         );
     }

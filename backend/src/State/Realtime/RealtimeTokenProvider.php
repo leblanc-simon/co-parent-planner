@@ -15,6 +15,7 @@ use App\Repository\MembershipRepository;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\Mercure\HubInterface;
+use Symfony\Component\Mercure\Jwt\Grant;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -49,7 +50,8 @@ final class RealtimeTokenProvider implements ProviderInterface
         \assert(null !== $factory, 'La fabrique de jetons Mercure doit être configurée (MERCURE_JWT_SECRET).');
 
         // subscribe scopé à la famille active ; publish vide (le client ne publie jamais).
-        $token = $factory->create($this->subscribeTopicsFor($membership), []);
+        $topics = $this->subscribeTopicsFor($membership);
+        $token = $factory->create([] === $topics ? [] : [new Grant([Grant::ACTION_SUBSCRIBE], $topics)]);
 
         return new RealtimeToken($token, $this->hub->getPublicUrl());
     }
@@ -71,8 +73,9 @@ final class RealtimeTokenProvider implements ProviderInterface
     /**
      * Topics autorisés en lecture pour le membre dans cette famille.
      * Au Lot 0 : toujours vide (aucun topic métier). Étendu aux lots 2/4/6 selon les Voters.
+     * Forme attendue par {@see Grant} : topics exacts sous `exact`, motifs sous `urlpattern`.
      *
-     * @return list<string>
+     * @return array<string, list<string>>
      */
     private function subscribeTopicsFor(?Membership $membership): array
     {
@@ -84,27 +87,28 @@ final class RealtimeTokenProvider implements ProviderInterface
         $familyId = $membership->getFamily()->getId();
         // Notes (Lot 2) : abonnement filtré sur le droit children_notes ≥ view (US-CH-3).
         if ($membership->can(RightDomain::ChildrenNotes, RightLevel::View)) {
-            $topics[] = \sprintf('/families/%s/notes', $familyId);
+            $topics['exact'][] = \sprintf('/families/%s/notes', $familyId);
         }
         // Garde (Lot 3) : abonnement filtré sur le droit custody ≥ view (US-CUST-5).
         if ($membership->can(RightDomain::Custody, RightLevel::View)) {
-            $topics[] = \sprintf('/families/%s/custody', $familyId);
+            $topics['exact'][] = \sprintf('/families/%s/custody', $familyId);
         }
         // Agenda (Lot 4) : abonnement filtré sur le droit agenda ≥ view (US-AG-8).
         if ($membership->can(RightDomain::Agenda, RightLevel::View)) {
-            $topics[] = \sprintf('/families/%s/agenda', $familyId);
+            $topics['exact'][] = \sprintf('/families/%s/agenda', $familyId);
         }
         // Dépenses (Lot 10, v2) : abonnement filtré sur `expenses ≥ view`, ce qui suffit à couvrir les
         // trois conditions du §3.5 — le niveau effectif vaut déjà `none` si le module est désactivé
         // pour la famille ou si le membre est un enfant (cf. Membership::effectiveLevel()).
         if ($membership->can(RightDomain::Expenses, RightLevel::View)) {
-            $topics[] = \sprintf('/families/%s/expenses', $familyId);
+            $topics['exact'][] = \sprintf('/families/%s/expenses', $familyId);
         }
-        // Échanges (Lot 6) : liste (badge) + détail par échange (template RFC 6570), filtré sur
-        // exchanges ≥ view (US-EX-2/7). Le clair des messages n'est poussé qu'ici, aux abonnés autorisés.
+        // Échanges (Lot 6) : liste (badge) + détail par échange (URL Pattern, Mercure ≥ 1.0 — les
+        // gabarits RFC 6570 n'existent plus), filtré sur exchanges ≥ view (US-EX-2/7). Le clair des
+        // messages n'est poussé qu'ici, aux abonnés autorisés.
         if ($membership->can(RightDomain::Exchanges, RightLevel::View)) {
-            $topics[] = \sprintf('/families/%s/exchanges', $familyId);
-            $topics[] = \sprintf('/families/%s/exchanges/{exchangeId}', $familyId);
+            $topics['exact'][] = \sprintf('/families/%s/exchanges', $familyId);
+            $topics['urlpattern'][] = \sprintf('/families/%s/exchanges/:exchangeId', $familyId);
         }
 
         return $topics;

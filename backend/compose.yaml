@@ -21,9 +21,9 @@ services:
 
 ###> symfony/mercure-bundle ###
   mercure:
-    # Épinglé en 0.x : la 1.x exige des claims `iss`/`aud` (RFC 9068) que le bundle n'émet
-    # pas (401 sur chaque abonnement) et ne livre plus `dev.Caddyfile`.
-    image: dunglas/mercure:v0.24.2
+    # Protocole 1.0 (jetons RFC 9068, `match=`). Version épinglée : la bascule 0.x → 1.0 a
+    # cassé le temps réel sans prévenir tant que l'image suivait `latest`.
+    image: dunglas/mercure:v1.1.2
     restart: unless-stopped
     environment:
       # HTTPS **désactivé** en développement : avec le SERVER_NAME par défaut, le hub répondait
@@ -33,15 +33,18 @@ services:
       SERVER_NAME: ':80'
       MERCURE_PUBLISHER_JWT_KEY: '!ChangeThisMercureHubJWTSecretKey!'
       MERCURE_SUBSCRIBER_JWT_KEY: '!ChangeThisMercureHubJWTSecretKey!'
+      # Émetteur de confiance : égal au `iss` des jetons de l'app (MERCURE_JWT_ISSUER de `.env`).
+      MERCURE_TRUSTED_ISSUERS: 'https://localhost'
       # Origines du front `symfony serve` : les deux hôtes servis par le serveur local. L'abonnement
-      # est **authentifié par cookie** (`<turbo-stream-source private>`), donc l'origine doit être
-      # listée explicitement — un `*` interdirait l'envoi des identifiants.
+      # est **authentifié par cookie** (`<turbo-mercure-stream-source private>`), donc l'origine doit être
+      # listée explicitement — un `*` interdirait l'envoi des identifiants. `cookie_name` : nom sans
+      # préfixe `__Secure-` (HTTP), identique à MERCURE_COOKIE_NAME de l'app.
       MERCURE_EXTRA_DIRECTIVES: |
         cors_origins http://127.0.0.1:8000 http://localhost:8000
-    # Comment the following line to disable the development mode
-    command: /usr/bin/caddy run --config /etc/caddy/dev.Caddyfile
+        cookie_name mercure_access_token
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost/healthz"]
+      # `/healthz` a disparu en 1.0 ; sonde de disponibilité de l'API d'administration Caddy.
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:2019/mercure/health/ready"]
       timeout: 5s
       retries: 5
       start_period: 60s

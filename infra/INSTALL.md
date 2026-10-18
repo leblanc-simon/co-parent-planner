@@ -55,7 +55,7 @@ docker compose down -v         # arrête + supprime les volumes (base, clés JWT
 | PostgreSQL | **16** | l'extension `citext` est créée par la 1ʳᵉ migration |
 | Redis | 7 | recommandé (cache, rate-limit) ; optionnel en dev (repli filesystem) |
 | Symfony CLI | ≥ 5 | recommandé (`symfony server`, injection d'env) |
-| Binaire Mercure | **0.24.x** (pas 1.x) | optionnel en dev (temps réel) ; la 1.x exige des claims `iss`/`aud` que l'app n'émet pas (401) |
+| Binaire Mercure | **1.1.x** (protocole 1.0) | optionnel en dev (temps réel) ; un hub 0.x ne comprend ni `match=` ni les jetons RFC 9068 |
 | Node.js | optionnel | AssetMapper ne requiert pas Node |
 | Flutter SDK | 3.38.x (Dart 3.10.x) | app mobile `/mobile` (génération client = pur Dart, sans JVM) |
 | `fonttools` (pip) | optionnel | **régénération** des coupes de polices (`mobile/tool/build_fonts.py`) ; les fichiers produits sont commités |
@@ -102,18 +102,31 @@ php bin/console --env=test doctrine:migrations:migrate -n
 > jusqu'au prochain passage du scheduler (03:00). Commande idempotente, passé figé ; un argument
 > optionnel restreint le recalcul à une famille (`app:custody:regenerate <id-famille>`).
 
-**Mercure** (temps réel) — lancer le binaire avec le secret `MERCURE_JWT_SECRET`. `SERVER_NAME=':80'`
-est **nécessaire en local** : sans lui, le hub force HTTPS et redirige vers un port fermé, ce qui rend
+**Mercure** (temps réel, hub **1.x**) — lancer le binaire avec le secret `MERCURE_JWT_SECRET`, et le
+`Caddyfile` livré avec lui (`Caddyfile.dev` n'existe plus en 1.0). `SERVER_NAME=':80'` est
+**nécessaire en local** : sans lui, le hub force HTTPS et redirige vers un port fermé, ce qui rend
 le temps réel inexerçable en développement (revue 2026-08, constat C11). Les origines du front doivent
 être listées explicitement — l'abonnement web est **authentifié par cookie**, un `*` interdirait donc
-l'envoi des identifiants :
+l'envoi des identifiants. Deux réglages doivent correspondre à ceux de l'app :
+`MERCURE_TRUSTED_ISSUERS` = `MERCURE_JWT_ISSUER` (claim `iss`, sans quoi `401 invalid_token`) et
+`cookie_name` = `MERCURE_COOKIE_NAME` :
 ```bash
 SERVER_NAME=':3000' \
 MERCURE_PUBLISHER_JWT_KEY='!ChangeThisMercureHubJWTSecretKey!' \
 MERCURE_SUBSCRIBER_JWT_KEY='!ChangeThisMercureHubJWTSecretKey!' \
-MERCURE_EXTRA_DIRECTIVES='cors_origins http://127.0.0.1:8000 http://localhost:8000' \
-./mercure run --config Caddyfile.dev
+MERCURE_TRUSTED_ISSUERS='https://localhost' \
+MERCURE_EXTRA_DIRECTIVES=$'cors_origins http://127.0.0.1:8000 http://localhost:8000\ncookie_name mercure_access_token' \
+./mercure run --config Caddyfile
 ```
+> **Production** : `MERCURE_JWT_ISSUER` et `MERCURE_TRUSTED_ISSUERS` valent l'URL publique de l'app.
+> En HTTPS, `MERCURE_COOKIE_NAME=__Secure-mercure_access_token` (le défaut du hub, sans
+> `cookie_name`). Derrière un proxy qui termine TLS, le hub voit `http://…` et en déduit une audience
+> qui ne correspond plus à `MERCURE_PUBLIC_URL` : épingler
+> `resource_identifier <MERCURE_PUBLIC_URL>` dans `MERCURE_EXTRA_DIRECTIVES`.
+>
+> **Mise à jour depuis un hub 0.x** : bascule **synchronisée** de l'app et du hub (protocole
+> incompatible dans les deux sens) ; l'app mobile doit être en version ≥ celle qui s'abonne par
+> `match=`.
 > Avec Docker, `backend/compose.yaml` fournit le même réglage et **publie le port hôte 3000**
 > (identique à la stack `infra/`), ce qui rend `MERCURE_URL`/`MERCURE_PUBLIC_URL` prévisibles.
 > Les valeurs par défaut de `backend/.env` pointent sur ce hub local : elles ne doivent **jamais**
@@ -219,6 +232,8 @@ php bin/console api:openapi:export --output=../contracts/openapi.json   # contra
 | `DATABASE_URL` | connexion PostgreSQL | `…@127.0.0.1:5432/app` |
 | `JWT_PASSPHRASE` | passphrase de la clé privée JWT | dev-only (`.env`) |
 | `MERCURE_JWT_SECRET` | secret de signature des JWT Mercure | dev-only |
+| `MERCURE_JWT_ISSUER` | claim `iss` des jetons Mercure ; doit figurer dans `MERCURE_TRUSTED_ISSUERS` du hub | `https://localhost` (défaut du hub) — **prod : URL publique de l'app** |
+| `MERCURE_COOKIE_NAME` | nom du cookie d'abonnement web ; doit égaler `cookie_name` du hub | `mercure_access_token` — **prod HTTPS : `__Secure-mercure_access_token`** |
 | `MERCURE_COOKIE_DOMAIN` | domaine du cookie d'abonnement temps réel du web ; à renseigner (domaine parent, ex. `.example.org`) **seulement** si le hub est sur un autre sous-domaine que l'app | vide (hôte de l'app) |
 | `MAILER_DSN` | transport e-mail | `smtp://127.0.0.1:1025` |
 | `ACCESS_TOKEN_TTL` / `REFRESH_TOKEN_TTL` / `ONE_TIME_TOKEN_TTL` | durées de vie (s) ; `ACCESS_TOKEN_TTL` = tolérance d'inactivité du web (session glissante : chaque navigation ré-émet le JWT) | 3600 / 2592000 / 3600 |

@@ -203,9 +203,11 @@ final class DeviceApiLot11Test extends ApiAuthTestCase
         $h = $this->bearer($token);
         $id = $client->request('POST', '/api/me/devices', ['json' => ['platform' => 'ios', 'token' => self::TOKEN], 'headers' => $h])->toArray()['id'];
 
-        self::assertSame(204, $client->request('DELETE', '/api/me/devices/'.$id, ['headers' => $h])->getStatusCode());
+        $first = $client->request('DELETE', '/api/me/devices/'.$id, ['headers' => $h])->getStatusCode();
         // Idempotent : une seconde révocation ne change rien.
-        self::assertSame(204, $client->request('DELETE', '/api/me/devices/'.$id, ['headers' => $h])->getStatusCode());
+        $second = $client->request('DELETE', '/api/me/devices/'.$id, ['headers' => $h])->getStatusCode();
+        self::assertSame(204, $first);
+        self::assertSame(204, $second);
 
         $list = $client->request('GET', '/api/me/devices', ['headers' => $h])->toArray();
         self::assertSame([], $list['member'] ?? $list);

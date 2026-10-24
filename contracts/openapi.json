@@ -8915,6 +8915,7 @@
                         }
                     },
                     "messages": {
+                        "description": "Fil complet (d\u00e9tail) ; vide en liste.",
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/MessageView"
@@ -9149,6 +9150,7 @@
                                 }
                             },
                             "messages": {
+                                "description": "Fil complet (d\u00e9tail) ; vide en liste.",
                                 "type": "array",
                                 "items": {
                                     "$ref": "#/components/schemas/MessageView.jsonld"
@@ -9283,6 +9285,7 @@
                         }
                     },
                     "shares": {
+                        "description": "partage personnalis\u00e9 ; vide = 50/50 entre parents",
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/ShareInput"
@@ -9437,6 +9440,7 @@
                         "type": "string"
                     },
                     "net": {
+                        "description": "solde sign\u00e9 par parent (positif : on lui doit)",
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/ExpenseNetResource"
@@ -9516,6 +9520,7 @@
                                 "type": "string"
                             },
                             "net": {
+                                "description": "solde sign\u00e9 par parent (positif : on lui doit)",
                                 "type": "array",
                                 "items": {
                                     "$ref": "#/components/schemas/ExpenseNetResource.jsonld"

@@ -57,6 +57,8 @@ class ExpenseBalanceJsonld {
 
   /// Identifiant de la famille — le solde n'a de sens que scopé (§4.5).
   final String familyId;
+
+  /// solde signé par parent (positif : on lui doit)
   final List<ExpenseNetResourceJsonld>? net;
 
   /// Parent qui doit, `null` si les comptes sont équilibrés.

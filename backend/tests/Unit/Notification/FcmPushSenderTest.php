@@ -102,8 +102,10 @@ final class FcmPushSenderTest extends TestCase
         $calls = [];
         $sender = $this->sender([self::oauth(), new MockResponse('{"name":"projects/x/messages/1"}'), new MockResponse('{"name":"projects/x/messages/2"}')], $calls);
 
-        self::assertSame(PushResult::Delivered, $sender->send(self::device(), self::content()));
-        self::assertSame(PushResult::Delivered, $sender->send(self::device(), self::content()));
+        $first = $sender->send(self::device(), self::content());
+        $second = $sender->send(self::device(), self::content());
+        self::assertSame(PushResult::Delivered, $first);
+        self::assertSame(PushResult::Delivered, $second);
 
         self::assertCount(3, $calls); // un seul échange OAuth pour deux envois
         self::assertSame('https://oauth2.googleapis.com/token', $calls[0]['url']);

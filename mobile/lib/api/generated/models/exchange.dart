@@ -81,6 +81,8 @@ class Exchange {
   /// même défaut que l'agenda : la contrainte existait côté serveur sans être lisible (C20).
   final int version;
   final List<OptionView>? options;
+
+  /// Fil complet (détail) ; vide en liste.
   final List<MessageView>? messages;
 
   Map<String, Object?> toJson() => _$ExchangeToJson(this);

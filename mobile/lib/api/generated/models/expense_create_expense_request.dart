@@ -46,6 +46,8 @@ class ExpenseCreateExpenseRequest {
 
   /// Enfant(s) concerné(s) — au moins un (§4.6) : une dépense n'a pas de cible « toute la famille ».
   final List<String>? childIds;
+
+  /// partage personnalisé ; vide = 50/50 entre parents
   final List<ShareInput>? shares;
 
   Map<String, Object?> toJson() => _$ExpenseCreateExpenseRequestToJson(this);

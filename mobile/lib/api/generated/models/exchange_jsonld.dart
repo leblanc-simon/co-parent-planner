@@ -96,6 +96,8 @@ class ExchangeJsonld {
   /// même défaut que l'agenda : la contrainte existait côté serveur sans être lisible (C20).
   final int version;
   final List<OptionViewJsonld>? options;
+
+  /// Fil complet (détail) ; vide en liste.
   final List<MessageViewJsonld>? messages;
 
   Map<String, Object?> toJson() => _$ExchangeJsonldToJson(this);

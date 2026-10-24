@@ -1,6 +1,9 @@
 # Image applicative CoParentPlanner — FrankenPHP (sert l'app web + l'API), réutilisée par le
 # worker Messenger et le scheduler (commande différente). Cf. cdc §4.8.
-FROM dunglas/frankenphp:1-php8.4
+# Version exacte épinglée : le tag flottant `1-php8.4` restait figé sur l'image en cache local
+# (`docker build` ne la retélécharge pas), si bien qu'une build pouvait garder un PHP vulnérable.
+# 1.13.3 embarque PHP 8.4.27 (correctifs PHP2Shell, CVE-2026-109618/109619).
+FROM dunglas/frankenphp:1.13.3-php8.4
 
 # Sert en HTTP simple sur :80 en dev (TLS terminé en amont en prod).
 ENV SERVER_NAME=:80 \

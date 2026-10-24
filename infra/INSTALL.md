@@ -50,7 +50,7 @@ docker compose down -v         # arrête + supprime les volumes (base, clés JWT
 
 | Outil | Version | Notes |
 |---|---|---|
-| PHP | **8.4+** | extensions : `pdo_pgsql`, `pgsql`, `intl`, `sodium`, `openssl`, `mbstring`, `ctype`, `iconv`, `zip`, `redis`, `apcu`, `opcache` |
+| PHP | **8.5+** | extensions : `pdo_pgsql`, `pgsql`, `intl`, `sodium`, `openssl`, `mbstring`, `ctype`, `iconv`, `zip`, `redis`, `apcu`, `opcache` |
 | Composer | 2.x | |
 | PostgreSQL | **16** | l'extension `citext` est créée par la 1ʳᵉ migration |
 | Redis | 7 | recommandé (cache, rate-limit) ; optionnel en dev (repli filesystem) |

@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PHP_VERSION: '8.4'
+  PHP_VERSION: '8.5'
   FLUTTER_VERSION: '3.38.9'
   DB_URL: 'postgresql://app:app@127.0.0.1:5432/app?serverVersion=16&charset=utf8'
   APP_ENCRYPTION_KEY: 'ERA17y4xejfPQrEqVvRDYXRYv8PlWwz6feNlAvXEpNs='

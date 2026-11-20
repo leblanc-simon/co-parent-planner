@@ -9,7 +9,7 @@ import 'package:coparentplanner/features/custody/presentation/custody_screen.dar
 import 'package:coparentplanner/features/custody/presentation/custody_settings_screen.dart';
 import 'package:coparentplanner/features/family/application/family_context.dart';
 import 'package:coparentplanner/features/members/data/members_repository.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -90,9 +90,8 @@ void main() {
     repo = MockCustodyRepository();
     membersRepo = MockMembersRepository();
     agendaRepo = MockAgendaRepository();
-    when(
-      () => membersRepo.listMembers(any()),
-    ).thenAnswer((_) async => const []);
+    when(() => membersRepo.listMembers(any()))
+        .thenAnswer((_) async => const []);
     when(
       () => agendaRepo.listEvents(
         any(),
@@ -429,75 +428,76 @@ void main() {
     ).called(1);
   });
 
-  testWidgets('paramètres : motif personnalisé → bascule une nuit et enregistre', (
-    tester,
-  ) async {
-    when(() => repo.getPattern('fam-1')).thenAnswer(
-      (_) async => api.CustodyPattern(
-        id: 'p1',
-        kind: 'custom',
-        anchorDate: '2026-06-21',
-        handoverWeekday: 0,
-        handoverTime: '19:00',
-        parentAMembershipId: 'mA',
-        parentBMembershipId: 'mB',
-        customPattern: List.filled(14, 'A'),
-      ),
-    );
-    // L'écran de réglages porte désormais DEUX sections sous deux droits distincts (E5) : le
-    // rythme sous `custody:edit`, les couleurs dès `view`. Le membre courant doit donc être
-    // désigné avec son droit, comme sur l'écran Garde — l'écran ne se fie plus au chemin par
-    // lequel on l'a ouvert.
-    when(() => membersRepo.listMembers('fam-1')).thenAnswer(
-      (_) async => const [
-        api.Member(
-          id: 'mA',
-          role: 'parent',
-          fullName: 'Alice',
-          self: true,
-          rights: {'custody': 'edit'},
+  testWidgets(
+    'paramètres : motif personnalisé → bascule une nuit et enregistre',
+    (tester) async {
+      when(() => repo.getPattern('fam-1')).thenAnswer(
+        (_) async => api.CustodyPattern(
+          id: 'p1',
+          kind: 'custom',
+          anchorDate: '2026-06-21',
+          handoverWeekday: 0,
+          handoverTime: '19:00',
+          parentAMembershipId: 'mA',
+          parentBMembershipId: 'mB',
+          customPattern: List.filled(14, 'A'),
         ),
-        api.Member(id: 'mB', role: 'parent', fullName: 'Bob'),
-      ],
-    );
-    List<String>? sentCustom;
-    when(
-      () => repo.updatePattern(
-        any(),
-        kind: any(named: 'kind'),
-        anchorDate: any(named: 'anchorDate'),
-        handoverWeekday: any(named: 'handoverWeekday'),
-        handoverTime: any(named: 'handoverTime'),
-        dayStartTime: any(named: 'dayStartTime'),
-        parentAMembershipId: any(named: 'parentAMembershipId'),
-        parentBMembershipId: any(named: 'parentBMembershipId'),
-        customPattern: any(named: 'customPattern'),
-      ),
-    ).thenAnswer((inv) async {
-      sentCustom = inv.namedArguments[#customPattern] as List<String>?;
-      return const api.CustodyPattern();
-    });
+      );
+      // L'écran de réglages porte désormais DEUX sections sous deux droits distincts (E5) : le
+      // rythme sous `custody:edit`, les couleurs dès `view`. Le membre courant doit donc être
+      // désigné avec son droit, comme sur l'écran Garde — l'écran ne se fie plus au chemin par
+      // lequel on l'a ouvert.
+      when(() => membersRepo.listMembers('fam-1')).thenAnswer(
+        (_) async => const [
+          api.Member(
+            id: 'mA',
+            role: 'parent',
+            fullName: 'Alice',
+            self: true,
+            rights: {'custody': 'edit'},
+          ),
+          api.Member(id: 'mB', role: 'parent', fullName: 'Bob'),
+        ],
+      );
+      List<String>? sentCustom;
+      when(
+        () => repo.updatePattern(
+          any(),
+          kind: any(named: 'kind'),
+          anchorDate: any(named: 'anchorDate'),
+          handoverWeekday: any(named: 'handoverWeekday'),
+          handoverTime: any(named: 'handoverTime'),
+          dayStartTime: any(named: 'dayStartTime'),
+          parentAMembershipId: any(named: 'parentAMembershipId'),
+          parentBMembershipId: any(named: 'parentBMembershipId'),
+          customPattern: any(named: 'customPattern'),
+        ),
+      ).thenAnswer((inv) async {
+        sentCustom = inv.namedArguments[#customPattern] as List<String>?;
+        return const api.CustodyPattern();
+      });
 
-    await pumpScreen(
-      tester,
-      const CustodySettingsScreen(),
-      overrides: overrides(),
-    );
-    await tester.pumpAndSettle();
+      await pumpScreen(
+        tester,
+        const CustodySettingsScreen(),
+        overrides: overrides(),
+      );
+      await tester.pumpAndSettle();
 
-    // La grille des 14 nuits est affichée ; on bascule la première (A → B).
-    expect(find.byKey(const ValueKey('custody-custom-0')), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('custody-custom-0')));
-    await tester.pump();
+      // La grille des 14 nuits est affichée ; on bascule la première (A → B).
+      expect(find.byKey(const ValueKey('custody-custom-0')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('custody-custom-0')));
+      await tester.pump();
 
-    await tester.tap(find.byKey(const ValueKey('custody-save')));
-    await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('custody-save')));
+      await tester.pump();
 
-    expect(sentCustom, isNotNull);
-    expect(sentCustom!.length, 14);
-    expect(sentCustom![0], 'B');
-    expect(sentCustom![1], 'A');
-  });
+      expect(sentCustom, isNotNull);
+      expect(sentCustom!.length, 14);
+      expect(sentCustom![0], 'B');
+      expect(sentCustom![1], 'A');
+    },
+  );
 
   // ───────────────────────── Revue mobile 2026-08, étape 7 ─────────────────────
 
@@ -537,82 +537,84 @@ void main() {
     },
   );
 
-  testWidgets('C55 — la case est annoncée avec le NOM du parent, pas son initiale seule', (
-    tester,
-  ) async {
-    stubReads();
-    stubMembers();
+  testWidgets(
+    'C55 — la case est annoncée avec le NOM du parent, pas son initiale seule',
+    (tester) async {
+      stubReads();
+      stubMembers();
 
-    await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
-    await tester.pumpAndSettle();
+      await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
 
-    // cdc §8.1 : « les lecteurs d'écran reçoivent le nom en clair, jamais
-    // l'initiale seule ». Jumeau du garde-fou web
-    // `WebPagesTest::testGardeCarriesNonColourParentMarker`.
-    expect(
-      find.bySemanticsLabel(RegExp(r'2 juillet 2026 — chez Marc Durand')),
-      findsOneWidget,
-    );
-    // Le 1er est le dernier jour de Sophie : la transmission tombe dedans, l'annonce
-    // énumère donc les deux tranches avec leurs heures. La proportion, elle, ne vit que
-    // dans la couleur — la case ouvre une fiche qui la redit en toutes lettres.
-    expect(
-      find.bySemanticsLabel(
-        RegExp(
-          r'1 juillet 2026 — chez Sophie Martin de 00:00 à 19:00, chez Marc Durand de 19:00 à 24:00',
+      // cdc §8.1 : « les lecteurs d'écran reçoivent le nom en clair, jamais
+      // l'initiale seule ». Jumeau du garde-fou web
+      // `WebPagesTest::testGardeCarriesNonColourParentMarker`.
+      expect(
+        find.bySemanticsLabel(RegExp(r'2 juillet 2026 — chez Marc Durand')),
+        findsOneWidget,
+      );
+      // Le 1er est le dernier jour de Sophie : la transmission tombe dedans, l'annonce
+      // énumère donc les deux tranches avec leurs heures. La proportion, elle, ne vit que
+      // dans la couleur — la case ouvre une fiche qui la redit en toutes lettres.
+      expect(
+        find.bySemanticsLabel(
+          RegExp(
+            r'1 juillet 2026 — chez Sophie Martin de 00:00 à 19:00, chez Marc Durand de 19:00 à 24:00',
+          ),
         ),
-      ),
-      findsOneWidget,
-    );
-    // Le 3 est une exception ET une journée partagée : l'annonce énumère les tranches puis
-    // dit l'exception, que la case ne porte que par un liseré.
-    expect(
-      find.bySemanticsLabel(
-        RegExp(
-          r'3 juillet 2026 — chez Marc Durand de 00:00 à 19:00, chez Sophie Martin de 19:00 à 24:00, Exceptionnel',
+        findsOneWidget,
+      );
+      // Le 3 est une exception ET une journée partagée : l'annonce énumère les tranches puis
+      // dit l'exception, que la case ne porte que par un liseré.
+      expect(
+        find.bySemanticsLabel(
+          RegExp(
+            r'3 juillet 2026 — chez Marc Durand de 00:00 à 19:00, chez Sophie Martin de 19:00 à 24:00, Exceptionnel',
+          ),
         ),
-      ),
-      findsOneWidget,
-    );
-  });
+        findsOneWidget,
+      );
+    },
+  );
 
-  testWidgets("un jour d'échange porte les deux teintes, au prorata de l'heure", (
-    tester,
-  ) async {
-    stubReads();
-    stubMembers();
+  testWidgets(
+    "un jour d'échange porte les deux teintes, au prorata de l'heure",
+    (tester) async {
+      stubReads();
+      stubMembers();
 
-    await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
-    await tester.pumpAndSettle();
+      await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
 
-    // Le 1er juillet est le dernier jour de Sophie (A) : les enfants passent chez Marc (B) à
-    // 19:00, soit 79,2 % de la case à Sophie.
-    final cell = tester.widget<Container>(
-      find
-          .descendant(
-            of: find.byKey(const ValueKey('garde-day-2026-07-01')),
-            matching: find.byType(Container),
-          )
-          .first,
-    );
-    final gradient =
-        (cell.decoration! as BoxDecoration).gradient! as LinearGradient;
-    expect(gradient.colors.first, const Color(0xFFF6E7DE)); // terracotta doux
-    expect(gradient.colors.last, const Color(0xFFDCECE8)); // teal doux
-    expect(gradient.stops![1], closeTo(19 / 24, 1e-9));
-    // Le filet : seul canal du partage en niveaux de gris et en contraste forcé (§8.1).
-    expect(
-      find.byKey(const ValueKey('garde-day-split-2026-07-01')),
-      findsOneWidget,
-    );
-    // La légende l'explique.
-    expect(
-      find.text(
-        "Journée partagée : le filet marque l'heure du passage d'un parent à l'autre",
-      ),
-      findsOneWidget,
-    );
-  });
+      // Le 1er juillet est le dernier jour de Sophie (A) : les enfants passent chez Marc (B) à
+      // 19:00, soit 79,2 % de la case à Sophie.
+      final cell = tester.widget<Container>(
+        find
+            .descendant(
+              of: find.byKey(const ValueKey('garde-day-2026-07-01')),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      final gradient =
+          (cell.decoration! as BoxDecoration).gradient! as LinearGradient;
+      expect(gradient.colors.first, const Color(0xFFF6E7DE)); // terracotta doux
+      expect(gradient.colors.last, const Color(0xFFDCECE8)); // teal doux
+      expect(gradient.stops![1], closeTo(19 / 24, 1e-9));
+      // Le filet : seul canal du partage en niveaux de gris et en contraste forcé (§8.1).
+      expect(
+        find.byKey(const ValueKey('garde-day-split-2026-07-01')),
+        findsOneWidget,
+      );
+      // La légende l'explique.
+      expect(
+        find.text(
+          "Journée partagée : le filet marque l'heure du passage d'un parent à l'autre",
+        ),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('une journée sans changement de foyer garde une seule teinte', (
     tester,
@@ -729,9 +731,8 @@ void main() {
           to: any(named: 'to'),
         ),
       ).thenAnswer((_) async => _stats);
-      when(
-        () => repo.listExceptions('fam-1'),
-      ).thenAnswer((_) async => const []);
+      when(() => repo.listExceptions('fam-1'))
+          .thenAnswer((_) async => const []);
       when(() => repo.listHolidays('fam-1')).thenAnswer((_) async => const []);
       stubMembers();
 
@@ -769,28 +770,35 @@ void main() {
     // s'applique, plutôt qu'à l'entrée du chemin.
   });
 
-  testWidgets('E5 — `custody=view` : les couleurs sont offertes, le rythme non', (
-    tester,
-  ) async {
-    when(() => repo.getPattern('fam-1')).thenAnswer((_) async => _pattern);
-    stubMembers(custody: 'view');
+  testWidgets(
+    'E5 — `custody=view` : les couleurs sont offertes, le rythme non',
+    (tester) async {
+      when(() => repo.getPattern('fam-1')).thenAnswer((_) async => _pattern);
+      stubMembers(custody: 'view');
 
-    await pumpScreen(
-      tester,
-      const CustodySettingsScreen(),
-      overrides: overrides(),
-    );
-    await tester.pumpAndSettle();
+      await pumpScreen(
+        tester,
+        const CustodySettingsScreen(),
+        overrides: overrides(),
+      );
+      await tester.pumpAndSettle();
 
-    // Aucune mutation du rythme : le formulaire se solderait par un 403 (C29).
-    expect(find.byKey(const ValueKey('custody-kind')), findsNothing);
-    expect(find.byKey(const ValueKey('custody-save')), findsNothing);
+      // Aucune mutation du rythme : le formulaire se solderait par un 403 (C29).
+      expect(find.byKey(const ValueKey('custody-kind')), findsNothing);
+      expect(find.byKey(const ValueKey('custody-save')), findsNothing);
 
-    // Mais les huit teintes du §8.2 sont bien proposées, pour les deux parents : choisir ses
-    // couleurs n'écrit rien de la famille et ne change l'écran de personne d'autre.
-    expect(find.byKey(const ValueKey('custody-color-A-teal')), findsOneWidget);
-    expect(find.byKey(const ValueKey('custody-color-B-slate')), findsOneWidget);
-  });
+      // Mais les huit teintes du §8.2 sont bien proposées, pour les deux parents : choisir ses
+      // couleurs n'écrit rien de la famille et ne change l'écran de personne d'autre.
+      expect(
+        find.byKey(const ValueKey('custody-color-A-teal')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('custody-color-B-slate')),
+        findsOneWidget,
+      );
+    },
+  );
 
   // ───────────────────── Foyer (E2) et couleurs du planning (E5) ─────────────────────
 
@@ -846,54 +854,55 @@ void main() {
     expect(find.byKey(const ValueKey('custody-day-partner')), findsNothing);
   });
 
-  testWidgets('E5 — la préférence enregistrée repeint le calendrier du spectateur', (
-    tester,
-  ) async {
-    stubReads();
-    stubMembers();
-    when(() => repo.listColors(any(), any())).thenAnswer(
-      (_) async => const [
-        api.CustodyColor(targetMembershipId: 'mB', palette: 'purple'),
-      ],
-    );
+  testWidgets(
+    'E5 — la préférence enregistrée repeint le calendrier du spectateur',
+    (tester) async {
+      stubReads();
+      stubMembers();
+      when(() => repo.listColors(any(), any())).thenAnswer(
+        (_) async => const [
+          api.CustodyColor(targetMembershipId: 'mB', palette: 'purple'),
+        ],
+      );
 
-    await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
-    await tester.pumpAndSettle();
+      await pumpScreen(tester, const CustodyScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
 
-    // Le 1er juillet finit chez le parent B : violet (#8E63A8) au lieu du teal du §8. C'est une
-    // journée partagée, donc un dégradé : la part de droite — celle du parent qui prend la
-    // suite — doit suivre la préférence.
-    final cell = tester.widget<Container>(
-      find
-          .descendant(
-            of: find.byKey(const ValueKey('garde-day-2026-07-01')),
-            matching: find.byType(Container),
-          )
-          .first,
-    );
-    final decoration = cell.decoration! as BoxDecoration;
-    expect(decoration.gradient, isA<LinearGradient>());
-    expect(
-      (decoration.gradient! as LinearGradient).colors.last,
-      const Color(0xFFEDE4F2),
-    );
-    // La bordure d'une case pleine du parent B suit aussi la préférence.
-    final plain = tester.widget<Container>(
-      find
-          .descendant(
-            of: find.byKey(const ValueKey('garde-day-2026-07-02')),
-            matching: find.byType(Container),
-          )
-          .first,
-    );
-    expect(
-      ((plain.decoration! as BoxDecoration).border! as Border).top.color,
-      const Color(0xFF8E63A8),
-    );
+      // Le 1er juillet finit chez le parent B : violet (#8E63A8) au lieu du teal du §8. C'est une
+      // journée partagée, donc un dégradé : la part de droite — celle du parent qui prend la
+      // suite — doit suivre la préférence.
+      final cell = tester.widget<Container>(
+        find
+            .descendant(
+              of: find.byKey(const ValueKey('garde-day-2026-07-01')),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      final decoration = cell.decoration! as BoxDecoration;
+      expect(decoration.gradient, isA<LinearGradient>());
+      expect(
+        (decoration.gradient! as LinearGradient).colors.last,
+        const Color(0xFFEDE4F2),
+      );
+      // La bordure d'une case pleine du parent B suit aussi la préférence.
+      final plain = tester.widget<Container>(
+        find
+            .descendant(
+              of: find.byKey(const ValueKey('garde-day-2026-07-02')),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      expect(
+        ((plain.decoration! as BoxDecoration).border! as Border).top.color,
+        const Color(0xFF8E63A8),
+      );
 
-    // §8.1 sans exception : l'initiale reste affichée quelle que soit la palette.
-    expect(find.text('M'), findsWidgets);
-  });
+      // §8.1 sans exception : l'initiale reste affichée quelle que soit la palette.
+      expect(find.text('M'), findsWidgets);
+    },
+  );
 
   testWidgets('E5 — choisir une teinte l\'enregistre pour ce membre-là', (
     tester,

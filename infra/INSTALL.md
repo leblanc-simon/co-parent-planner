@@ -57,7 +57,8 @@ docker compose down -v         # arrête + supprime les volumes (base, clés JWT
 | Symfony CLI | ≥ 5 | recommandé (`symfony server`, injection d'env) |
 | Binaire Mercure | **1.1.x** (protocole 1.0) | optionnel en dev (temps réel) ; un hub 0.x ne comprend ni `match=` ni les jetons RFC 9068 |
 | Node.js | optionnel | AssetMapper ne requiert pas Node |
-| Flutter SDK | 3.38.x (Dart 3.10.x) | app mobile `/mobile` (génération client = pur Dart, sans JVM) |
+| Flutter SDK | 3.50.x (Dart 3.14.x) | app mobile `/mobile` (génération client = pur Dart, sans JVM) |
+| JDK | 17+ | **build Android** uniquement (Gradle 9.5 via wrapper, AGP 9.3, Kotlin 2.4) |
 | `fonttools` (pip) | optionnel | **régénération** des coupes de polices (`mobile/tool/build_fonts.py`) ; les fichiers produits sont commités |
 
 Vérifier : `php -v && php -m | grep -E 'pdo_pgsql|sodium|intl|redis'`.
@@ -162,7 +163,7 @@ curl -s -X POST http://127.0.0.1:8000/api/auth/register \
 
 ### B.3 Mobile (Flutter)
 
-Prérequis : **Flutter 3.38.x / Dart 3.10.x** (`flutter doctor` au vert pour Android ; iOS nécessite
+Prérequis : **Flutter 3.50.x / Dart 3.14.x** (`flutter doctor` au vert pour Android ; iOS nécessite
 un macOS + Xcode). **Aucune JVM n'est requise pour la génération du client** (elle est pure Dart).
 
 ```bash
@@ -173,10 +174,9 @@ flutter pub get
 # 2) Générer le client Dart (clients retrofit/dio + modèles) depuis ce contrat :
 dart run swagger_parser
 # 3) Générer le code (.g.dart : json_serializable, retrofit, drift) :
-dart run build_runner build --delete-conflicting-outputs --force-jit
-#    /!\ --force-jit est IMPÉRATIF : certaines dépendances natives (sqlite3,
-#        path_provider_foundation) embarquent un hook/build.dart (native-assets) qui fait
-#        échouer la compilation AOT du script build_runner sous Dart 3.10. Le mode JIT l'évite.
+dart run build_runner build --delete-conflicting-outputs
+#    (le `--force-jit` exigé sous Dart 3.10 par les hooks native-assets n'est plus
+#     nécessaire depuis Dart 3.14.)
 # 4) Localisations (si chaînes i18n modifiées) :
 flutter gen-l10n
 
@@ -371,7 +371,7 @@ CI ne font que l'appeler. Donc :
 > (bornées dans `mobile/ios/Gemfile` ; committer `mobile/ios/Gemfile.lock` depuis un poste macOS fige
 > complètement la résolution). `pod install` n'est **pas** une étape CI séparée : le `Fastfile` le
 > déclenche via `flutter build ios --no-codesign` (le projet ne committe pas de `Podfile`, généré par
-> le tool Flutter au 1er build). La version **Flutter est figée à `3.38.9`**, identique au Lot 0.
+> le tool Flutter au 1er build). La version **Flutter est figée à `3.50.0`**, identique au job `mobile` de `ci.yml`.
 
 ---
 

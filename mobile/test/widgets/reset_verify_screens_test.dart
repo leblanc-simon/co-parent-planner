@@ -5,7 +5,7 @@ import 'package:coparentplanner/features/auth/data/auth_repository.dart';
 import 'package:coparentplanner/features/auth/presentation/check_email_screen.dart';
 import 'package:coparentplanner/features/auth/presentation/reset_password_screen.dart';
 import 'package:coparentplanner/features/auth/presentation/verify_email_screen.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';

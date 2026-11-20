@@ -10,7 +10,7 @@ import 'package:coparentplanner/features/custody/application/current_custody.dar
 import 'package:coparentplanner/features/family/application/family_context.dart';
 import 'package:coparentplanner/features/home/shell/home_tab.dart';
 import 'package:coparentplanner/features/home/shell/settings_tab.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 

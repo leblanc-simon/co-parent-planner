@@ -39,9 +39,8 @@ class RealtimeClient {
 
     // `match=` : correspondance exacte (Mercure 1.0 ; `topic=` est refusé). Le jeton peut accorder
     // un motif (`/exchanges/:exchangeId`), l'abonnement, lui, vise toujours des topics précis.
-    final url = Uri.parse(
-      hub,
-    ).replace(queryParameters: <String, dynamic>{'match': topics});
+    final url = Uri.parse(hub)
+        .replace(queryParameters: <String, dynamic>{'match': topics});
 
     final response = await _dio.getUri<ResponseBody>(
       url,
@@ -77,8 +76,7 @@ class RealtimeClient {
     while (!(cancelToken?.isCancelled ?? false)) {
       try {
         await for (final _ in connect(topics, cancelToken: cancelToken)) {
-          attempt =
-              0; // la connexion vit : le prochain incident repart d'une attente courte
+          attempt = 0; // la connexion vit : le prochain incident repart d'une attente courte
           yield null;
         }
       } on DioException catch (e) {

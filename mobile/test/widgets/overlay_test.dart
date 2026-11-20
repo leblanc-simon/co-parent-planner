@@ -9,7 +9,7 @@ import 'package:coparentplanner/features/custody/data/custody_repository.dart';
 import 'package:coparentplanner/features/custody/presentation/custody_screen.dart';
 import 'package:coparentplanner/features/family/application/family_context.dart';
 import 'package:coparentplanner/features/members/data/members_repository.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -76,9 +76,8 @@ void main() {
           to: any(named: 'to'),
         ),
       ).thenAnswer((_) async => const CachedResult<api.Event>.fresh([]));
-      when(
-        () => overlayRepo.activeLinks('fam-1'),
-      ).thenAnswer((_) async => const [_activeLink]);
+      when(() => overlayRepo.activeLinks('fam-1'))
+          .thenAnswer((_) async => const [_activeLink]);
     });
 
     List<Override> overrides() => [
@@ -138,9 +137,8 @@ void main() {
           ),
         ],
       );
-      when(
-        () => overlayRepo.overlayEvents('fam-1', any()),
-      ).thenAnswer((_) async => const []);
+      when(() => overlayRepo.overlayEvents('fam-1', any()))
+          .thenAnswer((_) async => const []);
       when(
         () => overlayRepo.setPreference(
           any(),
@@ -167,15 +165,12 @@ void main() {
     });
 
     testWidgets('aucun lien actif : section overlay masquée', (tester) async {
-      when(
-        () => overlayRepo.activeLinks('fam-1'),
-      ).thenAnswer((_) async => const []);
-      when(
-        () => overlayRepo.preferences('fam-1'),
-      ).thenAnswer((_) async => const []);
-      when(
-        () => overlayRepo.overlayEvents('fam-1', any()),
-      ).thenAnswer((_) async => const []);
+      when(() => overlayRepo.activeLinks('fam-1'))
+          .thenAnswer((_) async => const []);
+      when(() => overlayRepo.preferences('fam-1'))
+          .thenAnswer((_) async => const []);
+      when(() => overlayRepo.overlayEvents('fam-1', any()))
+          .thenAnswer((_) async => const []);
 
       await pumpScreen(tester, const AgendaScreen(), overrides: overrides());
       await tester.pumpAndSettle();
@@ -194,9 +189,8 @@ void main() {
       custodyRepo = MockCustodyRepository();
       overlayRepo = MockOverlayRepository();
       membersRepo = MockMembersRepository();
-      when(
-        () => custodyRepo.getPattern('fam-1'),
-      ).thenAnswer((_) async => _pattern);
+      when(() => custodyRepo.getPattern('fam-1'))
+          .thenAnswer((_) async => _pattern);
       when(
         () => custodyRepo.listDays(
           'fam-1',
@@ -211,15 +205,12 @@ void main() {
           to: any(named: 'to'),
         ),
       ).thenAnswer((_) async => _stats);
-      when(
-        () => custodyRepo.listExceptions('fam-1'),
-      ).thenAnswer((_) async => const []);
-      when(
-        () => custodyRepo.listHolidays('fam-1'),
-      ).thenAnswer((_) async => const []);
-      when(
-        () => overlayRepo.activeLinks('fam-1'),
-      ).thenAnswer((_) async => const [_activeLink]);
+      when(() => custodyRepo.listExceptions('fam-1'))
+          .thenAnswer((_) async => const []);
+      when(() => custodyRepo.listHolidays('fam-1'))
+          .thenAnswer((_) async => const []);
+      when(() => overlayRepo.activeLinks('fam-1'))
+          .thenAnswer((_) async => const [_activeLink]);
     });
 
     List<Override> overrides() => [

@@ -5,8 +5,9 @@ import 'package:coparentplanner/features/auth/application/auth_controller.dart';
 import 'package:coparentplanner/features/auth/application/auth_state.dart';
 import 'package:coparentplanner/features/family/application/family_context.dart';
 import 'package:coparentplanner/l10n/app_localizations.dart';
+import 'package:coparentplanner/l10n/localizations_delegates.dart';
 import 'package:coparentplanner/routing/app_router.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -71,7 +72,7 @@ void main() {
               final router = ref.watch(goRouterProvider);
               return MaterialApp.router(
                 routerConfig: router,
-                localizationsDelegates: AppL10n.localizationsDelegates,
+                localizationsDelegates: appLocalizationsDelegates,
                 supportedLocales: AppL10n.supportedLocales,
                 locale: const Locale('fr', 'FR'),
               );
@@ -139,7 +140,7 @@ void main() {
         child: Consumer(
           builder: (c, ref, _) => MaterialApp.router(
             routerConfig: ref.watch(goRouterProvider),
-            localizationsDelegates: AppL10n.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppL10n.supportedLocales,
             locale: const Locale('fr', 'FR'),
           ),

@@ -15,8 +15,9 @@ import 'package:coparentplanner/features/family/data/family_repository.dart';
 import 'package:coparentplanner/features/members/data/members_repository.dart';
 import 'package:coparentplanner/features/notifications/application/push_message_handler.dart';
 import 'package:coparentplanner/l10n/app_localizations.dart';
+import 'package:coparentplanner/l10n/localizations_delegates.dart';
 import 'package:coparentplanner/routing/app_router.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -135,7 +136,7 @@ void main() {
           builder: (c, ref, _) => MaterialApp.router(
             routerConfig: ref.watch(goRouterProvider),
             scaffoldMessengerKey: pushMessengerKey,
-            localizationsDelegates: AppL10n.localizationsDelegates,
+            localizationsDelegates: appLocalizationsDelegates,
             supportedLocales: AppL10n.supportedLocales,
             locale: const Locale('fr', 'FR'),
           ),
@@ -246,9 +247,8 @@ void main() {
       findsOneWidget,
     );
 
-    ScaffoldMessenger.of(
-      tester.element(find.byType(SnackBar)),
-    ).removeCurrentSnackBar();
+    ScaffoldMessenger.of(tester.element(find.byType(SnackBar)))
+        .removeCurrentSnackBar();
     await tester.pumpAndSettle();
     gateway.foreground.add(_push('exchanges', exchangeId: 'x1'));
     await tester.pumpAndSettle();

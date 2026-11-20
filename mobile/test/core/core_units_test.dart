@@ -30,9 +30,8 @@ void main() {
         ),
       ).thenAnswer((_) async {});
       when(() => fss.delete(key: any(named: 'key'))).thenAnswer((_) async {});
-      when(
-        () => fss.read(key: any(named: 'key')),
-      ).thenAnswer((_) async => null);
+      when(() => fss.read(key: any(named: 'key')))
+          .thenAnswer((_) async => null);
     });
 
     test('writeTokens ecrit access_token et refresh_token', () async {
@@ -72,9 +71,8 @@ void main() {
 
     test('writeActiveFamily(json) ecrit la cle active_family', () async {
       await adapter.writeActiveFamily('{"id":"f1"}');
-      verify(
-        () => fss.write(key: 'active_family', value: '{"id":"f1"}'),
-      ).called(1);
+      verify(() => fss.write(key: 'active_family', value: '{"id":"f1"}'))
+          .called(1);
       verifyNever(() => fss.delete(key: 'active_family'));
     });
   });

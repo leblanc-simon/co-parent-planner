@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Styles de bouton derogeant a la largeur pleine posee par le theme.
 ///

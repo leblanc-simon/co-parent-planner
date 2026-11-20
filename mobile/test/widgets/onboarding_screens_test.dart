@@ -5,7 +5,7 @@ import 'package:coparentplanner/features/family/data/family_repository.dart';
 import 'package:coparentplanner/features/onboarding/presentation/create_family_screen.dart';
 import 'package:coparentplanner/features/onboarding/presentation/join_family_screen.dart';
 import 'package:coparentplanner/features/onboarding/presentation/onboarding_screen.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/error/api_exception.dart';
@@ -61,9 +61,8 @@ class _SettingsTabState extends ConsumerState<SettingsTab> {
             phone: _phone.text.trim(),
           );
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l.settingsProfileUpdated)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(l.settingsProfileUpdated)));
       }
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = errorText(context, e));

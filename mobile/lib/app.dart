@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/deeplink/deep_link_handler.dart';
@@ -9,6 +9,7 @@ import 'core/push/push_controller.dart';
 import 'core/theme/app_theme.dart';
 import 'features/notifications/application/push_message_handler.dart';
 import 'l10n/app_localizations.dart';
+import 'l10n/localizations_delegates.dart';
 import 'routing/app_router.dart';
 
 class CoParentPlannerApp extends ConsumerStatefulWidget {
@@ -61,7 +62,7 @@ class _CoParentPlannerAppState extends ConsumerState<CoParentPlannerApp> {
       scaffoldMessengerKey: pushMessengerKey,
       locale: locale,
       supportedLocales: AppL10n.supportedLocales,
-      localizationsDelegates: AppL10n.localizationsDelegates,
+      localizationsDelegates: appLocalizationsDelegates,
     );
   }
 }

@@ -1,7 +1,8 @@
 import 'package:coparentplanner/core/error/api_exception.dart';
 import 'package:coparentplanner/core/error/error_text.dart';
 import 'package:coparentplanner/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:coparentplanner/l10n/localizations_delegates.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Le libellé d'erreur est résolu **dans la locale de l'écran** (revue mobile
@@ -13,7 +14,7 @@ void main() {
     late String rendered;
     await tester.pumpWidget(
       MaterialApp(
-        localizationsDelegates: AppL10n.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppL10n.supportedLocales,
         locale: const Locale('fr', 'FR'),
         home: Builder(

@@ -71,25 +71,22 @@ void main() {
     to: DateTime(2026, 7, 31),
   );
 
-  test(
-    'l\'événement créé hors-ligne apparaît dans le mois, en attente',
-    () async {
-      // Avant : la création n'écrivait que la ligne outbox, et l'agenda restait
-      // strictement identique — l'utilisateur pouvait croire sa saisie perdue.
-      expect((await readJuly()).items, isEmpty);
+  test('l\'événement créé hors-ligne apparaît dans le mois, en attente', () async {
+    // Avant : la création n'écrivait que la ligne outbox, et l'agenda restait
+    // strictement identique — l'utilisateur pouvait croire sa saisie perdue.
+    expect((await readJuly()).items, isEmpty);
 
-      await createOffline();
-      final result = await readJuly();
+    await createOffline();
+    final result = await readJuly();
 
-      expect(result.items, hasLength(1));
-      expect(result.items.single.title, 'Sortie scolaire');
-      expect(PendingLocal.isPending(result.items.single.id as String), isTrue);
-      // Hors-ligne sans cache, mais il y a bien quelque chose à montrer : l'écran
-      // ne doit pas basculer sur « Données non disponibles hors-ligne » (C14).
-      expect(result.available, isTrue);
-      expect(result.stale, isTrue);
-    },
-  );
+    expect(result.items, hasLength(1));
+    expect(result.items.single.title, 'Sortie scolaire');
+    expect(PendingLocal.isPending(result.items.single.id as String), isTrue);
+    // Hors-ligne sans cache, mais il y a bien quelque chose à montrer : l'écran
+    // ne doit pas basculer sur « Données non disponibles hors-ligne » (C14).
+    expect(result.available, isTrue);
+    expect(result.stale, isTrue);
+  });
 
   test('un autre mois ne montre pas l\'événement', () async {
     await createOffline();

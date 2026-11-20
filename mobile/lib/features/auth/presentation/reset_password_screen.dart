@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -56,9 +56,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
           .read(authControllerProvider.notifier)
           .resetPassword(token: widget.token!, password: _password.text);
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l.resetSuccess)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l.resetSuccess)));
       context.go(Routes.login);
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = errorText(context, e));

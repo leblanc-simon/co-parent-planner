@@ -62,9 +62,9 @@ void main() {
       ],
     );
 
-    final signals = await clientWith(
-      adapter,
-    ).connect(['/families/f1/exchanges']).toList();
+    final signals = await clientWith(adapter)
+        .connect(['/families/f1/exchanges'])
+        .toList();
 
     expect(signals, hasLength(2));
   });
@@ -77,10 +77,9 @@ void main() {
       // présente le jeton d'abonnement — pas le JWT d'API.
       final adapter = _HubAdapter(frames: const []);
 
-      await clientWith(adapter).connect([
-        '/families/f1/exchanges',
-        '/families/f1/exchanges/x1',
-      ]).toList();
+      await clientWith(adapter)
+          .connect(['/families/f1/exchanges', '/families/f1/exchanges/x1'])
+          .toList();
 
       final hubCall = adapter.requests.last;
       expect(hubCall.uri.queryParametersAll['match'], [

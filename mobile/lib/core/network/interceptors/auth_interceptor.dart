@@ -20,12 +20,10 @@ import 'api_routes.dart';
 /// intercepteur (`_rawDio`) pour eviter toute reentrance.
 class AuthInterceptor extends QueuedInterceptor {
   AuthInterceptor({
-    required SecureStorage storage,
-    required Dio rawDio,
-    required Future<void> Function() onSessionExpired,
-  }) : _storage = storage,
-       _rawDio = rawDio,
-       _onSessionExpired = onSessionExpired;
+    required this._storage,
+    required this._rawDio,
+    required this._onSessionExpired,
+  });
 
   final SecureStorage _storage;
   final Dio _rawDio;

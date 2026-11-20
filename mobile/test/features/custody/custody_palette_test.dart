@@ -1,5 +1,5 @@
 import 'package:coparentplanner/features/custody/application/custody_palette.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Catalogue des huit teintes du planning (cdc §8.2) — **jumeau de `App\Enum\CustodyPalette`**.
@@ -53,18 +53,12 @@ void main() {
     expect(CustodyPalette.defaultB, 'teal');
   });
 
-  test(
-    'une clé inconnue retombe sur le défaut, elle ne laisse pas la case blanche',
-    () {
-      // Cas réel : un serveur plus récent dont le catalogue s'est étoffé.
-      final tint = CustodyPalette.of('chartreuse', fallback: 'teal');
-      expect(tint.value, 'teal');
-      expect(
-        CustodyPalette.of(null, fallback: 'terracotta').value,
-        'terracotta',
-      );
-    },
-  );
+  test('une clé inconnue retombe sur le défaut, elle ne laisse pas la case blanche', () {
+    // Cas réel : un serveur plus récent dont le catalogue s'est étoffé.
+    final tint = CustodyPalette.of('chartreuse', fallback: 'teal');
+    expect(tint.value, 'teal');
+    expect(CustodyPalette.of(null, fallback: 'terracotta').value, 'terracotta');
+  });
 
   test('forSlot : tout ce qui n\'est pas B est A', () {
     final colors = CustodySlotColors(

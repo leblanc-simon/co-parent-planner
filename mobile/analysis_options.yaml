@@ -8,6 +8,13 @@ analyzer:
     - lib/api/generated/**
     - "**/*.g.dart"
     - "**/*.freezed.dart"
+    # Sortie de `flutter gen-l10n` : elle reference encore les delegues Material /
+    # Cupertino de flutter_localizations (deprecies en 3.47) ; l'app passe par
+    # `appLocalizationsDelegates` (lib/l10n/localizations_delegates.dart).
+    - lib/l10n/app_localizations*.dart
+    - build/**
+    - android/**
+    - ios/**
   language:
     strict-casts: true
     strict-raw-types: true

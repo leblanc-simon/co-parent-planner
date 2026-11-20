@@ -26,25 +26,22 @@ void main() {
     return OutboxService(dao: db.outboxDao, dio: dio);
   }
 
-  test(
-    'enqueue insère une entrée pending avec Idempotency-Key et X-Family-Id figé',
-    () async {
-      final svc = service(ScriptedAdapter((_) => (200, null)));
-      final id = await svc.enqueue(
-        userId: _user,
-        method: 'POST',
-        path: '/api/x',
-        body: {'a': 1},
-        xFamilyId: 'f1',
-      );
-      expect(await db.outboxDao.countByStatus(_user, OutboxStatus.pending), 1);
-      final entry = (await db.outboxDao.pendingEntries(_user)).single;
-      expect(entry.id, id);
-      expect(entry.userId, _user);
-      expect(entry.idempotencyKey, isNotEmpty);
-      expect(entry.headers, contains('f1'));
-    },
-  );
+  test('enqueue insère une entrée pending avec Idempotency-Key et X-Family-Id figé', () async {
+    final svc = service(ScriptedAdapter((_) => (200, null)));
+    final id = await svc.enqueue(
+      userId: _user,
+      method: 'POST',
+      path: '/api/x',
+      body: {'a': 1},
+      xFamilyId: 'f1',
+    );
+    expect(await db.outboxDao.countByStatus(_user, OutboxStatus.pending), 1);
+    final entry = (await db.outboxDao.pendingEntries(_user)).single;
+    expect(entry.id, id);
+    expect(entry.userId, _user);
+    expect(entry.idempotencyKey, isNotEmpty);
+    expect(entry.headers, contains('f1'));
+  });
 
   test('flush 2xx -> synced + envoie Idempotency-Key et X-Family-Id', () async {
     final adapter = ScriptedAdapter((_) => (200, {'ok': true}));

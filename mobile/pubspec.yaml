@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.10.8
+  sdk: ^3.14.0
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -32,6 +32,10 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  # Material et Cupertino sont sortis du framework (depreciation de
+  # `package:flutter/material.dart` depuis Flutter 3.47) : importer ces paquets.
+  material_ui: ^1.11.1
+  cupertino_ui: ^1.1.7
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -40,19 +44,15 @@ dependencies:
   dio: ^5.9.2
   retrofit: ^4.9.2
   json_annotation: ^4.12.0
-  go_router: ^17.3.0
-  drift: ^2.34.0
-  # sqlite3 < 3.2.0 : les 3.2+ embarquent un hook/build.dart (native-assets) qui
-  # casse le bootstrap AOT de build_runner sous Dart 3.10. 3.1.x est accepte par
-  # drift (^3.1.5) et garde l'approche plugin via sqlite3_flutter_libs 0.5.x.
-  sqlite3: ">=3.1.5 <3.2.0"
-  sqlite3_flutter_libs: ^0.5.34
+  go_router: ^18.1.4
+  drift: ^2.35.4
+  sqlite3: ^3.9.1
   path_provider: ^2.1.6
   path: ^1.9.1
-  # secure_storage 9.x : la 10.x tire flutter_secure_storage_darwin -> objective_c
-  # (hook/build.dart) qui casse aussi build_runner. 9.x = palier stable sans hook.
+  # secure_storage 9.x : bloquee jadis par le hook/build.dart d'objective_c qui cassait
+  # build_runner sous Dart 3.10 (leve en 3.14) ; les 10.x/11.x restent une montee majeure.
   flutter_secure_storage: ^9.2.4
-  app_links: ^7.0.0
+  app_links: ^7.2.2
   uuid: ^4.5.3
   connectivity_plus: ^7.1.1
   intl: ^0.20.2
@@ -73,11 +73,11 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 
   # Codegen : client OpenAPI (swagger_parser -> retrofit/dio) + modeles + drift
-  build_runner: ^2.15.0
-  json_serializable: ^6.14.0
-  retrofit_generator: ^10.2.7
-  drift_dev: ">=2.34.0 <2.34.1" # 2.34.1+ exige analyzer ^13 (indisponible sous Dart 3.10)
-  swagger_parser: ^1.44.0
+  build_runner: ^2.17.1
+  json_serializable: ^6.15.2
+  retrofit_generator: ^10.3.3
+  drift_dev: ^2.35.3
+  swagger_parser: ^1.46.0
   # Tests : mock dio + matchers
   mocktail: ^1.0.5
   http_mock_adapter: ^0.6.1

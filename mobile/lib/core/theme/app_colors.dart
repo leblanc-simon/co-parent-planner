@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Tokens de couleur du design system (cdc §8). Valeurs hex exactes extraites
 /// de `backend/assets/styles/app.css` et de la maquette mobile.

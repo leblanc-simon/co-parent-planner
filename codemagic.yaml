@@ -41,7 +41,7 @@ definitions:
       script: |
         cd mobile
         dart run swagger_parser
-        dart run build_runner build --delete-conflicting-outputs --force-jit
+        dart run build_runner build --delete-conflicting-outputs
         git diff --exit-code lib/api/generated \
           || { echo "Client Dart désaligné de l'OpenAPI — régénérez et committez."; exit 1; }
     - &flutter_tests
@@ -66,7 +66,7 @@ definitions:
                            #   par le Fastfile ; absentes, le push du build est éteint.
     vars:
       APP_IDENTIFIER: "eu.coparentplanner.app"  # consommé par ENV[] dans le Fastfile
-    flutter: 3.38.9        # version figée (source unique), cohérente avec GitHub Actions / Lot 0
+    flutter: 3.50.0        # version figée (source unique), cohérente avec GitHub Actions / Lot 0
     xcode: latest
     cocoapods: default
 

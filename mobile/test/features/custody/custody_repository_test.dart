@@ -155,34 +155,31 @@ void main() {
       expect(body['parentMembershipId'], 'mB');
     });
 
-    test(
-      '422 sur un jour passé → ApiException portant le détail serveur',
-      () async {
-        // L'API refuse une exception rétroactive : c'est ce refus que la fiche de
-        // jour anticipe en présentant « Échanger ce jour » inerte (C32).
-        final custody = repo(
-          (_) => (422, {'detail': 'Impossible de modifier un jour passé'}),
-        );
+    test('422 sur un jour passé → ApiException portant le détail serveur', () async {
+      // L'API refuse une exception rétroactive : c'est ce refus que la fiche de
+      // jour anticipe en présentant « Échanger ce jour » inerte (C32).
+      final custody = repo(
+        (_) => (422, {'detail': 'Impossible de modifier un jour passé'}),
+      );
 
-        await expectLater(
-          custody.createException(
-            'fam-1',
-            startDate: '2020-01-01',
-            endDate: '2020-01-01',
-            parentMembershipId: 'mB',
-          ),
-          throwsA(
-            isA<ApiException>()
-                .having((e) => e.statusCode, 'statusCode', 422)
-                .having(
-                  (e) => e.serverMessage,
-                  'serverMessage',
-                  contains('jour passé'),
-                ),
-          ),
-        );
-      },
-    );
+      await expectLater(
+        custody.createException(
+          'fam-1',
+          startDate: '2020-01-01',
+          endDate: '2020-01-01',
+          parentMembershipId: 'mB',
+        ),
+        throwsA(
+          isA<ApiException>()
+              .having((e) => e.statusCode, 'statusCode', 422)
+              .having(
+                (e) => e.serverMessage,
+                'serverMessage',
+                contains('jour passé'),
+              ),
+        ),
+      );
+    });
 
     test('deleteException appelle bien DELETE', () async {
       final custody = repo((_) => (204, null));

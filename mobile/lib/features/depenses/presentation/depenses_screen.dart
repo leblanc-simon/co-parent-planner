@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart' as api;
@@ -133,9 +133,8 @@ class DepensesScreen extends ConsumerWidget {
                             child: Text(
                               l.expensesEmpty,
                               textAlign: TextAlign.center,
-                              style: _t(
-                                context,
-                              ).bodyMedium?.copyWith(color: AppColors.muted),
+                              style: _t(context).bodyMedium
+                                  ?.copyWith(color: AppColors.muted),
                             ),
                           )
                         else
@@ -301,10 +300,8 @@ class _ExpenseTile extends ConsumerWidget {
                   ),
                   child: Text(
                     expenseCategoryLabel(l, expense.category).characters.first,
-                    style: _t(context).bodyMedium?.copyWith(
-                      color: color,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: _t(context).bodyMedium
+                        ?.copyWith(color: color, fontWeight: FontWeight.w700),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -317,9 +314,8 @@ class _ExpenseTile extends ConsumerWidget {
                       Text(
                         '${l.expensesPaidBy(expense.payerName.isEmpty ? l.expensesDeletedMember : expense.payerName)} · '
                         '${DateLabels.isoDayOfMonth(locale, expense.expenseDate)}',
-                        style: _t(
-                          context,
-                        ).bodySmall?.copyWith(color: AppColors.muted),
+                        style: _t(context).bodySmall
+                            ?.copyWith(color: AppColors.muted),
                       ),
                     ],
                   ),
@@ -477,9 +473,8 @@ class _StatusPill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: _t(
-          context,
-        ).bodySmall?.copyWith(color: color, fontWeight: FontWeight.w700),
+        style: _t(context).bodySmall
+            ?.copyWith(color: color, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -533,9 +528,8 @@ class _CategoryBreakdown extends ConsumerWidget {
                       ),
                       Text(
                         MoneyLabels.cents(locale, line.amountCents),
-                        style: _t(
-                          context,
-                        ).bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                        style: _t(context).bodyMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
@@ -731,9 +725,8 @@ class _ExpenseFormState extends ConsumerState<_ExpenseForm> {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
                   l.expensesNoChild,
-                  style: _t(
-                    context,
-                  ).bodySmall?.copyWith(color: AppColors.muted),
+                  style: _t(context).bodySmall
+                      ?.copyWith(color: AppColors.muted),
                 ),
               )
             else

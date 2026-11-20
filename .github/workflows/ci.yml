@@ -13,7 +13,7 @@ concurrency:
 
 env:
   PHP_VERSION: '8.5'
-  FLUTTER_VERSION: '3.38.9'
+  FLUTTER_VERSION: '3.50.0'
   DB_URL: 'postgresql://app:app@127.0.0.1:5432/app?serverVersion=16&charset=utf8'
   APP_ENCRYPTION_KEY: 'ERA17y4xejfPQrEqVvRDYXRYv8PlWwz6feNlAvXEpNs='
   JWT_PASSPHRASE: 'ci-test-passphrase'
@@ -184,7 +184,7 @@ jobs:
       - name: Régénérer le client + vérifier le drift OpenAPI
         run: |
           dart run swagger_parser
-          dart run build_runner build --delete-conflicting-outputs --force-jit
+          dart run build_runner build --delete-conflicting-outputs
           # `git diff` ne compare que les fichiers SUIVIS : un fichier généré
           # nouvellement émis (nouveau client au premier endpoint d'un lot) n'y
           # apparaissait pas, la porte restait verte et le dépôt se retrouvait avec

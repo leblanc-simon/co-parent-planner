@@ -96,16 +96,12 @@ Future<DeviceDescription> describeThisDevice() async {
 ///   qu'aucun push n'arrive plus.
 class DeviceRegistration {
   DeviceRegistration({
-    required ApiClients clients,
-    required SecureStorage storage,
-    required OutboxService Function() outbox,
-    DeviceDescriber describe = describeThisDevice,
-    Uuid uuid = const Uuid(),
-  }) : _clients = clients,
-       _storage = storage,
-       _outbox = outbox,
-       _describe = describe,
-       _uuid = uuid;
+    required this._clients,
+    required this._storage,
+    required this._outbox,
+    this._describe = describeThisDevice,
+    this._uuid = const Uuid(),
+  });
 
   final ApiClients _clients;
   final SecureStorage _storage;

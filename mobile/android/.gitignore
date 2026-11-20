@@ -12,3 +12,6 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+
+# Rapports Gradle (AGP 9 écrit android/build/reports/)
+/build/

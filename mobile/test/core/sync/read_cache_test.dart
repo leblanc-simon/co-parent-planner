@@ -77,44 +77,38 @@ void main() {
     },
   );
 
-  test(
-    'erreur métier (403) propagée, sans repli cache (l\'offline n\'ouvre aucune porte)',
-    () async {
-      await expectLater(
-        read('A', () async {
-          throw DioException(
+  test('erreur métier (403) propagée, sans repli cache (l\'offline n\'ouvre aucune porte)', () async {
+    await expectLater(
+      read('A', () async {
+        throw DioException(
+          requestOptions: RequestOptions(path: '/x'),
+          response: Response(
             requestOptions: RequestOptions(path: '/x'),
-            response: Response(
-              requestOptions: RequestOptions(path: '/x'),
-              statusCode: 403,
-            ),
-          );
-        }),
-        throwsA(isA<ApiException>()),
-      );
-    },
-  );
+            statusCode: 403,
+          ),
+        );
+      }),
+      throwsA(isA<ApiException>()),
+    );
+  });
 
-  test(
-    'cloisonnement par compte : le cache de u-1 n\'est jamais servi à u-2 (C3/C8)',
-    () async {
-      await read(
-        'A',
-        () async => [
-          {'id': '1'},
-        ],
-      );
-      final r = await read('A', () async => throw network(), userId: 'u-2');
-      expect(
-        r.available,
-        false,
-        reason:
-            "le cloisonnement famille seul laissait le cache d'un compte lisible "
-            'par le compte suivant connecté sur le même appareil',
-      );
-      expect(r.items, isEmpty);
-    },
-  );
+  test('cloisonnement par compte : le cache de u-1 n\'est jamais servi à u-2 (C3/C8)', () async {
+    await read(
+      'A',
+      () async => [
+        {'id': '1'},
+      ],
+    );
+    final r = await read('A', () async => throw network(), userId: 'u-2');
+    expect(
+      r.available,
+      false,
+      reason:
+          "le cloisonnement famille seul laissait le cache d'un compte lisible "
+          'par le compte suivant connecté sur le même appareil',
+    );
+    expect(r.items, isEmpty);
+  });
 
   test('purgeUser efface le cache d\'un seul compte', () async {
     await read(

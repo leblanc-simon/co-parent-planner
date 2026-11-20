@@ -3,7 +3,7 @@ import 'package:coparentplanner/core/error/api_exception.dart';
 import 'package:coparentplanner/core/storage/storage_providers.dart';
 import 'package:coparentplanner/features/settings/data/rgpd_repository.dart';
 import 'package:coparentplanner/features/settings/presentation/privacy_screen.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -54,37 +54,38 @@ void main() {
     expect(find.text('https://eu/export.zip'), findsOneWidget);
   });
 
-  testWidgets('export en attente : l\'identifiant survit à la sortie de l\'écran', (
-    tester,
-  ) async {
-    // L'opération ne vivait que dans l'état du widget : un retour arrière suffisait
-    // à perdre l'identifiant, et l'API n'offrant aucune liste des opérations du
-    // sujet, l'archive et son lien signé devenaient inatteignables (constat C52).
-    when(() => repo.requestExport()).thenAnswer(
-      (_) async => const api.MeExport(id: 'op-1', status: 'pending'),
-    );
-    when(() => repo.exportStatus('op-1')).thenAnswer(
-      (_) async => const api.MeExport(
-        id: 'op-1',
-        status: 'done',
-        downloadUrl: 'https://eu/export.zip',
-      ),
-    );
+  testWidgets(
+    'export en attente : l\'identifiant survit à la sortie de l\'écran',
+    (tester) async {
+      // L'opération ne vivait que dans l'état du widget : un retour arrière suffisait
+      // à perdre l'identifiant, et l'API n'offrant aucune liste des opérations du
+      // sujet, l'archive et son lien signé devenaient inatteignables (constat C52).
+      when(() => repo.requestExport()).thenAnswer(
+        (_) async => const api.MeExport(id: 'op-1', status: 'pending'),
+      );
+      when(() => repo.exportStatus('op-1')).thenAnswer(
+        (_) async => const api.MeExport(
+          id: 'op-1',
+          status: 'done',
+          downloadUrl: 'https://eu/export.zip',
+        ),
+      );
 
-    await pumpScreen(tester, const PrivacyScreen(), overrides: overrides());
-    await tester.tap(find.byKey(const ValueKey('rgpd-export')));
-    await tester.pump();
-    expect(storage.exportOperationId, 'op-1');
+      await pumpScreen(tester, const PrivacyScreen(), overrides: overrides());
+      await tester.tap(find.byKey(const ValueKey('rgpd-export')));
+      await tester.pump();
+      expect(storage.exportOperationId, 'op-1');
 
-    // Sortie de l'écran puis retour : l'identifiant est relu et le statut redemandé.
-    await pumpScreen(tester, const SizedBox(), overrides: overrides());
-    await pumpScreen(tester, const PrivacyScreen(), overrides: overrides());
-    await tester.pumpAndSettle();
+      // Sortie de l'écran puis retour : l'identifiant est relu et le statut redemandé.
+      await pumpScreen(tester, const SizedBox(), overrides: overrides());
+      await pumpScreen(tester, const PrivacyScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
 
-    expect(find.text('https://eu/export.zip'), findsOneWidget);
-    // L'export est livré : plus rien à retrouver au prochain passage.
-    expect(storage.exportOperationId, isNull);
-  });
+      expect(find.text('https://eu/export.zip'), findsOneWidget);
+      // L'export est livré : plus rien à retrouver au prochain passage.
+      expect(storage.exportOperationId, isNull);
+    },
+  );
 
   testWidgets(
     'export en attente : le statut est scruté sans geste de l\'utilisateur',
@@ -117,9 +118,8 @@ void main() {
     tester,
   ) async {
     storage.exportOperationId = 'op-perimee';
-    when(
-      () => repo.exportStatus('op-perimee'),
-    ).thenThrow(ApiException(statusCode: 404));
+    when(() => repo.exportStatus('op-perimee'))
+        .thenThrow(ApiException(statusCode: 404));
 
     await pumpScreen(tester, const PrivacyScreen(), overrides: overrides());
     await tester.pumpAndSettle();

@@ -128,6 +128,7 @@ import 'package:coparentplanner/features/onboarding/presentation/join_family_scr
 import 'package:coparentplanner/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:coparentplanner/features/settings/data/rgpd_repository.dart';
 import 'package:coparentplanner/features/settings/presentation/privacy_screen.dart';
+import 'package:coparentplanner/l10n/localizations_delegates.dart';
 import 'package:coparentplanner/main.dart';
 import 'package:coparentplanner/routing/app_router.dart';
 import 'package:coparentplanner/routing/routes.dart';

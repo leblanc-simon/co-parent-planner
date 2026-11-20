@@ -329,7 +329,7 @@ découpage** plutôt que d'inventer une taxonomie. Noter que 6.3 (écran RGPD/co
 | Composer | 2.10.1 | | API Platform | 4.3.14 |
 | Symfony CLI | 5.17.1 | | lexik/jwt | 3.2.0 |
 | Node / npm | 25.9.0 / 11.12.1 | | Mercure / bundle | 0.7.2 / 0.4.2 |
-| Docker / Compose | 29.5.3 / v5.1.4 | | Flutter / Dart | 3.38.9 / 3.10.8 |
+| Docker / Compose | 29.5.3 / v5.1.4 | | Flutter / Dart | 3.50.1 / 3.14.0 |
 | PostgreSQL (client) | 16.14 | | git | 2.43.0 |
 
 Extensions PHP présentes : pdo_pgsql, pgsql, sodium, openssl, intl, redis, apcu, mbstring, zip.

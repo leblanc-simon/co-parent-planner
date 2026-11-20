@@ -1339,7 +1339,16 @@ class $$OutboxEntriesTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$OutboxEntriesTable, OutboxEntry>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $OutboxEntriesTable,
+                    OutboxEntry
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -1541,7 +1550,16 @@ class $$CacheEntriesTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$CacheEntriesTable, CacheEntry>(table),
+                  BaseReferences<_$AppDatabase, $CacheEntriesTable, CacheEntry>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),

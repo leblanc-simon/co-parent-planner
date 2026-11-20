@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import 'app_colors.dart';
 
@@ -65,7 +65,10 @@ class AppCard extends StatelessWidget {
         ),
         boxShadow: AppShadows.soft,
       ),
-      child: child,
+      // Surface d'encre transparente au-dessus du fond : sans elle, les `ListTile`
+      // de la carte peignent leurs ondulations sur le `Material` ancêtre, sous le
+      // fond blanc, donc invisibles (assertion de material_ui).
+      child: Material(type: MaterialType.transparency, child: child),
     );
   }
 }

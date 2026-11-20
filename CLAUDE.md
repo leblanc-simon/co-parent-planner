@@ -81,7 +81,9 @@ symfony console --env=test doctrine:migrations:migrate -n
 cd infra && docker compose up --build              # app: http://localhost:8000
 ```
 
-App mobile Flutter dans `/mobile` (Dart 3.10 / Flutter 3.38.9). Le client HTTP est **généré
+App mobile Flutter dans `/mobile` (Dart 3.14 / Flutter 3.50). Material et Cupertino viennent
+des paquets `material_ui` / `cupertino_ui` (`package:flutter/material.dart` est déprécié) ; les
+délégués de localisation passent par `appLocalizationsDelegates`, pas `AppL10n.localizationsDelegates`. Le client HTTP est **généré
 depuis l'OpenAPI** par `swagger_parser` (pur Dart, **aucune JVM/openapi-generator**) → clients
 retrofit/dio + modèles json_serializable dans `lib/api/generated/` (**commité, jamais édité à la main**).
 
@@ -89,9 +91,7 @@ retrofit/dio + modèles json_serializable dans `lib/api/generated/` (**commité,
 cd mobile && flutter pub get
 # Régénérer le client après un export OpenAPI backend (idempotent ; drift = CI rouge) :
 dart run swagger_parser
-dart run build_runner build --delete-conflicting-outputs --force-jit   # --force-jit IMPÉRATIF
-#   ^ des deps natives (sqlite3, path_provider_foundation) ont un hook/build.dart qui casse
-#     l'AOT du script build_runner sous Dart 3.10 ; le mode JIT le contourne.
+dart run build_runner build --delete-conflicting-outputs
 flutter gen-l10n                                       # ARB -> AppL10n (i18n)
 dart analyze                                           # 0 issue (exclut lib/api/generated)
 flutter test --coverage                                # tests ; couverture ≥ 70% (D8), 84,3% actuel

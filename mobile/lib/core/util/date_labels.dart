@@ -12,7 +12,7 @@ import 'civil_date.dart';
 /// changement de code »).
 ///
 /// Les symboles de date sont chargés par `GlobalMaterialLocalizations`, présent dans
-/// `AppL10n.localizationsDelegates` : ces fonctions attendent donc d'être appelées
+/// `appLocalizationsDelegates` : ces fonctions attendent donc d'être appelées
 /// sous un `MaterialApp` localisé (c'est le cas de tout écran, et du harnais de test).
 abstract final class DateLabels {
   /// « juillet 2026 » — titre du calendrier.

@@ -31,7 +31,7 @@ permissions:
   contents: read
 
 env:
-  FLUTTER_VERSION: '3.38.9'   # figé, identique au job mobile du Lot 0 (.github/workflows/ci.yml)
+  FLUTTER_VERSION: '3.50.0'   # figé, identique au job mobile du Lot 0 (.github/workflows/ci.yml)
 
 jobs:
   # Porte de non-régression (§3.4) : pas de build iOS signé si les tests Flutter échouent.
@@ -52,7 +52,7 @@ jobs:
       - name: Régénérer le client + vérifier le drift OpenAPI
         run: |
           dart run swagger_parser
-          dart run build_runner build --delete-conflicting-outputs --force-jit
+          dart run build_runner build --delete-conflicting-outputs
           git diff --exit-code lib/api/generated \
             || { echo "::error::Client Dart désaligné de l'OpenAPI — régénérez et committez."; exit 1; }
       - name: Analyse statique
@@ -117,7 +117,7 @@ jobs:
       - name: Régénérer le client + vérifier le drift OpenAPI
         run: |
           dart run swagger_parser
-          dart run build_runner build --delete-conflicting-outputs --force-jit
+          dart run build_runner build --delete-conflicting-outputs
           git diff --exit-code lib/api/generated \
             || { echo "::error::Client Dart désaligné de l'OpenAPI — régénérez et committez."; exit 1; }
 

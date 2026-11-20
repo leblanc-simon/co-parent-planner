@@ -56,18 +56,15 @@ void main() {
     () => registration.register(userId: 'u-1', token: token, locale: 'fr-FR'),
   ).called(1);
 
-  test(
-    'permission accordée : l\'appareil est enregistré à l\'ouverture de session',
-    () async {
-      gateway.current = PushPermission.granted;
+  test('permission accordée : l\'appareil est enregistré à l\'ouverture de session', () async {
+    gateway.current = PushPermission.granted;
 
-      await start(userId: 'u-1');
+    await start(userId: 'u-1');
 
-      verifyRegistered('jeton-initial');
-      expect(container.read(pushControllerProvider).registered, isTrue);
-      expect(gateway.requests, 0);
-    },
-  );
+    verifyRegistered('jeton-initial');
+    expect(container.read(pushControllerProvider).registered, isTrue);
+    expect(gateway.requests, 0);
+  });
 
   test(
     'connexion après démarrage : enregistré dès que la session existe',
@@ -130,9 +127,8 @@ void main() {
     () async {
       gateway.current = PushPermission.granted;
       final controller = await start(userId: 'u-1');
-      when(
-        () => registration.current('u-1'),
-      ).thenAnswer((_) async => registered);
+      when(() => registration.current('u-1'))
+          .thenAnswer((_) async => registered);
 
       gateway.current = PushPermission.denied;
       await controller.refresh();

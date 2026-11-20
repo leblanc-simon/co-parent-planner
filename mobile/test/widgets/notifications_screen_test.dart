@@ -8,7 +8,7 @@ import 'package:coparentplanner/features/members/data/members_repository.dart';
 import 'package:coparentplanner/features/notifications/data/notification_prefs_repository.dart';
 import 'package:coparentplanner/features/notifications/presentation/notifications_screen.dart';
 import 'package:coparentplanner/core/widgets/error_banner.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';

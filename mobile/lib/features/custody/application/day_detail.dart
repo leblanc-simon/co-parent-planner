@@ -176,101 +176,102 @@ const _handoverLookaheadDays = 45;
 /// l'écran : seule la recherche de la transmission peut demander un aller-retour
 /// supplémentaire, et uniquement lorsque le mois affiché ne contient plus aucun
 /// changement d'attributaire après ce jour (typiquement en fin de mois).
-final custodyDayDetailProvider = FutureProvider.family<CustodyDayDetail, String>((
-  ref,
-  dateKey,
-) async {
-  final family = ref.watch(familyContextProvider);
-  final pattern = ref.watch(familyCustodyPatternProvider).valueOrNull;
-  final days = ref.watch(familyCustodyDaysProvider).valueOrNull ?? const [];
-  final exceptions =
-      ref.watch(familyCustodyExceptionsProvider).valueOrNull ?? const [];
-  final holidays = ref.watch(familyHolidaysProvider).valueOrNull ?? const [];
+final custodyDayDetailProvider =
+    FutureProvider.family<CustodyDayDetail, String>((ref, dateKey) async {
+      final family = ref.watch(familyContextProvider);
+      final pattern = ref.watch(familyCustodyPatternProvider).valueOrNull;
+      final days = ref.watch(familyCustodyDaysProvider).valueOrNull ?? const [];
+      final exceptions =
+          ref.watch(familyCustodyExceptionsProvider).valueOrNull ?? const [];
+      final holidays =
+          ref.watch(familyHolidaysProvider).valueOrNull ?? const [];
 
-  // La veille est chargée avec le mois (`custodyDaysWindow`) : elle porte le parent qui rend
-  // les enfants, sans lequel un jour d'échange ne peut pas être décrit.
-  final asDate = CivilDate.of(dateKey);
-  final previousKey = asDate == null
-      ? null
-      : CivilDate.format(DateTime(asDate.year, asDate.month, asDate.day - 1));
-  api.CustodyDay? day;
-  api.CustodyDay? previousDay;
-  for (final d in days) {
-    if (d.date == dateKey) day = d;
-    if (d.date == previousKey) previousDay = d;
-  }
-  final parentId = day?.parentMembershipId;
-  // La veille sert au créneau proposé par « Échanger ce jour » : c'est elle qui décide si
-  // l'échange prolonge une garde en cours ou commence le matin même (cdc §3.4).
-  final previousParentId = previousDay?.parentMembershipId;
-
-  // Le parent « courant » est celui qui termine la journée : c'est de chez lui que les enfants
-  // repartiront, même si le jour est compté à l'autre.
-  final segments = DaySegments.of(day).segments;
-  final lastParentId = segments.isEmpty ? parentId : segments.last.parentId;
-  var handover = nextHandover(days, dateKey, lastParentId);
-  if (handover == null && lastParentId != null && family != null) {
-    final from = CivilDate.of(dateKey);
-    if (from != null) {
-      try {
-        final ahead = await ref
-            .watch(custodyRepositoryProvider)
-            .listDays(
-              family.familyId,
-              from: DateTime(from.year, from.month, from.day + 1),
-              to: DateTime(
-                from.year,
-                from.month,
-                from.day + _handoverLookaheadDays,
-              ),
+      // La veille est chargée avec le mois (`custodyDaysWindow`) : elle porte le parent qui rend
+      // les enfants, sans lequel un jour d'échange ne peut pas être décrit.
+      final asDate = CivilDate.of(dateKey);
+      final previousKey = asDate == null
+          ? null
+          : CivilDate.format(
+              DateTime(asDate.year, asDate.month, asDate.day - 1),
             );
-        handover = nextHandover(ahead, dateKey, lastParentId);
-      } catch (_) {
-        // Hors-ligne ou refus : la fiche reste utile sans la transmission,
-        // qui est alors omise (comme en bout d'horizon glissant).
+      api.CustodyDay? day;
+      api.CustodyDay? previousDay;
+      for (final d in days) {
+        if (d.date == dateKey) day = d;
+        if (d.date == previousKey) previousDay = d;
       }
-    }
-  }
+      final parentId = day?.parentMembershipId;
+      // La veille sert au créneau proposé par « Échanger ce jour » : c'est elle qui décide si
+      // l'échange prolonge une garde en cours ou commence le matin même (cdc §3.4).
+      final previousParentId = previousDay?.parentMembershipId;
 
-  final today = ref.watch(todayProvider);
-  final isPast = dateKey.compareTo(CivilDate.format(today)) < 0;
-  // Cible de l'échange : l'autre parent du rythme. Sans rythme complet, rien à proposer.
-  final swapTargetId = pattern == null || parentId == null
-      ? null
-      : (parentId == pattern.parentAMembershipId
-            ? pattern.parentBMembershipId
-            : pattern.parentAMembershipId);
+      // Le parent « courant » est celui qui termine la journée : c'est de chez lui que les enfants
+      // repartiront, même si le jour est compté à l'autre.
+      final segments = DaySegments.of(day).segments;
+      final lastParentId = segments.isEmpty ? parentId : segments.last.parentId;
+      var handover = nextHandover(days, dateKey, lastParentId);
+      if (handover == null && lastParentId != null && family != null) {
+        final from = CivilDate.of(dateKey);
+        if (from != null) {
+          try {
+            final ahead = await ref
+                .watch(custodyRepositoryProvider)
+                .listDays(
+                  family.familyId,
+                  from: DateTime(from.year, from.month, from.day + 1),
+                  to: DateTime(
+                    from.year,
+                    from.month,
+                    from.day + _handoverLookaheadDays,
+                  ),
+                );
+            handover = nextHandover(ahead, dateKey, lastParentId);
+          } catch (_) {
+            // Hors-ligne ou refus : la fiche reste utile sans la transmission,
+            // qui est alors omise (comme en bout d'horizon glissant).
+          }
+        }
+      }
 
-  return CustodyDayDetail(
-    date: dateKey,
-    day: day,
-    slot: slotOf(parentId, pattern),
-    segments: segments,
-    exception: periodCovering(
-      exceptions,
-      dateKey,
-      start: (e) => e.startDate,
-      end: (e) => e.endDate,
-    ),
-    holiday: periodCovering(
-      holidays,
-      dateKey,
-      start: (h) => h.startDate,
-      end: (h) => h.endDate,
-    ),
-    handoverDate: handover?.day.date,
-    handoverSlot: slotOf(handover?.segment.parentId, pattern),
-    handoverTime: handover?.segment.fromTime,
-    isPast: isPast,
-    swapTargetId: swapTargetId,
-    swapDefaults: swapTargetId == null || isPast
-        ? null
-        : SwapDefaults.forDay(
-            dateKey: dateKey,
-            previousParentId: previousParentId,
-            targetParentId: swapTargetId,
-            handoverTime: pattern?.handoverTime ?? '19:00',
-            dayStartTime: pattern?.dayStartTime ?? '08:00',
-          ),
-  );
-});
+      final today = ref.watch(todayProvider);
+      final isPast = dateKey.compareTo(CivilDate.format(today)) < 0;
+      // Cible de l'échange : l'autre parent du rythme. Sans rythme complet, rien à proposer.
+      final swapTargetId = pattern == null || parentId == null
+          ? null
+          : (parentId == pattern.parentAMembershipId
+                ? pattern.parentBMembershipId
+                : pattern.parentAMembershipId);
+
+      return CustodyDayDetail(
+        date: dateKey,
+        day: day,
+        slot: slotOf(parentId, pattern),
+        segments: segments,
+        exception: periodCovering(
+          exceptions,
+          dateKey,
+          start: (e) => e.startDate,
+          end: (e) => e.endDate,
+        ),
+        holiday: periodCovering(
+          holidays,
+          dateKey,
+          start: (h) => h.startDate,
+          end: (h) => h.endDate,
+        ),
+        handoverDate: handover?.day.date,
+        handoverSlot: slotOf(handover?.segment.parentId, pattern),
+        handoverTime: handover?.segment.fromTime,
+        isPast: isPast,
+        swapTargetId: swapTargetId,
+        swapDefaults: swapTargetId == null || isPast
+            ? null
+            : SwapDefaults.forDay(
+                dateKey: dateKey,
+                previousParentId: previousParentId,
+                targetParentId: swapTargetId,
+                handoverTime: pattern?.handoverTime ?? '19:00',
+                dayStartTime: pattern?.dayStartTime ?? '08:00',
+              ),
+      );
+    });

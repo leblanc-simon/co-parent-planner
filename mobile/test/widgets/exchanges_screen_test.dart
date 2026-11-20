@@ -9,7 +9,7 @@ import 'package:coparentplanner/features/exchanges/presentation/exchange_detail_
 import 'package:coparentplanner/features/exchanges/presentation/exchanges_screen.dart';
 import 'package:coparentplanner/features/family/application/family_context.dart';
 import 'package:coparentplanner/features/members/data/members_repository.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -36,12 +36,10 @@ void main() {
     childrenRepo = MockChildrenRepository();
     membersRepo = MockMembersRepository();
     // Le fil distingue ses propres messages (X3) : sans membres, personne n'est « soi ».
-    when(
-      () => membersRepo.listMembers('fam-1'),
-    ).thenAnswer((_) async => const []);
-    when(
-      () => childrenRepo.listChildren('u-test', 'fam-1'),
-    ).thenAnswer((_) async => const []);
+    when(() => membersRepo.listMembers('fam-1'))
+        .thenAnswer((_) async => const []);
+    when(() => childrenRepo.listChildren('u-test', 'fam-1'))
+        .thenAnswer((_) async => const []);
     // Ouvrir un détail marque le fil lu (X5) : le stub par défaut évite d'imposer
     // ce détail à tous les tests qui n'en parlent pas.
     when(() => repo.markRead(any())).thenAnswer((_) async {});
@@ -188,9 +186,8 @@ void main() {
         ],
       ),
     );
-    when(
-      () => repo.decide('x2', 'o1'),
-    ).thenAnswer((_) async => const api.Exchange(id: 'x2', status: 'open'));
+    when(() => repo.decide('x2', 'o1'))
+        .thenAnswer((_) async => const api.Exchange(id: 'x2', status: 'open'));
 
     await pumpScreen(
       tester,
@@ -247,9 +244,8 @@ void main() {
     ) async {
       when(() => repo.detail('x3')).thenAnswer((_) async => discussion);
       final closed = Completer<api.Exchange>();
-      when(
-        () => repo.patch('x3', status: 'decided'),
-      ).thenAnswer((_) => closed.future);
+      when(() => repo.patch('x3', status: 'decided'))
+          .thenAnswer((_) => closed.future);
 
       await pumpScreen(
         tester,
@@ -311,62 +307,63 @@ void main() {
       verify(() => repo.decide('x4', 'o1')).called(1);
     });
 
-    testWidgets('écran quitté pendant l\'envoi : ni exception, ni cache périmé', (
-      tester,
-    ) async {
-      // `ref.invalidate` d'un `ConsumerState` démonté lève un `StateError` en
-      // release aussi : le message était enregistré côté serveur mais le fil
-      // rouvert ne le montrait pas, faute d'invalidation (constat C23).
-      when(() => repo.detail('x3')).thenAnswer((_) async => discussion);
-      final sent = Completer<api.Message>();
-      when(
-        () => repo.postMessage('x3', 'On part quand ?'),
-      ).thenAnswer((_) => sent.future);
+    testWidgets(
+      'écran quitté pendant l\'envoi : ni exception, ni cache périmé',
+      (tester) async {
+        // `ref.invalidate` d'un `ConsumerState` démonté lève un `StateError` en
+        // release aussi : le message était enregistré côté serveur mais le fil
+        // rouvert ne le montrait pas, faute d'invalidation (constat C23).
+        when(() => repo.detail('x3')).thenAnswer((_) async => discussion);
+        final sent = Completer<api.Message>();
+        when(() => repo.postMessage('x3', 'On part quand ?'))
+            .thenAnswer((_) => sent.future);
 
-      late BuildContext pageContext;
-      await pumpScreen(
-        tester,
-        Builder(
-          builder: (context) {
-            pageContext = context;
-            return TextButton(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const ExchangeDetailScreen(exchangeId: 'x3'),
+        late BuildContext pageContext;
+        await pumpScreen(
+          tester,
+          Builder(
+            builder: (context) {
+              pageContext = context;
+              return TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) =>
+                        const ExchangeDetailScreen(exchangeId: 'x3'),
+                  ),
                 ),
-              ),
-              child: const Text('ouvrir'),
-            );
-          },
-        ),
-        overrides: overrides(),
-      );
-      await tester.tap(find.text('ouvrir'));
-      await tester.pumpAndSettle();
+                child: const Text('ouvrir'),
+              );
+            },
+          ),
+          overrides: overrides(),
+        );
+        await tester.tap(find.text('ouvrir'));
+        await tester.pumpAndSettle();
 
-      await tester.enterText(
-        find.byKey(const ValueKey('exchange-message-field')),
-        'On part quand ?',
-      );
-      await tester.tap(find.byKey(const ValueKey('exchange-send')));
-      await tester.pump();
+        await tester.enterText(
+          find.byKey(const ValueKey('exchange-message-field')),
+          'On part quand ?',
+        );
+        await tester.tap(find.byKey(const ValueKey('exchange-send')));
+        await tester.pump();
 
-      // Retour arrière avant la réponse du serveur, puis réponse.
-      Navigator.of(pageContext).pop();
-      await tester.pumpAndSettle();
-      sent.complete(const api.Message(id: 'm1', text: 'On part quand ?'));
-      await tester.pumpAndSettle();
+        // Retour arrière avant la réponse du serveur, puis réponse.
+        Navigator.of(pageContext).pop();
+        await tester.pumpAndSettle();
+        sent.complete(const api.Message(id: 'm1', text: 'On part quand ?'));
+        await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
+        expect(tester.takeException(), isNull);
 
-      // Réouverture : le détail est redemandé au serveur. Sans invalidation, le
-      // provider (non `autoDispose`) aurait resservi son cache d'avant l'envoi —
-      // le fil s'y rouvrait sans le message pourtant enregistré.
-      await tester.tap(find.text('ouvrir'));
-      await tester.pumpAndSettle();
+        // Réouverture : le détail est redemandé au serveur. Sans invalidation, le
+        // provider (non `autoDispose`) aurait resservi son cache d'avant l'envoi —
+        // le fil s'y rouvrait sans le message pourtant enregistré.
+        await tester.tap(find.text('ouvrir'));
+        await tester.pumpAndSettle();
 
-      verify(() => repo.detail('x3')).called(2);
-    });
+        verify(() => repo.detail('x3')).called(2);
+      },
+    );
   });
 
   group('écriture des échanges — Lot 6 sans filet jusqu\'ici (C71)', () {
@@ -448,9 +445,8 @@ void main() {
     });
 
     testWidgets('création d\'une discussion : titre transmis', (tester) async {
-      when(
-        () => repo.list('u-test', 'fam-1'),
-      ).thenAnswer((_) async => const []);
+      when(() => repo.list('u-test', 'fam-1'))
+          .thenAnswer((_) async => const []);
       when(
         () => repo.create(
           any(),
@@ -491,9 +487,8 @@ void main() {
     testWidgets(
       'décision : deux options requises, puis transmises dans l\'ordre',
       (tester) async {
-        when(
-          () => repo.list('u-test', 'fam-1'),
-        ).thenAnswer((_) async => const []);
+        when(() => repo.list('u-test', 'fam-1'))
+            .thenAnswer((_) async => const []);
         when(
           () => repo.create(
             any(),
@@ -645,9 +640,8 @@ void main() {
     testWidgets(
       'quand le vote peut trancher, l\'écran le dit et demande confirmation',
       (tester) async {
-        when(
-          () => repo.decide('x5', 'o1'),
-        ).thenAnswer((_) async => decision(status: 'decided'));
+        when(() => repo.decide('x5', 'o1'))
+            .thenAnswer((_) async => decision(status: 'decided'));
         await open(tester, decision(maySettle: true));
 
         expect(find.byKey(const ValueKey('exchange-status')), findsOneWidget);
@@ -674,9 +668,8 @@ void main() {
     testWidgets('un vote modifiable ne demande aucune confirmation', (
       tester,
     ) async {
-      when(
-        () => repo.decide('x5', 'o2'),
-      ).thenAnswer((_) async => decision(myVotedOptionId: 'o2'));
+      when(() => repo.decide('x5', 'o2'))
+          .thenAnswer((_) async => decision(myVotedOptionId: 'o2'));
       await open(tester, decision(awaiting: ['Marc']));
 
       await tester.tap(find.byKey(const ValueKey('exchange-option-o2')));
@@ -693,9 +686,8 @@ void main() {
     ) async {
       // Le serveur l'acceptait depuis toujours ; aucun écran ne l'offrait, et une décision non
       // votée restait ouverte — et « en retard » — indéfiniment.
-      when(
-        () => repo.patch('x5', decidedOptionId: 'o1'),
-      ).thenAnswer((_) async => decision(status: 'decided'));
+      when(() => repo.patch('x5', decidedOptionId: 'o1'))
+          .thenAnswer((_) async => decision(status: 'decided'));
       await open(tester, decision());
 
       await tester.tap(find.byKey(const ValueKey('exchange-option-o1')));
@@ -803,35 +795,39 @@ void main() {
       },
     );
 
-    testWidgets('la carte nomme l\'enfant concerné, même sans liste d\'enfants', (
-      tester,
-    ) async {
-      // Le prénom était résolu depuis la liste des enfants, pas toujours chargée : un échange
-      // concernant Léa s'annonçait alors « Toute la famille » (X4).
-      when(() => repo.list('u-test', 'fam-1')).thenAnswer(
-        (_) async => const [
-          api.Exchange(
-            id: 'x7',
-            type: 'discussion',
-            title: 'Inscription piscine',
-            status: 'open',
-            childId: 'c1',
-            childName: 'Léa',
-            authorName: 'Marc Durand',
-          ),
-        ],
-      );
-      when(
-        () => childrenRepo.listChildren('u-test', 'fam-1'),
-      ).thenThrow(ApiException(statusCode: 403));
+    testWidgets(
+      'la carte nomme l\'enfant concerné, même sans liste d\'enfants',
+      (tester) async {
+        // Le prénom était résolu depuis la liste des enfants, pas toujours chargée : un échange
+        // concernant Léa s'annonçait alors « Toute la famille » (X4).
+        when(() => repo.list('u-test', 'fam-1')).thenAnswer(
+          (_) async => const [
+            api.Exchange(
+              id: 'x7',
+              type: 'discussion',
+              title: 'Inscription piscine',
+              status: 'open',
+              childId: 'c1',
+              childName: 'Léa',
+              authorName: 'Marc Durand',
+            ),
+          ],
+        );
+        when(() => childrenRepo.listChildren('u-test', 'fam-1'))
+            .thenThrow(ApiException(statusCode: 403));
 
-      await pumpScreen(tester, const ExchangesScreen(), overrides: overrides());
-      await tester.pumpAndSettle();
+        await pumpScreen(
+          tester,
+          const ExchangesScreen(),
+          overrides: overrides(),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Léa'), findsOneWidget);
-      expect(find.text('Toute la famille'), findsNothing);
-      expect(find.text('Marc Durand'), findsOneWidget);
-    });
+        expect(find.text('Léa'), findsOneWidget);
+        expect(find.text('Toute la famille'), findsNothing);
+        expect(find.text('Marc Durand'), findsOneWidget);
+      },
+    );
   });
 
   group('non-lus (X5)', () {
@@ -979,9 +975,8 @@ void main() {
     ) async {
       // Type, titre, message, enfant, échéance et deux options d'un bloc : à froid, la friction
       // était réelle pour l'action la plus fréquente — poser une question simple (point 8).
-      when(
-        () => repo.list('u-test', 'fam-1'),
-      ).thenAnswer((_) async => const []);
+      when(() => repo.list('u-test', 'fam-1'))
+          .thenAnswer((_) async => const []);
 
       await pumpScreen(tester, const ExchangesScreen(), overrides: overrides());
       await tester.pumpAndSettle();
@@ -1000,9 +995,8 @@ void main() {
       tester,
     ) async {
       // Une décision a presque toujours une échéance : la lui faire chercher serait absurde.
-      when(
-        () => repo.list('u-test', 'fam-1'),
-      ).thenAnswer((_) async => const []);
+      when(() => repo.list('u-test', 'fam-1'))
+          .thenAnswer((_) async => const []);
 
       await pumpScreen(tester, const ExchangesScreen(), overrides: overrides());
       await tester.pumpAndSettle();

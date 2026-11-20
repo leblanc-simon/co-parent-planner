@@ -20,9 +20,8 @@ void main() {
         File('ios/Runner/Runner.entitlements').readAsStringSync(),
         contains('<key>aps-environment</key>'),
       );
-      final project = File(
-        'ios/Runner.xcodeproj/project.pbxproj',
-      ).readAsStringSync();
+      final project = File('ios/Runner.xcodeproj/project.pbxproj')
+          .readAsStringSync();
       expect(
         'CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;'
             .allMatches(project)
@@ -33,9 +32,8 @@ void main() {
     });
 
     test('cible iOS 15 : le minimum de firebase_messaging', () {
-      final project = File(
-        'ios/Runner.xcodeproj/project.pbxproj',
-      ).readAsStringSync();
+      final project = File('ios/Runner.xcodeproj/project.pbxproj')
+          .readAsStringSync();
       expect(project, isNot(contains('IPHONEOS_DEPLOYMENT_TARGET = 13.0;')));
       expect(project, contains('IPHONEOS_DEPLOYMENT_TARGET = 15.0;'));
     });
@@ -56,9 +54,8 @@ void main() {
 
   group('Android', () {
     test('icône de notification monochrome déclarée et présente', () {
-      final manifest = File(
-        'android/app/src/main/AndroidManifest.xml',
-      ).readAsStringSync();
+      final manifest = File('android/app/src/main/AndroidManifest.xml')
+          .readAsStringSync();
       expect(
         manifest,
         contains('com.google.firebase.messaging.default_notification_icon'),

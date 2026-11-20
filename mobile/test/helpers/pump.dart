@@ -1,6 +1,7 @@
 import 'package:coparentplanner/core/theme/app_theme.dart';
 import 'package:coparentplanner/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:coparentplanner/l10n/localizations_delegates.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -30,7 +31,7 @@ Future<void> pumpScreen(
         // un bouton pose nu dans une `Row` fait alors echouer tout le layout,
         // ecran blanc a l'appui, sans qu'aucun test ne bronche.
         theme: AppTheme.light(),
-        localizationsDelegates: AppL10n.localizationsDelegates,
+        localizationsDelegates: appLocalizationsDelegates,
         supportedLocales: AppL10n.supportedLocales,
         locale: const Locale('fr', 'FR'),
         home: child,

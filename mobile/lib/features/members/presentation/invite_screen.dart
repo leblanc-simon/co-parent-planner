@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/generated/export.dart' as api;
@@ -67,9 +67,8 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
                 : _rights,
           );
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l.membersInvited)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(l.membersInvited)));
         Navigator.of(context).pop();
       }
     } on ApiException catch (e) {

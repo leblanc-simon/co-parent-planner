@@ -8,12 +8,11 @@ import 'package:dio/dio.dart';
 /// (donc rejouable sans doublon, §3.11). Les GET sont toujours rejouables.
 class RetryInterceptor extends Interceptor {
   RetryInterceptor({
-    required Dio dio,
+    required this._dio,
     this.maxRetries = 3,
     this.baseDelay = const Duration(milliseconds: 300),
     Future<void> Function(Duration)? delay,
-  }) : _dio = dio,
-       _delay = delay ?? Future<void>.delayed;
+  }) : _delay = delay ?? Future<void>.delayed;
 
   final Dio _dio;
   final int maxRetries;

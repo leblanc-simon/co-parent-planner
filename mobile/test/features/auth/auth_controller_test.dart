@@ -260,24 +260,21 @@ void main() {
       );
     });
 
-    test(
-      'forceLogout (session expirée) ne purge PAS : le travail hors-ligne survit',
-      () async {
-        await authenticate();
-        await seedOutbox('u1');
-        when(() => repo.clearTokens()).thenAnswer((_) async {});
+    test('forceLogout (session expirée) ne purge PAS : le travail hors-ligne survit', () async {
+      await authenticate();
+      await seedOutbox('u1');
+      when(() => repo.clearTokens()).thenAnswer((_) async {});
 
-        await ctrl().forceLogout();
+      await ctrl().forceLogout();
 
-        expect(
-          await db.outboxDao.pendingEntries('u1'),
-          hasLength(1),
-          reason:
-              'les données appartiennent toujours au même compte et seront '
-              'rejouées à la reconnexion',
-        );
-      },
-    );
+      expect(
+        await db.outboxDao.pendingEntries('u1'),
+        hasLength(1),
+        reason:
+            'les données appartiennent toujours au même compte et seront '
+            'rejouées à la reconnexion',
+      );
+    });
 
     test('resetPassword purge les jetons locaux (C5)', () async {
       when(
@@ -340,9 +337,8 @@ void main() {
     );
 
     test('échec réseau -> la connexion aboutit quand même', () async {
-      when(
-        () => families.listMyFamilies(),
-      ).thenThrow(ApiException(statusCode: null));
+      when(() => families.listMyFamilies())
+          .thenThrow(ApiException(statusCode: null));
 
       await ctrl().login(email: 'a@b.fr', password: 'x');
 

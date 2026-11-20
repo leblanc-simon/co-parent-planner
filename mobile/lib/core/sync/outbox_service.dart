@@ -29,12 +29,10 @@ import 'outbox_status.dart';
 /// - les entrées `synced` sont purgées après chaque flush (C16/C65).
 class OutboxService {
   OutboxService({
-    required OutboxDao dao,
-    required Dio dio,
-    Uuid uuid = const Uuid(),
-  }) : _dao = dao,
-       _dio = dio,
-       _uuid = uuid;
+    required this._dao,
+    required this._dio,
+    this._uuid = const Uuid(),
+  });
 
   final OutboxDao _dao;
   final Dio _dio;

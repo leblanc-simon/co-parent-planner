@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -25,9 +25,8 @@ import '../data/notification_prefs_repository.dart';
 final openNotificationSettingsProvider = Provider<Future<void> Function()>(
   (ref) => () async {
     try {
-      await const MethodChannel(
-        'coparentplanner/system_settings',
-      ).invokeMethod<void>('openNotificationSettings');
+      await const MethodChannel('coparentplanner/system_settings')
+          .invokeMethod<void>('openNotificationSettings');
     } on PlatformException catch (_) {
       // Plateforme sans réglage atteignable : le texte explicatif reste affiché.
     } on MissingPluginException catch (_) {}
@@ -177,9 +176,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       }
     });
     if (saved) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(l.notificationsQuietSaved)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l.notificationsQuietSaved)));
     }
   }
 

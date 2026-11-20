@@ -7,7 +7,7 @@ import 'package:coparentplanner/features/depenses/data/expense_repository.dart';
 import 'package:coparentplanner/features/depenses/presentation/depenses_screen.dart';
 import 'package:coparentplanner/features/family/application/family_context.dart';
 import 'package:coparentplanner/features/members/data/members_repository.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -82,12 +82,10 @@ void main() {
     repo = MockExpenseRepository();
     membersRepo = MockMembersRepository();
     childrenRepo = MockChildrenRepository();
-    when(
-      () => membersRepo.listMembers('fam-1'),
-    ).thenAnswer((_) async => const [_alice, _bob]);
-    when(
-      () => childrenRepo.listChildren('u-test', 'fam-1'),
-    ).thenAnswer((_) async => const []);
+    when(() => membersRepo.listMembers('fam-1'))
+        .thenAnswer((_) async => const [_alice, _bob]);
+    when(() => childrenRepo.listChildren('u-test', 'fam-1'))
+        .thenAnswer((_) async => const []);
   });
 
   void stubExpenses(List<api.Expense> expenses, {bool available = true}) {
@@ -172,9 +170,8 @@ void main() {
   testWidgets('marquer réglée appelle le dépôt et rafraîchit', (tester) async {
     stubExpenses([expense()]);
     stubBalance(_balanceOwed);
-    when(
-      () => repo.settle('e-1'),
-    ).thenAnswer((_) async => expense(settled: true));
+    when(() => repo.settle('e-1'))
+        .thenAnswer((_) async => expense(settled: true));
 
     await pumpScreen(tester, const DepensesScreen(), overrides: overrides());
     await tester.pumpAndSettle();

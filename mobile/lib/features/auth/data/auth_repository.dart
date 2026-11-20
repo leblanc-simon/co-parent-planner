@@ -7,6 +7,7 @@ import '../../../core/network/api_clients.dart';
 import '../../../core/storage/secure_storage.dart';
 import '../../../core/storage/storage_providers.dart';
 import '../application/auth_state.dart';
+
 import 'dart:convert';
 
 /// Acces aux endpoints d'auth/compte. Enveloppe les clients generes, traduit les

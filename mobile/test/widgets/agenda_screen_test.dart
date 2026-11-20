@@ -7,7 +7,7 @@ import 'package:coparentplanner/features/agenda/presentation/agenda_screen.dart'
 import 'package:coparentplanner/features/children/data/children_repository.dart';
 import 'package:coparentplanner/features/family/application/family_context.dart';
 import 'package:coparentplanner/features/members/data/members_repository.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -79,12 +79,10 @@ void main() {
     tester,
   ) async {
     // Les tuiles résolvent au mieux enfant/responsable via ces providers.
-    when(
-      () => membersRepo.listMembers('fam-1'),
-    ).thenAnswer((_) async => const []);
-    when(
-      () => childrenRepo.listChildren('u-test', 'fam-1'),
-    ).thenAnswer((_) async => const []);
+    when(() => membersRepo.listMembers('fam-1'))
+        .thenAnswer((_) async => const []);
+    when(() => childrenRepo.listChildren('u-test', 'fam-1'))
+        .thenAnswer((_) async => const []);
     stubEvents(repo, const [
       api.Event(
         id: 'e1',
@@ -121,9 +119,8 @@ void main() {
         api.Member(id: 'mC', role: 'child', fullName: 'Léa'),
       ],
     );
-    when(
-      () => childrenRepo.listChildren('u-test', 'fam-1'),
-    ).thenAnswer((_) async => const []);
+    when(() => childrenRepo.listChildren('u-test', 'fam-1'))
+        .thenAnswer((_) async => const []);
     when(
       () => repo.createEvent(
         any(),
@@ -172,42 +169,45 @@ void main() {
     ).called(1);
   });
 
-  testWidgets('E2 — le sélecteur de responsable situe le beau-parent dans son foyer', (
-    tester,
-  ) async {
-    stubEvents(repo, const []);
-    when(() => membersRepo.listMembers('fam-1')).thenAnswer(
-      (_) async => const [
-        api.Member(id: 'mA', role: 'parent', fullName: 'Sophie Durand'),
-        api.Member(
-          id: 'mS',
-          role: 'step_parent',
-          fullName: 'Bob Martin',
-          partnerMembershipId: 'mA',
-          // L'API sert `partnerName` des DEUX côtés ; c'est le RÔLE qui décide de la
-          // mention, sans quoi « Sophie · conjointe de Bob » inverserait le foyer.
-          partnerName: 'Sophie Durand',
-        ),
-      ],
-    );
-    when(
-      () => childrenRepo.listChildren('u-test', 'fam-1'),
-    ).thenAnswer((_) async => const []);
+  testWidgets(
+    'E2 — le sélecteur de responsable situe le beau-parent dans son foyer',
+    (tester) async {
+      stubEvents(repo, const []);
+      when(() => membersRepo.listMembers('fam-1')).thenAnswer(
+        (_) async => const [
+          api.Member(id: 'mA', role: 'parent', fullName: 'Sophie Durand'),
+          api.Member(
+            id: 'mS',
+            role: 'step_parent',
+            fullName: 'Bob Martin',
+            partnerMembershipId: 'mA',
+            // L'API sert `partnerName` des DEUX côtés ; c'est le RÔLE qui décide de la
+            // mention, sans quoi « Sophie · conjointe de Bob » inverserait le foyer.
+            partnerName: 'Sophie Durand',
+          ),
+        ],
+      );
+      when(() => childrenRepo.listChildren('u-test', 'fam-1'))
+          .thenAnswer((_) async => const []);
 
-    await pumpScreen(tester, const AgendaScreen(), overrides: overrides());
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('agenda-new')));
-    await tester.pumpAndSettle();
+      await pumpScreen(tester, const AgendaScreen(), overrides: overrides());
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('agenda-new')));
+      await tester.pumpAndSettle();
 
-    // Le sélecteur fermé n'affiche que l'élément retenu : il faut ouvrir la liste pour voir
-    // les deux libellés.
-    await tester.tap(find.byType(DropdownButtonFormField<String>).at(1));
-    await tester.pumpAndSettle();
+      // Le sélecteur fermé n'affiche que l'élément retenu : il faut ouvrir la liste pour voir
+      // les deux libellés.
+      await tester.tap(find.byType(DropdownButtonFormField<String>).at(1));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Bob Martin · Conjoint·e de Sophie Durand'), findsWidgets);
-    // Le parent, lui, est nommé seul — la mention ne se lit que du côté du beau-parent.
-    expect(find.text('Sophie Durand'), findsWidgets);
-  });
+      expect(
+        find.text('Bob Martin · Conjoint·e de Sophie Durand'),
+        findsWidgets,
+      );
+      // Le parent, lui, est nommé seul — la mention ne se lit que du côté du beau-parent.
+      expect(find.text('Sophie Durand'), findsWidgets);
+    },
+  );
 
   // ---- Régressions de la revue mobile 2026-08 (étape 6) ----
 
@@ -282,12 +282,10 @@ void main() {
   testWidgets(
     'les activités de famille liée sont triées avec les propres (C39)',
     (tester) async {
-      when(
-        () => membersRepo.listMembers('fam-1'),
-      ).thenAnswer((_) async => const []);
-      when(
-        () => childrenRepo.listChildren('u-test', 'fam-1'),
-      ).thenAnswer((_) async => const []);
+      when(() => membersRepo.listMembers('fam-1'))
+          .thenAnswer((_) async => const []);
+      when(() => childrenRepo.listChildren('u-test', 'fam-1'))
+          .thenAnswer((_) async => const []);
       stubEvents(repo, const [
         api.Event(
           id: 'e1',
@@ -298,12 +296,10 @@ void main() {
         ),
       ]);
       final overlayRepo = MockOverlayRepository();
-      when(
-        () => overlayRepo.activeLinks(any()),
-      ).thenAnswer((_) async => const []);
-      when(
-        () => overlayRepo.preferences(any()),
-      ).thenAnswer((_) async => const []);
+      when(() => overlayRepo.activeLinks(any()))
+          .thenAnswer((_) async => const []);
+      when(() => overlayRepo.preferences(any()))
+          .thenAnswer((_) async => const []);
       when(() => overlayRepo.overlayEvents(any(), any())).thenAnswer(
         (_) async => const [
           OverlayEvent(
@@ -344,12 +340,10 @@ void main() {
 
   group('suppression d\'un événement (C41)', () {
     Future<void> openActions(WidgetTester tester, api.Event event) async {
-      when(
-        () => membersRepo.listMembers('fam-1'),
-      ).thenAnswer((_) async => const []);
-      when(
-        () => childrenRepo.listChildren('u-test', 'fam-1'),
-      ).thenAnswer((_) async => const []);
+      when(() => membersRepo.listMembers('fam-1'))
+          .thenAnswer((_) async => const []);
+      when(() => childrenRepo.listChildren('u-test', 'fam-1'))
+          .thenAnswer((_) async => const []);
       stubEvents(repo, [event]);
 
       await pumpScreen(tester, const AgendaScreen(), overrides: overrides());

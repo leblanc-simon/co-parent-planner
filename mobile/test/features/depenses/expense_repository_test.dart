@@ -158,29 +158,32 @@ void main() {
       expect(adapter.requests.single.path, '/api/families/fam-1/expenses');
     });
 
-    test('le règlement passe un PATCH partiel, jamais la dépense entière', () async {
-      final adapter = _RecordingAdapter({
-        'id': 'e-1',
-        'title': 'Cantine',
-        'settled': true,
-      });
-      final repo = repoWith(adapter);
+    test(
+      'le règlement passe un PATCH partiel, jamais la dépense entière',
+      () async {
+        final adapter = _RecordingAdapter({
+          'id': 'e-1',
+          'title': 'Cantine',
+          'settled': true,
+        });
+        final repo = repoWith(adapter);
 
-      final updated = await repo.settle('e-1');
+        final updated = await repo.settle('e-1');
 
-      expect(adapter.requests.single.method, 'PATCH');
-      expect(adapter.requests.single.path, '/api/expenses/e-1');
+        expect(adapter.requests.single.method, 'PATCH');
+        expect(adapter.requests.single.path, '/api/expenses/e-1');
 
-      // Le modèle généré sérialise **toutes** ses clés, les non renseignées à `null`.
-      // C'est sans danger parce que le serveur traite `null` comme « inchangé » et jamais
-      // comme « efface » (`ExpenseWriter::update`) — un test fonctionnel backend fixe cette
-      // convention en envoyant exactement ce corps.
-      final body = adapter.requests.single.data as Map<String, dynamic>;
-      expect(body['settled'], isTrue);
-      expect(body['title'], isNull);
-      expect(body['amountCents'], isNull);
-      expect(updated.settled, isTrue);
-    });
+        // Le modèle généré sérialise **toutes** ses clés, les non renseignées à `null`.
+        // C'est sans danger parce que le serveur traite `null` comme « inchangé » et jamais
+        // comme « efface » (`ExpenseWriter::update`) — un test fonctionnel backend fixe cette
+        // convention en envoyant exactement ce corps.
+        final body = adapter.requests.single.data as Map<String, dynamic>;
+        expect(body['settled'], isTrue);
+        expect(body['title'], isNull);
+        expect(body['amountCents'], isNull);
+        expect(updated.settled, isTrue);
+      },
+    );
 
     test('la relance appelle la route dédiée', () async {
       final adapter = _RecordingAdapter({'id': 'e-1', 'title': 'Cantine'});

@@ -1,7 +1,7 @@
 import { Page, expect, test } from '@playwright/test';
 
 import { waitForVerificationToken } from '../helpers/mailpit';
-import { waitForSaved } from '../helpers/page';
+import { waitForReload, waitForSaved } from '../helpers/page';
 
 const PASSWORD = 'MotDePasseTresLong123';
 
@@ -89,7 +89,12 @@ test('Échanges : discussion + message, décision + bascule, marqueur « en reta
   const labels = page.locator('[name="optionLabel[]"]');
   await labels.nth(0).fill('Centre A');
   await labels.nth(1).fill('Centre B');
+  // Rechargement armé avant la soumission : la confirmation du message précédent est encore
+  // affichée, `waitForSaved` seul passait aussitôt ; le rechargement de la création arrivait
+  // alors APRÈS le choix d'option et remettait le bouton de vote à `disabled` (CI).
+  const reloaded = waitForReload(page);
   await page.locator('.exchange-form button[type="submit"]').click();
+  await reloaded;
   await waitForSaved(page);
 
   await page.locator('.exchange-card').filter({ hasText: 'Choix du centre aéré' }).first().click();

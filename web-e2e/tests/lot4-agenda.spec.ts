@@ -1,7 +1,7 @@
 import { Page, expect, test } from '@playwright/test';
 
 import { waitForVerificationToken } from '../helpers/mailpit';
-import { waitForSaved } from '../helpers/page';
+import { waitForReload, waitForSaved } from '../helpers/page';
 
 const PASSWORD = 'MotDePasseTresLong123';
 
@@ -106,7 +106,12 @@ test('Agenda : créer un événement, une série, filtrer, éditer, supprimer, �
   await tennis
     .locator('textarea[name="description"]')
     .fill('Raquette déjà dans le sac');
+  // Rechargement armé avant la soumission : la confirmation de la création est encore dans sa
+  // fenêtre d'affichage, `waitForSaved` seul la prenait pour celle de l'édition et le `goto`
+  // suivant partait avant le rechargement (titre jamais vu modifié en CI).
+  const reloaded = waitForReload(page);
   await tennis.locator('form.agenda-edit').dispatchEvent('submit');
+  await reloaded;
   await waitForSaved(page);
   await page.goto(`/agenda?month=${soon.month}`);
   await expect(page.locator('.agenda-events')).toContainText('Tennis modifié');
